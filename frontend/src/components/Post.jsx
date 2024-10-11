@@ -192,8 +192,30 @@ const Post = ({ post, postedBy }) => {
     };
   }, [i18n]);
 
+  // useEffect(() => {
+  //   const getUser = async () => {
+  //     try {
+  //       const res = await fetch("/api/users/profile/" + postedBy);
+  //       const data = await res.json();
+  //       if (data.error) {
+  //         showToast(t("Error"), data.error, "error");
+  //         return;
+  //       }
+  //       setUser(data);
+  //     } catch (error) {
+  //       showToast(t("Error"), error.message, "error");
+  //       setUser(null);
+  //     }
+  //   };
+
+  //   getUser();
+  // }, [postedBy, showToast, t]);
+  
+  // debugging
   useEffect(() => {
     const getUser = async () => {
+      console.log("postedBy:", postedBy); // Log postedBy to check its structure
+  
       try {
         const res = await fetch("/api/users/profile/" + postedBy);
         const data = await res.json();
@@ -207,9 +229,10 @@ const Post = ({ post, postedBy }) => {
         setUser(null);
       }
     };
-
+  
     getUser();
   }, [postedBy, showToast, t]);
+  
 
   const handleDeletePost = async (e) => {
     try {
