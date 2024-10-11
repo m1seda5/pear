@@ -456,112 +456,6 @@
 
 
 // debugging (working no toast errors but looks like the original source code:
-// import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
-// import { useEffect, useState } from "react";
-// import useShowToast from "../hooks/useShowToast";
-// import Post from "../components/Post";
-// import { useRecoilState } from "recoil";
-// import postsAtom from "../atoms/postsAtom";
-// import { useTranslation } from 'react-i18next';
-// import '../index.css';
-
-// const HomePage = () => {
-//   const [posts, setPosts] = useRecoilState(postsAtom);
-//   const [loading, setLoading] = useState(true);
-//   const [newPosts, setNewPosts] = useState([]);
-//   const showToast = useShowToast();
-//   const { t, i18n } = useTranslation();
-//   const [language, setLanguage] = useState(i18n.language);
-
-//   useEffect(() => {
-//     const handleLanguageChange = (lng) => {
-//       setLanguage(lng);
-//     };
-
-//     i18n.on('languageChanged', handleLanguageChange);
-
-//     return () => {
-//       i18n.off('languageChanged', handleLanguageChange);
-//     };
-//   }, [i18n]);
-
-//   useEffect(() => {
-//     const getFeedPosts = async () => {
-//       setLoading(true);
-//       setPosts([]);
-//       try {
-//         console.log("Fetching feed posts"); // Log start of fetching feed posts
-//         const res = await fetch("/api/posts/feed");
-//         const data = await res.json();
-//         console.log("Feed posts data:", data); // Log the data received
-
-//         if (data.error) {
-//           showToast(t("Error"), data.error, "error");
-//           return;
-//         }
-
-//         setPosts(data);
-//         const now = Date.now();
-//         const recentPosts = data.filter(post => {
-//           const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
-//           return postAgeInHours <= 3;
-//         });
-//         setNewPosts(recentPosts);
-
-//         setTimeout(() => {
-//           setNewPosts([]);
-//         }, 30000);
-//       } catch (error) {
-//         console.error("Error fetching feed posts:", error.message); // Log any errors
-//         if (error.message.includes('User not found')) {
-//           console.warn("User retrieval failed but no toast shown");
-//         } else {
-//           showToast(t("Error"), error.message, "error");
-//         }
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-//     getFeedPosts();
-//   }, [showToast, setPosts, t]);
-
-//   const isNewPost = (postTime) => {
-//     const now = Date.now();
-//     const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
-//     return postAgeInHours <= 3;
-//   };
-
-//   return (
-//     <Flex gap="10" alignItems={"flex-start"}>
-//       <Box flex={70}>
-//         {!loading && posts.length === 0 && (
-//           <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-//         )}
-//         {loading ? (
-//           <Flex justify="center" align="center" h="full">
-//             <Spinner size={"xl"} />
-//           </Flex>
-//         ) : (
-//           <>
-//             {posts.map((post) => (
-//               <Post key={post._id} post={post} postedBy={post.postedBy} />
-//             ))}
-//             {newPosts.length > 0 && (
-//               <Box position={"fixed"} bottom={4} right={4}>
-//                 <Text>{t("New posts available")}</Text>
-//               </Box>
-//             )}
-//           </>
-//         )}
-//       </Box>
-//     </Flex>
-//   );
-// };
-
-// export default HomePage;
-
-
-// debugging and testing   
 import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import useShowToast from "../hooks/useShowToast";
@@ -579,20 +473,18 @@ const HomePage = () => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
 
-  // Handle language changes
   useEffect(() => {
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on('languageChanged', handleLanguageChange); // Listen for language changes
+    i18n.on('languageChanged', handleLanguageChange);
 
     return () => {
-      i18n.off('languageChanged', handleLanguageChange); // Cleanup on unmount
+      i18n.off('languageChanged', handleLanguageChange);
     };
   }, [i18n]);
 
-  // Fetch posts
   useEffect(() => {
     const getFeedPosts = async () => {
       setLoading(true);
@@ -608,19 +500,16 @@ const HomePage = () => {
           return;
         }
 
-        console.log("Posts set:", data); // Log when posts are successfully set
         setPosts(data);
-
         const now = Date.now();
         const recentPosts = data.filter(post => {
           const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
-          return postAgeInHours <= 3; // Filter posts created in the last 3 hours
+          return postAgeInHours <= 3;
         });
         setNewPosts(recentPosts);
 
         setTimeout(() => {
-          setNewPosts([]); // Clear new posts after 30 seconds
-          console.log("New posts cleared after 30 seconds");
+          setNewPosts([]);
         }, 30000);
       } catch (error) {
         console.error("Error fetching feed posts:", error.message); // Log any errors
@@ -631,13 +520,11 @@ const HomePage = () => {
         }
       } finally {
         setLoading(false);
-        console.log("Loading finished"); // Log when loading is done
       }
     };
     getFeedPosts();
   }, [showToast, setPosts, t]);
 
-  // Check if a post is new (created within the last 3 hours)
   const isNewPost = (postTime) => {
     const now = Date.now();
     const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
@@ -650,37 +537,28 @@ const HomePage = () => {
         {!loading && posts.length === 0 && (
           <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
         )}
-
-        {loading && (
-          <Flex justifyContent="center">
-            <Spinner size="xl" />
+        {loading ? (
+          <Flex justify="center" align="center" h="full">
+            <Spinner size={"xl"} />
           </Flex>
+        ) : (
+          <>
+            {posts.map((post) => (
+              <Post key={post._id} post={post} postedBy={post.postedBy} />
+            ))}
+            {newPosts.length > 0 && (
+              <Box position={"fixed"} bottom={4} right={4}>
+                <Text>{t("New posts available")}</Text>
+              </Box>
+            )}
+          </>
         )}
-
-        {posts.map((post) => {
-          const isNew = isNewPost(post.createdAt);
-
-          return (
-            <Box
-              key={post._id}
-              className="postContainer" // This is where the popout hover effect will happen
-              borderWidth="1px"
-              borderRadius="lg"
-              p={4}
-              mb={6}
-              boxShadow="sm"
-            >
-              <Post post={post} postedBy={post.postedBy} />
-
-              {isNew && newPosts.includes(post) && (
-                <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-              )}
-            </Box>
-          );
-        })}
       </Box>
     </Flex>
   );
 };
 
 export default HomePage;
+
+
+
