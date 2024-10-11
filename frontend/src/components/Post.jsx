@@ -210,14 +210,15 @@ const Post = ({ post, postedBy }) => {
 
   //   getUser();
   // }, [postedBy, showToast, t]);
-  
+
   // debugging
   useEffect(() => {
     const getUser = async () => {
-      console.log("postedBy:", postedBy); // Log postedBy to check its structure
-  
+      console.log("postedBy:", postedBy);
+
       try {
-        const res = await fetch("/api/users/profile/" + postedBy);
+        const userId = typeof postedBy === 'object' ? postedBy._id : postedBy; // Extract ID if postedBy is an object
+        const res = await fetch("/api/users/profile/" + userId); // Use userId directly in the URL
         const data = await res.json();
         if (data.error) {
           showToast(t("Error"), data.error, "error");
@@ -229,10 +230,10 @@ const Post = ({ post, postedBy }) => {
         setUser(null);
       }
     };
-  
+
     getUser();
   }, [postedBy, showToast, t]);
-  
+
 
   const handleDeletePost = async (e) => {
     try {
