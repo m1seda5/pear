@@ -122,7 +122,7 @@ import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
-import ReactiveBackground from './components/ReactiveBackground'; // Import background component
+import InactivityBackground from './components/InactivityBackground'; // Updated import for background component
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -137,7 +137,7 @@ function App() {
       <Box position={'relative'} w="full">
         
         {/* Background will be positioned at the back of all content */}
-        <ReactiveBackground />
+        <InactivityBackground />
 
         <Container maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'}>
           <Header />
@@ -164,4 +164,3 @@ function App() {
 }
 
 export default App;
-
