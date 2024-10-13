@@ -757,7 +757,7 @@ import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaLock } from "react-icons/fa";
 
 const Header = () => {
@@ -767,56 +767,35 @@ const Header = () => {
     const setAuthScreen = useSetRecoilState(authScreenAtom);
     const navigate = useNavigate();
     const [hoveringLock, setHoveringLock] = useState(false);
-    const [inactiveTime, setInactiveTime] = useState(0);
 
-    useEffect(() => {
-        const timer = setInterval(() => setInactiveTime(inactiveTime + 1), 1000);
-
-        const resetInactiveTime = () => setInactiveTime(0);
-
-        window.addEventListener('mousemove', resetInactiveTime);
-        window.addEventListener('keydown', resetInactiveTime);
-
-        if (inactiveTime >= 8) {
-            // Trigger icon fight interaction
-            document.querySelectorAll(".icon-container").forEach(icon => {
-                icon.classList.add("fight");
-                setTimeout(() => icon.classList.remove("fight"), 15000); // Reset after 15s
-            });
-        }
-
-        return () => {
-            clearInterval(timer);
-            window.removeEventListener('mousemove', resetInactiveTime);
-            window.removeEventListener('keydown', resetInactiveTime);
-        };
-    }, [inactiveTime]);
-
+    // Check if the user has access to the chat page based on their email and time restrictions
     const isStudent = user?.email?.includes("students");
     const currentDate = new Date();
-    const dayOfWeek = currentDate.getDay();
-    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+    const dayOfWeek = currentDate.getDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
+    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes(); // Convert to HHMM format
 
+    // School hours in HHMM format
     const schoolStart = 810;
     const lunchStart = 1250;
     const lunchEnd = 1340;
     const schoolEnd = 1535;
 
+    // Determine if the student has chat access based on the day and time
     const hasChatAccess =
         isStudent &&
         ((dayOfWeek >= 1 && dayOfWeek <= 5 && 
             (currentTime < schoolStart || 
             (currentTime >= lunchStart && currentTime <= lunchEnd) || 
             currentTime > schoolEnd)) ||
-        dayOfWeek === 0 || dayOfWeek === 6);
+        dayOfWeek === 0 || dayOfWeek === 6); // Allow access on weekends
 
     const handleChatClick = (e) => {
         if (!hasChatAccess) {
-            e.preventDefault();
-            setHoveringLock(true);
+            e.preventDefault(); // Prevent navigation if the user doesn't have access
+            setHoveringLock(true); // Show red lock when hovering
         } else {
             setHoveringLock(false);
-            navigate("/chat");
+            navigate("/chat"); // Navigate to chat page if access is allowed
         }
     };
 
@@ -826,7 +805,6 @@ const Header = () => {
                 <Link
                     as={RouterLink}
                     to="/"
-                    className="icon-container"
                     _hover={{
                         color: "teal.500",
                         transform: "scale(1.2)",
@@ -841,7 +819,6 @@ const Header = () => {
                     as={RouterLink}
                     to="/auth"
                     onClick={() => setAuthScreen("login")}
-                    className="icon-container"
                     _hover={{
                         color: "teal.500",
                         transform: "scale(1.2)",
@@ -858,7 +835,6 @@ const Header = () => {
                 w={6}
                 src={colorMode === "dark" ? "/light-logo.svg" : "/dark-logo.svg"}
                 onClick={toggleColorMode}
-                className="icon-container"
                 _hover={{
                     transform: "rotate(20deg) scale(1.2)",
                 }}
@@ -870,7 +846,6 @@ const Header = () => {
                     <Link
                         as={RouterLink}
                         to={`/${user.username}`}
-                        className="icon-container"
                         _hover={{
                             color: "teal.500",
                             transform: "scale(1.2)",
@@ -882,7 +857,6 @@ const Header = () => {
 
                     <Link
                         onClick={handleChatClick}
-                        className="icon-container"
                         _hover={{
                             color: hasChatAccess ? "teal.500" : "red.500",
                             transform: "scale(1.2)",
@@ -898,7 +872,6 @@ const Header = () => {
                     <Link
                         as={RouterLink}
                         to="/settings"
-                        className="icon-container"
                         _hover={{
                             color: "teal.500",
                             transform: "scale(1.2)",
@@ -910,7 +883,6 @@ const Header = () => {
                     <Button
                         size="xs"
                         onClick={logout}
-                        className="icon-container"
                         _hover={{
                             bg: "teal.500",
                             color: "white",
@@ -928,7 +900,6 @@ const Header = () => {
                     as={RouterLink}
                     to="/auth"
                     onClick={() => setAuthScreen("signup")}
-                    className="icon-container"
                     _hover={{
                         color: "teal.500",
                         transform: "scale(1.2)",
