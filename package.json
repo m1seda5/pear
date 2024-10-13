@@ -26,6 +26,7 @@
 		"jsonwebtoken": "^9.0.1",
 		"mongoose": "^7.4.0",
 		"react-i18next": "^15.0.1",
+		"react-tsparticles": "^2.12.2",
 		"socket.io": "^4.7.2",
 		"three": "^0.169.0",
 		"ws": "^8.18.0"
