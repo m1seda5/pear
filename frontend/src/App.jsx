@@ -137,8 +137,7 @@ function App() {
       <Box position={'relative'} w="full">
         
         {/* Background will be positioned at the back of all content */}
-        <InactivityBackground />
-
+    
         <Container maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'}>
           <Header />
           <Routes>
