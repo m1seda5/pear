@@ -42,12 +42,10 @@ const filterPostsByAudience = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Check if the user is a student and set the audience accordingly
+    // Set the target audience for posts based on user role
     if (user.role === "student" && user.yearGroup) {
       req.targetAudience = user.yearGroup;
-    }
-    // Check if the user is a teacher and set the department as audience
-    else if (user.role === "teacher" && user.department) {
+    } else if (user.role === "teacher" && user.department) {
       req.targetAudience = user.department;
     } else {
       req.targetAudience = "all";
