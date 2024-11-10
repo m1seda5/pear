@@ -1,4 +1,4 @@
-// this is working 
+// // athis is the orignal working version
 // import express from "express";
 // import {
 // 	createPost,
@@ -10,41 +10,42 @@
 // 	getUserPosts,
 // } from "../controllers/postController.js";
 // import protectRoute from "../middlewares/protectRoute.js";
+// import checkTeacherAccess from "../middlewares/checkTeacherAccess.js"; // Import the teacher access middleware
 
 // const router = express.Router();
 
 // router.get("/feed", protectRoute, getFeedPosts);
-// router.get("/:id", getPost);
-// router.get("/user/:username", getUserPosts);
-// router.post("/create", protectRoute, createPost);
+// router.get("/:id", protectRoute, getPost); // Added protectRoute for consistency
+// router.get("/user/:username", protectRoute, getUserPosts); // Added protectRoute for consistency
+// router.post("/create", protectRoute, checkTeacherAccess, createPost); // Add the checkTeacherAccess middleware
 // router.delete("/:id", protectRoute, deletePost);
 // router.put("/like/:id", protectRoute, likeUnlikePost);
 // router.put("/reply/:id", protectRoute, replyToPost);
 
-
 // export default router;
 
 
-// adding teacher roles 
+// this is adding thje dmin role
 import express from "express";
 import {
-	createPost,
-	deletePost,
-	getPost,
-	likeUnlikePost,
-	replyToPost,
-	getFeedPosts,
-	getUserPosts,
+  createPost,
+  deletePost,
+  getPost,
+  likeUnlikePost,
+  replyToPost,
+  getFeedPosts,
+  getUserPosts,
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
-import checkTeacherAccess from "../middlewares/checkTeacherAccess.js"; // Import the teacher access middleware
+import checkAdminAccess from "../middlewares/checkAdminAccess.js"; // Admin access middleware
+import checkTeacherAccess from "../middlewares/checkTeacherAccess.js"; // Teacher access middleware
 
 const router = express.Router();
 
 router.get("/feed", protectRoute, getFeedPosts);
-router.get("/:id", protectRoute, getPost); // Added protectRoute for consistency
-router.get("/user/:username", protectRoute, getUserPosts); // Added protectRoute for consistency
-router.post("/create", protectRoute, checkTeacherAccess, createPost); // Add the checkTeacherAccess middleware
+router.get("/:id", protectRoute, getPost);
+router.get("/user/:username", protectRoute, getUserPosts);
+router.post("/create", protectRoute, checkAdminAccess, createPost); // Admin-only access for creating posts
 router.delete("/:id", protectRoute, deletePost);
 router.put("/like/:id", protectRoute, likeUnlikePost);
 router.put("/reply/:id", protectRoute, replyToPost);
