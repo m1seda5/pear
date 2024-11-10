@@ -66,7 +66,7 @@ const checkChatAccess = async (req, res, next) => {
     }
 
     const currentDate = new Date();
-    const dayOfWeek = currentDate.getDay();
+    const dayOfWeek = currentDate.getDay(); 
     const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
 
     const schoolStart = 810;
@@ -74,10 +74,8 @@ const checkChatAccess = async (req, res, next) => {
     const lunchEnd = 1340;
     const schoolEnd = 1535;
 
-    // Check if the day is a school day (Monday to Friday)
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      if (user.role === "student") {
-        // Student access based on time
+      if (user.email.includes("students")) {
         if (
           currentTime < schoolStart ||
           (currentTime >= lunchStart && currentTime <= lunchEnd) ||
@@ -85,14 +83,12 @@ const checkChatAccess = async (req, res, next) => {
         ) {
           return next();
         } else {
-          return res.status(403).json({ error: "Access denied during school hours" });
+          return res.status(403).json({});
         }
       } else {
-        // Teachers and admins have full access during school days
-        return next();
+        return res.status(403).json({});
       }
     } else {
-      // Weekend access (no restrictions)
       return next();
     }
   } catch (error) {
@@ -101,4 +97,3 @@ const checkChatAccess = async (req, res, next) => {
 };
 
 export default checkChatAccess;
- 

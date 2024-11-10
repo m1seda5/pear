@@ -42,7 +42,6 @@ const checkTeacherAccess = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Ensure the user has a 'teacher' role
     if (user.role !== "teacher") {
       return res.status(403).json({ error: "Access denied. Teachers only." });
     }
