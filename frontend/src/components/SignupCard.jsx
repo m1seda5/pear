@@ -178,85 +178,215 @@
 
 // this is versio two with the new roles plus admin role
 import { useState } from "react";
-import { Flex, Box, FormControl, FormLabel, Input, Select, Button } from "@chakra-ui/react";
+import {
+  Flex,
+  Box,
+  FormControl,
+  FormLabel,
+  Input,
+  InputGroup,
+  HStack,
+  InputRightElement,
+  Stack,
+  Button,
+  Heading,
+  Text,
+  useColorModeValue,
+  Link,
+  Select,
+  Checkbox,
+} from "@chakra-ui/react";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 
 export default function SignupCard() {
+  const [showPassword, setShowPassword] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
   const [yearGroup, setYearGroup] = useState("");
   const [department, setDepartment] = useState("");
-  const [inputs, setInputs] = useState({ name: "", email: "", password: "" });
+  const [inputs, setInputs] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+  });
 
   const handleSignup = async () => {
-    const res = await fetch("/api/users/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...inputs,
-        yearGroup: isStudent ? yearGroup : null,
-        department: isTeacher ? department : null,
-        role: isStudent ? "student" : isTeacher ? "teacher" : "student",
-      }),
-    });
-
-    const data = await res.json();
-    if (data.error) {
-      console.error(data.error);
-    } else {
-      console.log("User signed up successfully", data);
+    try {
+      const res = await fetch("/api/users/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...inputs,
+          yearGroup: isStudent ? yearGroup : null,
+          department: isTeacher ? department : null,
+          role: isStudent ? "student" : isTeacher ? "teacher" : "student",
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        console.error(data.error);
+      } else {
+        console.log("User signed up successfully", data);
+      }
+    } catch (error) {
+      console.error("Error signing up", error);
     }
   };
 
   return (
     <Flex align={"center"} justify={"center"}>
-      <Box>
-        <FormControl>
-          <FormLabel>Name</FormLabel>
-          <Input type="text" onChange={(e) => setInputs({ ...inputs, name: e.target.value })} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Email</FormLabel>
-          <Input type="email" onChange={(e) => setInputs({ ...inputs, email: e.target.value })} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Password</FormLabel>
-          <Input type="password" onChange={(e) => setInputs({ ...inputs, password: e.target.value })} />
-        </FormControl>
+      <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
+        <Stack align={"center"}>
+          <Heading fontSize={"4xl"} textAlign={"center"}>
+            Sign up
+          </Heading>
+        </Stack>
+        <Box
+          rounded={"lg"}
+          bg={useColorModeValue("white", "gray.700")}
+          boxShadow={"lg"}
+          p={8}
+        >
+          <Stack spacing={4}>
+            <HStack>
+              <Box>
+                <FormControl isRequired>
+                  <FormLabel>Full name</FormLabel>
+                  <Input
+                    type="text"
+                    onChange={(e) =>
+                      setInputs({ ...inputs, name: e.target.value })
+                    }
+                    value={inputs.name}
+                  />
+                </FormControl>
+              </Box>
+              <Box>
+                <FormControl isRequired>
+                  <FormLabel>Username</FormLabel>
+                  <Input
+                    type="text"
+                    onChange={(e) =>
+                      setInputs({ ...inputs, username: e.target.value })
+                    }
+                    value={inputs.username}
+                  />
+                </FormControl>
+              </Box>
+            </HStack>
+            <FormControl isRequired>
+              <FormLabel>Email address</FormLabel>
+              <Input
+                type="email"
+                onChange={(e) =>
+                  setInputs({ ...inputs, email: e.target.value })
+                }
+                value={inputs.email}
+              />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Password</FormLabel>
+              <InputGroup>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  onChange={(e) =>
+                    setInputs({ ...inputs, password: e.target.value })
+                  }
+                  value={inputs.password}
+                />
+                <InputRightElement h={"full"}>
+                  <Button
+                    variant={"ghost"}
+                    onClick={() =>
+                      setShowPassword((showPassword) => !showPassword)
+                    }
+                  >
+                    {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                  </Button>
+                </InputRightElement>
+              </InputGroup>
+            </FormControl>
 
-        <FormControl>
-          <input type="checkbox" checked={isStudent} onChange={() => setIsStudent(!isStudent)} /> Are you a student?
-        </FormControl>
+            {/* Checkbox for Are You a Student? */}
+            <FormControl>
+              <Checkbox
+                isChecked={isStudent}
+                onChange={(e) => setIsStudent(e.target.checked)}
+              >
+                Are you a student?
+              </Checkbox>
+            </FormControl>
 
-        {isStudent && (
-          <FormControl>
-            <FormLabel>Select Year Group</FormLabel>
-            <Select onChange={(e) => setYearGroup(e.target.value)}>
-              <option value="Year 9">Year 9</option>
-              <option value="Year 10">Year 10</option>
-              <option value="Year 11">Year 11</option>
-              <option value="Year 12">Year 12</option>
-              <option value="Year 13">Year 13</option>
-            </Select>
-          </FormControl>
-        )}
+            {/* Year Group Selection */}
+            {isStudent && (
+              <FormControl isRequired>
+                <FormLabel>Select Year Group</FormLabel>
+                <Select
+                  placeholder="Select Year Group"
+                  onChange={(e) => setYearGroup(e.target.value)}
+                >
+                  <option value="Year 9">Year 9</option>
+                  <option value="Year 10">Year 10</option>
+                  <option value="Year 11">Year 11</option>
+                  <option value="Year 12">Year 12</option>
+                  <option value="Year 13">Year 13</option>
+                </Select>
+              </FormControl>
+            )}
 
-        <FormControl>
-          <input type="checkbox" checked={isTeacher} onChange={() => setIsTeacher(!isTeacher)} /> Are you a teacher?
-        </FormControl>
+            {/* Checkbox for Are You a Teacher? */}
+            <FormControl>
+              <Checkbox
+                isChecked={isTeacher}
+                onChange={(e) => setIsTeacher(e.target.checked)}
+              >
+                Are you a teacher?
+              </Checkbox>
+            </FormControl>
 
-        {isTeacher && (
-          <FormControl>
-            <FormLabel>Select Department</FormLabel>
-            <Select onChange={(e) => setDepartment(e.target.value)}>
-              <option value="Math">Math Department</option>
-              <option value="Science">Science Department</option>
-              <option value="English">English Department</option>
-            </Select>
-          </FormControl>
-        )}
+            {/* Department Selection */}
+            {isTeacher && (
+              <FormControl isRequired>
+                <FormLabel>Select Department</FormLabel>
+                <Select
+                  placeholder="Select Department"
+                  onChange={(e) => setDepartment(e.target.value)}
+                >
+                  <option value="Math">Math Department</option>
+                  <option value="Science">Science Department</option>
+                  <option value="English">English Department</option>
+                </Select>
+              </FormControl>
+            )}
 
-        <Button onClick={handleSignup}>Sign Up</Button>
-      </Box>
+            <Stack spacing={10} pt={2}>
+              <Button
+                loadingText="Submitting"
+                size="lg"
+                bg={useColorModeValue("gray.600", "gray.700")}
+                color={"white"}
+                _hover={{
+                  bg: useColorModeValue("gray.700", "gray.800"),
+                }}
+                onClick={handleSignup}
+              >
+                Sign up
+              </Button>
+            </Stack>
+            <Stack pt={6}>
+              <Text align={"center"}>
+                Already a user?{" "}
+                <Link color={"blue.400"} onClick={() => { /* Add navigation logic here */ }}>
+                  Login
+                </Link>
+              </Text>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
     </Flex>
   );
 }
