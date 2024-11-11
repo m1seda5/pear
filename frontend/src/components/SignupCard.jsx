@@ -462,7 +462,7 @@ export default function SignupCard() {
         </Stack>
         <Box
           rounded={"lg"}
-          bg={useColorModeValue("white", "gray.800")} // Original colors retained
+          bg={useColorModeValue("white", "gray.dark")} // Original colors retained
           boxShadow={"lg"}
           p={8}
         >
