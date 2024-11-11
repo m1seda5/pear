@@ -196,14 +196,73 @@
 // export default CreatePost;
 
 
-// this is the create post function
+// this is the create post function working just for the admin role update doesnt have conditionlarendrring
+// import { useState } from "react";
+// import { Button, Modal, ModalBody, ModalFooter, Textarea, Select } from "@chakra-ui/react";
+// import { BsFillImageFill } from "react-icons/bs";
+
+// const CreatePost = () => {
+//   const [postText, setPostText] = useState("");
+//   const [targetAudience, setTargetAudience] = useState("all"); // Default to 'all'
+//   const user = useRecoilValue(userAtom);
+
+//   const handleCreatePost = async () => {
+//     const payload = {
+//       postedBy: user._id,
+//       text: postText,
+//       targetAudience,
+//     };
+
+//     // Send post to backend
+//     const res = await fetch("/api/posts/create", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload),
+//     });
+
+//     const data = await res.json();
+//     if (data.error) {
+//       console.error(data.error);
+//     } else {
+//       console.log("Post created successfully", data);
+//     }
+//   };
+
+//   return (
+//     <Modal isOpen={isOpen} onClose={onClose}>
+//       <ModalBody>
+//         <Textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Create a post..." />
+//         <Select onChange={(e) => setTargetAudience(e.target.value)}>
+//           <option value="all">All</option>
+//           <option value="Year 9">Year 9</option>
+//           <option value="Year 10">Year 10</option>
+//           <option value="Year 11">Year 11</option>
+//           <option value="Year 12">Year 12</option>
+//           <option value="Year 13">Year 13</option>
+//           <option value="Math Department">Math Department</option>
+//           <option value="Science Department">Science Department</option>
+//           <option value="English Department">English Department</option>
+//         </Select>
+//       </ModalBody>
+//       <ModalFooter>
+//         <Button onClick={handleCreatePost}>Post</Button>
+//       </ModalFooter>
+//     </Modal>
+//   );
+// };
+
+// export default CreatePost;
+
+
+// this is the post with the new contditional render 
 import { useState } from "react";
 import { Button, Modal, ModalBody, ModalFooter, Textarea, Select } from "@chakra-ui/react";
-import { BsFillImageFill } from "react-icons/bs";
+import { useRecoilValue } from "recoil";
+import userAtom from "../atoms/userAtom";
 
-const CreatePost = () => {
+const CreatePost = ({ isOpen, onClose }) => {
   const [postText, setPostText] = useState("");
-  const [targetAudience, setTargetAudience] = useState("all"); // Default to 'all'
+  const [targetAudience, setTargetAudience] = useState("all");
   const user = useRecoilValue(userAtom);
 
   const handleCreatePost = async () => {
@@ -231,17 +290,35 @@ const CreatePost = () => {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalBody>
-        <Textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Create a post..." />
+        <Textarea
+          value={postText}
+          onChange={(e) => setPostText(e.target.value)}
+          placeholder="Create a post..."
+        />
+
         <Select onChange={(e) => setTargetAudience(e.target.value)}>
           <option value="all">All</option>
-          <option value="Year 9">Year 9</option>
-          <option value="Year 10">Year 10</option>
-          <option value="Year 11">Year 11</option>
-          <option value="Year 12">Year 12</option>
-          <option value="Year 13">Year 13</option>
-          <option value="Math Department">Math Department</option>
-          <option value="Science Department">Science Department</option>
-          <option value="English Department">English Department</option>
+
+          {/* Show year groups only for teachers and admins */}
+          {(user.role === "teacher" || user.role === "admin") && (
+            <>
+              <option value="Year 9">Year 9</option>
+              <option value="Year 10">Year 10</option>
+              <option value="Year 11">Year 11</option>
+              <option value="Year 12">Year 12</option>
+              <option value="Year 13">Year 13</option>
+            </>
+          )}
+
+          {/* Show departments only for admins */}
+          {user.role === "admin" && (
+            <>
+              <option value="Math Department">Math Department</option>
+              <option value="Science Department">Science Department</option>
+              <option value="English Department">English Department</option>
+              <option value="TV">TV</option>
+            </>
+          )}
         </Select>
       </ModalBody>
       <ModalFooter>
