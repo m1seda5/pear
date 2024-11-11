@@ -28,23 +28,29 @@
 // verification update
 import express from "express";
 import {
-	followUnFollowUser,
-	getUserProfile,
-	loginUser,
-	logoutUser,
-	signupUser,
-	updateUser,
-	getSuggestedUsers,
-	freezeAccount,
-	awardVerification // Import the award verification function
+  followUnFollowUser,
+  getUserProfile,
+  loginUser,
+  logoutUser,
+  signupUser,
+  updateUser,
+  getSuggestedUsers,
+  freezeAccount,
+  awardVerification
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
+import roleAssignment from "../middlewares/roleAssignment.js"; // Import the roleAssignment middleware
 
 const router = express.Router();
 
+// User routes
+
+// Signup route (roleAssignment will run first)
+router.post("/signup", roleAssignment, signupUser);
+
+// Other routes
 router.get("/profile/:query", getUserProfile);
 router.get("/suggested", protectRoute, getSuggestedUsers);
-router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 router.post("/follow/:id", protectRoute, followUnFollowUser); // Toggle state(follow/unfollow)
