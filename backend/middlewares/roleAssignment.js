@@ -25,11 +25,10 @@
 
 // gthis is adding the tv role 
 const roleAssignment = (req, res, next) => {
-  const { yearGroup, isTeacher, isAdmin } = req.body;
+  const { email, yearGroup, isTeacher, isAdmin } = req.body;
 
-  // Assign role based on email, student, teacher, or admin info
-  if (email && email.includes("tv")) {
-    req.user.role = "tv";
+  if (email.includes("tv")) {
+    req.user.role = "TV";
   } else if (yearGroup) {
     req.user.role = "student";
     req.user.yearGroup = yearGroup;
@@ -43,7 +42,3 @@ const roleAssignment = (req, res, next) => {
 
   next();
 };
-
-
-// Use default export
-export default roleAssignment;

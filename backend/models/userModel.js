@@ -90,11 +90,12 @@ const userSchema = mongoose.Schema(
     following: { type: [String], default: [] },
     bio: { type: String, default: "" },
     isFrozen: { type: Boolean, default: false },
-    verification: { type: String, enum: ["none", "blue", "golden"], default: "none" },
+    verification: { type: String, enum: ["none", "blue", "gold"], default: "none" },
     isStudent: { type: Boolean, default: false },
     yearGroup: {
       type: String,
       required: function () { return this.isStudent; },
+      default: null,
     },
     department: { type: String, default: null }, // For teacher departments
     role: {
