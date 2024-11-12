@@ -441,6 +441,14 @@ export default function SignupCard() {
           role: isStudent ? "student" : isTeacher ? "teacher" : "student",
         }),
       });
+  
+      // Check for successful response (status 2xx)
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP error! Status: ${res.status}. Response: ${errorText}`);
+      }
+  
+      // Parse the JSON response
       const data = await res.json();
       if (data.error) {
         console.error(data.error);
@@ -448,9 +456,10 @@ export default function SignupCard() {
         console.log("User signed up successfully", data);
       }
     } catch (error) {
-      console.error("Error signing up", error);
+      console.error("Error signing up:", error);
     }
   };
+  
 
   return (
     <Flex align={"center"} justify={"center"}>

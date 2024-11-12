@@ -631,10 +631,10 @@ const signupUser = async (req, res) => {
   
 	  await newUser.save();
   
+	  // Send successful response
 	  if (newUser) {
 		generateTokenAndSetCookie(newUser._id, res);
-  
-		res.status(201).json({
+		return res.status(201).json({
 		  _id: newUser._id,
 		  name: newUser.name,
 		  email: newUser.email,
@@ -645,13 +645,15 @@ const signupUser = async (req, res) => {
 		  role: newUser.role,
 		});
 	  } else {
-		res.status(400).json({ error: "Invalid user data" });
+		return res.status(400).json({ error: "Invalid user data" });
 	  }
 	} catch (err) {
-	  res.status(500).json({ error: err.message });
+	  // Catch any error and send a JSON response
 	  console.error("Error in signupUser: ", err.message);
+	  return res.status(500).json({ error: "Internal server error. Please try again later." });
 	}
   };
+  
   
 
 
