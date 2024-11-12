@@ -42,3 +42,4 @@ const roleAssignment = (req, res, next) => {
 
   next();
 };
+export default roleAssignment;
