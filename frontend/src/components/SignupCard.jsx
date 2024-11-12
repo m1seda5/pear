@@ -442,7 +442,7 @@ export default function SignupCard() {
         }),
       });
   
-      // Check for successful response (status 2xx)
+      // Check for a successful response (status 2xx)
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`HTTP error! Status: ${res.status}. Response: ${errorText}`);
@@ -454,11 +454,16 @@ export default function SignupCard() {
         console.error(data.error);
       } else {
         console.log("User signed up successfully", data);
+        
+        // Redirect after successful signup
+        window.location.href = "/dashboard"; // Replace with the actual path you want
       }
     } catch (error) {
       console.error("Error signing up:", error);
     }
   };
+  
+  
   
 
   return (
