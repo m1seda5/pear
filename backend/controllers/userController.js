@@ -598,63 +598,46 @@ const getUserProfile = async (req, res) => {
 	}
 };
 
+
+  
 const signupUser = async (req, res) => {
-	try {
-	  const { name, email, username, password, yearGroup, isStudent } = req.body;
-  
-	  // Check if the user already exists
-	  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-	  if (existingUser) {
-		return res.status(400).json({ error: "User already exists" });
-	  }
-  
-	  const salt = await bcrypt.genSalt(10);
-	  const hashedPassword = await bcrypt.hash(password, salt);
-  
-	  // Determine role
-	  let role = "student";
-	  if (email.includes("tv")) {
-		role = "TV";
-	  } else if (!isStudent) {
-		role = "teacher";
-	  }
-  
-	  // Create new user
-	  const newUser = new User({
-		name,
-		email,
-		username,
-		password: hashedPassword,
-		yearGroup: isStudent ? yearGroup : null,
-		role,
-	  });
-  
-	  await newUser.save();
-  
-	  // Send successful response
-	  if (newUser) {
-		generateTokenAndSetCookie(newUser._id, res);
-		return res.status(201).json({
-		  _id: newUser._id,
-		  name: newUser.name,
-		  email: newUser.email,
-		  username: newUser.username,
-		  bio: newUser.bio,
-		  profilePic: newUser.profilePic,
-		  yearGroup: newUser.yearGroup,
-		  role: newUser.role,
-		});
-	  } else {
-		return res.status(400).json({ error: "Invalid user data" });
-	  }
-	} catch (err) {
-	  // Catch any error and send a JSON response
-	  console.error("Error in signupUser: ", err.message);
-	  return res.status(500).json({ error: "Internal server error. Please try again later." });
-	}
-  };
-  
-  
+		try {
+			const { name, email, username, password } = req.body;
+			const user = await User.findOne({ $or: [{ email }, { username }] });
+	
+			if (user) {
+				return res.status(400).json({ error: "User already exists" });
+			}
+			const salt = await bcrypt.genSalt(10);
+			const hashedPassword = await bcrypt.hash(password, salt);
+	
+			const newUser = new User({
+				name,
+				email,
+				username,
+				password: hashedPassword,
+			});
+			await newUser.save();
+	
+			if (newUser) {
+				generateTokenAndSetCookie(newUser._id, res);
+	
+				res.status(201).json({
+					_id: newUser._id,
+					name: newUser.name,
+					email: newUser.email,
+					username: newUser.username,
+					bio: newUser.bio,
+					profilePic: newUser.profilePic,
+				});
+			} else {
+				res.status(400).json({ error: "Invalid user data" });
+			}
+		} catch (err) {
+			res.status(500).json({ error: err.message });
+			console.log("Error in signupUser: ", err.message);
+		}
+	};
 
 
 const loginUser = async (req, res) => {
