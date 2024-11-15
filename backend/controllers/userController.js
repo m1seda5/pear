@@ -902,6 +902,16 @@ const signupUser = async (req, res) => {
 	try {
 	  const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
   
+	  // Validate the input from the request body
+	  if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
+		return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
+	  }
+  
+	  // Ensure one of isStudent or isTeacher is true
+	  if (!isStudent && !isTeacher) {
+		return res.status(400).json({ error: "Invalid role selection" });
+	  }
+  
 	  // Check if a user with the same email or username already exists
 	  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
   
@@ -913,7 +923,7 @@ const signupUser = async (req, res) => {
 	  const salt = await bcrypt.genSalt(10);
 	  const hashedPassword = await bcrypt.hash(password, salt);
   
-	  // Determine the role based on input
+	  // Determine the role
 	  let role;
 	  if (email.includes("admin")) {
 		role = "admin"; // Assign admin role based on email
@@ -921,8 +931,6 @@ const signupUser = async (req, res) => {
 		role = "student";
 	  } else if (isTeacher) {
 		role = "teacher";
-	  } else {
-		return res.status(400).json({ error: "Invalid role selection" }); // Ensure role is always valid
 	  }
   
 	  // Create new user
@@ -942,26 +950,23 @@ const signupUser = async (req, res) => {
 	  await newUser.save();
   
 	  // If the user was created successfully, generate a token and respond with user details
-	  if (newUser) {
-		generateTokenAndSetCookie(newUser._id, res);
+	  generateTokenAndSetCookie(newUser._id, res);
   
-		res.status(201).json({
-		  _id: newUser._id,
-		  name: newUser.name,
-		  email: newUser.email,
-		  username: newUser.username,
-		  role: newUser.role,
-		  yearGroup: newUser.yearGroup,
-		  department: newUser.department,
-		});
-	  } else {
-		res.status(400).json({ error: "Invalid user data" });
-	  }
+	  res.status(201).json({
+		_id: newUser._id,
+		name: newUser.name,
+		email: newUser.email,
+		username: newUser.username,
+		role: newUser.role,
+		yearGroup: newUser.yearGroup,
+		department: newUser.department,
+	  });
 	} catch (err) {
 	  res.status(500).json({ error: err.message });
 	  console.log("Error in signup user: ", err.message);
 	}
   };
+  
   
   
 
