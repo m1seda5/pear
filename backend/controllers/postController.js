@@ -780,7 +780,7 @@ const createPost = async (req, res) => {
 
     // Ensure text length is within limit (500 characters max)
     if (text.length > 500) {
-      return res.status(400).json({ error: `Text must be less than 500 characters` });
+      return res.status(400).json({ error: "Text must be less than 500 characters" });
     }
 
     // Handle image upload if provided
@@ -792,7 +792,7 @@ const createPost = async (req, res) => {
     // Only teachers can set the `targetAudience`
     let finalTargetAudience = null;
     if (user.role === "teacher") {
-      finalTargetAudience = targetAudience || 'all';  // Default to 'all' if not specified
+      finalTargetAudience = targetAudience || "all"; // Default to 'all' if not specified
     }
 
     // Create the new post
@@ -800,7 +800,7 @@ const createPost = async (req, res) => {
       postedBy,
       text,
       img,
-      targetAudience: finalTargetAudience,  // Target audience only for teachers
+      targetAudience: finalTargetAudience, // Target audience only for teachers
     });
 
     // Save the post
@@ -808,12 +808,10 @@ const createPost = async (req, res) => {
 
     // Respond with the newly created post
     res.status(201).json(newPost);
-    
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 const getPost = async (req, res) => {
   try {
@@ -832,7 +830,6 @@ const getPost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 const deletePost = async (req, res) => {
   try {
@@ -983,10 +980,6 @@ const getFeedPosts = async (req, res) => {
   }
 };
 
-export { getFeedPosts };
-
-
-
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
@@ -1011,6 +1004,8 @@ export {
   deletePost,
   likeUnlikePost,
   replyToPost,
+  repostPost,
   getFeedPosts,
   getUserPosts,
 };
+
