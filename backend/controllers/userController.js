@@ -913,14 +913,16 @@ const signupUser = async (req, res) => {
 	  const salt = await bcrypt.genSalt(10);
 	  const hashedPassword = await bcrypt.hash(password, salt);
   
-	  // Determine the role based on email (admin if email contains "admin")
-	  let role = "user";
+	  // Determine the role based on input
+	  let role;
 	  if (email.includes("admin")) {
-		role = "admin"; // Admin role assigned based on email
+		role = "admin"; // Assign admin role based on email
 	  } else if (isStudent) {
 		role = "student";
 	  } else if (isTeacher) {
 		role = "teacher";
+	  } else {
+		return res.status(400).json({ error: "Invalid role selection" }); // Ensure role is always valid
 	  }
   
 	  // Create new user
@@ -929,7 +931,7 @@ const signupUser = async (req, res) => {
 		email,
 		username,
 		password: hashedPassword,
-		role, // Assign role
+		role, // Use the correct role
 		isStudent,
 		isTeacher,
 		yearGroup: isStudent ? yearGroup : undefined, // Only set yearGroup if the user is a student
@@ -960,6 +962,7 @@ const signupUser = async (req, res) => {
 	  console.log("Error in signup user: ", err.message);
 	}
   };
+  
   
 
 
