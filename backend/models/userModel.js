@@ -127,10 +127,18 @@ const userSchema = mongoose.Schema(
     yearGroup: {
       type: String,
       enum: yearGroupEnum,
+      required: function () {
+        // Only require yearGroup if the user is a student
+        return this.isStudent;
+      },
     },
     department: {
       type: String,
       enum: departmentEnum,
+      required: function () {
+        // Only require department if the user is a teacher
+        return this.isTeacher;
+      },
     },
     following: [
       {
@@ -142,6 +150,10 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: true, // Assume new users are students unless specified otherwise
     },
+    isTeacher: {
+      type: Boolean,
+      default: false, // Default to false unless specified otherwise
+    },
     profilePic: {
       type: String, // URL to the user's profile picture
     },
@@ -150,6 +162,15 @@ const userSchema = mongoose.Schema(
     timestamps: true, // Include timestamps for created and updated times
   }
 );
+
+// Custom validation to ensure that either isStudent or isTeacher is true
+userSchema.pre("save", function (next) {
+  if (!this.isStudent && !this.isTeacher) {
+    const error = new Error("At least one of isStudent or isTeacher must be true");
+    return next(error);
+  }
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 

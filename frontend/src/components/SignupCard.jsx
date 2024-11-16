@@ -213,7 +213,6 @@ import {
 	  username: "",
 	  email: "",
 	  password: "",
-	  role: "", // New field to store the user's role
 	});
   
 	const showToast = useShowToast();
@@ -232,40 +231,44 @@ import {
 	};
   
 	const handleSignup = async () => {
-		// Log the inputs and role booleans for debugging
-		console.log("Inputs:", inputs);
-		console.log("isStudent:", isStudent, "Type:", typeof isStudent);
-		console.log("isTeacher:", isTeacher, "Type:", typeof isTeacher);
-	  
-		try {
-		  const res = await fetch("/api/users/signup", {
-			method: "POST",
-			headers: {
-			  "Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-			  ...inputs,
-			  isStudent: Boolean(isStudent), // Ensure these are explicitly boolean
-			  isTeacher: Boolean(isTeacher), // Ensure these are explicitly boolean
-			  yearGroup: isStudent ? yearGroup : null,
-			  department: isTeacher ? department : null,
-			}),
-		  });
-		  const data = await res.json();
-	  
-		  if (data.error) {
-			showToast("Error", data.error, "error");
-			return;
-		  }
-	  
-		  // Save user data to local storage and set user state
-		  localStorage.setItem("user-threads", JSON.stringify(data));
-		  setUser(data);
-		} catch (error) {
-		  showToast("Error", error.message, "error");
+	  // Check if student has selected a year group and teacher has selected a department
+	  if (isStudent && !yearGroup) {
+		showToast("Error", "Please select a year group.", "error");
+		return;
+	  }
+	  if (isTeacher && !department) {
+		showToast("Error", "Please select a department.", "error");
+		return;
+	  }
+  
+	  try {
+		const res = await fetch("/api/users/signup", {
+		  method: "POST",
+		  headers: {
+			"Content-Type": "application/json",
+		  },
+		  body: JSON.stringify({
+			...inputs,
+			isStudent,  // Send the isStudent flag
+			isTeacher,  // Send the isTeacher flag
+			yearGroup: isStudent ? yearGroup : null,  // Only send yearGroup if student
+			department: isTeacher ? department : null,  // Only send department if teacher
+		  }),
+		});
+  
+		const data = await res.json();
+  
+		if (data.error) {
+		  showToast("Error", data.error, "error");
+		  return;
 		}
-	  };
-	  
+  
+		localStorage.setItem("user-threads", JSON.stringify(data));
+		setUser(data);
+	  } catch (error) {
+		showToast("Error", error.message, "error");
+	  }
+	};
   
 	return (
 	  <Flex align={"center"} justify={"center"}>
@@ -355,11 +358,11 @@ import {
 					placeholder="Select Year Group"
 					onChange={(e) => setYearGroup(e.target.value)}
 				  >
-					<option value="year9">Year 9</option>
-					<option value="year10">Year 10</option>
-					<option value="year11">Year 11</option>
-					<option value="year12">Year 12</option>
-					<option value="year13">Year 13</option>
+					<option value="Year 9">Year 9</option>
+					<option value="Year 10">Year 10</option>
+					<option value="Year 11">Year 11</option>
+					<option value="Year 12">Year 12</option>
+					<option value="Year 13">Year 13</option>
 				  </Select>
 				</FormControl>
 			  )}
@@ -372,15 +375,15 @@ import {
 					placeholder="Select Department"
 					onChange={(e) => setDepartment(e.target.value)}
 				  >
-					<option value="math">Mathematics</option>
-					<option value="science">Science</option>
-					<option value="english">English</option>
-					<option value="geography">Geography</option>
-					<option value="history">History</option>
-					<option value="art">Art</option>
-					<option value="pe">Physical Education</option>
-					<option value="music">Music</option>
-					<option value="cs">Computer Science</option>
+					<option value="Math">Math</option>
+					<option value="Science">Science</option>
+					<option value="English">English</option>
+					<option value="Geography">Geography</option>
+					<option value="History">History</option>
+					<option value="Art">Art</option>
+					<option value="PE">Physical Education</option>
+					<option value="Music">Music</option>
+					<option value="ICT">ICT</option>
 				  </Select>
 				</FormControl>
 			  )}
