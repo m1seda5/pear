@@ -232,31 +232,40 @@ import {
 	};
   
 	const handleSignup = async () => {
-	  try {
-		const res = await fetch("/api/users/signup", {
-		  method: "POST",
-		  headers: {
-			"Content-Type": "application/json",
-		  },
-		  body: JSON.stringify({
-			...inputs,
-			yearGroup: isStudent ? yearGroup : null,
-			department: isTeacher ? department : null,
-		  }),
-		});
-		const data = await res.json();
-  
-		if (data.error) {
-		  showToast("Error", data.error, "error");
-		  return;
+		// Log the inputs and role booleans for debugging
+		console.log("Inputs:", inputs);
+		console.log("isStudent:", isStudent, "Type:", typeof isStudent);
+		console.log("isTeacher:", isTeacher, "Type:", typeof isTeacher);
+	  
+		try {
+		  const res = await fetch("/api/users/signup", {
+			method: "POST",
+			headers: {
+			  "Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+			  ...inputs,
+			  isStudent: Boolean(isStudent), // Ensure these are explicitly boolean
+			  isTeacher: Boolean(isTeacher), // Ensure these are explicitly boolean
+			  yearGroup: isStudent ? yearGroup : null,
+			  department: isTeacher ? department : null,
+			}),
+		  });
+		  const data = await res.json();
+	  
+		  if (data.error) {
+			showToast("Error", data.error, "error");
+			return;
+		  }
+	  
+		  // Save user data to local storage and set user state
+		  localStorage.setItem("user-threads", JSON.stringify(data));
+		  setUser(data);
+		} catch (error) {
+		  showToast("Error", error.message, "error");
 		}
-  
-		localStorage.setItem("user-threads", JSON.stringify(data));
-		setUser(data);
-	  } catch (error) {
-		showToast("Error", error.message, "error");
-	  }
-	};
+	  };
+	  
   
 	return (
 	  <Flex align={"center"} justify={"center"}>
