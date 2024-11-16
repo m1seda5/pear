@@ -902,19 +902,13 @@ const signupUser = async (req, res) => {
 	try {
 	  const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
   
-	  // Validate the input from the request body
+	  // Validate boolean values for isStudent and isTeacher
 	  if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
 		return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
 	  }
   
-	  // Ensure one of isStudent or isTeacher is true
-	  if (!isStudent && !isTeacher) {
-		return res.status(400).json({ error: "Invalid role selection" });
-	  }
-  
 	  // Check if a user with the same email or username already exists
 	  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-  
 	  if (existingUser) {
 		return res.status(400).json({ error: "User already exists" });
 	  }
@@ -923,14 +917,14 @@ const signupUser = async (req, res) => {
 	  const salt = await bcrypt.genSalt(10);
 	  const hashedPassword = await bcrypt.hash(password, salt);
   
-	  // Determine the role
+	  // Determine the role based on the boolean values
 	  let role;
-	  if (email.includes("admin")) {
-		role = "admin"; // Assign admin role based on email
-	  } else if (isStudent) {
+	  if (isStudent) {
 		role = "student";
 	  } else if (isTeacher) {
 		role = "teacher";
+	  } else {
+		return res.status(400).json({ error: "Invalid role selection" });
 	  }
   
 	  // Create new user
@@ -939,7 +933,7 @@ const signupUser = async (req, res) => {
 		email,
 		username,
 		password: hashedPassword,
-		role, // Use the correct role
+		role, // Assign role based on boolean flags
 		isStudent,
 		isTeacher,
 		yearGroup: isStudent ? yearGroup : undefined, // Only set yearGroup if the user is a student
@@ -963,14 +957,13 @@ const signupUser = async (req, res) => {
 	  });
 	} catch (err) {
 	  res.status(500).json({ error: err.message });
-	  console.log("Error in signup user: ", err.message);
+	  console.error("Error in signup user:", err.message);
 	}
   };
   
   
   
-
-
+  
 const loginUser = async (req, res) => {
 	try {
 		const { username, password } = req.body;
