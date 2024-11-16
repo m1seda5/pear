@@ -1185,4 +1185,4 @@ export {
 	getSuggestedUsers,
 	freezeAccount,
 	awardVerification,  // Exporting the new function
-};
+}; 

@@ -1,3 +1,4 @@
+// original working
 import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
 import { useParams } from "react-router-dom";
@@ -64,3 +65,6 @@ const UserPage = () => {
 };
 
 export default UserPage;
+
+
+
