@@ -872,20 +872,18 @@ import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCooki
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 
+
 const getUserProfile = async (req, res) => {
-	// We will fetch user profile either with username or userId
-	// query is either username or userId
 	const { query } = req.params;
 
 	try {
 		let user;
 
-		// query is userId
+		// Fetch user either by ID or username
 		if (mongoose.Types.ObjectId.isValid(query)) {
-			user = await User.findOne({ _id: query }).select("-password").select("-updatedAt");
+			user = await User.findOne({ _id: query }).select("-password -updatedAt");
 		} else {
-			// query is username
-			user = await User.findOne({ username: query }).select("-password").select("-updatedAt");
+			user = await User.findOne({ username: query }).select("-password -updatedAt");
 		}
 
 		if (!user) return res.status(404).json({ error: "User not found" });
@@ -893,74 +891,67 @@ const getUserProfile = async (req, res) => {
 		res.status(200).json(user);
 	} catch (err) {
 		res.status(500).json({ error: err.message });
-		console.log("Error in getUserProfile: ", err.message);
+		console.error("Error in getUserProfile: ", err.message);
 	}
 };
 
 
 const signupUser = async (req, res) => {
 	try {
-	  const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
-  
-	  // Validate boolean values for isStudent and isTeacher
-	  if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
-		return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
-	  }
-  
-	  // Check if a user with the same email or username already exists
-	  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-	  if (existingUser) {
-		return res.status(400).json({ error: "User already exists" });
-	  }
-  
-	  // Hash the user's password
-	  const salt = await bcrypt.genSalt(10);
-	  const hashedPassword = await bcrypt.hash(password, salt);
-  
-	  // Determine the role based on the boolean values
-	  let role;
-	  if (isStudent) {
-		role = "student";
-	  } else if (isTeacher) {
-		role = "teacher";
-	  } else {
-		return res.status(400).json({ error: "Invalid role selection" });
-	  }
-  
-	  // Create new user
-	  const newUser = new User({
-		name,
-		email,
-		username,
-		password: hashedPassword,
-		role, // Assign role based on boolean flags
-		isStudent,
-		isTeacher,
-		yearGroup: isStudent ? yearGroup : undefined, // Only set yearGroup if the user is a student
-		department: isTeacher ? department : undefined, // Only set department if the user is a teacher
-	  });
-  
-	  // Save the user to the database
-	  await newUser.save();
-  
-	  // If the user was created successfully, generate a token and respond with user details
-	  generateTokenAndSetCookie(newUser._id, res);
-  
-	  res.status(201).json({
-		_id: newUser._id,
-		name: newUser.name,
-		email: newUser.email,
-		username: newUser.username,
-		role: newUser.role,
-		yearGroup: newUser.yearGroup,
-		department: newUser.department,
-	  });
+		const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
+
+		if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
+			return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
+		}
+
+		const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+		if (existingUser) {
+			return res.status(400).json({ error: "User already exists" });
+		}
+
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+
+		let role;
+		if (isStudent) {
+			role = "student";
+		} else if (isTeacher) {
+			role = "teacher";
+		} else {
+			return res.status(400).json({ error: "Invalid role selection" });
+		}
+
+		const newUser = new User({
+			name,
+			email,
+			username,
+			password: hashedPassword,
+			role,
+			isStudent,
+			isTeacher,
+			yearGroup: isStudent ? yearGroup : undefined,
+			department: isTeacher ? department : undefined,
+			following: [], // Initialize as empty array
+			followers: []  // Initialize as empty array
+		});
+
+		await newUser.save();
+		generateTokenAndSetCookie(newUser._id, res);
+
+		res.status(201).json({
+			_id: newUser._id,
+			name: newUser.name,
+			email: newUser.email,
+			username: newUser.username,
+			role: newUser.role,
+			yearGroup: newUser.yearGroup,
+			department: newUser.department,
+		});
 	} catch (err) {
-	  res.status(500).json({ error: err.message });
-	  console.error("Error in signup user:", err.message);
+		res.status(500).json({ error: err.message });
+		console.error("Error in signupUser: ", err.message);
 	}
-  };
-  
+};
   
   
   
@@ -1022,27 +1013,26 @@ const followUnFollowUser = async (req, res) => {
 		const userToModify = await User.findById(id);
 		const currentUser = await User.findById(req.user._id);
 
-		if (id === req.user._id.toString())
+		if (id === req.user._id.toString()) {
 			return res.status(400).json({ error: "You cannot follow/unfollow yourself" });
+		}
 
 		if (!userToModify || !currentUser) return res.status(400).json({ error: "User not found" });
 
-		const isFollowing = currentUser.following.includes(id);
+		const isFollowing = Array.isArray(currentUser.following) && currentUser.following.includes(id);
 
 		if (isFollowing) {
-			// Unfollow user
 			await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
 			await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
 			res.status(200).json({ message: "User unfollowed successfully" });
 		} else {
-			// Follow user
 			await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
 			await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
 			res.status(200).json({ message: "User followed successfully" });
 		}
 	} catch (err) {
 		res.status(500).json({ error: err.message });
-		console.log("Error in followUnFollowUser: ", err.message);
+		console.error("Error in followUnFollowUser: ", err.message);
 	}
 };
 
