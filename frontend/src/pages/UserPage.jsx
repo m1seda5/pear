@@ -91,6 +91,13 @@ const UserPage = () => {
 			if (!user) return;
 			setFetchingPosts(true);
 			try {
+				// Ensure user.following is defined and an array before accessing it
+				if (!user.following || !Array.isArray(user.following)) {
+					showToast("Error", "User's following data is invalid.", "error");
+					setPosts([]);
+					return;
+				}
+
 				const res = await fetch(`/api/posts/user/${username}`);
 				const data = await res.json();
 
@@ -137,5 +144,7 @@ const UserPage = () => {
 		</>
 	);
 };
+
+
 
 export default UserPage;
