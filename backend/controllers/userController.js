@@ -898,60 +898,63 @@ const getUserProfile = async (req, res) => {
 
 const signupUser = async (req, res) => {
 	try {
-		const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
-
-		if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
-			return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
-		}
-
-		const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-		if (existingUser) {
-			return res.status(400).json({ error: "User already exists" });
-		}
-
-		const salt = await bcrypt.genSalt(10);
-		const hashedPassword = await bcrypt.hash(password, salt);
-
-		let role;
-		if (isStudent) {
-			role = "student";
-		} else if (isTeacher) {
-			role = "teacher";
-		} else {
-			return res.status(400).json({ error: "Invalid role selection" });
-		}
-
-		const newUser = new User({
-			name,
-			email,
-			username,
-			password: hashedPassword,
-			role,
-			isStudent,
-			isTeacher,
-			yearGroup: isStudent ? yearGroup : undefined,
-			department: isTeacher ? department : undefined,
-			following: [], // Initialize as empty array
-			followers: []  // Initialize as empty array
-		});
-
-		await newUser.save();
-		generateTokenAndSetCookie(newUser._id, res);
-
-		res.status(201).json({
-			_id: newUser._id,
-			name: newUser.name,
-			email: newUser.email,
-			username: newUser.username,
-			role: newUser.role,
-			yearGroup: newUser.yearGroup,
-			department: newUser.department,
-		});
+	  const { name, email, username, password, isStudent, isTeacher, yearGroup, department } = req.body;
+  
+	  if (typeof isStudent !== "boolean" || typeof isTeacher !== "boolean") {
+		return res.status(400).json({ error: "Invalid input for isStudent or isTeacher" });
+	  }
+  
+	  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+	  if (existingUser) {
+		return res.status(400).json({ error: "User already exists" });
+	  }
+  
+	  const salt = await bcrypt.genSalt(10);
+	  const hashedPassword = await bcrypt.hash(password, salt);
+  
+	  let role;
+	  if (isStudent) {
+		role = "student";
+	  } else if (isTeacher) {
+		role = "teacher";
+	  } else {
+		return res.status(400).json({ error: "Invalid role selection" });
+	  }
+  
+	  const newUser = new User({
+		name,
+		email,
+		username,
+		password: hashedPassword,
+		role,
+		isStudent,
+		isTeacher,
+		yearGroup: isStudent ? yearGroup : undefined,
+		department: isTeacher ? department : undefined,
+		following: [], // Initialize as empty array
+		followers: [], // Initialize as empty array
+	  });
+  
+	  await newUser.save();
+  
+	  // Generate a token and set it in a cookie
+	  generateTokenAndSetCookie(newUser._id, res);
+  
+	  res.status(201).json({
+		_id: newUser._id,
+		name: newUser.name,
+		email: newUser.email,
+		username: newUser.username,
+		role: newUser.role,
+		yearGroup: newUser.yearGroup,
+		department: newUser.department,
+	  });
 	} catch (err) {
-		res.status(500).json({ error: err.message });
-		console.error("Error in signupUser: ", err.message);
+	  res.status(500).json({ error: err.message });
+	  console.error("Error in signupUser: ", err.message);
 	}
-};
+  };
+  
   
   
   
@@ -1009,32 +1012,37 @@ const logoutUser = (req, res) => {
 
 const followUnFollowUser = async (req, res) => {
 	try {
-		const { id } = req.params;
-		const userToModify = await User.findById(id);
-		const currentUser = await User.findById(req.user._id);
-
-		if (id === req.user._id.toString()) {
-			return res.status(400).json({ error: "You cannot follow/unfollow yourself" });
-		}
-
-		if (!userToModify || !currentUser) return res.status(400).json({ error: "User not found" });
-
-		const isFollowing = Array.isArray(currentUser.following) && currentUser.following.includes(id);
-
-		if (isFollowing) {
-			await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
-			await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
-			res.status(200).json({ message: "User unfollowed successfully" });
-		} else {
-			await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
-			await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
-			res.status(200).json({ message: "User followed successfully" });
-		}
+	  const { id } = req.params;
+	  const userToModify = await User.findById(id);
+	  const currentUser = await User.findById(req.user._id);
+  
+	  if (id === req.user._id.toString()) {
+		return res.status(400).json({ error: "You cannot follow/unfollow yourself" });
+	  }
+  
+	  if (!userToModify || !currentUser) return res.status(400).json({ error: "User not found" });
+  
+	  // Ensure followers/following arrays are properly initialized
+	  userToModify.followers = userToModify.followers || [];
+	  currentUser.following = currentUser.following || [];
+  
+	  const isFollowing = currentUser.following.includes(id);
+  
+	  if (isFollowing) {
+		await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
+		await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
+		res.status(200).json({ message: "User unfollowed successfully" });
+	  } else {
+		await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
+		await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
+		res.status(200).json({ message: "User followed successfully" });
+	  }
 	} catch (err) {
-		res.status(500).json({ error: err.message });
-		console.error("Error in followUnFollowUser: ", err.message);
+	  res.status(500).json({ error: err.message });
+	  console.error("Error in followUnFollowUser: ", err.message);
 	}
-};
+  };
+  
 
 const updateUser = async (req, res) => {
 	const { name, email, username, password, bio } = req.body;
