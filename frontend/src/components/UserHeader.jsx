@@ -601,7 +601,7 @@
 // export default UserHeader;
 
 
-// this updated version with verification
+// this updated version with verification(working)
 import { Avatar, Box, Flex, Link, Text, VStack, useToast } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
 import { Portal } from "@chakra-ui/portal";

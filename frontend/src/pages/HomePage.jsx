@@ -334,7 +334,7 @@
 // export default HomePage;
 
 
-// this is with translations added
+// this is with translations added(working)
 import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import useShowToast from "../hooks/useShowToast";

@@ -49,7 +49,7 @@
 // export default checkChatAccess;
 
 
-// debuggin adding req user
+// original 
 import User from "../models/userModel.js";
 
 const checkChatAccess = async (req, res, next) => {

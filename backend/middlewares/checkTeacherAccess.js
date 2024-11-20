@@ -27,4 +27,3 @@ const checkTeacherAccess = async (req, res, next) => {
 export default checkTeacherAccess;
 
 
-// this is the version which has(this is part of the admin role update

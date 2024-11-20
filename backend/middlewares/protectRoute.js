@@ -23,7 +23,7 @@
 // export default protectRoute;
 
 
-// adding debugging additional requser
+// original working version
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js"; // Ensure the User model is imported
 
