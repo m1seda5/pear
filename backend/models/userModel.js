@@ -78,29 +78,14 @@
 
 import mongoose from "mongoose";
 
-// Department options (you can add or remove as per your requirements)
 const departmentEnum = [
-  "Math",
-  "Science",
-  "English",
-  "History",
-  "Geography",
-  "Art",
-  "Music",
-  "Physical Education",
-  "ICT",
-  "Other",
+  "Math", "Science", "English", "History", "Geography",
+  "Art", "Music", "Physical Education", "ICT", "Other",
 ];
 
-// Year groups (you can add/remove as needed)
 const yearGroupEnum = [
-  "Year 7",
-  "Year 8",
-  "Year 9",
-  "Year 10",
-  "Year 11",
-  "Year 12",
-  "Year 13",
+  "Year 7", "Year 8", "Year 9", "Year 10", 
+  "Year 11", "Year 12", "Year 13",
 ];
 
 const userSchema = mongoose.Schema(
@@ -122,22 +107,20 @@ const userSchema = mongoose.Schema(
     role: {
       type: String,
       enum: ["student", "teacher", "admin"],
-      default: "student", // Default to "student" if role isn't provided
+      default: "student",
     },
     yearGroup: {
       type: String,
       enum: yearGroupEnum,
       required: function () {
-        // Only require yearGroup if the user is a student
-        return this.isStudent;
+        return this.role === "student";
       },
     },
     department: {
       type: String,
       enum: departmentEnum,
       required: function () {
-        // Only require department if the user is a teacher
-        return this.isTeacher;
+        return this.role === "teacher";
       },
     },
     following: [
@@ -146,33 +129,14 @@ const userSchema = mongoose.Schema(
         ref: "User",
       },
     ],
-    isStudent: {
-      type: Boolean,
-      default: true, // Assume new users are students unless specified otherwise
-    },
-    isTeacher: {
-      type: Boolean,
-      default: false, // Default to false unless specified otherwise
-    },
     profilePic: {
-      type: String, // URL to the user's profile picture
+      type: String,
+      default: "",
     },
   },
-  {
-    timestamps: true, // Include timestamps for created and updated times
-  }
+  { timestamps: true }
 );
-
-// Custom validation to ensure that either isStudent or isTeacher is true
-userSchema.pre("save", function (next) {
-  if (!this.isStudent && !this.isTeacher) {
-    const error = new Error("At least one of isStudent or isTeacher must be true");
-    return next(error);
-  }
-  next();
-});
 
 const User = mongoose.model("User", userSchema);
 
 export default User;
-

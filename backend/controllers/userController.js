@@ -875,25 +875,33 @@ import mongoose from "mongoose";
 
 const getUserProfile = async (req, res) => {
 	const { query } = req.params;
-
+  
 	try {
-		let user;
-
-		// Fetch user either by ID or username
-		if (mongoose.Types.ObjectId.isValid(query)) {
-			user = await User.findOne({ _id: query }).select("-password -updatedAt");
-		} else {
-			user = await User.findOne({ username: query }).select("-password -updatedAt");
-		}
-
-		if (!user) return res.status(404).json({ error: "User not found" });
-
-		res.status(200).json(user);
+	  let user;
+  
+	  // Fetch user by ID or username
+	  if (mongoose.Types.ObjectId.isValid(query)) {
+		user = await User.findById(query)
+		  .select("-password -updatedAt")
+		  .populate("following", "username profilePic");
+	  } else {
+		user = await User.findOne({ username: query })
+		  .select("-password -updatedAt")
+		  .populate("following", "username profilePic");
+	  }
+  
+	  if (!user) return res.status(404).json({ error: "User not found" });
+  
+	  // Ensure `following` is always returned as an array
+	  if (!user.following) user.following = [];
+  
+	  res.status(200).json(user);
 	} catch (err) {
-		res.status(500).json({ error: err.message });
-		console.error("Error in getUserProfile: ", err.message);
+	  console.error("Error in getUserProfile: ", err.message);
+	  res.status(500).json({ error: err.message });
 	}
-};
+  };
+  
 
 
 const signupUser = async (req, res) => {
