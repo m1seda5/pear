@@ -939,8 +939,39 @@ const Header = () => {
     const navigate = useNavigate();
     const [hoveringLock, setHoveringLock] = useState(false);
 
+    // Determine user roles based on `user.role`
     const isStudent = user?.role === "student";
+    const isTeacher = user?.role === "teacher";
     const isAdmin = user?.role === "admin";
+
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
+    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes(); // Convert to HHMM format
+
+    // School hours in HHMM format
+    const schoolStart = 810;
+    const lunchStart = 1250;
+    const lunchEnd = 1340;
+    const schoolEnd = 1535;
+
+    // Determine if the student has chat access based on the day and time
+    const hasChatAccess =
+        isStudent &&
+        ((dayOfWeek >= 1 && dayOfWeek <= 5 &&
+            (currentTime < schoolStart ||
+                (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+                currentTime > schoolEnd)) ||
+            dayOfWeek === 0 || dayOfWeek === 6); // Allow access on weekends
+
+    const handleChatClick = (e) => {
+        if (!hasChatAccess) {
+            e.preventDefault(); // Prevent navigation if the user doesn't have access
+            setHoveringLock(true); // Show red lock when hovering
+        } else {
+            setHoveringLock(false);
+            navigate("/chat"); // Navigate to chat page if access is allowed
+        }
+    };
 
     return (
         <Flex justifyContent="center" mt={6} mb="12" gap={10}>
@@ -985,57 +1016,73 @@ const Header = () => {
             />
 
             {user && (
-                <Link
-                    _hover={{
-                        color: "teal.500",
-                        transform: "scale(1.2)",
-                    }}
-                    transition="all 0.3s ease-in-out"
-                    onClick={logout}
-                >
-                    <FiLogOut size={24} />
-                </Link>
+                <Flex alignItems="center" gap={10}>
+                    <Link
+                        as={RouterLink}
+                        to={`/${user.username}`}
+                        _hover={{
+                            color: "teal.500",
+                            transform: "scale(1.2)",
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <RxAvatar size={24} />
+                    </Link>
+
+                    <Link
+                        onClick={handleChatClick}
+                        _hover={{
+                            color: hasChatAccess ? "teal.500" : "red.500",
+                            transform: "scale(1.2)",
+                            cursor: hasChatAccess ? "pointer" : "not-allowed",
+                        }}
+                        transition="all 0.3s ease-in-out"
+                        onMouseEnter={() => !hasChatAccess && setHoveringLock(true)}
+                        onMouseLeave={() => setHoveringLock(false)}
+                    >
+                        {hoveringLock ? <FaLock size={20} /> : <BsFillChatQuoteFill size={20} />}
+                    </Link>
+
+                    {isAdmin && (
+                        <Link
+                            as={RouterLink}
+                            to="/settings"
+                            _hover={{
+                                color: "teal.500",
+                                transform: "scale(1.2)",
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <MdOutlineSettings size={20} />
+                        </Link>
+                    )}
+                    <Button
+                        size="xs"
+                        onClick={logout}
+                        _hover={{
+                            bg: "teal.500",
+                            color: "white",
+                            transform: "scale(1.1)",
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <FiLogOut size={20} />
+                    </Button>
+                </Flex>
             )}
 
-            {isAdmin && (
+            {!user && (
                 <Link
                     as={RouterLink}
-                    to="/admin"
+                    to="/auth"
+                    onClick={() => setAuthScreen("signup")}
                     _hover={{
                         color: "teal.500",
                         transform: "scale(1.2)",
                     }}
                     transition="all 0.3s ease-in-out"
                 >
-                    <MdOutlineSettings size={24} />
-                </Link>
-            )}
-
-            {isStudent && (
-                <Link
-                    as={RouterLink}
-                    to="/chat"
-                    _hover={{
-                        color: "teal.500",
-                        transform: "scale(1.2)",
-                    }}
-                    transition="all 0.3s ease-in-out"
-                >
-                    <BsFillChatQuoteFill size={24} />
-                </Link>
-            )}
-
-            {user && (
-                <Link
-                    as={RouterLink}
-                    to="/profile"
-                    _hover={{
-                        color: "teal.500",
-                        transform: "scale(1.2)",
-                    }}
-                    transition="all 0.3s ease-in-out"
-                >
-                    <RxAvatar size={24} />
+                    Sign up
                 </Link>
             )}
         </Flex>
@@ -1043,3 +1090,4 @@ const Header = () => {
 };
 
 export default Header;
+
