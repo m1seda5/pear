@@ -1043,19 +1043,18 @@ const Header = () => {
                         {hoveringLock ? <FaLock size={20} /> : <BsFillChatQuoteFill size={20} />}
                     </Link>
 
-                    {isAdmin && (
-                        <Link
-                            as={RouterLink}
-                            to="/settings"
-                            _hover={{
-                                color: "teal.500",
-                                transform: "scale(1.2)",
-                            }}
-                            transition="all 0.3s ease-in-out"
-                        >
-                            <MdOutlineSettings size={20} />
-                        </Link>
-                    )}
+                    <Link
+                        as={RouterLink}
+                        to="/settings"
+                        _hover={{
+                            color: "teal.500",
+                            transform: "scale(1.2)",
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <MdOutlineSettings size={20} />
+                    </Link>
+
                     <Button
                         size="xs"
                         onClick={logout}
