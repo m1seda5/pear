@@ -196,9 +196,7 @@
 // export default CreatePost;
 
 
-
-
-//admin role update
+// admin role update
 import { AddIcon } from "@chakra-ui/icons";
 import {
     Button,
@@ -235,8 +233,9 @@ const MAX_CHAR = 500;
 const CreatePost = () => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [postText, setPostText] = useState("");
-    const [targetYearGroups, setTargetYearGroups] = useState([]); // Default to empty array for multiple selections
-    const [targetDepartments, setTargetDepartments] = useState([]); // Default to empty array for multiple selections
+    const [targetYearGroups, setTargetYearGroups] = useState([]);
+    const [targetDepartments, setTargetDepartments] = useState([]);
+    const [targetTV, setTargetTV] = useState(false); // State to target TV
     const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
     const imageRef = useRef(null);
     const [remainingChar, setRemainingChar] = useState(MAX_CHAR);
@@ -267,8 +266,9 @@ const CreatePost = () => {
                 postedBy: user._id,
                 text: postText,
                 img: imgUrl,
-                targetYearGroups: targetYearGroups.length > 0 ? targetYearGroups : ["all"], // Default to 'all' if none selected
+                targetYearGroups: targetYearGroups.length > 0 ? targetYearGroups : ["all"], 
                 targetDepartments: targetDepartments.length > 0 ? targetDepartments : [],
+                targetTV: targetTV, // Add the targetTV flag
             };
 
             // Send the post request to the server
@@ -291,7 +291,8 @@ const CreatePost = () => {
             if (
                 data.targetYearGroups === "all" || 
                 data.targetYearGroups.includes(user.yearGroup) || 
-                user.role === "student"
+                user.role === "student" ||
+                (data.targetTV && user.role === "tv") // Check if post is targeted to TV users
             ) {
                 if (username === user.username) {
                     setPosts([data, ...posts]);
@@ -304,6 +305,7 @@ const CreatePost = () => {
             setImgUrl("");
             setTargetYearGroups([]); // Reset selections
             setTargetDepartments([]); // Reset selections
+            setTargetTV(false); // Reset TV targeting flag
 
         } catch (error) {
             showToast(t("Error"), error.message, "error");
@@ -396,6 +398,16 @@ const CreatePost = () => {
                                             <option key={dept} value={dept}>{t(dept)}</option>
                                         ))}
                                     </Select>
+
+                                    {/* Add TV targeting for admin */}
+                                    <Select
+                                        mt={4}
+                                        value={targetTV}
+                                        onChange={(e) => setTargetTV(e.target.checked)}
+                                        placeholder={t("Target TV Audience")}
+                                    >
+                                        <option value={true}>{t("TV Audience")}</option>
+                                    </Select>
                                 </>
                             )}
                         </FormControl>
@@ -426,4 +438,3 @@ const CreatePost = () => {
 };
 
 export default CreatePost;
-

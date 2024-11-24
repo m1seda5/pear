@@ -505,25 +505,25 @@ import { v2 as cloudinary } from "cloudinary";
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, targetYearGroups, targetDepartments, role } = req.body;
+    const { title, content, targetYearGroups, targetDepartments, targetAudience } = req.body;
     const userId = req.user._id; // Assuming user info is attached to req.user after authentication
 
     const user = await User.findById(userId);
-    
+
     // Role-based validation
-    if (role === 'student' && user.role !== 'student') {
-      return res.status(403).json({ error: "You do not have permission to create posts." });
+    if (user.role === 'student') {
+      return res.status(403).json({ error: "Students cannot create posts." });
     }
 
-    // Admin: Can target all year groups and departments
-    if (role === 'admin') {
-      if (!targetYearGroups || !targetDepartments) {
-        return res.status(400).json({ error: "Admin must specify year groups and departments." });
+    // Admin can target TV role
+    if (user.role === 'admin') {
+      if (!targetAudience || (targetAudience !== 'tv' && !targetYearGroups && !targetDepartments)) {
+        return res.status(400).json({ error: "Admin must specify target audience, year groups, or departments." });
       }
     }
 
     // Teacher: Can target Year 9 to Year 13
-    if (role === 'teacher' && !targetYearGroups) {
+    if (user.role === 'teacher' && !targetYearGroups) {
       return res.status(400).json({ error: "Teachers must specify year groups to target." });
     }
 
@@ -533,7 +533,7 @@ const createPost = async (req, res) => {
       createdBy: userId,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
-      role: role
+      targetAudience: targetAudience || "all",
     });
 
     await newPost.save();

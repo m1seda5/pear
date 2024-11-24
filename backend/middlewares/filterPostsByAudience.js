@@ -43,28 +43,29 @@ const filterPostsByAudience = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Default to 'all' if no specific filtering is required
     let filter = {};
 
     if (user.role === "student") {
-      // Students can only see posts from their year group
-      filter.targetAudience = user.yearGroup; // filter by year group
-    } else if (user.role === "teacher" || user.role === "admin") {
-      // Teachers and admins can target year groups or departments
-      if (user.targetYearGroups.length > 0) {
-        filter.targetAudience = { $in: user.targetYearGroups }; // Match any of the targeted year groups
-      }
-      if (user.targetDepartments.length > 0) {
-        filter.targetAudience = { $in: user.targetDepartments }; // Match any of the targeted departments
-      }
+      filter.targetYearGroups = { $in: [user.yearGroup, "all"] };
     }
 
-    // Attach the filter to the request object for further use in the route handler
-    req.filter = filter;
+    if (user.role === "teacher") {
+      filter.targetDepartments = { $in: [user.department] };
+    }
 
+    // Check if the user is admin or tv, and filter by targetTV
+    if (user.role === "admin") {
+      filter.targetTV = { $in: [true] };  // Admin can target TV posts
+    }
+
+    if (user.role === "tv") {
+      filter.targetTV = { $in: [true] };  // TV users see posts targeted to TV
+    }
+
+    req.filter = filter;
     next();
   } catch (error) {
-    res.status(500).json({ error: "Error filtering posts by audience" });
+    return res.status(500).json({ error: "Failed to filter posts by audience" });
   }
 };
 

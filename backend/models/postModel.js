@@ -103,7 +103,8 @@ const postSchema = mongoose.Schema(
       enum: [
         'all', 'Year 9', 'Year 10', 'Year 11', 'Year 12', 'Year 13', 
         'Math', 'Physics', 'Chemistry', 'Biology', 'Geography', 'Computer Science',
-        'Arts', 'History', 'Psychology', 'Sociology', 'Economics', 'Business', 'BTEC Business'
+        'Arts', 'History', 'Psychology', 'Sociology', 'Economics', 'Business', 'BTEC Business',
+        'tv'
       ],
       default: 'all',
     },
