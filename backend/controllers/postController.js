@@ -506,43 +506,51 @@ import { v2 as cloudinary } from "cloudinary";
 const createPost = async (req, res) => {
   try {
     const { title, content, targetYearGroups, targetDepartments, targetAudience } = req.body;
-    const userId = req.user._id; // Assuming user info is attached to req.user after authentication
+    const userId = req.user._id; // Assumes user info is attached to req.user after authentication
 
+    // Fetch the user's role
     const user = await User.findById(userId);
 
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    console.log("Create post request by user:", user);
+
     // Role-based validation
-    if (user.role === 'student') {
-      return res.status(403).json({ error: "Students cannot create posts." });
-    }
-
-    // Admin can target TV role
-    if (user.role === 'admin') {
-      if (!targetAudience || (targetAudience !== 'tv' && !targetYearGroups && !targetDepartments)) {
-        return res.status(400).json({ error: "Admin must specify target audience, year groups, or departments." });
+    if (user.role === "student") {
+      // Students can post, but their posts default to "all"
+      req.body.targetAudience = "all";
+    } else if (user.role === "admin") {
+      if (!targetAudience && !targetYearGroups && !targetDepartments) {
+        return res.status(400).json({
+          error: "Admin must specify target audience, year groups, or departments.",
+        });
       }
+    } else if (user.role === "teacher" && !targetYearGroups) {
+      return res.status(400).json({
+        error: "Teachers must specify year groups to target.",
+      });
     }
 
-    // Teacher: Can target Year 9 to Year 13
-    if (user.role === 'teacher' && !targetYearGroups) {
-      return res.status(400).json({ error: "Teachers must specify year groups to target." });
-    }
-
+    // Create the post
     const newPost = new Post({
       title,
       content,
       createdBy: userId,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
-      targetAudience: targetAudience || "all",
+      targetAudience: req.body.targetAudience || "all", // Defaults to "all"
     });
 
     await newPost.save();
     res.status(201).json(newPost);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
+  } catch (err) {
+    console.error("Error in createPost:", err.message);
+    res.status(500).json({ error: "Failed to create post" });
   }
 };
+
 
 
 const getPost = async (req, res) => {

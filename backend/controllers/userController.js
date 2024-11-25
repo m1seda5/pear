@@ -895,54 +895,58 @@ const getUserProfile = async (req, res) => {
 
 const signupUser = async (req, res) => {
   try {
-    const { name, email, username, password } = req.body;
+    const { name, email, username, password, role, yearGroup, department } = req.body;
+
+    console.log("Signup request received:", req.body); // Debugging
 
     // Check if user already exists based on email or username
-    const user = await User.findOne({ $or: [{ email }, { username }] });
-    if (user) {
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Hash password
+    // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create the new user with default role as "student"
+    // Validate role-specific fields
+    if (role === "student" && !yearGroup) {
+      return res.status(400).json({ error: "Year group is required for students" });
+    }
+    if (role === "teacher" && !department) {
+      return res.status(400).json({ error: "Department is required for teachers" });
+    }
+
+    // Create the user
     const newUser = new User({
       name,
       email,
       username,
       password: hashedPassword,
-      role: "student", // Default role
+      role: role || "student", // Default to "student" if no role is provided
+      yearGroup: role === "student" ? yearGroup : undefined, // Assign year group only for students
+      department: role === "teacher" ? department : undefined, // Assign department only for teachers
     });
 
-    // Assign admin or tv role based on email or password detection
-    if (email.includes("admin") || password.includes("admin")) {
-      newUser.role = "admin"; // Assign admin if found in email/password
-    }
-    if (email.includes("tv") || password.includes("tv")) {
-      newUser.role = "tv"; // Assign tv role if found in email/password
-    }
-
-    // Save the new user
+    // Save the user to the database
     await newUser.save();
 
-    if (newUser) {
-      generateTokenAndSetCookie(newUser._id, res);
-      res.status(201).json({
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        username: newUser.username,
-        bio: newUser.bio,
-        profilePic: newUser.profilePic,
-      });
-    } else {
-      res.status(400).json({ error: "Invalid user data" });
-    }
+    console.log("User created successfully:", newUser);
+
+    // Generate token and send response
+    generateTokenAndSetCookie(newUser._id, res);
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      username: newUser.username,
+      role: newUser.role,
+      yearGroup: newUser.yearGroup,
+      department: newUser.department,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
-    console.log("Error in signupUser: ", err.message);
+    console.error("Error in signupUser:", err.message);
+    res.status(500).json({ error: "Failed to register user" });
   }
 };
 

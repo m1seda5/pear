@@ -221,31 +221,43 @@ const SignupCard = () => {
 
   const handleSignup = async () => {
     try {
+      const role =
+        isStudent && yearGroup ? "student" :
+        isTeacher && department ? "teacher" :
+        isAdmin ? "admin" : "student"; // Default to student if no role is selected
+  
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...inputs,
-          role: isStudent ? "student" : isTeacher ? "teacher" : null,
-          yearGroup: isStudent ? yearGroup : null,
-          department: isTeacher ? department : null,
+          name: inputs.name,
+          email: inputs.email,
+          username: inputs.username,
+          password: inputs.password,
+          role,
+          yearGroup: role === "student" ? yearGroup : null,
+          department: role === "teacher" ? department : null,
         }),
       });
+  
       const data = await res.json();
-
+  
       if (data.error) {
         showToast("Error", data.error, "error");
         return;
       }
-
+  
+      console.log("Signup successful:", data);
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
     } catch (error) {
-      showToast("Error", error, "error");
+      console.error("Error in handleSignup:", error);
+      showToast("Error", error.message, "error");
     }
   };
+  
 
   return (
     <Flex align={"center"} justify={"center"}>
