@@ -69,6 +69,11 @@ const checkChatAccess = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Allow admins unrestricted access
+    if (user.role === "admin") {
+      return next();
+    }
+
     const currentDate = new Date();
     const dayOfWeek = currentDate.getDay();
     const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
@@ -78,10 +83,9 @@ const checkChatAccess = async (req, res, next) => {
     const lunchEnd = 1340;
     const schoolEnd = 1535;
 
-    // Check if the day is a school day (Monday to Friday)
+    // Check access for students on school days
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       if (user.role === "student") {
-        // Student access based on time (during school hours or lunch break)
         if (
           currentTime < schoolStart ||
           (currentTime >= lunchStart && currentTime <= lunchEnd) ||
@@ -91,18 +95,19 @@ const checkChatAccess = async (req, res, next) => {
         } else {
           return res.status(403).json({ error: "Access denied during school hours" });
         }
-      } else {
-        // Teachers and admins have full access during school days
-        return next();
       }
     } else {
-      // Weekend access (no restrictions)
+      // Allow access on weekends for all roles
       return next();
     }
+
+    // Teachers and other roles have unrestricted access on weekdays
+    return next();
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 export default checkChatAccess;
 
