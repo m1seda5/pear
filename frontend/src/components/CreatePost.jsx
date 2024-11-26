@@ -245,7 +245,6 @@ const CreatePost = () => {
         setPostText(inputText.slice(0, MAX_CHAR)); // Limit to MAX_CHAR
         setRemainingChar(MAX_CHAR - inputText.length);
     };
-
     const handleCreatePost = async () => {
         try {
             const payload = {
@@ -255,16 +254,20 @@ const CreatePost = () => {
                 targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
                 targetDepartments: targetDepartments.length ? targetDepartments : [],
             };
-
+    
+            console.log("Posting payload:", payload);  // Add this line to log the payload
+    
             const res = await fetch("/api/posts/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
+    
             const data = await res.json();
             if (data.error) throw new Error(data.error);
+    
             showToast(t("Success"), t("Post created successfully"), "success");
-            onClose(); // Close modal after successful post
+            onClose();
             setPostText("");
             setImgUrl("");
             setTargetYearGroups([]);
@@ -273,13 +276,7 @@ const CreatePost = () => {
             showToast(t("Error"), error.message, "error");
         }
     };
-
-    // Dynamic options
-    const yearGroups = ["Year 9", "Year 10", "Year 11", "Year 12", "Year 13"];
-    const departments = [
-        "Math", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
-        "Arts", "History", "Psychology", "Sociology", "Economics", "Business", "BTEC Business"
-    ];
+    
 
     return (
         <>
@@ -337,11 +334,11 @@ const CreatePost = () => {
                                     }
                                 >
                                     <option value="all">{t("All Year Groups")}</option>
-                                    {yearGroups.map((year) => (
-                                        <option key={year} value={year}>
-                                            {t(year)}
-                                        </option>
-                                    ))}
+                                    <option value="Year 9">{t("Year 9")}</option>
+                                    <option value="Year 10">{t("Year 10")}</option>
+                                    <option value="Year 11">{t("Year 11")}</option>
+                                    <option value="Year 12">{t("Year 12")}</option>
+                                    <option value="Year 13">{t("Year 13")}</option>
                                 </Select>
                             )}
 
@@ -359,11 +356,11 @@ const CreatePost = () => {
                                         }
                                     >
                                         <option value="all">{t("All Year Groups")}</option>
-                                        {yearGroups.map((year) => (
-                                            <option key={year} value={year}>
-                                                {t(year)}
-                                            </option>
-                                        ))}
+                                        <option value="Year 9">{t("Year 9")}</option>
+                                        <option value="Year 10">{t("Year 10")}</option>
+                                        <option value="Year 11">{t("Year 11")}</option>
+                                        <option value="Year 12">{t("Year 12")}</option>
+                                        <option value="Year 13">{t("Year 13")}</option>
                                     </Select>
 
                                     <Select
@@ -377,11 +374,19 @@ const CreatePost = () => {
                                             )
                                         }
                                     >
-                                        {departments.map((dept) => (
-                                            <option key={dept} value={dept}>
-                                                {t(dept)}
-                                            </option>
-                                        ))}
+                                        <option value="Math">{t("Math")}</option>
+                                        <option value="Physics">{t("Physics")}</option>
+                                        <option value="Chemistry">{t("Chemistry")}</option>
+                                        <option value="Biology">{t("Biology")}</option>
+                                        <option value="Geography">{t("Geography")}</option>
+                                        <option value="Computer Science">{t("Computer Science")}</option>
+                                        <option value="Arts">{t("Arts")}</option>
+                                        <option value="History">{t("History")}</option>
+                                        <option value="Psychology">{t("Psychology")}</option>
+                                        <option value="Sociology">{t("Sociology")}</option>
+                                        <option value="Economics">{t("Economics")}</option>
+                                        <option value="Business">{t("Business")}</option>
+                                        <option value="BTEC Business">{t("BTEC Business")}</option>
                                     </Select>
                                 </>
                             )}
