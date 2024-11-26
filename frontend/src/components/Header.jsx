@@ -963,16 +963,15 @@ const Header = () => {
                 currentTime > schoolEnd)) ||
             dayOfWeek === 0 || dayOfWeek === 6); // Allow access on weekends
 
-            const handleChatClick = (e) => {
-                if (!isAdmin && !hasChatAccess) {
-                    e.preventDefault(); // Prevent navigation if the user doesn't have access
-                    setHoveringLock(true); // Show red lock when hovering
-                } else {
-                    setHoveringLock(false);
-                    navigate("/chat"); // Navigate to chat page if access is allowed
-                }
-            };
-            
+    const handleChatClick = (e) => {
+        if (!hasChatAccess) {
+            e.preventDefault(); // Prevent navigation if the user doesn't have access
+            setHoveringLock(true); // Show red lock when hovering
+        } else {
+            setHoveringLock(false);
+            navigate("/chat"); // Navigate to chat page if access is allowed
+        }
+    };
 
     return (
         <Flex justifyContent="center" mt={6} mb="12" gap={10}>
