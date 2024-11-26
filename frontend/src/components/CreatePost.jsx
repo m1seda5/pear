@@ -1,4 +1,4 @@
-// // original 
+// // original
 // import { AddIcon } from "@chakra-ui/icons";
 // import {
 //     Button,
@@ -67,14 +67,14 @@
 //                 text: postText,
 //                 img: imgUrl,
 //             };
-    
+
 //             // Only include targetAudience for teachers, set it to null for students
 //             if (user.role === "teacher") {
 //                 payload.targetAudience = targetAudience;
 //             } else {
 //                 payload.targetAudience = null; // Set to null for students
 //             }
-    
+
 //             // Send the post request to the server
 //             const res = await fetch("/api/posts/create", {
 //                 method: "POST",
@@ -83,38 +83,37 @@
 //                 },
 //                 body: JSON.stringify(payload),
 //             });
-    
+
 //             const data = await res.json();
 //             if (data.error) {
 //                 showToast(t("Error"), data.error, "error");
 //                 return;
 //             }
 //             showToast(t("Success"), t("Post created successfully"), "success");
-    
+
 //             // Add the new post to the state if it should be visible to the user
 //             if (
-//                 data.targetAudience === "all" || 
-//                 data.targetAudience === user.yearGroup || 
+//                 data.targetAudience === "all" ||
+//                 data.targetAudience === user.yearGroup ||
 //                 user.role === "student"
 //             ) {
 //                 if (username === user.username) {
 //                     setPosts([data, ...posts]);
 //                 }
 //             }
-    
+
 //             // Reset form states after posting
 //             onClose();
 //             setPostText("");
 //             setImgUrl("");
 //             setTargetAudience(user.role === "teacher" ? "all" : ""); // Reset based on role
-    
+
 //         } catch (error) {
 //             showToast(t("Error"), error.message, "error");
 //         } finally {
 //             setLoading(false);
 //         }
 //     };
-    
 
 //     return (
 //         <>
@@ -195,28 +194,59 @@
 
 // export default CreatePost;
 
+// oldhand create post function not working i think
+// const handleCreatePost = async () => {
+//     try {
+//         const payload = {
+//             postedBy: user._id,
+//             text: postText,
+//             img: imgUrl,
+//             targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+//             targetDepartments: targetDepartments.length ? targetDepartments : [],
+//         };
 
+//         console.log("Posting payload:", payload);  // Add this line to log the payload
+
+//         const res = await fetch("/api/posts/create", {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify(payload),
+//         });
+
+//         const data = await res.json();
+//         if (data.error) throw new Error(data.error);
+
+//         showToast(t("Success"), t("Post created successfully"), "success");
+//         onClose();
+//         setPostText("");
+//         setImgUrl("");
+//         setTargetYearGroups([]);
+//         setTargetDepartments([]);
+//     } catch (error) {
+//         showToast(t("Error"), error.message, "error");
+//     }
+// };
 // admin role update
 import { AddIcon } from "@chakra-ui/icons";
 import {
-    Button,
-    CloseButton,
-    Flex,
-    FormControl,
-    Image,
-    Input,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Text,
-    Textarea,
-    useColorModeValue,
-    useDisclosure,
-    Select,
+  Button,
+  CloseButton,
+  Flex,
+  FormControl,
+  Image,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  Textarea,
+  useColorModeValue,
+  useDisclosure,
+  Select,
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import usePreviewImg from "../hooks/usePreviewImg";
@@ -229,279 +259,230 @@ import { useTranslation } from "react-i18next";
 const MAX_CHAR = 500;
 
 const CreatePost = () => {
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const [postText, setPostText] = useState("");
-    const [targetYearGroups, setTargetYearGroups] = useState([]);
-    const [targetDepartments, setTargetDepartments] = useState([]);
-    const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
-    const imageRef = useRef(null);
-    const [remainingChar, setRemainingChar] = useState(MAX_CHAR);
-    const user = useRecoilValue(userAtom);
-    const showToast = useShowToast();
-    const { t } = useTranslation();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [postText, setPostText] = useState("");
+  const [targetYearGroups, setTargetYearGroups] = useState([]);
+  const [targetDepartments, setTargetDepartments] = useState([]);
+  const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
+  const imageRef = useRef(null);
+  const [remainingChar, setRemainingChar] = useState(MAX_CHAR);
+  const user = useRecoilValue(userAtom);
+  const showToast = useShowToast();
+  const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(false);
 
-    const handleTextChange = (e) => {
-        const inputText = e.target.value;
-        setPostText(inputText.slice(0, MAX_CHAR)); // Limit to MAX_CHAR
-        setRemainingChar(MAX_CHAR - inputText.length);
-    };
-    // oldhand create post function not working i think
-    // const handleCreatePost = async () => {
-    //     try {
-    //         const payload = {
-    //             postedBy: user._id,
-    //             text: postText,
-    //             img: imgUrl,
-    //             targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
-    //             targetDepartments: targetDepartments.length ? targetDepartments : [],
-    //         };
-    
-    //         console.log("Posting payload:", payload);  // Add this line to log the payload
-    
-    //         const res = await fetch("/api/posts/create", {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify(payload),
-    //         });
-    
-    //         const data = await res.json();
-    //         if (data.error) throw new Error(data.error);
-    
-    //         showToast(t("Success"), t("Post created successfully"), "success");
-    //         onClose();
-    //         setPostText("");
-    //         setImgUrl("");
-    //         setTargetYearGroups([]);
-    //         setTargetDepartments([]);
-    //     } catch (error) {
-    //         showToast(t("Error"), error.message, "error");
-    //     }
-    // };
-    const handleCreatePost = async () => {
-        setLoading(true);  // Start loading indicator
-        try {
-            // Prepare the payload for the post
-            const payload = {
-                postedBy: user._id,
-                text: postText,
-                targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"], // Default to all if no year groups are selected
-                targetDepartments: targetDepartments.length ? targetDepartments : [], // Default to empty if no departments are selected
-                targetAudience: "all",  // Default targetAudience to "all"
-            };
-    
-            // If the user has an image, include it in the payload
-            if (imgUrl) {
-                payload.img = imgUrl;
-            }
-    
-            // Handle role-based payload adjustments
-            if (user.role === "teacher") {
-                // Teachers must specify target year groups
-                if (targetYearGroups.length === 0) {
-                    showToast(t("Error"), t("Teachers must specify year groups"), "error");
-                    return;
-                }
-            } else if (user.role === "admin") {
-                // Admins must specify target audience, year groups, or departments
-                if (!targetYearGroups.length && !targetDepartments.length) {
-                    showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
-                    return;
-                }
-            } else if (user.role === "student") {
-                // Students' posts default to "all"
-                payload.targetAudience = "all";
-            }
-    
-            // Send the post request to the backend
-            const res = await fetch("/api/posts/create", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-    
-            const data = await res.json();
-    
-            // Handle any errors returned by the backend
-            if (data.error) {
-                showToast(t("Error"), data.error, "error");
-                return;
-            }
-    
-            // Show success message
-            showToast(t("Success"), t("Post created successfully"), "success");
-    
-            // Optionally add the post to the local state if it should be visible
-            if (
-                data.targetAudience === "all" ||
-                data.targetAudience === user.yearGroup ||
-                user.role === "student"
-            ) {
-                if (username === user.username) {
-                    setPosts([data, ...posts]);  // Add the new post to the list
-                }
-            }
-    
-            // Reset form states after posting
-            onClose();
-            setPostText("");
-            setImgUrl("");
-            setTargetYearGroups([]);  // Reset year groups
-            setTargetDepartments([]);  // Reset departments
-    
-        } catch (error) {
-            // Show error message if something goes wrong
-            showToast(t("Error"), error.message, "error");
-        } finally {
-            // Stop loading indicator
-            setLoading(false);
-        }
-    };
-    
-    
+  const handleTextChange = (e) => {
+    const inputText = e.target.value;
+    setPostText(inputText.slice(0, MAX_CHAR)); // Limit to MAX_CHAR
+    setRemainingChar(MAX_CHAR - inputText.length);
+  };
 
-    return (
-        <>
+  const handleCreatePost = async () => {
+    setIsLoading(true); // Start loading indicator
+    try {
+      const payload = {
+        postedBy: user._id,
+        text: postText,
+        targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+        targetDepartments: targetDepartments.length ? targetDepartments : [],
+        targetAudience: "all",
+      };
+
+      if (imgUrl) payload.img = imgUrl;
+
+      // Role-based validations
+      if (user.role === "teacher" && targetYearGroups.length === 0) {
+        showToast(t("Error"), t("Teachers must specify year groups"), "error");
+        return;
+      }
+
+      if (
+        user.role === "admin" &&
+        !targetYearGroups.length &&
+        !targetDepartments.length
+      ) {
+        showToast(
+          t("Error"),
+          t("Admins must specify target year groups or departments"),
+          "error"
+        );
+        return;
+      }
+
+      const res = await fetch("/api/posts/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(t("Error"), data.error, "error");
+        return;
+      }
+
+      showToast(t("Success"), t("Post created successfully"), "success");
+
+      // Reset form after successful post
+      setPostText("");
+      setImgUrl("");
+      setTargetYearGroups([]);
+      setTargetDepartments([]);
+      onClose();
+    } catch (error) {
+      showToast(t("Error"), error.message, "error");
+    } finally {
+      setIsLoading(false); // Stop loading indicator
+    }
+  };
+
+  return (
+    <>
+      <Button
+        position="fixed"
+        bottom={10}
+        right={5}
+        bg={useColorModeValue("gray.300", "gray.dark")}
+        onClick={onOpen}
+        size="md"
+        aria-label={t("Create Post")}
+      >
+        <AddIcon />
+      </Button>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t("Create Post")}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <Textarea
+                placeholder={t("Write your post...")}
+                value={postText}
+                onChange={handleTextChange}
+              />
+              <Text fontSize="xs" fontWeight="bold" textAlign="right" m="1">
+                {remainingChar}/{MAX_CHAR}
+              </Text>
+              <Input
+                type="file"
+                hidden
+                ref={imageRef}
+                onChange={handleImageChange}
+              />
+              <BsFillImageFill
+                style={{ marginLeft: "5px", cursor: "pointer" }}
+                size={16}
+                onClick={() => imageRef.current.click()}
+                aria-label={t("Add Image")}
+              />
+
+              {/* Role-specific Target Options */}
+              {user.role === "teacher" && (
+                <Select
+                  mt={4}
+                  placeholder={t("Select Year Group(s)")}
+                  multiple
+                  value={targetYearGroups}
+                  onChange={(e) =>
+                    setTargetYearGroups(
+                      [...e.target.selectedOptions].map((o) => o.value)
+                    )
+                  }
+                >
+                  {/* Year group options */}
+                  <option value="all">{t("All Year Groups")}</option>
+                  <option value="Year 9">{t("Year 9")}</option>
+                  <option value="Year 10">{t("Year 10")}</option>
+                  <option value="Year 11">{t("Year 11")}</option>
+                  <option value="Year 12">{t("Year 12")}</option>
+                  <option value="Year 13">{t("Year 13")}</option>
+                </Select>
+              )}
+
+              {user.role === "admin" && (
+                <>
+                  <Select
+                    mt={4}
+                    placeholder={t("Select Year Group(s)")}
+                    multiple
+                    value={targetYearGroups}
+                    onChange={(e) =>
+                      setTargetYearGroups(
+                        [...e.target.selectedOptions].map((o) => o.value)
+                      )
+                    }
+                  >
+                    {/* Year group options */}
+                    <option value="all">{t("All Year Groups")}</option>
+                    <option value="Year 9">{t("Year 9")}</option>
+                    <option value="Year 10">{t("Year 10")}</option>
+                    <option value="Year 11">{t("Year 11")}</option>
+                    <option value="Year 12">{t("Year 12")}</option>
+                    <option value="Year 13">{t("Year 13")}</option>
+                  </Select>
+
+                  <Select
+                    mt={4}
+                    placeholder={t("Select Department(s)")}
+                    multiple
+                    value={targetDepartments}
+                    onChange={(e) =>
+                      setTargetDepartments(
+                        [...e.target.selectedOptions].map((o) => o.value)
+                      )
+                    }
+                  >
+                    {/* Department options */}
+                    <option value="Math">{t("Math")}</option>
+                    <option value="Physics">{t("Physics")}</option>
+                    <option value="Chemistry">{t("Chemistry")}</option>
+                    <option value="Biology">{t("Biology")}</option>
+                    <option value="Geography">{t("Geography")}</option>
+                    <option value="Computer Science">
+                      {t("Computer Science")}
+                    </option>
+                    <option value="Arts">{t("Arts")}</option>
+                    <option value="History">{t("History")}</option>
+                    <option value="Psychology">{t("Psychology")}</option>
+                    <option value="Sociology">{t("Sociology")}</option>
+                    <option value="Economics">{t("Economics")}</option>
+                    <option value="Business">{t("Business")}</option>
+                    <option value="BTEC Business">{t("BTEC Business")}</option>
+                  </Select>
+                </>
+              )}
+            </FormControl>
+
+            {imgUrl && (
+              <Flex mt={5} w="full" position="relative">
+                <Image src={imgUrl} alt={t("Uploaded Image")} />
+                <CloseButton
+                  position="absolute"
+                  top={2}
+                  right={2}
+                  onClick={() => setImgUrl("")}
+                />
+              </Flex>
+            )}
+          </ModalBody>
+
+          <ModalFooter>
             <Button
-                position="fixed"
-                bottom={10}
-                right={5}
-                bg={useColorModeValue("gray.300", "gray.dark")}
-                onClick={onOpen}
-                size="md"
-                aria-label={t("Create Post")}
+              colorScheme="blue"
+              mr={3}
+              isLoading={isLoading} // Updated to track loading state
+              onClick={handleCreatePost}
             >
-                <AddIcon />
+              {t("Post")}
             </Button>
-
-            <Modal isOpen={isOpen} onClose={onClose}>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>{t("Create Post")}</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody>
-                        <FormControl>
-                            <Textarea
-                                placeholder={t("Write your post...")}
-                                value={postText}
-                                onChange={handleTextChange}
-                            />
-                            <Text fontSize="xs" fontWeight="bold" textAlign="right" m="1">
-                                {remainingChar}/{MAX_CHAR}
-                            </Text>
-                            <Input
-                                type="file"
-                                hidden
-                                ref={imageRef}
-                                onChange={handleImageChange}
-                            />
-                            <BsFillImageFill
-                                style={{ marginLeft: "5px", cursor: "pointer" }}
-                                size={16}
-                                onClick={() => imageRef.current.click()}
-                                aria-label={t("Add Image")}
-                            />
-
-                            {/* Role-specific Target Options */}
-                            {user.role === "teacher" && (
-                                <Select
-                                    mt={4}
-                                    placeholder={t("Select Year Group(s)")}
-                                    multiple
-                                    value={targetYearGroups}
-                                    onChange={(e) =>
-                                        setTargetYearGroups(
-                                            [...e.target.selectedOptions].map((o) => o.value)
-                                        )
-                                    }
-                                >
-                                    <option value="all">{t("All Year Groups")}</option>
-                                    <option value="Year 9">{t("Year 9")}</option>
-                                    <option value="Year 10">{t("Year 10")}</option>
-                                    <option value="Year 11">{t("Year 11")}</option>
-                                    <option value="Year 12">{t("Year 12")}</option>
-                                    <option value="Year 13">{t("Year 13")}</option>
-                                </Select>
-                            )}
-
-                            {user.role === "admin" && (
-                                <>
-                                    <Select
-                                        mt={4}
-                                        placeholder={t("Select Year Group(s)")}
-                                        multiple
-                                        value={targetYearGroups}
-                                        onChange={(e) =>
-                                            setTargetYearGroups(
-                                                [...e.target.selectedOptions].map((o) => o.value)
-                                            )
-                                        }
-                                    >
-                                        <option value="all">{t("All Year Groups")}</option>
-                                        <option value="Year 9">{t("Year 9")}</option>
-                                        <option value="Year 10">{t("Year 10")}</option>
-                                        <option value="Year 11">{t("Year 11")}</option>
-                                        <option value="Year 12">{t("Year 12")}</option>
-                                        <option value="Year 13">{t("Year 13")}</option>
-                                    </Select>
-
-                                    <Select
-                                        mt={4}
-                                        placeholder={t("Select Department(s)")}
-                                        multiple
-                                        value={targetDepartments}
-                                        onChange={(e) =>
-                                            setTargetDepartments(
-                                                [...e.target.selectedOptions].map((o) => o.value)
-                                            )
-                                        }
-                                    >
-                                        <option value="Math">{t("Math")}</option>
-                                        <option value="Physics">{t("Physics")}</option>
-                                        <option value="Chemistry">{t("Chemistry")}</option>
-                                        <option value="Biology">{t("Biology")}</option>
-                                        <option value="Geography">{t("Geography")}</option>
-                                        <option value="Computer Science">{t("Computer Science")}</option>
-                                        <option value="Arts">{t("Arts")}</option>
-                                        <option value="History">{t("History")}</option>
-                                        <option value="Psychology">{t("Psychology")}</option>
-                                        <option value="Sociology">{t("Sociology")}</option>
-                                        <option value="Economics">{t("Economics")}</option>
-                                        <option value="Business">{t("Business")}</option>
-                                        <option value="BTEC Business">{t("BTEC Business")}</option>
-                                    </Select>
-                                </>
-                            )}
-                        </FormControl>
-
-                        {imgUrl && (
-                            <Flex mt={5} w="full" position="relative">
-                                <Image src={imgUrl} alt={t("Uploaded Image")} />
-                                <CloseButton
-                                    position="absolute"
-                                    top={2}
-                                    right={2}
-                                    onClick={() => setImgUrl("")}
-                                />
-                            </Flex>
-                        )}
-                    </ModalBody>
-
-                    <ModalFooter>
-                        <Button
-                            colorScheme="blue"
-                            mr={3}
-                            isLoading={false}
-                            onClick={handleCreatePost}
-                        >
-                            {t("Post")}
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </>
-    );
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
 };
 
 export default CreatePost;
