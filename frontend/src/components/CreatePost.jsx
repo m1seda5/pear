@@ -245,37 +245,120 @@ const CreatePost = () => {
         setPostText(inputText.slice(0, MAX_CHAR)); // Limit to MAX_CHAR
         setRemainingChar(MAX_CHAR - inputText.length);
     };
+    // oldhand create post function not working i think
+    // const handleCreatePost = async () => {
+    //     try {
+    //         const payload = {
+    //             postedBy: user._id,
+    //             text: postText,
+    //             img: imgUrl,
+    //             targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+    //             targetDepartments: targetDepartments.length ? targetDepartments : [],
+    //         };
+    
+    //         console.log("Posting payload:", payload);  // Add this line to log the payload
+    
+    //         const res = await fetch("/api/posts/create", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify(payload),
+    //         });
+    
+    //         const data = await res.json();
+    //         if (data.error) throw new Error(data.error);
+    
+    //         showToast(t("Success"), t("Post created successfully"), "success");
+    //         onClose();
+    //         setPostText("");
+    //         setImgUrl("");
+    //         setTargetYearGroups([]);
+    //         setTargetDepartments([]);
+    //     } catch (error) {
+    //         showToast(t("Error"), error.message, "error");
+    //     }
+    // };
     const handleCreatePost = async () => {
+        setLoading(true);  // Start loading indicator
         try {
+            // Prepare the payload for the post
             const payload = {
                 postedBy: user._id,
                 text: postText,
-                img: imgUrl,
-                targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
-                targetDepartments: targetDepartments.length ? targetDepartments : [],
+                targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"], // Default to all if no year groups are selected
+                targetDepartments: targetDepartments.length ? targetDepartments : [], // Default to empty if no departments are selected
+                targetAudience: "all",  // Default targetAudience to "all"
             };
     
-            console.log("Posting payload:", payload);  // Add this line to log the payload
+            // If the user has an image, include it in the payload
+            if (imgUrl) {
+                payload.img = imgUrl;
+            }
     
+            // Handle role-based payload adjustments
+            if (user.role === "teacher") {
+                // Teachers must specify target year groups
+                if (targetYearGroups.length === 0) {
+                    showToast(t("Error"), t("Teachers must specify year groups"), "error");
+                    return;
+                }
+            } else if (user.role === "admin") {
+                // Admins must specify target audience, year groups, or departments
+                if (!targetYearGroups.length && !targetDepartments.length) {
+                    showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
+                    return;
+                }
+            } else if (user.role === "student") {
+                // Students' posts default to "all"
+                payload.targetAudience = "all";
+            }
+    
+            // Send the post request to the backend
             const res = await fetch("/api/posts/create", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify(payload),
             });
     
             const data = await res.json();
-            if (data.error) throw new Error(data.error);
     
+            // Handle any errors returned by the backend
+            if (data.error) {
+                showToast(t("Error"), data.error, "error");
+                return;
+            }
+    
+            // Show success message
             showToast(t("Success"), t("Post created successfully"), "success");
+    
+            // Optionally add the post to the local state if it should be visible
+            if (
+                data.targetAudience === "all" ||
+                data.targetAudience === user.yearGroup ||
+                user.role === "student"
+            ) {
+                if (username === user.username) {
+                    setPosts([data, ...posts]);  // Add the new post to the list
+                }
+            }
+    
+            // Reset form states after posting
             onClose();
             setPostText("");
             setImgUrl("");
-            setTargetYearGroups([]);
-            setTargetDepartments([]);
+            setTargetYearGroups([]);  // Reset year groups
+            setTargetDepartments([]);  // Reset departments
+    
         } catch (error) {
+            // Show error message if something goes wrong
             showToast(t("Error"), error.message, "error");
+        } finally {
+            // Stop loading indicator
+            setLoading(false);
         }
     };
+    
     
 
     return (
