@@ -277,25 +277,86 @@ const CreatePost = () => {
     setRemainingChar(MAX_CHAR - inputText.length);
   };
 
+  // const handleCreatePost = async () => {
+  //   setIsLoading(true); // Start loading indicator
+  //   try {
+  //     const payload = {
+  //       postedBy: user._id,
+  //       text: postText,
+  //       targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+  //       targetDepartments: targetDepartments.length ? targetDepartments : [],
+  //       targetAudience: "all",
+  //     };
+
+  //     if (imgUrl) payload.img = imgUrl;
+
+  //     // Role-based validations
+  //     if (user.role === "teacher" && targetYearGroups.length === 0) {
+  //       showToast(t("Error"), t("Teachers must specify year groups"), "error");
+  //       return;
+  //     }
+
+  //     if (
+  //       user.role === "admin" &&
+  //       !targetYearGroups.length &&
+  //       !targetDepartments.length
+  //     ) {
+  //       showToast(
+  //         t("Error"),
+  //         t("Admins must specify target year groups or departments"),
+  //         "error"
+  //       );
+  //       return;
+  //     }
+
+  //     const res = await fetch("/api/posts/create", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (data.error) {
+  //       showToast(t("Error"), data.error, "error");
+  //       return;
+  //     }
+
+  //     showToast(t("Success"), t("Post created successfully"), "success");
+
+  //     // Reset form after successful post
+  //     setPostText("");
+  //     setImgUrl("");
+  //     setTargetYearGroups([]);
+  //     setTargetDepartments([]);
+  //     onClose();
+  //   } catch (error) {
+  //     showToast(t("Error"), error.message, "error");
+  //   } finally {
+  //     setIsLoading(false); // Stop loading indicator
+  //   }
+  // };
   const handleCreatePost = async () => {
     setIsLoading(true); // Start loading indicator
     try {
+      // Prepare the payload
       const payload = {
-        postedBy: user._id,
-        text: postText,
-        targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+        title: postTitle, // Ensure title is included
+        content: postText, // Aligned with "content" field in the backend
+        targetYearGroups: targetYearGroups.length ? targetYearGroups : [],
         targetDepartments: targetDepartments.length ? targetDepartments : [],
-        targetAudience: "all",
+        targetAudience: "all", // Default to "all" as per the backend
       };
-
+  
+      // Add image URL if present
       if (imgUrl) payload.img = imgUrl;
-
-      // Role-based validations
+  
+      // Role-based validations (aligned with the backend)
       if (user.role === "teacher" && targetYearGroups.length === 0) {
         showToast(t("Error"), t("Teachers must specify year groups"), "error");
         return;
       }
-
+  
       if (
         user.role === "admin" &&
         !targetYearGroups.length &&
@@ -308,34 +369,41 @@ const CreatePost = () => {
         );
         return;
       }
-
+  
+      // Make the POST request to the backend
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+  
       const data = await res.json();
-
-      if (data.error) {
-        showToast(t("Error"), data.error, "error");
+  
+      // Handle server response
+      if (!res.ok) {
+        const error = data?.error || t("Something went wrong!");
+        showToast(t("Error"), error, "error");
         return;
       }
-
+  
+      // Success
       showToast(t("Success"), t("Post created successfully"), "success");
-
-      // Reset form after successful post
-      setPostText("");
-      setImgUrl("");
-      setTargetYearGroups([]);
-      setTargetDepartments([]);
+  
+      // Reset form states
+      setPostTitle(""); // Reset title
+      setPostText(""); // Reset content
+      setImgUrl(""); // Reset image URL
+      setTargetYearGroups([]); // Reset year groups
+      setTargetDepartments([]); // Reset departments
       onClose();
     } catch (error) {
-      showToast(t("Error"), error.message, "error");
+      // Catch and display any unexpected errors
+      showToast(t("Error"), error.message || t("Failed to create post"), "error");
     } finally {
       setIsLoading(false); // Stop loading indicator
     }
   };
+  
 
   return (
     <>
