@@ -261,7 +261,6 @@ const MAX_CHAR = 500;
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [postText, setPostText] = useState("");
-  const [postTitle, setPostTitle] = useState(""); // Add state for title
   const [targetYearGroups, setTargetYearGroups] = useState([]);
   const [targetDepartments, setTargetDepartments] = useState([]);
   const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
@@ -278,6 +277,65 @@ const CreatePost = () => {
     setRemainingChar(MAX_CHAR - inputText.length);
   };
 
+  // const handleCreatePost = async () => {
+  //   setIsLoading(true); // Start loading indicator
+  //   try {
+  //     const payload = {
+  //       postedBy: user._id,
+  //       text: postText,
+  //       targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+  //       targetDepartments: targetDepartments.length ? targetDepartments : [],
+  //       targetAudience: "all",
+  //     };
+
+  //     if (imgUrl) payload.img = imgUrl;
+
+  //     // Role-based validations
+  //     if (user.role === "teacher" && targetYearGroups.length === 0) {
+  //       showToast(t("Error"), t("Teachers must specify year groups"), "error");
+  //       return;
+  //     }
+
+  //     if (
+  //       user.role === "admin" &&
+  //       !targetYearGroups.length &&
+  //       !targetDepartments.length
+  //     ) {
+  //       showToast(
+  //         t("Error"),
+  //         t("Admins must specify target year groups or departments"),
+  //         "error"
+  //       );
+  //       return;
+  //     }
+
+  //     const res = await fetch("/api/posts/create", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (data.error) {
+  //       showToast(t("Error"), data.error, "error");
+  //       return;
+  //     }
+
+  //     showToast(t("Success"), t("Post created successfully"), "success");
+
+  //     // Reset form after successful post
+  //     setPostText("");
+  //     setImgUrl("");
+  //     setTargetYearGroups([]);
+  //     setTargetDepartments([]);
+  //     onClose();
+  //   } catch (error) {
+  //     showToast(t("Error"), error.message, "error");
+  //   } finally {
+  //     setIsLoading(false); // Stop loading indicator
+  //   }
+  // };
   const handleCreatePost = async () => {
     setIsLoading(true); // Start loading indicator
     try {
@@ -289,16 +347,16 @@ const CreatePost = () => {
         targetDepartments: targetDepartments.length ? targetDepartments : [],
         targetAudience: "all", // Default to "all" as per the backend
       };
-
+  
       // Add image URL if present
       if (imgUrl) payload.img = imgUrl;
-
+  
       // Role-based validations (aligned with the backend)
       if (user.role === "teacher" && targetYearGroups.length === 0) {
         showToast(t("Error"), t("Teachers must specify year groups"), "error");
         return;
       }
-
+  
       if (
         user.role === "admin" &&
         !targetYearGroups.length &&
@@ -311,26 +369,26 @@ const CreatePost = () => {
         );
         return;
       }
-
+  
       // Make the POST request to the backend
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+  
       const data = await res.json();
-
+  
       // Handle server response
       if (!res.ok) {
         const error = data?.error || t("Something went wrong!");
         showToast(t("Error"), error, "error");
         return;
       }
-
+  
       // Success
       showToast(t("Success"), t("Post created successfully"), "success");
-
+  
       // Reset form states
       setPostTitle(""); // Reset title
       setPostText(""); // Reset content
@@ -345,6 +403,7 @@ const CreatePost = () => {
       setIsLoading(false); // Stop loading indicator
     }
   };
+  
 
   return (
     <>
@@ -367,15 +426,6 @@ const CreatePost = () => {
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
-              {/* Input for Post Title */}
-              <Input
-                placeholder={t("Enter a title for your post...")}
-                value={postTitle}
-                onChange={(e) => setPostTitle(e.target.value)}
-                mb={4}
-              />
-
-              {/* Input for Post Content */}
               <Textarea
                 placeholder={t("Write your post...")}
                 value={postText}
@@ -476,24 +526,25 @@ const CreatePost = () => {
 
             {imgUrl && (
               <Flex mt={5} w="full" position="relative">
-                <Image w="full" src={imgUrl} alt={t("Image Preview")} />
+                <Image src={imgUrl} alt={t("Uploaded Image")} />
                 <CloseButton
-                  onClick={() => setImgUrl("")}
-                  size="sm"
                   position="absolute"
-                  top={1}
-                  right={1}
+                  top={2}
+                  right={2}
+                  onClick={() => setImgUrl("")}
                 />
               </Flex>
             )}
           </ModalBody>
+
           <ModalFooter>
             <Button
-              onClick={handleCreatePost}
-              isLoading={isLoading}
               colorScheme="blue"
+              mr={3}
+              isLoading={isLoading} // Updated to track loading state
+              onClick={handleCreatePost}
             >
-              {t("Create")}
+              {t("Post")}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -503,4 +554,3 @@ const CreatePost = () => {
 };
 
 export default CreatePost;
-
