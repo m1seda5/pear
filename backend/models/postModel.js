@@ -97,16 +97,42 @@ const postSchema = mongoose.Schema(
         },
       },
     ],
-    // Target audience and departments for teachers
+    // Target audience for students and teachers
     targetAudience: {
       type: String,
       enum: [
-        'all', 'Year 9', 'Year 10', 'Year 11', 'Year 12', 'Year 13', 
-        'Math', 'Physics', 'Chemistry', 'Biology', 'Geography', 'Computer Science',
-        'Arts', 'History', 'Psychology', 'Sociology', 'Economics', 'Business', 'BTEC Business',
-        'tv'
+        "all",
+        "Year 9",
+        "Year 10",
+        "Year 11",
+        "Year 12",
+        "Year 13",
+        "Math",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "Geography",
+        "Computer Science",
+        "Arts",
+        "History",
+        "Psychology",
+        "Sociology",
+        "Economics",
+        "Business",
+        "BTEC Business",
+        "tv",
       ],
-      default: 'all',
+      default: "all",
+    },
+    // Specific year groups for targeting
+    targetYearGroups: {
+      type: [String], // Array to support multiple year groups
+      default: [], // Default is an empty array
+    },
+    // Specific departments for targeting
+    targetDepartments: {
+      type: [String], // Array to support multiple departments
+      default: [], // Default is an empty array
     },
   },
   {
@@ -117,3 +143,4 @@ const postSchema = mongoose.Schema(
 const Post = mongoose.model("Post", postSchema);
 
 export default Post;
+
