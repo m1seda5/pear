@@ -501,21 +501,15 @@
 import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
+
 const createPost = async (req, res) => {
   try {
     const { title, content, targetYearGroups, targetDepartments, targetAudience } = req.body;
-
-    if (!title || !content) {
-      return res.status(400).json({ error: "Title and content are required." });
-    }
-
-    const userId = req.user && req.user._id;
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized. User not authenticated." });
-    }
+    const userId = req.user._id; // Assumes user info is attached to req.user after authentication
 
     // Fetch the user's role
     const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -524,7 +518,8 @@ const createPost = async (req, res) => {
 
     // Role-based validation
     if (user.role === "student") {
-      req.body.targetAudience = "all"; // Students' posts default to "all"
+      // Students can post, but their posts default to "all"
+      req.body.targetAudience = "all";
     } else if (user.role === "admin") {
       if (!targetAudience && !targetYearGroups && !targetDepartments) {
         return res.status(400).json({
@@ -544,17 +539,16 @@ const createPost = async (req, res) => {
       createdBy: userId,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
-      targetAudience: req.body.targetAudience || "all",
+      targetAudience: req.body.targetAudience || "all", // Defaults to "all"
     });
 
-    const savedPost = await newPost.save();
-    res.status(201).json(savedPost);
+    await newPost.save();
+    res.status(201).json(newPost);
   } catch (err) {
     console.error("Error in createPost:", err.message);
     res.status(500).json({ error: "Failed to create post" });
   }
 };
-
 
 
 
