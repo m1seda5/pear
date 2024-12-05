@@ -1,4 +1,3 @@
-
 // this is th euodated post controller with the the new changes(dont use this)
 // import Post from "../models/postModel.js";
 // import User from "../models/userModel.js";
@@ -235,7 +234,6 @@
 //   getUserPosts,
 // };
 
-
 // original use this version (working this si the one to use)
 // import Post from "../models/postModel.js";
 // import User from "../models/userModel.js";
@@ -291,12 +289,11 @@
 
 //     // Respond with the newly created post
 //     res.status(201).json(newPost);
-    
+
 //   } catch (err) {
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-
 
 // const getPost = async (req, res) => {
 //   try {
@@ -315,7 +312,6 @@
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-
 
 // const deletePost = async (req, res) => {
 //   try {
@@ -465,7 +461,6 @@
 //   }
 // };
 
-
 // const getUserPosts = async (req, res) => {
 //   const { username } = req.params;
 //   try {
@@ -494,9 +489,6 @@
 //   getUserPosts,
 // };
 
-
-
-
 // this is the new version Admin role update
 import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
@@ -504,17 +496,44 @@ import { v2 as cloudinary } from "cloudinary";
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, targetYearGroups, targetDepartments, targetAudience } = req.body;
-    const userId = req.user._id; // Assumes user info is attached to req.user after authentication
+    const {
+      postedBy,
+      text,
+      targetYearGroups,
+      targetDepartments,
+      targetAudience,
+    } = req.body;
+    let { img } = req.body;
 
-    // Fetch the user's role
-    const user = await User.findById(userId);
+    if (!postedBy || !text) {
+      return res
+        .status(400)
+        .json({ error: "PostedBy and text fields are required" });
+    }
 
+    // Find the user who is posting
+    const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log("Create post request by user:", user);
+    // Check if the user is authorized to post
+    if (user._id.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ error: "Unauthorized to create post" });
+    }
+
+    // Ensure text length is within limit (500 characters max)
+    if (text.length > 500) {
+      return res
+        .status(400)
+        .json({ error: `Text must be less than 500 characters` });
+    }
+
+    // Handle image upload if provided
+    if (img) {
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      img = uploadedResponse.secure_url;
+    }
 
     // Role-based validation
     if (user.role === "student") {
@@ -523,7 +542,8 @@ const createPost = async (req, res) => {
     } else if (user.role === "admin") {
       if (!targetAudience && !targetYearGroups && !targetDepartments) {
         return res.status(400).json({
-          error: "Admin must specify target audience, year groups, or departments.",
+          error:
+            "Admin must specify target audience, year groups, or departments.",
         });
       }
     } else if (user.role === "teacher" && !targetYearGroups) {
@@ -534,9 +554,9 @@ const createPost = async (req, res) => {
 
     // Create the post
     const newPost = new Post({
-      title,
-      content,
-      createdBy: userId,
+      postedBy,
+      text,
+      img,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
       targetAudience: req.body.targetAudience || "all", // Defaults to "all"
@@ -550,14 +570,15 @@ const createPost = async (req, res) => {
   }
 };
 
-
-
 const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
 
     // Fetch the post with the postedBy details
-    const post = await Post.findById(postId).populate("postedBy", "username profilePic");
+    const post = await Post.findById(postId).populate(
+      "postedBy",
+      "username profilePic"
+    );
 
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
@@ -569,7 +590,6 @@ const getPost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 const deletePost = async (req, res) => {
   try {
@@ -682,10 +702,14 @@ const getFeedPosts = async (req, res) => {
     const userId = req.user && req.user._id; // Ensure req.user exists before accessing userId
 
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select("role following yearGroup isStudent");
+    const user = await User.findById(userId).select(
+      "role following yearGroup isStudent"
+    );
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -718,7 +742,6 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
