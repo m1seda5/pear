@@ -195,37 +195,37 @@ const CreatePost = () => {
 export default CreatePost;
 
 // oldhand create post function not working i think
-const handleCreatePost = async () => {
-    try {
-        const payload = {
-            postedBy: user._id,
-            text: postText,
-            img: imgUrl,
-            targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
-            targetDepartments: targetDepartments.length ? targetDepartments : [],
-        };
+// const handleCreatePost = async () => {
+//     try {
+//         const payload = {
+//             postedBy: user._id,
+//             text: postText,
+//             img: imgUrl,
+//             targetYearGroups: targetYearGroups.length ? targetYearGroups : ["all"],
+//             targetDepartments: targetDepartments.length ? targetDepartments : [],
+//         };
 
-        console.log("Posting payload:", payload);  // Add this line to log the payload
+//         console.log("Posting payload:", payload);  // Add this line to log the payload
 
-        const res = await fetch("/api/posts/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+//         const res = await fetch("/api/posts/create", {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify(payload),
+//         });
 
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+//         const data = await res.json();
+//         if (data.error) throw new Error(data.error);
 
-        showToast(t("Success"), t("Post created successfully"), "success");
-        onClose();
-        setPostText("");
-        setImgUrl("");
-        setTargetYearGroups([]);
-        setTargetDepartments([]);
-    } catch (error) {
-        showToast(t("Error"), error.message, "error");
-    }
-};
+//         showToast(t("Success"), t("Post created successfully"), "success");
+//         onClose();
+//         setPostText("");
+//         setImgUrl("");
+//         setTargetYearGroups([]);
+//         setTargetDepartments([]);
+//     } catch (error) {
+//         showToast(t("Error"), error.message, "error");
+//     }
+// };
 
 // admin role update
 // import { AddIcon } from "@chakra-ui/icons";
