@@ -899,7 +899,7 @@ const signupUser = async (req, res) => {
 
     console.log("Signup request received:", req.body); // Debugging
 
-    // Check if user already exists based on email or username
+    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
@@ -923,17 +923,17 @@ const signupUser = async (req, res) => {
       email,
       username,
       password: hashedPassword,
-      role: role || "student", // Default to "student" if no role is provided
-      yearGroup: role === "student" ? yearGroup : undefined, // Assign year group only for students
-      department: role === "teacher" ? department : undefined, // Assign department only for teachers
+      role: role || "student",
+      yearGroup: role === "student" ? yearGroup : undefined,
+      department: role === "teacher" ? department : undefined,
     });
 
-    // Save the user to the database
+    // Save to the database
     await newUser.save();
 
     console.log("User created successfully:", newUser);
 
-    // Generate token and send response
+    // Generate token and set response
     generateTokenAndSetCookie(newUser._id, res);
     res.status(201).json({
       _id: newUser._id,

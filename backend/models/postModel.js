@@ -79,65 +79,33 @@ const postSchema = mongoose.Schema(
     },
     replies: [
       {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        text: {
-          type: String,
-          required: true,
-        },
-        userProfilePic: {
-          type: String,
-        },
-        username: {
-          type: String,
-        },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        text: { type: String, required: true },
+        userProfilePic: { type: String },
+        username: { type: String },
       },
     ],
-    // Target audience for students and teachers
     targetAudience: {
       type: String,
       enum: [
-        "all",
-        "Year 9",
-        "Year 10",
-        "Year 11",
-        "Year 12",
-        "Year 13",
-        "Math",
-        "Physics",
-        "Chemistry",
-        "Biology",
-        "Geography",
-        "Computer Science",
-        "Arts",
-        "History",
-        "Psychology",
-        "Sociology",
-        "Economics",
-        "Business",
-        "BTEC Business",
-        "tv",
+        "all", "Year 9", "Year 10", "Year 11", "Year 12", "Year 13",
+        "Math", "Physics", "Chemistry", "Biology", "Geography",
+        "Computer Science", "Arts", "History", "Psychology",
+        "Sociology", "Economics", "Business", "BTEC Business", "tv"
       ],
       default: "all",
     },
-    // Specific year groups for targeting
     targetYearGroups: {
-      type: [String], // Array to support multiple year groups
-      default: [], // Default is an empty array
+      type: [String],
+      default: [],
     },
-    // Specific departments for targeting
     targetDepartments: {
-      type: [String], // Array to support multiple departments
-      default: [], // Default is an empty array
+      type: [String],
+      default: [],
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-const Post = mongoose.model("Post", postSchema);
 
+const Post = mongoose.model("Post", postSchema);
 export default Post;

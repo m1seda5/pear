@@ -722,49 +722,35 @@ const repostPost = async (req, res) => {
 
 const getFeedPosts = async (req, res) => {
   try {
-    const userId = req.user && req.user._id; // Ensure req.user exists before accessing userId
+    const userId = req.user && req.user._id;
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized, user not authenticated" });
+      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select(
-      "role following yearGroup isStudent"
-    );
+    const user = await User.findById(userId).select("role following yearGroup isStudent");
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Retrieve the list of users the current user is following
     const following = user.following || [];
-
-    // Include the current user’s own ID in the list to fetch their posts as well
     const allUserIds = [...following, userId];
 
-    // Fetch posts based on target audience and user roles
     const feedPosts = await Post.find({
       $or: [
-        { targetAudience: null }, // Posts without specific targeting (public)
-        { targetAudience: "all" }, // Posts targeted to all users
-        { targetAudience: user.isStudent ? user.yearGroup : user.role }, // Posts targeted to user's year group or role
-        { postedBy: { $in: allUserIds } }, // Posts by users the current user is following
+        { targetAudience: "all" },
+        { targetAudience: user.isStudent ? user.yearGroup : user.role },
+        { postedBy: { $in: allUserIds } },
       ],
     }).sort({ createdAt: -1 });
-
-    // If no posts found, return an empty array instead of 404
-    if (!feedPosts.length) {
-      return res.status(200).json([]);
-    }
 
     res.status(200).json(feedPosts);
   } catch (err) {
     console.error("Error fetching feed posts:", err.message);
     res.status(500).json({ error: "Could not fetch posts" });
   }
-};
+}; 
 
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
