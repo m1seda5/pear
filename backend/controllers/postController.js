@@ -534,7 +534,6 @@ const createPost = async (req, res) => {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
-
     // Role-based validation
     if (user.role === "student") {
       // Students can post to "all" audience
@@ -548,13 +547,10 @@ const createPost = async (req, res) => {
             "Admin must specify target audience, year groups, or departments.",
         });
       }
-    } else if (user.role === "teacher") {
-      // Teachers can post with either year groups or departments or audience
-      if (!targetYearGroups && !targetDepartments && !targetAudience) {
-        return res.status(400).json({
-          error: "Teachers must specify either year groups, departments, or audience to target.",
-        });
-      }
+    } else if (user.role === "teacher" && !targetYearGroups) {
+      return res.status(400).json({
+        error: "Teachers must specify year groups to target.",
+      });
     }
 
     // Create the post
@@ -574,7 +570,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: "Failed to create post" });
   }
 };
-
 
 // const getPost = async (req, res) => {
 //   try {
