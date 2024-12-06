@@ -50,11 +50,94 @@
 // 	  timestamps: true,
 // 	}
 //   );
-  
 
 // const Post = mongoose.model("Post", postSchema);
 
 // export default Post;
 
 // this is the admin role update
+import mongoose from "mongoose";
 
+const postSchema = mongoose.Schema(
+  {
+    postedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    text: {
+      type: String,
+      maxLength: 500,
+    },
+    img: {
+      type: String,
+    },
+    likes: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+    },
+    replies: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        text: {
+          type: String,
+          required: true,
+        },
+        userProfilePic: {
+          type: String,
+        },
+        username: {
+          type: String,
+        },
+      },
+    ],
+    // Target audience for students and teachers
+    targetAudience: {
+      type: String,
+      enum: [
+        "all",
+        "Year 9",
+        "Year 10",
+        "Year 11",
+        "Year 12",
+        "Year 13",
+        "Math",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "Geography",
+        "Computer Science",
+        "Arts",
+        "History",
+        "Psychology",
+        "Sociology",
+        "Economics",
+        "Business",
+        "BTEC Business",
+        "tv",
+      ],
+      default: "all",
+    },
+    // Specific year groups for targeting
+    targetYearGroups: {
+      type: [String], // Array to support multiple year groups
+      default: [], // Default is an empty array
+    },
+    // Specific departments for targeting
+    targetDepartments: {
+      type: [String], // Array to support multiple departments
+      default: [], // Default is an empty array
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+const Post = mongoose.model("Post", postSchema);
+
+export default Post;
