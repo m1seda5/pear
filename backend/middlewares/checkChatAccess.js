@@ -1,5 +1,5 @@
 
-original 
+// original 
 import User from "../models/userModel.js";
 
 const checkChatAccess = async (req, res, next) => {
