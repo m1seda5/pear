@@ -29,43 +29,86 @@
 
 
 // admin role update
+// import User from "../models/userModel.js";
+
+// const filterPostsByAudience = async (req, res, next) => {
+//   try {
+//     if (!req.user || !req.user._id) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     const user = await User.findById(req.user._id);
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     let filter = {};
+
+//     if (user.role === "student") {
+//       filter.targetYearGroups = { $in: [user.yearGroup, "all"] };
+//     }
+
+//     if (user.role === "teacher") {
+//       filter.targetDepartments = { $in: [user.department] };
+//     }
+
+//     // Check if the user is admin or tv, and filter by targetTV
+//     if (user.role === "admin") {
+//       filter.targetTV = { $in: [true] };  // Admin can target TV posts
+//     }
+
+//     if (user.role === "tv") {
+//       filter.targetTV = { $in: [true] };  // TV users see posts targeted to TV
+//     }
+
+//     req.filter = filter;
+//     next();
+//   } catch (error) {
+//     return res.status(500).json({ error: "Failed to filter posts by audience" });
+//   }
+// };
+
+// export default filterPostsByAudience;
+
+
+// filtering update testing
 import User from "../models/userModel.js";
 
 const filterPostsByAudience = async (req, res, next) => {
   try {
+    // Ensure the user is authenticated
     if (!req.user || !req.user._id) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Fetch the user's details
     const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Create the filter object based on the user's role and attributes
     let filter = {};
 
     if (user.role === "student") {
-      filter.targetYearGroups = { $in: [user.yearGroup, "all"] };
+      filter = { targetYearGroups: { $in: [user.yearGroup, "all"] } };
+    } else if (user.role === "teacher") {
+      filter = { targetDepartments: { $in: [user.department] } };
+    } else if (user.role === "admin" || user.role === "tv") {
+      filter = { targetTV: { $in: [true] } }; // Admin and TV users see TV posts
+    } else {
+      return res.status(403).json({ error: "Access denied: invalid role" });
     }
 
-    if (user.role === "teacher") {
-      filter.targetDepartments = { $in: [user.department] };
-    }
-
-    // Check if the user is admin or tv, and filter by targetTV
-    if (user.role === "admin") {
-      filter.targetTV = { $in: [true] };  // Admin can target TV posts
-    }
-
-    if (user.role === "tv") {
-      filter.targetTV = { $in: [true] };  // TV users see posts targeted to TV
-    }
-
+    // Attach the filter to the request object for use in downstream operations
     req.filter = filter;
     next();
   } catch (error) {
-    return res.status(500).json({ error: "Failed to filter posts by audience" });
+    return res
+      .status(500)
+      .json({ error: "Failed to filter posts by audience", details: error.message });
   }
 };
 

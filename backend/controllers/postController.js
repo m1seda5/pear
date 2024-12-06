@@ -571,21 +571,43 @@ const createPost = async (req, res) => {
   }
 };
 
+// const getPost = async (req, res) => {
+//   try {
+//     const postId = req.params.id;
+
+//     // Fetch the post with the postedBy details
+//     const post = await Post.findById(postId).populate(
+//       "postedBy",
+//       "username profilePic"
+//     );
+
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     // Return the post since the middleware has already filtered access
+//     res.status(200).json(post);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// get post fucntion changed for the filtering update
+
 const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
 
-    // Fetch the post with the postedBy details
-    const post = await Post.findById(postId).populate(
+    // Fetch the post matching the filter and ID
+    const post = await Post.findOne({ _id: postId, ...req.filter }).populate(
       "postedBy",
       "username profilePic"
     );
 
     if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.status(404).json({ error: "Post not found or access denied" });
     }
 
-    // Return the post since the middleware has already filtered access
     res.status(200).json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });
