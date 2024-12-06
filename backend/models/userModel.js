@@ -130,9 +130,9 @@ const userSchema = mongoose.Schema(
     },
     yearGroup: {
       type: String,
-      enum: ["Year 9", "Year 10", "Year 11", "Year 12", "Year 13"],
+      enum: ["Year 9", "Year 10", "Year 11", "Year 12", "Year 13"],  // Added year groups for students
       required: function () {
-        return this.isStudent; // Required only if the user is a student
+        return this.isStudent;  // yearGroup is required only for students
       },
     },
     role: {
@@ -144,19 +144,22 @@ const userSchema = mongoose.Schema(
     department: {
       type: String,
       enum: [
-        "Math", "Physics", "Chemistry", "Biology", "Geography",
-        "Computer Science", "Arts", "History", "Psychology",
-        "Sociology", "Economics", "Business", "BTEC Business"
+        "Math", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
+        "Arts", "History", "Psychology", "Sociology", "Economics", "Business",
+        "BTEC Business"
       ],
       required: function () {
-        return this.role === "teacher"; // Required only for teachers
+        return this.role === "teacher";  // department is only required for teachers
       },
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 const User = mongoose.model("User", userSchema);
+
 export default User;
 
 

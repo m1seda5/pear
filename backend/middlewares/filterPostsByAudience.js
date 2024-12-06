@@ -77,20 +77,26 @@ import User from "../models/userModel.js";
 
 const filterPostsByAudience = async (req, res, next) => {
   try {
+    // Ensure the user is authenticated
     if (!req.user || !req.user._id) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Fetch the user's details
     const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Initialize an empty filter
     let filter = {};
+
     if (user.role === "student") {
+      // Students can only see posts targeted to their year group or all
       filter = { targetYearGroups: { $in: [user.yearGroup, "all"] } };
     } else if (user.role === "teacher") {
+      // Teachers can see posts targeted to their department or posts targeted to all
       filter = {
         $or: [
           { targetDepartments: { $in: [user.department] } },
@@ -98,15 +104,19 @@ const filterPostsByAudience = async (req, res, next) => {
         ],
       };
     } else if (user.role === "admin" || user.role === "tv") {
-      filter = { targetAudience: "tv" };
+      // Admins and TV users can access posts targeting TV
+      filter = { targetTV: { $in: [true] } };
     } else {
       return res.status(403).json({ error: "Access denied: invalid role" });
     }
 
+    // Attach the filter to the request object for use in downstream operations
     req.filter = filter;
     next();
   } catch (error) {
-    res.status(500).json({ error: "Failed to filter posts by audience", details: error.message });
+    return res
+      .status(500)
+      .json({ error: "Failed to filter posts by audience", details: error.message });
   }
 };
 
