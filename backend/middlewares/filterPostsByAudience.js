@@ -89,15 +89,23 @@ const filterPostsByAudience = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Create the filter object based on the user's role and attributes
+    // Initialize an empty filter
     let filter = {};
 
     if (user.role === "student") {
+      // Students can only see posts targeted to their year group or all
       filter = { targetYearGroups: { $in: [user.yearGroup, "all"] } };
     } else if (user.role === "teacher") {
-      filter = { targetDepartments: { $in: [user.department] } };
+      // Teachers can see posts targeted to their department or posts targeted to all
+      filter = {
+        $or: [
+          { targetDepartments: { $in: [user.department] } },
+          { targetYearGroups: "all" },
+        ],
+      };
     } else if (user.role === "admin" || user.role === "tv") {
-      filter = { targetTV: { $in: [true] } }; // Admin and TV users see TV posts
+      // Admins and TV users can access posts targeting TV
+      filter = { targetTV: { $in: [true] } };
     } else {
       return res.status(403).json({ error: "Access denied: invalid role" });
     }
@@ -113,4 +121,5 @@ const filterPostsByAudience = async (req, res, next) => {
 };
 
 export default filterPostsByAudience;
+
 
