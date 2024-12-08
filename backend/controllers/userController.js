@@ -911,7 +911,7 @@ const signupUser = async (req, res) => {
 
     // Determine role logic
     let finalRole = "student"; // Default fallback role
-    
+
     // Check for admin role if no year group or department selected
     if (!yearGroup && !department) {
       if (email.toLowerCase().includes("admin") && username.toLowerCase().includes("admin")) {
@@ -951,7 +951,6 @@ const signupUser = async (req, res) => {
     res.status(500).json({ error: "Failed to register user" });
   }
 };
-
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
