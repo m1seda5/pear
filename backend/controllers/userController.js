@@ -897,7 +897,7 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    console.log("Signup request received:", req.body); // Debugging
+    console.log("Signup request received:", req.body);
 
     // Check if user already exists based on email or username
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -909,12 +909,14 @@ const signupUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Validate role-specific fields
-    if (role === "student" && !yearGroup) {
-      return res.status(400).json({ error: "Year group is required for students" });
-    }
-    if (role === "teacher" && !department) {
-      return res.status(400).json({ error: "Department is required for teachers" });
+    // Determine role logic
+    let finalRole = "student"; // Default fallback role
+    
+    // Check for admin role if no year group or department selected
+    if (!yearGroup && !department) {
+      if (email.toLowerCase().includes("admin") && username.toLowerCase().includes("admin")) {
+        finalRole = "admin";
+      }
     }
 
     // Create the user
@@ -923,9 +925,9 @@ const signupUser = async (req, res) => {
       email,
       username,
       password: hashedPassword,
-      role: role || "student", // Default to "student" if no role is provided
-      yearGroup: role === "student" ? yearGroup : undefined, // Assign year group only for students
-      department: role === "teacher" ? department : undefined, // Assign department only for teachers
+      role: finalRole,
+      yearGroup: role === "student" ? yearGroup : undefined,
+      department: role === "teacher" ? department : undefined,
     });
 
     // Save the user to the database
