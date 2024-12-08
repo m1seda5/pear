@@ -598,7 +598,7 @@ const createPost = async (req, res) => {
 // get post fucntion changed for the filtering update
 
 // Post Fetching
-const getPost = async (req, res) => {
+const getPosts = async (req, res) => {
   const user = req.user;
 
   let query = {};
