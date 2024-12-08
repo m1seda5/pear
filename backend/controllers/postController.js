@@ -781,6 +781,9 @@ const getFeedPosts = async (req, res) => {
 
         // Always show posts from users the current user is following
         { postedBy: { $in: following } },
+
+        // Ensure users see their own posts
+        { postedBy: userId }
       ],
     };
 
