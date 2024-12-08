@@ -285,7 +285,7 @@ const CreatePost = () => {
       const payload = {
         postedBy: user._id,
         text: postText,
-        targetAudience: "all",
+        targetAudience: "all", // Default target for students
         targetYearGroups: [],
         targetDepartments: [],
       };
