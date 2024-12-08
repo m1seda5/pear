@@ -535,26 +535,23 @@ const createPost = async (req, res) => {
       img = uploadedResponse.secure_url;
     }
     // Role-based validation
-   // If the user is a student, default targeting to "all" (no year group/department)
-  if (user.role === 'student') {
-    // If no year group is selected, it will target "all"
-    targetedYearGroup = targetedYearGroup || 'all';
-    targetedDepartment = 'all'; // Students can't target departments
-  }
-
-  // Teachers can target both year groups and departments
-  if (user.role === 'teacher') {
-    if (!targetedYearGroup || !targetedDepartment) {
-      return res.status(400).json({ message: 'Teachers must target both a year group and a department.' });
+    if (user.role === "student") {
+      // Students can post to "all" audience
+      req.body.targetAudience = "all";
+      req.body.targetYearGroups = []; // Clear any specific year groups
+      req.body.targetDepartments = []; // Clear any specific departments
+    } else if (user.role === "admin") {
+      if (!targetAudience && !targetYearGroups && !targetDepartments) {
+        return res.status(400).json({
+          error:
+            "Admin must specify target audience, year groups, or departments.",
+        });
+      }
+    } else if (user.role === "teacher" && !targetYearGroups) {
+      return res.status(400).json({
+        error: "Teachers must specify year groups to target.",
+      });
     }
-  }
-
-  // Admins can target both year groups and departments
-  if (user.role === 'admin' || user.email.includes('admin')) {
-    if (!targetedYearGroup || !targetedDepartment) {
-      return res.status(400).json({ message: 'Admins must target both a year group and a department.' });
-    }
-  }
 
     // Create the post
     const newPost = new Post({
@@ -597,37 +594,25 @@ const createPost = async (req, res) => {
 
 // get post fucntion changed for the filtering update
 
-// Post Fetching
-const getPosts = async (req, res) => {
-  const user = req.user;
-
-  let query = {};
-
-  // If the user is a student, filter posts by year group
-  if (user.role === 'student') {
-    query.targetedYearGroup = user.yearGroup || 'all';  // Students only see their own year group or "all"
-  }
-
-  // If the user is a teacher, filter posts by department or year group
-  if (user.role === 'teacher') {
-    query.targetedDepartment = user.department || 'all';
-    query.targetedYearGroup = 'all';  // Teachers can see posts for all year groups
-  }
-
-  // Admins can see all posts, no additional filter needed
-  if (user.role === 'admin' || user.email.includes('admin')) {
-    // Admins can see all posts, no additional filter needed
-  }
-
+const getPost = async (req, res) => {
   try {
-    const posts = await Post.find(query);
-    res.status(200).json(posts);
+    const postId = req.params.id;
+
+    // Fetch the post matching the filter and ID
+    const post = await Post.findOne({ _id: postId, ...req.filter }).populate(
+      "postedBy",
+      "username profilePic"
+    );
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found or access denied" });
+    }
+
+    res.status(200).json(post);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error fetching posts' });
+    res.status(500).json({ error: err.message });
   }
 };
-
 
 const deletePost = async (req, res) => {
   try {
