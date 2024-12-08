@@ -144,9 +144,9 @@ const userSchema = mongoose.Schema(
     department: {
       type: String,
       enum: [
-        "Math", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
+        "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
         "Arts", "History", "Psychology", "Sociology", "Economics", "Business",
-        "BTEC Business"
+        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music", "BTEC Art", "English", "tv"
       ],
       required: function () {
         return this.role === "teacher";  // department is only required for teachers

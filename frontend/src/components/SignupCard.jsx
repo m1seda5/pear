@@ -353,15 +353,25 @@ const SignupCard = () => {
                   placeholder="Select Department"
                   onChange={(e) => setDepartment(e.target.value)}
                 >
-                  <option value="Math">Math</option>
-                  <option value="Chemistry">Chemistry</option>
+                  <option value="Mathematics">Math</option>                          
+                   <option value="Chemistry">Chemistry</option> 
+                  <option value="Biology">Biology</option> 
                   <option value="Physics">Science</option>
+                  <option value="Computer Science">Computer Science</option>
                   <option value="BTEC Business">BTEC Business</option>
+                  <option value="BTEC Sport">BTEC Sport</option>
+                  <option value="BTEC Art">BTEC Art</option>
+                  <option value="BTEC Music">BTEC Music</option>
+                  <option value="Buisness">Business</option>
+                 <option value="Economics">Economics</option>
                   <option value="English">English</option>
                   <option value="History">History</option>
+                  <option value="Sociology">Sociology</option>
+                  <option value="Psychology">Psychology</option>
                   <option value="Geography">Geography</option>
-                  <option value="Art">Art</option>
+                  <option value="Arts">Arts</option>
                   <option value="Music">Music</option>
+                  <option value="Physical Education">Physical Education</option>
                 </Select>
               </FormControl>
             )}
