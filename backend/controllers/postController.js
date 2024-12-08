@@ -496,12 +496,20 @@ import { v2 as cloudinary } from "cloudinary";
 
 const createPost = async (req, res) => {
   try {
-    const { postedBy, text, targetYearGroups, targetDepartments, targetAudience } = req.body;
+    const {
+      postedBy,
+      text,
+      targetYearGroups,
+      targetDepartments,
+      targetAudience,
+    } = req.body;
     let { img } = req.body;
 
     // Validate required fields
     if (!postedBy || !text) {
-      return res.status(400).json({ error: "PostedBy and text fields are required" });
+      return res
+        .status(400)
+        .json({ error: "PostedBy and text fields are required" });
     }
 
     // Find the user who is posting
@@ -527,8 +535,8 @@ const createPost = async (req, res) => {
       case "teacher":
         // Teachers must specify year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
-          return res.status(400).json({ 
-            error: "Teachers must specify at least one year group to target" 
+          return res.status(400).json({
+            error: "Teachers must specify at least one year group to target",
           });
         }
         // Ensure the teacher is targeting only year groups
@@ -539,8 +547,9 @@ const createPost = async (req, res) => {
       case "admin":
         // Admins must specify a target
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
-          return res.status(400).json({ 
-            error: "Admin must specify a target audience, year groups, or departments" 
+          return res.status(400).json({
+            error:
+              "Admin must specify a target audience, year groups, or departments",
           });
         }
         break;
@@ -562,7 +571,7 @@ const createPost = async (req, res) => {
       img,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
-      targetAudience: req.body.targetAudience || "all"
+      targetAudience: req.body.targetAudience || "all",
     });
 
     await newPost.save();
@@ -722,12 +731,14 @@ const repostPost = async (req, res) => {
   }
 };
 
- getFeedPosts = async (req, res) => {
+const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user && req.user._id;
 
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized, user not authenticated" });
     }
 
     const user = await User.findById(userId).select(
@@ -748,30 +759,34 @@ const repostPost = async (req, res) => {
         { targetAudience: "all" },
 
         // For students, show posts targeting their EXACT year group
-        ...(user.role === 'student' ? [
-          { targetYearGroups: { $in: [user.yearGroup] } },
-          { targetAudience: user.yearGroup }
-        ] : []),
+        ...(user.role === "student"
+          ? [
+              { targetYearGroups: { $in: [user.yearGroup] } },
+              { targetAudience: user.yearGroup },
+            ]
+          : []),
 
         // For teachers, show posts targeting their EXACT department
-        ...(user.role === 'teacher' ? [
-          { targetDepartments: { $in: [user.department] } },
-          { targetAudience: user.department }
-        ] : []),
+        ...(user.role === "teacher"
+          ? [
+              { targetDepartments: { $in: [user.department] } },
+              { targetAudience: user.department },
+            ]
+          : []),
 
         // For admin/TV, show additional posts
-        ...(user.role === 'admin' || user.role === 'tv' ? [
-          { targetAudience: 'tv' }
-        ] : []),
+        ...(user.role === "admin" || user.role === "tv"
+          ? [{ targetAudience: "tv" }]
+          : []),
 
         // Always show posts from users the current user is following
-        { postedBy: { $in: following } }
-      ]
+        { postedBy: { $in: following } },
+      ],
     };
 
     // Fetch posts matching the filter
     const feedPosts = await Post.find(postFilter)
-      .populate('postedBy', 'username profilePic')
+      .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
       .limit(50); // Limit to prevent overwhelming results
 
@@ -781,7 +796,6 @@ const repostPost = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
