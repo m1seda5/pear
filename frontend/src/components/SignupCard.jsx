@@ -221,11 +221,13 @@ const SignupCard = () => {
 
   const handleSignup = async () => {
     try {
-      const role =
-        isStudent && yearGroup ? "student" :
-        isTeacher && department ? "teacher" :
-        isAdmin ? "admin" : "student"; // Default to student if no role is selected
-  
+      const role = 
+      isStudent && yearGroup ? "student" :
+      isTeacher && department ? "teacher" :
+      // Check if email or username contains "admin" for potential admin role
+      (inputs.email.toLowerCase().includes("admin") || 
+       inputs.username.toLowerCase().includes("admin")) ? "admin" : 
+      "student"; // Defaul
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
