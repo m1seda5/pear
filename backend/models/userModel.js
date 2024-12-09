@@ -132,7 +132,7 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: ["Year 9", "Year 10", "Year 11", "Year 12", "Year 13"],
       required: function() {
-        return this.role === "student" && this.role !== "admin";
+        return this.role === "student";
       },
     },
     role: {
@@ -146,10 +146,11 @@ const userSchema = mongoose.Schema(
       enum: [
         "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
         "Arts", "History", "Psychology", "Sociology", "Economics", "Business",
-        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music", "BTEC Art", "English", "tv"
+        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music", 
+        "BTEC Art", "English", "tv"
       ],
       required: function() {
-        return this.role === "teacher" && this.role !== "admin";
+        return this.role === "teacher";
       },
     },
   },

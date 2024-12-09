@@ -896,45 +896,37 @@ const getUserProfile = async (req, res) => {
 const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
-
+    
     console.log("Signup request received:", req.body);
-
+    
     // Check if user already exists based on email or username
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
-
+    
     // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Determine role logic
-    let finalRole = "student"; // Default fallback role
-
-    // Check for admin role if no year group or department selected
-    if (!yearGroup && !department) {
-      if (email.toLowerCase().includes("admin") && username.toLowerCase().includes("admin")) {
-        finalRole = "admin";
-      }
-    }
-
-    // Create the user
+    
+    // Create the user with more flexible role handling
     const newUser = new User({
       name,
       email,
       username,
       password: hashedPassword,
-      role: finalRole,
-      yearGroup: role === "student" ? yearGroup : undefined,
-      department: role === "teacher" ? department : undefined,
+      role,
+      // Only set yearGroup if role is student
+      ...(role === "student" ? { yearGroup } : {}),
+      // Only set department if role is teacher
+      ...(role === "teacher" ? { department } : {}),
     });
-
+    
     // Save the user to the database
     await newUser.save();
-
+    
     console.log("User created successfully:", newUser);
-
+    
     // Generate token and send response
     generateTokenAndSetCookie(newUser._id, res);
     res.status(201).json({
@@ -947,8 +939,17 @@ const signupUser = async (req, res) => {
       department: newUser.department,
     });
   } catch (err) {
-    console.error("Error in signupUser:", err.message);
-    res.status(500).json({ error: "Failed to register user" });
+    console.error("Detailed Error in signupUser:", {
+      message: err.message,
+      name: err.name,
+      errors: err.errors,
+      stack: err.stack
+    });
+    res.status(500).json({ 
+      error: "Failed to register user", 
+      details: err.message,
+      validationErrors: err.errors 
+    });
   }
 };
 const loginUser = async (req, res) => {

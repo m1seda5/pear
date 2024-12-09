@@ -222,35 +222,37 @@ const SignupCard = () => {
   const handleSignup = async () => {
     try {
       const role = 
-      isStudent && yearGroup ? "student" :
-      isTeacher && department ? "teacher" :
-      // Check if email or username contains "admin" for potential admin role
-      (inputs.email.toLowerCase().includes("admin") || 
-       inputs.username.toLowerCase().includes("admin")) ? "admin" : 
-      "student"; // Defaul
+        isStudent && yearGroup ? "student" :
+        isTeacher && department ? "teacher" :
+        (inputs.email.toLowerCase().includes("admin") || 
+         inputs.username.toLowerCase().includes("admin")) ? "admin" : 
+        "student";
+    
+      const signupData = {
+        name: inputs.name,
+        email: inputs.email,
+        username: inputs.username,
+        password: inputs.password,
+        role,
+        ...(role === "student" ? { yearGroup } : {}),
+        ...(role === "teacher" ? { department } : {}),
+      };
+    
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: inputs.name,
-          email: inputs.email,
-          username: inputs.username,
-          password: inputs.password,
-          role,
-          yearGroup: role === "student" ? yearGroup : null,
-          department: role === "teacher" ? department : null,
-        }),
+        body: JSON.stringify(signupData),
       });
-  
+    
       const data = await res.json();
-  
+    
       if (data.error) {
         showToast("Error", data.error, "error");
         return;
       }
-  
+    
       console.log("Signup successful:", data);
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
@@ -259,7 +261,6 @@ const SignupCard = () => {
       showToast("Error", error.message, "error");
     }
   };
-  
 
   return (
     <Flex align={"center"} justify={"center"}>
