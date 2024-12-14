@@ -909,6 +909,9 @@ const signupUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
+    // Generate verification token
+    const emailVerificationToken = generateVerificationToken();
+    
     // Create the user with more flexible role handling
     const newUser = new User({
       name,
@@ -916,6 +919,8 @@ const signupUser = async (req, res) => {
       username,
       password: hashedPassword,
       role,
+      emailVerificationToken,
+      isEmailVerified: false,
       // Only set yearGroup if role is student
       ...(role === "student" ? { yearGroup } : {}),
       // Only set department if role is teacher
@@ -927,6 +932,13 @@ const signupUser = async (req, res) => {
     
     console.log("User created successfully:", newUser);
     
+    // Send verification email
+    await sendVerificationEmail(
+      email, 
+      emailVerificationToken, 
+      process.env.BASE_URL || 'https://pear-tsk2.onrender.com'
+    );
+    
     // Generate token and send response
     generateTokenAndSetCookie(newUser._id, res);
     res.status(201).json({
@@ -937,6 +949,8 @@ const signupUser = async (req, res) => {
       role: newUser.role,
       yearGroup: newUser.yearGroup,
       department: newUser.department,
+      message: "User registered. Please check your email to verify your account.",
+      requiresVerification: true
     });
   } catch (err) {
     console.error("Detailed Error in signupUser:", {
@@ -950,6 +964,27 @@ const signupUser = async (req, res) => {
       details: err.message,
       validationErrors: err.errors 
     });
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    const user = await User.findOne({ emailVerificationToken: token });
+    
+    if (!user) {
+      return res.status(400).json({ error: "Invalid verification token" });
+    }
+    
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    await user.save();
+    
+    res.status(200).json({ message: "Email successfully verified" });
+  } catch (error) {
+    console.error("Email Verification Error:", error);
+    res.status(500).json({ error: "Failed to verify email" });
   }
 };
 const loginUser = async (req, res) => {
@@ -1184,4 +1219,5 @@ export {
   getSuggestedUsers,
   freezeAccount,
   awardVerification, // Exporting the new function
+  verifyEmail,
 };

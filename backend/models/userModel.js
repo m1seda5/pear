@@ -146,16 +146,26 @@ const userSchema = mongoose.Schema(
       enum: [
         "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
         "Arts", "History", "Psychology", "Sociology", "Economics", "Business",
-        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music", 
+        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music",
         "BTEC Art", "English", "tv"
       ],
       required: function() {
         return this.role === "teacher";
       },
     },
+    // New fields for email verification
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);
+
 export default User;

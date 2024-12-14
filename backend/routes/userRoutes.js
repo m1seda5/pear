@@ -38,6 +38,7 @@ import {
 	updateUser,
 	getSuggestedUsers,
 	freezeAccount,
+	verifyEmail, // Import the new verification function
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -48,6 +49,7 @@ router.get("/suggested", protectRoute, getSuggestedUsers);
 router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
+router.post("/verify-email", verifyEmail); // New route for email verification
 router.post("/follow/:id", protectRoute, followUnFollowUser); // Toggle state(follow/unfollow)
 router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
