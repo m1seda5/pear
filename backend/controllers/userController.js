@@ -861,6 +861,7 @@ import User from "../models/userModel.js";
 import Post from "../models/postModel.js";
 import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
+import { generateVerificationToken, sendVerificationEmail } from "../utils/emailVerification.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 
@@ -987,6 +988,7 @@ const verifyEmail = async (req, res) => {
     res.status(500).json({ error: "Failed to verify email" });
   }
 };
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -1000,19 +1002,18 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
+    // Add email verification check
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ 
+        error: "Please verify your email before logging in" 
+      });
+    }
+
     if (user.isFrozen) {
       user.isFrozen = false;
       await user.save();
     }
 
-    // Start of auto-follow everyone code
-    const allUsers = await User.find({});
-    const allUserIds = allUsers.map((u) => u._id.toString());
-    user.following = allUserIds;
-    await user.save();
-    // End of auto-follow everyone code
-
-    // Send back the role to the front-end so it knows whether the user is a teacher or student
     generateTokenAndSetCookie(user._id, res);
 
     res.status(200).json({
@@ -1022,8 +1023,8 @@ const loginUser = async (req, res) => {
       username: user.username,
       bio: user.bio,
       profilePic: user.profilePic,
-      role: user.role, // Include the role in the response
-      message: "Login successful, now following all users including yourself.",
+      role: user.role,
+      message: "Login successful",
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
