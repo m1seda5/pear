@@ -575,36 +575,13 @@ const createPost = async (req, res) => {
     });
 
     await newPost.save();
-
-    // Fetch users who might be interested in this post based on audience
-    const interestedUsers = await User.find({
-      $or: [
-        { role: 'student', yearGroup: newPost.targetYearGroups[0] },
-        { role: 'teacher', department: newPost.targetDepartments[0] },
-        { role: 'admin' }
-      ],
-      isEmailVerified: true
-    });
-
-    // Send notifications to interested users
-    for (const user of interestedUsers) {
-      await sendPostNotificationEmail(
-        user.email, 
-        {
-          id: newPost._id,
-          postedBy: (await User.findById(newPost.postedBy)).username,
-          text: newPost.text
-        },
-        process.env.BASE_URL || 'https://pear-tsk2.onrender.com'
-      );
-    }
-
     res.status(201).json(newPost);
   } catch (err) {
     console.error("Error in createPost:", err.message);
     res.status(500).json({ error: "Failed to create post" });
   }
 };
+
 // const getPost = async (req, res) => {
 //   try {
 //     const postId = req.params.id;
