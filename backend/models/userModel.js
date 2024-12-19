@@ -156,15 +156,15 @@ const userSchema = mongoose.Schema(
     // New fields for email verification
     emailVerificationToken: {
       type: String,
-      default: null
+      default: null,
     },
     isEmailVerified: {
       type: Boolean,
-      default: false
-    }
-  }, { timestamps: true });
-  
-  
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
 const User = mongoose.model("User", userSchema);
 
