@@ -1194,12 +1194,14 @@ import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCooki
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 import pkg from 'sib-api-v3-sdk';
-const { BrevoClient } = pkg;// Import Brevo client
+const { SibApiV3Sdk } = pkg;
 
-const brevoApiKey = process.env.BREVO_API_KEY; // Ensure this is set in your .env file
+const brevoApiKey = process.env.BREVO_API_KEY;
 
-const brevoClient = BrevoClient.ApiClient.instance;
-const apiKey = brevoClient.authentications["api-key"];
+// Initialize the API instance
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+// Set the API key
+const apiKey = apiInstance.authentications['api-key'];
 apiKey.apiKey = brevoApiKey;
 
 const getUserProfile = async (req, res) => {
@@ -1260,20 +1262,18 @@ const signupUser = async (req, res) => {
     // Generate a verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${newUser._id}`;
 
-    // Send verification email using Brevo
-    const brevoEmailApi = new BrevoClient.TransactionalEmailsApi();
-    const emailTemplate = {
-      sender: { email: process.env.BREVO_SENDER_EMAIL, name: "YourAppName" },
-      to: [{ email: newUser.email }],
-      subject: "Verify Your Email",
-      htmlContent: `
+    // Send verification email using Brevo - Updated part
+    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.BREVO_SENDER_EMAIL, name: "Pear" };
+    sendSmtpEmail.to = [{ email: newUser.email }];
+    sendSmtpEmail.subject = "Verify Your Email";
+    sendSmtpEmail.htmlContent = `
         <h1>Welcome to YourAppName!</h1>
         <p>Click the link below to verify your email:</p>
         <a href="${verificationLink}">Verify Email</a>
-      `,
-    };
+      `;
 
-    await brevoEmailApi.sendTransacEmail(emailTemplate);
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
 
     res.status(201).json({
       message:
@@ -1286,7 +1286,6 @@ const signupUser = async (req, res) => {
       .json({ error: "Failed to register user", details: err.message });
   }
 };
-
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
