@@ -1193,16 +1193,15 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import pkg from 'sib-api-v3-sdk';
-const { SibApiV3Sdk } = pkg;
+import * as SibApiV3Sdk from 'sib-api-v3-sdk';
 
 const brevoApiKey = process.env.BREVO_API_KEY;
 
-// Initialize the API instance
+// Initialize Brevo SDK
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+defaultClient.authentications['api-key'].apiKey = brevoApiKey;
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-// Set the API key
-const apiKey = apiInstance.authentications['api-key'];
-apiKey.apiKey = brevoApiKey;
+
 
 const getUserProfile = async (req, res) => {
   const { query } = req.params;
@@ -1231,8 +1230,7 @@ const getUserProfile = async (req, res) => {
 
 const signupUser = async (req, res) => {
   try {
-    const { name, email, username, password, role, yearGroup, department } =
-      req.body;
+    const { name, email, username, password, role, yearGroup, department } = req.body;
 
     // Check if user already exists based on email or username
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -1251,7 +1249,7 @@ const signupUser = async (req, res) => {
       username,
       password: hashedPassword,
       role,
-      isVerified: false, // Add this field to the User model
+      isVerified: false,
       ...(role === "student" ? { yearGroup } : {}),
       ...(role === "teacher" ? { department } : {}),
     });
@@ -1262,28 +1260,40 @@ const signupUser = async (req, res) => {
     // Generate a verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${newUser._id}`;
 
-    // Send verification email using Brevo - Updated part
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.BREVO_SENDER_EMAIL, name: "Pear" };
-    sendSmtpEmail.to = [{ email: newUser.email }];
-    sendSmtpEmail.subject = "Verify Your Email";
-    sendSmtpEmail.htmlContent = `
-        <h1>Welcome to YourAppName!</h1>
+    // Create the email using Brevo SDK
+    const sendSmtpEmail = {
+      sender: { 
+        email: process.env.BREVO_SENDER_EMAIL, 
+        name: "Pear" 
+      },
+      to: [{ email: newUser.email }],
+      subject: "Verify Your Email",
+      htmlContent: `
+        <h1>Welcome to Pear!</h1>
         <p>Click the link below to verify your email:</p>
         <a href="${verificationLink}">Verify Email</a>
-      `;
+      `
+    };
 
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-
-    res.status(201).json({
-      message:
-        "Signup successful! Please verify your email to complete the process.",
-      userId: newUser._id,
-    });
+    try {
+      // Send the email
+      await apiInstance.sendTransacEmail(sendSmtpEmail);
+      
+      res.status(201).json({
+        message: "Signup successful! Please verify your email to complete the process.",
+        userId: newUser._id,
+      });
+    } catch (emailError) {
+      // If email sending fails, still create the user but log the error
+      console.error("Error sending verification email:", emailError);
+      res.status(201).json({
+        message: "Signup successful! Email verification may be delayed.",
+        userId: newUser._id,
+      });
+    }
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Failed to register user", details: err.message });
+    res.status(500).json({ error: "Failed to register user", details: err.message });
+    console.error("Signup error:", err);
   }
 };
 const loginUser = async (req, res) => {
