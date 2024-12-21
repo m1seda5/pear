@@ -1467,7 +1467,7 @@ export {
   followUnFollowUser,
   updateUser,
   getUserProfile,
-  getSuggestedUsers,
+  // getSuggestedUsers,
   freezeAccount,
   verifyEmail, // Exporting verifyEmail function
 };
