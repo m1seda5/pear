@@ -1193,7 +1193,8 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import { BrevoClient } from "sib-api-v3-sdk"; // Import Brevo client
+import pkg from 'sib-api-v3-sdk';
+const { BrevoClient } = pkg;// Import Brevo client
 
 const brevoApiKey = process.env.BREVO_API_KEY; // Ensure this is set in your .env file
 
