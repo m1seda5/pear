@@ -896,19 +896,19 @@
 // const signupUser = async (req, res) => {
 //   try {
 //     const { name, email, username, password, role, yearGroup, department } = req.body;
-    
+
 //     console.log("Signup request received:", req.body);
-    
+
 //     // Check if user already exists based on email or username
 //     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
 //     if (existingUser) {
 //       return res.status(400).json({ error: "User already exists" });
 //     }
-    
+
 //     // Hash the password
 //     const salt = await bcrypt.genSalt(10);
 //     const hashedPassword = await bcrypt.hash(password, salt);
-    
+
 //     // Create the user with more flexible role handling
 //     const newUser = new User({
 //       name,
@@ -921,12 +921,12 @@
 //       // Only set department if role is teacher
 //       ...(role === "teacher" ? { department } : {}),
 //     });
-    
+
 //     // Save the user to the database
 //     await newUser.save();
-    
+
 //     console.log("User created successfully:", newUser);
-    
+
 //     // Generate token and send response
 //     generateTokenAndSetCookie(newUser._id, res);
 //     res.status(201).json({
@@ -945,10 +945,10 @@
 //       errors: err.errors,
 //       stack: err.stack
 //     });
-//     res.status(500).json({ 
-//       error: "Failed to register user", 
+//     res.status(500).json({
+//       error: "Failed to register user",
 //       details: err.message,
-//       validationErrors: err.errors 
+//       validationErrors: err.errors
 //     });
 //   }
 // };
@@ -1186,8 +1186,7 @@
 //   awardVerification, // Exporting the new function
 // };
 
-
-// emial verification 
+// emial verification
 import User from "../models/userModel.js";
 import Post from "../models/postModel.js";
 import bcrypt from "bcryptjs";
@@ -1209,9 +1208,13 @@ const getUserProfile = async (req, res) => {
     let user;
 
     if (mongoose.Types.ObjectId.isValid(query)) {
-      user = await User.findOne({ _id: query }).select("-password").select("-updatedAt");
+      user = await User.findOne({ _id: query })
+        .select("-password")
+        .select("-updatedAt");
     } else {
-      user = await User.findOne({ username: query }).select("-password").select("-updatedAt");
+      user = await User.findOne({ username: query })
+        .select("-password")
+        .select("-updatedAt");
     }
 
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -1225,7 +1228,8 @@ const getUserProfile = async (req, res) => {
 
 const signupUser = async (req, res) => {
   try {
-    const { name, email, username, password, role, yearGroup, department } = req.body;
+    const { name, email, username, password, role, yearGroup, department } =
+      req.body;
 
     // Check if user already exists based on email or username
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -1271,11 +1275,14 @@ const signupUser = async (req, res) => {
     await brevoEmailApi.sendTransacEmail(emailTemplate);
 
     res.status(201).json({
-      message: "Signup successful! Please verify your email to complete the process.",
+      message:
+        "Signup successful! Please verify your email to complete the process.",
       userId: newUser._id,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to register user", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to register user", details: err.message });
   }
 };
 
@@ -1284,12 +1291,14 @@ const loginUser = async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
 
-    if (!user || !await bcrypt.compare(password, user.password)) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
     if (!user.isVerified) {
-      return res.status(400).json({ error: "Please verify your email to log in" });
+      return res
+        .status(400)
+        .json({ error: "Please verify your email to log in" });
     }
 
     if (user.isFrozen) {
@@ -1330,7 +1339,9 @@ const followUnFollowUser = async (req, res) => {
     const currentUser = await User.findById(req.user._id);
 
     if (id === req.user._id.toString())
-      return res.status(400).json({ error: "You cannot follow/unfollow yourself" });
+      return res
+        .status(400)
+        .json({ error: "You cannot follow/unfollow yourself" });
 
     if (!userToModify || !currentUser)
       return res.status(400).json({ error: "User not found" });
@@ -1361,7 +1372,9 @@ const updateUser = async (req, res) => {
     if (!user) return res.status(400).json({ error: "User not found" });
 
     if (req.params.id !== userId.toString())
-      return res.status(400).json({ error: "You cannot update other user's profile" });
+      return res
+        .status(400)
+        .json({ error: "You cannot update other user's profile" });
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -1371,7 +1384,9 @@ const updateUser = async (req, res) => {
 
     if (profilePic) {
       if (user.profilePic) {
-        await cloudinary.uploader.destroy(user.profilePic.split("/").pop().split(".")[0]);
+        await cloudinary.uploader.destroy(
+          user.profilePic.split("/").pop().split(".")[0]
+        );
       }
 
       const uploadedResponse = await cloudinary.uploader.upload(profilePic);
@@ -1434,15 +1449,48 @@ const verifyEmail = async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    res.status(200).json({ message: "Email verified successfully, you can now log in" });
+    res
+      .status(200)
+      .json({ message: "Email verified successfully, you can now log in" });
   } catch (err) {
     // Handle errors like invalid token or expired token
-    if (err.name === 'TokenExpiredError') {
-      return res.status(400).json({ error: 'Token has expired' });
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).json({ error: "Token has expired" });
     }
     return res.status(500).json({ error: err.message });
   }
-}; 
+};
+
+// Start of integration code
+const getSuggestedUsers = async (req, res) => {
+  try {
+    // exclude the current user from suggested users array and exclude users that current user is already following
+    const userId = req.user._id;
+
+    const usersFollowedByYou = await User.findById(userId).select("following");
+
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: userId },
+        },
+      },
+      {
+        $sample: { size: 10 },
+      },
+    ]);
+    const filteredUsers = users.filter(
+      (user) => !usersFollowedByYou.following.includes(user._id)
+    );
+    const suggestedUsers = filteredUsers.slice(0, 4);
+
+    suggestedUsers.forEach((user) => (user.password = null));
+
+    res.status(200).json(suggestedUsers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const freezeAccount = async (req, res) => {
   try {
@@ -1467,7 +1515,7 @@ export {
   followUnFollowUser,
   updateUser,
   getUserProfile,
-  // getSuggestedUsers,
+  getSuggestedUsers,
   freezeAccount,
   verifyEmail, // Exporting verifyEmail function
 };
