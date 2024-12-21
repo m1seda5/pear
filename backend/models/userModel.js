@@ -99,6 +99,8 @@ const userSchema = mongoose.Schema(
       minLength: 6,
       required: true,
     },
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, required: false },
     profilePic: {
       type: String,
       default: "",
@@ -131,7 +133,7 @@ const userSchema = mongoose.Schema(
     yearGroup: {
       type: String,
       enum: ["Year 9", "Year 10", "Year 11", "Year 12", "Year 13"],
-      required: function() {
+      required: function () {
         return this.role === "student";
       },
     },
@@ -144,12 +146,28 @@ const userSchema = mongoose.Schema(
     department: {
       type: String,
       enum: [
-        "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "Computer Science",
-        "Arts", "History", "Psychology", "Sociology", "Economics", "Business",
-        "BTEC Business", "Physical Education", "BTEC Sport", "Music", "BTEC Music", 
-        "BTEC Art", "English", "tv"
+        "Mathematics",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "Geography",
+        "Computer Science",
+        "Arts",
+        "History",
+        "Psychology",
+        "Sociology",
+        "Economics",
+        "Business",
+        "BTEC Business",
+        "Physical Education",
+        "BTEC Sport",
+        "Music",
+        "BTEC Music",
+        "BTEC Art",
+        "English",
+        "tv",
       ],
-      required: function() {
+      required: function () {
         return this.role === "teacher";
       },
     },
