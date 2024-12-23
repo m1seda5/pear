@@ -1186,7 +1186,7 @@
 //   awardVerification, // Exporting the new function
 // };
 
-// emial verification
+// email verification
 import User from "../models/userModel.js";
 import Post from "../models/postModel.js";
 import bcrypt from "bcryptjs";
@@ -1196,7 +1196,7 @@ import mongoose from "mongoose";
 import { Configuration, TransactionalEmailsApi } from '@getbrevo/brevo';
 
 const config = new Configuration({
-  apiKey: process.env.BREVO_API_KEY
+  apiKey: process.env.BREVO_API_KEY,
 });
 
 const apiInstance = new TransactionalEmailsApi(config);
@@ -1230,14 +1230,17 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
+    // Check for existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
+    // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Create new user
     const newUser = new User({
       name,
       email,
@@ -1251,40 +1254,46 @@ const signupUser = async (req, res) => {
 
     await newUser.save();
 
+    // Generate email verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
 
-    const sendSmtpEmail = {
+    const emailData = {
+      sender: {
+        name: "Pear",
+        email: process.env.SENDER_EMAIL,
+      },
+      to: [
+        {
+          email: newUser.email,
+          name: newUser.name,
+        },
+      ],
       subject: "Verify Your Email",
       htmlContent: `
         <h1>Welcome to Pear!</h1>
         <p>Click the link below to verify your email:</p>
-        <a href="${verificationLink}">Verify Email</a>
+        <a href="${verificationLink}" target="_blank">Verify Email</a>
       `,
-      sender: {
-        name: "Pear",
-        email: process.env.SENDER_EMAIL
-      },
-      to: [{ email: newUser.email }]
     };
 
+    // Send email
     try {
-      await apiInstance.sendTransacEmail(sendSmtpEmail);
-      
+      await apiInstance.sendTransacEmail(emailData);
+
       res.status(201).json({
         message: "Signup successful! Please check your email to verify your account.",
         userId: newUser._id,
       });
     } catch (emailError) {
       console.error("Error sending verification email:", emailError);
-      
       res.status(201).json({
-        message: "Account created but verification email failed to send. Please contact support.",
+        message: "Account created, but verification email failed to send. Please contact support.",
         userId: newUser._id,
       });
     }
   } catch (err) {
+    console.error("Signup error:", err.message);
     res.status(500).json({ error: err.message });
-    console.error("Signup error:", err);
   }
 };
 const loginUser = async (req, res) => {

@@ -55,6 +55,7 @@
 // export default router;
 
 // email verififcation update import express from "express";
+import express from "express";
 import {
 	followUnFollowUser,
 	getUserProfile,
@@ -83,3 +84,4 @@ router.put("/freeze", protectRoute, freezeAccount);
 router.get("/verify-email", verifyEmail);
 
 export default router;
+
