@@ -1197,10 +1197,10 @@ import * as SibApiV3Sdk from 'sib-api-v3-sdk';
 
 const brevoApiKey = process.env.BREVO_API_KEY;
 
-// Initialize Brevo SDK
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-defaultClient.authentications['api-key'].apiKey = brevoApiKey;
+// Initialize Brevo SDK properly
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const apiClient = SibApiV3Sdk.ApiClient.instance;
+apiClient.authentications['api-key'].apiKey = brevoApiKey;
 
 
 const getUserProfile = async (req, res) => {
@@ -1232,17 +1232,17 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    // Check if user already exists based on email or username
+    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Hash the password
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create the user with 'isVerified' set to false initially
+    // Create new user
     const newUser = new User({
       name,
       email,
@@ -1254,45 +1254,44 @@ const signupUser = async (req, res) => {
       ...(role === "teacher" ? { department } : {}),
     });
 
-    // Save the user to the database
     await newUser.save();
 
-    // Generate a verification link
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${newUser._id}`;
+    // Create verification link
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
 
-    // Create the email using Brevo SDK
-    const sendSmtpEmail = {
-      sender: { 
-        email: process.env.BREVO_SENDER_EMAIL, 
-        name: "Pear" 
-      },
-      to: [{ email: newUser.email }],
-      subject: "Verify Your Email",
-      htmlContent: `
-        <h1>Welcome to Pear!</h1>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verificationLink}">Verify Email</a>
-      `
+    // Create email using Brevo
+    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+    sendSmtpEmail.subject = "Verify Your Email";
+    sendSmtpEmail.htmlContent = `
+      <h1>Welcome to Pear!</h1>
+      <p>Click the link below to verify your email:</p>
+      <a href="${verificationLink}">Verify Email</a>
+    `;
+    sendSmtpEmail.sender = { 
+      name: "Pear",
+      email: process.env.SENDER_EMAIL
     };
+    sendSmtpEmail.to = [{ email: newUser.email }];
 
     try {
-      // Send the email
+      // Send verification email
       await apiInstance.sendTransacEmail(sendSmtpEmail);
       
       res.status(201).json({
-        message: "Signup successful! Please verify your email to complete the process.",
+        message: "Signup successful! Please check your email to verify your account.",
         userId: newUser._id,
       });
     } catch (emailError) {
-      // If email sending fails, still create the user but log the error
       console.error("Error sending verification email:", emailError);
+      
+      // Still create the user but notify about email issues
       res.status(201).json({
-        message: "Signup successful! Email verification may be delayed.",
+        message: "Account created but verification email failed to send. Please contact support.",
         userId: newUser._id,
       });
     }
   } catch (err) {
-    res.status(500).json({ error: "Failed to register user", details: err.message });
+    res.status(500).json({ error: err.message });
     console.error("Signup error:", err);
   }
 };
@@ -1432,45 +1431,26 @@ const updateUser = async (req, res) => {
 
 // New function for email verification
 const verifyEmail = async (req, res) => {
-  const { token } = req.query;
-
-  // Check if the token is provided
-  if (!token) {
-    return res.status(400).json({ error: "Invalid or missing token" });
-  }
-
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { id } = req.params;
 
-    // Find the user associated with the decoded userId
-    const user = await User.findById(decoded.userId);
-
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Check if the user is already verified
     if (user.isVerified) {
-      return res.status(400).json({ message: "Email is already verified" });
+      return res.status(400).json({ message: "Email already verified" });
     }
 
-    // Mark the user as verified
     user.isVerified = true;
     await user.save();
 
-    res
-      .status(200)
-      .json({ message: "Email verified successfully, you can now log in" });
+    res.status(200).json({ message: "Email verified successfully. You can now log in." });
   } catch (err) {
-    // Handle errors like invalid token or expired token
-    if (err.name === "TokenExpiredError") {
-      return res.status(400).json({ error: "Token has expired" });
-    }
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
-
 // Start of integration code
 const getSuggestedUsers = async (req, res) => {
   try {

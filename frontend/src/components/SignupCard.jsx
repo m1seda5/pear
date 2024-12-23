@@ -454,54 +454,55 @@ const SignupCard = () => {
   const showToast = useShowToast();
   const setUser = useSetRecoilState(userAtom);
 
-  const handleSignup = async () => {
-    try {
-      const role = 
-        isStudent && yearGroup ? "student" :
-        isTeacher && department ? "teacher" :
-        (inputs.email.toLowerCase().includes("admin") || 
-         inputs.username.toLowerCase().includes("admin")) ? "admin" : 
-        "student";
-    
-      const signupData = {
-        name: inputs.name,
-        email: inputs.email,
-        username: inputs.username,
-        password: inputs.password,
-        role,
-        ...(role === "student" ? { yearGroup } : {}),
-        ...(role === "teacher" ? { department } : {}),
-      };
-    
-      const res = await fetch("/api/users/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(signupData),
-      });
-    
-      const data = await res.json();
-    
-      if (data.error) {
-        showToast("Error", data.error, "error");
-        return;
-      }
-    
-      console.log("Signup successful:", data);
-      localStorage.setItem("user-threads", JSON.stringify(data));
-      setUser(data);
-
-      // Notify user to verify their email
-      showToast("Check your inbox", "A verification email has been sent to your inbox. Please verify your email before proceeding.", "info");
-
-      // Redirect or prompt user to check their email
-      setAuthScreen("login");
-    } catch (error) {
-      console.error("Error in handleSignup:", error);
-      showToast("Error", error.message, "error");
+  // Update your existing SignupCard.jsx
+const handleSignup = async () => {
+  try {
+    const role = 
+      isStudent && yearGroup ? "student" :
+      isTeacher && department ? "teacher" :
+      (inputs.email.toLowerCase().includes("admin") || 
+       inputs.username.toLowerCase().includes("admin")) ? "admin" : 
+      "student";
+  
+    const signupData = {
+      name: inputs.name,
+      email: inputs.email,
+      username: inputs.username,
+      password: inputs.password,
+      role,
+      ...(role === "student" ? { yearGroup } : {}),
+      ...(role === "teacher" ? { department } : {}),
+    };
+  
+    const res = await fetch("/api/users/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(signupData),
+    });
+  
+    const data = await res.json();
+  
+    if (data.error) {
+      showToast("Error", data.error, "error");
+      return;
     }
-  };
+  
+    showToast(
+      "Success", 
+      "Please check your email to verify your account before logging in.", 
+      "success"
+    );
+    
+    // Don't set user or localStorage here since email isn't verified yet
+    setAuthScreen("login");
+    
+  } catch (error) {
+    console.error("Error in handleSignup:", error);
+    showToast("Error", error.message, "error");
+  }
+};
 
   return (
     <Flex align={"center"} justify={"center"}>

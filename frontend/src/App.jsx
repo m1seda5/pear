@@ -120,9 +120,10 @@ import UpdateProfilePage from "./pages/UpdateProfilePage";
 import CreatePost from "./components/CreatePost";
 import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import VerifyEmail from "./pages/VerifyEmail";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
-import InactivityBackground from './components/InactivityBackground'; // Updated import for background component
+import InactivityBackground from './components/InactivityBackground';
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -135,26 +136,28 @@ function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <Box position={'relative'} w="full">
-        
-        {/* Background will be positioned at the back of all content */}
-    
         <Container maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'}>
           <Header />
           <Routes>
             <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-            <Route path="/:username" element={user ? (
-              <>
+            <Route 
+              path="/:username" 
+              element={user ? (
+                <>
+                  <UserPage />
+                  <CreatePost />
+                </>
+              ) : (
                 <UserPage />
-                <CreatePost />
-              </>
-            ) : (
-              <UserPage />
-            )} />
+              )} 
+            />
             <Route path="/:username/post/:pid" element={<PostPage />} />
             <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
+            {/* New route for email verification - doesn't require auth */}
+            <Route path="/verify-email/:id" element={<VerifyEmail />} />
           </Routes>
         </Container>
       </Box>

@@ -13,6 +13,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@getbrevo/brevo": "^2.2.0",
 		"@react-three/drei": "^9.114.3",
 		"@react-three/fiber": "^8.17.10",
 		"@sendinblue/client": "^3.3.1",
@@ -29,7 +30,6 @@
 		"nodemailer": "^6.9.16",
 		"react-i18next": "^15.0.1",
 		"react-tsparticles": "^2.12.2",
-		"sib-api-v3-sdk": "^8.5.0",
 		"socket.io": "^4.7.2",
 		"three": "^0.169.0",
 		"ws": "^8.18.0"
