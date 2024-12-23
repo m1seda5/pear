@@ -1193,15 +1193,11 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import * as SibApiV3Sdk from 'sib-api-v3-sdk';
+import Brevo from '@getbrevo/brevo';
 
-const brevoApiKey = process.env.BREVO_API_KEY;
-
-// Initialize Brevo SDK properly
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-const apiClient = SibApiV3Sdk.ApiClient.instance;
-apiClient.authentications['api-key'].apiKey = brevoApiKey;
-
+const brevoClient = new Brevo.ApiClient();
+brevoClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+const apiInstance = new Brevo.TransactionalEmailsApi(brevoClient);
 
 const getUserProfile = async (req, res) => {
   const { query } = req.params;
@@ -1232,17 +1228,14 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const newUser = new User({
       name,
       email,
@@ -1256,25 +1249,22 @@ const signupUser = async (req, res) => {
 
     await newUser.save();
 
-    // Create verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
 
-    // Create email using Brevo
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
     sendSmtpEmail.subject = "Verify Your Email";
     sendSmtpEmail.htmlContent = `
       <h1>Welcome to Pear!</h1>
       <p>Click the link below to verify your email:</p>
       <a href="${verificationLink}">Verify Email</a>
     `;
-    sendSmtpEmail.sender = { 
+    sendSmtpEmail.sender = {
       name: "Pear",
       email: process.env.SENDER_EMAIL
     };
     sendSmtpEmail.to = [{ email: newUser.email }];
 
     try {
-      // Send verification email
       await apiInstance.sendTransacEmail(sendSmtpEmail);
       
       res.status(201).json({
@@ -1284,7 +1274,6 @@ const signupUser = async (req, res) => {
     } catch (emailError) {
       console.error("Error sending verification email:", emailError);
       
-      // Still create the user but notify about email issues
       res.status(201).json({
         message: "Account created but verification email failed to send. Please contact support.",
         userId: newUser._id,
@@ -1295,6 +1284,7 @@ const signupUser = async (req, res) => {
     console.error("Signup error:", err);
   }
 };
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -1429,7 +1419,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// New function for email verification
 const verifyEmail = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1451,12 +1440,10 @@ const verifyEmail = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-// Start of integration code
+
 const getSuggestedUsers = async (req, res) => {
   try {
-    // exclude the current user from suggested users array and exclude users that current user is already following
     const userId = req.user._id;
-
     const usersFollowedByYou = await User.findById(userId).select("following");
 
     const users = await User.aggregate([
@@ -1507,5 +1494,5 @@ export {
   getUserProfile,
   getSuggestedUsers,
   freezeAccount,
-  verifyEmail, // Exporting verifyEmail function
+  verifyEmail,
 };
