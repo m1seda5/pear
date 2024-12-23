@@ -1193,12 +1193,13 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import Brevo from '@getbrevo/brevo';
+import * as Brevo from '@getbrevo/brevo';
 
-const brevoClient = new Brevo.ApiClient();
-brevoClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new Brevo.TransactionalEmailsApi(brevoClient);
+const defaultClient = Brevo.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
+const apiInstance = new Brevo.TransactionalEmailsApi();
 const getUserProfile = async (req, res) => {
   const { query } = req.params;
 
