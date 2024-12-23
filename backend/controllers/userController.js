@@ -1193,13 +1193,14 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import * as Brevo from '@getbrevo/brevo';
+import { Configuration, TransactionalEmailsApi } from '@getbrevo/brevo';
 
-const defaultClient = Brevo.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
+const config = new Configuration({
+  apiKey: process.env.BREVO_API_KEY
+});
 
-const apiInstance = new Brevo.TransactionalEmailsApi();
+const apiInstance = new TransactionalEmailsApi(config);
+
 const getUserProfile = async (req, res) => {
   const { query } = req.params;
 
@@ -1252,18 +1253,19 @@ const signupUser = async (req, res) => {
 
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
 
-    const sendSmtpEmail = new Brevo.SendSmtpEmail();
-    sendSmtpEmail.subject = "Verify Your Email";
-    sendSmtpEmail.htmlContent = `
-      <h1>Welcome to Pear!</h1>
-      <p>Click the link below to verify your email:</p>
-      <a href="${verificationLink}">Verify Email</a>
-    `;
-    sendSmtpEmail.sender = {
-      name: "Pear",
-      email: process.env.SENDER_EMAIL
+    const sendSmtpEmail = {
+      subject: "Verify Your Email",
+      htmlContent: `
+        <h1>Welcome to Pear!</h1>
+        <p>Click the link below to verify your email:</p>
+        <a href="${verificationLink}">Verify Email</a>
+      `,
+      sender: {
+        name: "Pear",
+        email: process.env.SENDER_EMAIL
+      },
+      to: [{ email: newUser.email }]
     };
-    sendSmtpEmail.to = [{ email: newUser.email }];
 
     try {
       await apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -1285,7 +1287,6 @@ const signupUser = async (req, res) => {
     console.error("Signup error:", err);
   }
 };
-
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
