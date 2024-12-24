@@ -1254,8 +1254,23 @@ const signupUser = async (req, res) => {
 
     await newUser.save();
 
+    // Verify environment variables
+    if (!process.env.BREVO_API_KEY) {
+      console.error("BREVO_API_KEY is missing in the environment variables");
+      return res.status(500).json({ error: "Email service configuration error" });
+    }
+
+    if (!process.env.SENDER_EMAIL) {
+      console.error("SENDER_EMAIL is missing in the environment variables");
+      return res.status(500).json({ error: "Email service configuration error" });
+    }
+
     // Generate email verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
+    if (!verificationLink) {
+      console.error("Failed to generate verification link");
+      return res.status(500).json({ error: "Verification link generation failed" });
+    }
 
     const emailData = {
       sender: {
@@ -1285,10 +1300,9 @@ const signupUser = async (req, res) => {
         userId: newUser._id,
       });
     } catch (emailError) {
-      console.error("Error sending verification email:", emailError);
-      res.status(201).json({
-        message: "Account created, but verification email failed to send. Please contact support.",
-        userId: newUser._id,
+      console.error("Error sending verification email:", emailError.message);
+      return res.status(500).json({
+        error: "Account created, but verification email failed to send. Please contact support.",
       });
     }
   } catch (err) {
@@ -1296,6 +1310,8 @@ const signupUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
