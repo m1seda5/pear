@@ -1230,15 +1230,20 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
+    console.log("Signup request received with body:", req.body);
+
     // Check for existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
+      console.log("User already exists with email or username:", { email, username });
       return res.status(400).json({ error: "User already exists" });
     }
 
     // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    console.log("Password hashed successfully");
 
     // Create new user
     const newUser = new User({
@@ -1253,8 +1258,14 @@ const signupUser = async (req, res) => {
     });
 
     await newUser.save();
+    console.log("New user created successfully:", newUser);
 
     // Verify environment variables
+    console.log("Checking environment variables...");
+    console.log("BREVO_API_KEY:", process.env.BREVO_API_KEY ? "Loaded" : "Not Found");
+    console.log("SENDER_EMAIL:", process.env.SENDER_EMAIL ? "Loaded" : "Not Found");
+    console.log("FRONTEND_URL:", process.env.FRONTEND_URL ? process.env.FRONTEND_URL : "Not Found");
+
     if (!process.env.BREVO_API_KEY) {
       console.error("BREVO_API_KEY is missing in the environment variables");
       return res.status(500).json({ error: "Email service configuration error" });
@@ -1267,6 +1278,8 @@ const signupUser = async (req, res) => {
 
     // Generate email verification link
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${newUser._id}`;
+    console.log("Generated verification link:", verificationLink);
+
     if (!verificationLink) {
       console.error("Failed to generate verification link");
       return res.status(500).json({ error: "Verification link generation failed" });
@@ -1291,9 +1304,12 @@ const signupUser = async (req, res) => {
       `,
     };
 
+    console.log("Sending email with the following data:", emailData);
+
     // Send email
     try {
-      await apiInstance.sendTransacEmail(emailData);
+      const response = await apiInstance.sendTransacEmail(emailData);
+      console.log("Email sent successfully. Response:", response);
 
       res.status(201).json({
         message: "Signup successful! Please check your email to verify your account.",
@@ -1310,6 +1326,7 @@ const signupUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 const loginUser = async (req, res) => {
