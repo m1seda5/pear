@@ -1268,12 +1268,10 @@ const signupUser = async (req, res) => {
           name: newUser.name,
         },
       ],
-      subject: "Verify Your Email",
-      htmlContent: `
-        <h1>Welcome to Pear!</h1>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verificationLink}" target="_blank">Verify Email</a>
-      `,
+      templateId: 1,  // Using the template ID here
+      params: {
+        VERIFICATION_LINK: verificationLink, // Parameter to dynamically inject in your template
+      },
     };
 
     // Send email
@@ -1296,6 +1294,7 @@ const signupUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
