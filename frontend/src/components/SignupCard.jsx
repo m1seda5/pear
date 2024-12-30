@@ -485,8 +485,10 @@ const SignupCard = () => {
       await axios.post("/api/users/signup", { ...inputs });
       setIsOtpSent(true);
       startTimer();
+      showToast("Success", "OTP sent to your email", "success");
     } catch (error) {
-      setErrorMessage(error.response.data.message || "Error sending OTP");
+      setErrorMessage(error.response?.data?.message || "Error sending OTP");
+      showToast("Error", errorMessage, "error");
     }
   };
 
@@ -499,8 +501,9 @@ const SignupCard = () => {
       });
       setIsOtpVerified(true);
       setErrorMessage("");
+      showToast("Success", "OTP verified successfully", "success");
     } catch (error) {
-      setErrorMessage(error.response.data.message || "Invalid OTP");
+      setErrorMessage(error.response?.data?.message || "Invalid OTP");
     }
   };
 
@@ -512,13 +515,16 @@ const SignupCard = () => {
     }
 
     try {
-      const role = 
-        isStudent && yearGroup ? "student" :
-        isTeacher && department ? "teacher" :
-        (inputs.email.toLowerCase().includes("admin") || 
-         inputs.username.toLowerCase().includes("admin")) ? "admin" : 
-        "student";
-    
+      const role =
+        isStudent && yearGroup
+          ? "student"
+          : isTeacher && department
+          ? "teacher"
+          : (inputs.email.toLowerCase().includes("admin") ||
+              inputs.username.toLowerCase().includes("admin"))
+          ? "admin"
+          : "student";
+
       const signupData = {
         name: inputs.name,
         email: inputs.email,
@@ -528,7 +534,7 @@ const SignupCard = () => {
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {}),
       };
-    
+
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
@@ -536,14 +542,14 @@ const SignupCard = () => {
         },
         body: JSON.stringify(signupData),
       });
-    
+
       const data = await res.json();
-    
+
       if (data.error) {
         showToast("Error", data.error, "error");
         return;
       }
-    
+
       console.log("Signup successful:", data);
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
@@ -622,7 +628,6 @@ const SignupCard = () => {
               </Checkbox>
             </FormControl>
 
-            {/* Year Group Selection (Visible only for students) */}
             {isStudent && (
               <FormControl isRequired>
                 <FormLabel>Select Year Group</FormLabel>
@@ -639,7 +644,6 @@ const SignupCard = () => {
               </FormControl>
             )}
 
-            {/* Department Selection (Visible only for teachers) */}
             {isTeacher && (
               <FormControl isRequired>
                 <FormLabel>Select Department</FormLabel>
@@ -647,30 +651,22 @@ const SignupCard = () => {
                   placeholder="Select Department"
                   onChange={(e) => setDepartment(e.target.value)}
                 >
-                  <option value="Mathematics">Math</option>                          
-                  <option value="Chemistry">Chemistry</option> 
-                  <option value="Biology">Biology</option> 
-                  <option value="Physics">Science</option>
-                  <option value="Computer Science">Computer Science</option>
-                  <option value="BTEC Business">BTEC Business</option>
-                  <option value="BTEC Sport">BTEC Sport</option>
-                  <option value="BTEC Art">BTEC Art</option>
-                  <option value="BTEC Music">BTEC Music</option>
-                  <option value="Buisness">Business</option>
-                  <option value="Economics">Economics</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Science">Science</option>
                   <option value="English">English</option>
                   <option value="History">History</option>
-                  <option value="Sociology">Sociology</option>
-                  <option value="Psychology">Psychology</option>
                   <option value="Geography">Geography</option>
-                  <option value="Arts">Arts</option>
-                  <option value="Music">Music</option>
-                  <option value="Physical Education">Physical Education</option>
+                  {/* Add more departments here */}
                 </Select>
               </FormControl>
             )}
 
             {/* OTP Section */}
+            {!isOtpSent && (
+              <Button colorScheme="blue" onClick={sendOtp}>
+                Send OTP
+              </Button>
+            )}
             {isOtpSent && (
               <FormControl isRequired>
                 <FormLabel>Enter OTP</FormLabel>
@@ -687,10 +683,8 @@ const SignupCard = () => {
               </FormControl>
             )}
 
-            {/* Sign Up Button */}
             <Stack spacing={10} pt={2}>
               <Button
-                loadingText="Submitting"
                 size="lg"
                 bg={useColorModeValue("gray.600", "gray.700")}
                 color={"white"}
@@ -704,9 +698,8 @@ const SignupCard = () => {
               </Button>
             </Stack>
 
-            {/* Timer */}
             {timer > 0 && isOtpSent && <Text>Time remaining: {timer}s</Text>}
-            
+
             <Stack pt={6}>
               <Text align={"center"}>
                 Already a user?{" "}
@@ -723,11 +716,3 @@ const SignupCard = () => {
 };
 
 export default SignupCard;
-
-
-
-  
-  
-
-
-
