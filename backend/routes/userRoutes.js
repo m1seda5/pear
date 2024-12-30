@@ -65,7 +65,7 @@ import {
     updateUser,
     getSuggestedUsers,
     freezeAccount,
-    verifyOtp, // Import verifyOtp
+    verifyOTP, // Import verifyOtp
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -81,7 +81,7 @@ router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
 
 // Add the OTP verification route here
-router.post("/verify-otp", verifyOtp);
+router.post("/verify-otp", verifyOTP);
 
 export default router;
 

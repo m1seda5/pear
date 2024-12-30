@@ -1584,7 +1584,6 @@ const awardVerification = async (req, res) => {
   }
 };
 // End of integration code
-
 export {
   signupUser,
   verifyOTP,
