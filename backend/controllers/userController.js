@@ -1246,39 +1246,39 @@ const sendOTPEmail = async (email, otp) => {
     text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
   };
 
+  console.log(`Sending OTP Email to ${email} with OTP ${otp}`);
   await transporter.sendMail(mailOptions);
 };
 
 const signupUser = async (req, res) => {
+  console.log("Signup request received:", req.body);
+
   try {
-    const { name, email, username, password, role, yearGroup, department } =
-      req.body;
+    const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    console.log("Signup request received:", req.body);
-
-    // Check if user already exists based on email or username
+    console.log("Checking for existing user...");
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+
     if (existingUser) {
+      console.warn("User already exists:", existingUser);
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Generate OTP and store it temporarily
     const otp = generateOTP();
     const otpExpiry = Date.now() + 2 * 60 * 1000; // 2 minutes from now
-
-    // Check if an existing unverified user with the same email exists
     let unverifiedUser = await User.findOne({ email, isVerified: false });
 
     if (unverifiedUser) {
+      console.log("Updating existing unverified user with OTP...");
       unverifiedUser.otp = otp;
       unverifiedUser.otpExpiry = otpExpiry;
       await unverifiedUser.save();
     } else {
-      // Hash the password
+      console.log("Hashing password...");
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Create a new unverified user
+      console.log("Creating new unverified user...");
       unverifiedUser = new User({
         name,
         email,
@@ -1295,21 +1295,15 @@ const signupUser = async (req, res) => {
       await unverifiedUser.save();
     }
 
-    console.log("OTP generated and saved:", otp);
-
-    // Send OTP to user's email
+    console.log("Sending OTP email...");
     await sendOTPEmail(email, otp);
 
+    console.log("Signup process completed successfully.");
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
     });
   } catch (err) {
-    console.error("Detailed Error in signupUser:", {
-      message: err.message,
-      name: err.name,
-      errors: err.errors,
-      stack: err.stack,
-    });
+    console.error("Error in signupUser:", err);
     res.status(500).json({
       error: "Failed to register user",
       details: err.message,

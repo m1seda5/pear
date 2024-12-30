@@ -410,7 +410,7 @@
 // export default SignupCard;
 
   
-// // emial verification update
+// // email verification update
 import React, { useState } from "react";
 import {
   Flex,
@@ -482,11 +482,14 @@ const SignupCard = () => {
   // Send OTP
   const sendOtp = async () => {
     try {
-      await axios.post("/api/users/signup", { ...inputs });
+      console.log("Sending OTP with data:", inputs);
+      const response = await axios.post("/api/users/signup", { ...inputs });
+      console.log("OTP Response:", response.data);
       setIsOtpSent(true);
       startTimer();
       showToast("Success", "OTP sent to your email", "success");
     } catch (error) {
+      console.error("Error sending OTP:", error.response?.data || error.message);
       setErrorMessage(error.response?.data?.message || "Error sending OTP");
       showToast("Error", errorMessage, "error");
     }
@@ -510,10 +513,11 @@ const SignupCard = () => {
   // Handle form submission
   const handleSignup = async () => {
     if (!isOtpVerified) {
+      console.log("OTP not verified. Cannot proceed.");
       setErrorMessage("Please verify your OTP before signing up");
       return;
     }
-
+  
     try {
       const role =
         isStudent && yearGroup
@@ -524,7 +528,7 @@ const SignupCard = () => {
               inputs.username.toLowerCase().includes("admin"))
           ? "admin"
           : "student";
-
+  
       const signupData = {
         name: inputs.name,
         email: inputs.email,
@@ -534,7 +538,9 @@ const SignupCard = () => {
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {}),
       };
-
+  
+      console.log("Sending signup data:", signupData);
+  
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
@@ -542,17 +548,20 @@ const SignupCard = () => {
         },
         body: JSON.stringify(signupData),
       });
-
+  
       const data = await res.json();
-
+  
+      console.log("Signup Response:", data);
+  
       if (data.error) {
+        console.error("Signup Error:", data.error);
         showToast("Error", data.error, "error");
         return;
       }
-
-      console.log("Signup successful:", data);
+  
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
+      showToast("Success", "Signup successful!", "success");
     } catch (error) {
       console.error("Error in handleSignup:", error);
       showToast("Error", error.message, "error");
