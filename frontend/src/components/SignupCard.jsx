@@ -673,7 +673,7 @@ const SignupCard = () => {
             {/* OTP Section */}
             {!isOtpSent && (
               <Button colorScheme="blue" onClick={sendOtp}>
-                Send OTP
+                Verify Email
               </Button>
             )}
             {isOtpSent && (
