@@ -474,6 +474,13 @@ const SignupCard = () => {
     }, 1000);
   };
 
+  // Reset timer and resend OTP
+  const resendOtp = () => {
+    setTimer(120); // Reset timer to 2 minutes
+    setIsOtpVerified(false);
+    sendOtp(); // Resend OTP
+  };
+
   // Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -517,7 +524,7 @@ const SignupCard = () => {
       setErrorMessage("Please verify your OTP before signing up");
       return;
     }
-  
+
     try {
       const role =
         isStudent && yearGroup
@@ -528,7 +535,7 @@ const SignupCard = () => {
               inputs.username.toLowerCase().includes("admin"))
           ? "admin"
           : "student";
-  
+
       const signupData = {
         name: inputs.name,
         email: inputs.email,
@@ -538,9 +545,9 @@ const SignupCard = () => {
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {}),
       };
-  
+
       console.log("Sending signup data:", signupData);
-  
+
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
@@ -548,17 +555,17 @@ const SignupCard = () => {
         },
         body: JSON.stringify(signupData),
       });
-  
+
       const data = await res.json();
-  
+
       console.log("Signup Response:", data);
-  
+
       if (data.error) {
         console.error("Signup Error:", data.error);
         showToast("Error", data.error, "error");
         return;
       }
-  
+
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
       showToast("Success", "Signup successful!", "success");
@@ -665,58 +672,69 @@ const SignupCard = () => {
                   <option value="English">English</option>
                   <option value="History">History</option>
                   <option value="Geography">Geography</option>
-                  {/* Add more departments here */}
+                  <option value="Music">Music</option>
+                  <option value="Art">Art</option>
+                  <option value="Physical Education">Physical Education</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="French">French</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="German">German</option>
+                  <option value="Business Studies">Business Studies</option>
+                  <option value="Economics">Economics</option>
+                  <option value="Psychology">Psychology</option>
+                  <option value="Philosophy">Philosophy</option>
+                  <option value="Religious Studies">Religious Studies</option>
+                  <option value="Drama">Drama</option>
+                  <option value="Design Technology">Design Technology</option>
                 </Select>
               </FormControl>
             )}
 
-            {/* OTP Section */}
-            {!isOtpSent && (
-              <Button colorScheme="blue" onClick={sendOtp}>
-                Verify Email
-              </Button>
+            <FormControl>
+              <FormLabel>Enter OTP</FormLabel>
+              <Input
+                type="text"
+                name="otp"
+                value={formData.otp}
+                onChange={handleChange}
+                isDisabled={!isOtpSent || isOtpVerified}
+              />
+            </FormControl>
+
+            {isOtpSent && timer > 0 && (
+              <Text color="gray.500">Resend OTP in {timer}s</Text>
             )}
-            {isOtpSent && (
-              <FormControl isRequired>
-                <FormLabel>Enter OTP</FormLabel>
-                <Input
-                  type="text"
-                  name="otp"
-                  value={formData.otp}
-                  onChange={handleChange}
-                />
-                <Button type="button" onClick={verifyOtp} disabled={isOtpVerified}>
-                  Verify OTP
-                </Button>
-                {errorMessage && <Text color="red.500">{errorMessage}</Text>}
-              </FormControl>
+            {timer === 0 && !isOtpVerified && (
+              <Button onClick={resendOtp}>Resend OTP</Button>
             )}
 
-            <Stack spacing={10} pt={2}>
+            <Stack spacing={10}>
               <Button
-                size="lg"
-                bg={useColorModeValue("gray.600", "gray.700")}
-                color={"white"}
-                _hover={{
-                  bg: useColorModeValue("gray.700", "gray.800"),
-                }}
-                onClick={handleSignup}
-                disabled={!isOtpVerified || timer === 0}
+                colorScheme="blue"
+                variant="solid"
+                onClick={isOtpSent ? verifyOtp : sendOtp}
+                isDisabled={!inputs.email || !inputs.password || (isOtpSent && !formData.otp)}
               >
-                Sign up
+                {isOtpSent ? "Verify OTP" : "Send OTP"}
+              </Button>
+              <Button
+                colorScheme="teal"
+                variant="solid"
+                onClick={handleSignup}
+                isDisabled={!isOtpVerified}
+              >
+                Sign Up
               </Button>
             </Stack>
 
-            {timer > 0 && isOtpSent && <Text>Time remaining: {timer}s</Text>}
+            {errorMessage && <Text color="red.500">{errorMessage}</Text>}
 
-            <Stack pt={6}>
-              <Text align={"center"}>
-                Already a user?{" "}
-                <Link color={"blue.400"} onClick={() => setAuthScreen("login")}>
-                  Login
-                </Link>
-              </Text>
-            </Stack>
+            <HStack pt={6}>
+              <Text color="gray.600">Already have an account?</Text>
+              <Link color={"blue.400"} onClick={() => setAuthScreen("login")}>
+                Login
+              </Link>
+            </HStack>
           </Stack>
         </Box>
       </Stack>
@@ -725,3 +743,4 @@ const SignupCard = () => {
 };
 
 export default SignupCard;
+
