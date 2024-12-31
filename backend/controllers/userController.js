@@ -1326,8 +1326,7 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ error: "User is already verified" });
     }
 
-    // Convert both OTPs to strings for comparison
-    if (user.otp.toString() !== otp.toString()) {
+    if (user.otp !== otp) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
@@ -1357,6 +1356,7 @@ const verifyOTP = async (req, res) => {
     });
   }
 };
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
