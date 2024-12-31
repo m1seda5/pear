@@ -174,8 +174,6 @@
 // 	);
 // }
 
-
-
 // admin role update(working)
 // import React, { useState } from "react";
 // import {
@@ -221,13 +219,13 @@
 
 //   const handleSignup = async () => {
 //     try {
-//       const role = 
+//       const role =
 //         isStudent && yearGroup ? "student" :
 //         isTeacher && department ? "teacher" :
-//         (inputs.email.toLowerCase().includes("admin") || 
-//          inputs.username.toLowerCase().includes("admin")) ? "admin" : 
+//         (inputs.email.toLowerCase().includes("admin") ||
+//          inputs.username.toLowerCase().includes("admin")) ? "admin" :
 //         "student";
-    
+
 //       const signupData = {
 //         name: inputs.name,
 //         email: inputs.email,
@@ -237,7 +235,7 @@
 //         ...(role === "student" ? { yearGroup } : {}),
 //         ...(role === "teacher" ? { department } : {}),
 //       };
-    
+
 //       const res = await fetch("/api/users/signup", {
 //         method: "POST",
 //         headers: {
@@ -245,14 +243,14 @@
 //         },
 //         body: JSON.stringify(signupData),
 //       });
-    
+
 //       const data = await res.json();
-    
+
 //       if (data.error) {
 //         showToast("Error", data.error, "error");
 //         return;
 //       }
-    
+
 //       console.log("Signup successful:", data);
 //       localStorage.setItem("user-threads", JSON.stringify(data));
 //       setUser(data);
@@ -355,9 +353,9 @@
 //                   placeholder="Select Department"
 //                   onChange={(e) => setDepartment(e.target.value)}
 //                 >
-//                   <option value="Mathematics">Math</option>                          
-//                   <option value="Chemistry">Chemistry</option> 
-//                   <option value="Biology">Biology</option> 
+//                   <option value="Mathematics">Math</option>
+//                   <option value="Chemistry">Chemistry</option>
+//                   <option value="Biology">Biology</option>
 //                   <option value="Physics">Science</option>
 //                   <option value="Computer Science">Computer Science</option>
 //                   <option value="BTEC Business">BTEC Business</option>
@@ -409,9 +407,8 @@
 
 // export default SignupCard;
 
-  
 // // email verification update
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Flex,
   Box,
@@ -454,24 +451,31 @@ const SignupCard = () => {
   });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [timer, setTimer] = useState(120); // 2-minute timer
+  const [timer, setTimer] = useState(120);
+  const [timerActive, setTimerActive] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const showToast = useShowToast();
   const setUser = useSetRecoilState(userAtom);
 
-  // Start OTP timer
+  // Timer effect
+  useEffect(() => {
+    let interval;
+    if (timerActive && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      setTimerActive(false);
+    }
+    return () => clearInterval(interval);
+  }, [timerActive, timer]);
+
+  // Start timer
   const startTimer = () => {
-    let interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    setTimer(120);
+    setTimerActive(true);
   };
 
   // Handle input changes
@@ -489,9 +493,24 @@ const SignupCard = () => {
       startTimer();
       showToast("Success", "OTP sent to your email", "success");
     } catch (error) {
-      console.error("Error sending OTP:", error.response?.data || error.message);
+      console.error(
+        "Error sending OTP:",
+        error.response?.data || error.message
+      );
       setErrorMessage(error.response?.data?.message || "Error sending OTP");
       showToast("Error", errorMessage, "error");
+    }
+  };
+
+  // Resend OTP
+  const resendOtp = async () => {
+    try {
+      await sendOtp();
+      startTimer();
+      setFormData({ ...formData, otp: "" }); // Clear previous OTP input
+      setErrorMessage(""); // Clear any error messages
+    } catch (error) {
+      showToast("Error", "Failed to resend OTP", "error");
     }
   };
 
@@ -517,18 +536,18 @@ const SignupCard = () => {
       setErrorMessage("Please verify your OTP before signing up");
       return;
     }
-  
+
     try {
       const role =
         isStudent && yearGroup
           ? "student"
           : isTeacher && department
           ? "teacher"
-          : (inputs.email.toLowerCase().includes("admin") ||
-              inputs.username.toLowerCase().includes("admin"))
+          : inputs.email.toLowerCase().includes("admin") ||
+            inputs.username.toLowerCase().includes("admin")
           ? "admin"
           : "student";
-  
+
       const signupData = {
         name: inputs.name,
         email: inputs.email,
@@ -538,9 +557,9 @@ const SignupCard = () => {
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {}),
       };
-  
+
       console.log("Sending signup data:", signupData);
-  
+
       const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: {
@@ -548,17 +567,17 @@ const SignupCard = () => {
         },
         body: JSON.stringify(signupData),
       });
-  
+
       const data = await res.json();
-  
+
       console.log("Signup Response:", data);
-  
+
       if (data.error) {
         console.error("Signup Error:", data.error);
         showToast("Error", data.error, "error");
         return;
       }
-  
+
       localStorage.setItem("user-threads", JSON.stringify(data));
       setUser(data);
       showToast("Success", "Signup successful!", "success");
@@ -576,7 +595,12 @@ const SignupCard = () => {
             Sign up
           </Heading>
         </Stack>
-        <Box rounded={"lg"} bg={useColorModeValue("white", "gray.dark")} boxShadow={"lg"} p={8}>
+        <Box
+          rounded={"lg"}
+          bg={useColorModeValue("white", "gray.dark")}
+          boxShadow={"lg"}
+          p={8}
+        >
           <Stack spacing={4}>
             <HStack>
               <Box>
@@ -584,7 +608,9 @@ const SignupCard = () => {
                   <FormLabel>Full name</FormLabel>
                   <Input
                     type="text"
-                    onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
+                    onChange={(e) =>
+                      setInputs({ ...inputs, name: e.target.value })
+                    }
                     value={inputs.name}
                   />
                 </FormControl>
@@ -594,7 +620,9 @@ const SignupCard = () => {
                   <FormLabel>Username</FormLabel>
                   <Input
                     type="text"
-                    onChange={(e) => setInputs({ ...inputs, username: e.target.value })}
+                    onChange={(e) =>
+                      setInputs({ ...inputs, username: e.target.value })
+                    }
                     value={inputs.username}
                   />
                 </FormControl>
@@ -604,7 +632,9 @@ const SignupCard = () => {
               <FormLabel>Email address</FormLabel>
               <Input
                 type="email"
-                onChange={(e) => setInputs({ ...inputs, email: e.target.value })}
+                onChange={(e) =>
+                  setInputs({ ...inputs, email: e.target.value })
+                }
                 value={inputs.email}
               />
             </FormControl>
@@ -613,13 +643,17 @@ const SignupCard = () => {
               <InputGroup>
                 <Input
                   type={showPassword ? "text" : "password"}
-                  onChange={(e) => setInputs({ ...inputs, password: e.target.value })}
+                  onChange={(e) =>
+                    setInputs({ ...inputs, password: e.target.value })
+                  }
                   value={inputs.password}
                 />
                 <InputRightElement h={"full"}>
                   <Button
                     variant={"ghost"}
-                    onClick={() => setShowPassword((showPassword) => !showPassword)}
+                    onClick={() =>
+                      setShowPassword((showPassword) => !showPassword)
+                    }
                   >
                     {showPassword ? <ViewIcon /> : <ViewOffIcon />}
                   </Button>
@@ -629,10 +663,16 @@ const SignupCard = () => {
 
             {/* Role Selection */}
             <FormControl>
-              <Checkbox isChecked={isStudent} onChange={(e) => setIsStudent(e.target.checked)}>
+              <Checkbox
+                isChecked={isStudent}
+                onChange={(e) => setIsStudent(e.target.checked)}
+              >
                 Are you a student?
               </Checkbox>
-              <Checkbox isChecked={isTeacher} onChange={(e) => setIsTeacher(e.target.checked)}>
+              <Checkbox
+                isChecked={isTeacher}
+                onChange={(e) => setIsTeacher(e.target.checked)}
+              >
                 Are you a teacher?
               </Checkbox>
             </FormControl>
@@ -660,12 +700,25 @@ const SignupCard = () => {
                   placeholder="Select Department"
                   onChange={(e) => setDepartment(e.target.value)}
                 >
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
+                  <option value="Mathematics">Math</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                  <option value="Physics">Science</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="BTEC Business">BTEC Business</option>
+                  <option value="BTEC Sport">BTEC Sport</option>
+                  <option value="BTEC Art">BTEC Art</option>
+                  <option value="BTEC Music">BTEC Music</option>
+                  <option value="Buisness">Business</option>
+                  <option value="Economics">Economics</option>
                   <option value="English">English</option>
                   <option value="History">History</option>
+                  <option value="Sociology">Sociology</option>
+                  <option value="Psychology">Psychology</option>
                   <option value="Geography">Geography</option>
-                  {/* Add more departments here */}
+                  <option value="Arts">Arts</option>
+                  <option value="Music">Music</option>
+                  <option value="Physical Education">Physical Education</option>
                 </Select>
               </FormControl>
             )}
@@ -685,10 +738,32 @@ const SignupCard = () => {
                   value={formData.otp}
                   onChange={handleChange}
                 />
-                <Button type="button" onClick={verifyOtp} disabled={isOtpVerified}>
-                  Verify OTP
-                </Button>
-                {errorMessage && <Text color="red.500">{errorMessage}</Text>}
+                <HStack spacing={4} mt={2}>
+                  <Button
+                    type="button"
+                    onClick={verifyOtp}
+                    disabled={isOtpVerified}
+                    colorScheme="blue"
+                  >
+                    Verify OTP
+                  </Button>
+                  {timer === 0 && !isOtpVerified && (
+                    <Button onClick={resendOtp} colorScheme="green">
+                      Resend OTP
+                    </Button>
+                  )}
+                </HStack>
+                {timer > 0 && (
+                  <Text mt={2} fontSize="sm" color="gray.500">
+                    Resend OTP in: {Math.floor(timer / 60)}:
+                    {(timer % 60).toString().padStart(2, "0")}
+                  </Text>
+                )}
+                {errorMessage && (
+                  <Text color="red.500" mt={2}>
+                    {errorMessage}
+                  </Text>
+                )}
               </FormControl>
             )}
 
@@ -701,13 +776,11 @@ const SignupCard = () => {
                   bg: useColorModeValue("gray.700", "gray.800"),
                 }}
                 onClick={handleSignup}
-                disabled={!isOtpVerified || timer === 0}
+                disabled={!isOtpVerified}
               >
                 Sign up
               </Button>
             </Stack>
-
-            {timer > 0 && isOtpSent && <Text>Time remaining: {timer}s</Text>}
 
             <Stack pt={6}>
               <Text align={"center"}>
