@@ -1234,10 +1234,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// OTP Generation Helper
-const generateOTP = () => crypto.randomInt(1000, 10000); // 4-digit OTP
+const generateOTP = () => {
+  return crypto.randomInt(1000, 10000); // Generates a 4-digit OTP
+};
 
-// Send OTP Email Helper
 const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: "pearnet104@gmail.com",
@@ -1245,69 +1245,115 @@ const sendOTPEmail = async (email, otp) => {
     subject: "Your OTP Code",
     text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
   };
+
+  console.log(`Sending OTP Email to ${email} with OTP ${otp}`);
   await transporter.sendMail(mailOptions);
 };
 
-// Signup Controller
 const signupUser = async (req, res) => {
+  console.log("Signup request received:", req.body);
+
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
+    console.log("Checking for existing user...");
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) return res.status(400).json({ error: "User already exists" });
+
+    if (existingUser) {
+      console.warn("User already exists:", existingUser);
+      return res.status(400).json({ error: "User already exists" });
+    }
 
     const otp = generateOTP();
     const otpExpiry = Date.now() + 2 * 60 * 1000; // 2 minutes from now
+    let unverifiedUser = await User.findOne({ email, isVerified: false });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    if (unverifiedUser) {
+      console.log("Updating existing unverified user with OTP...");
+      unverifiedUser.otp = otp;
+      unverifiedUser.otpExpiry = otpExpiry;
+      await unverifiedUser.save();
+    } else {
+      console.log("Hashing password...");
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({
-      name,
-      email,
-      username,
-      password: hashedPassword,
-      role,
-      isVerified: false,
-      otp,
-      otpExpiry,
-      ...(role === "student" ? { yearGroup } : {}),
-      ...(role === "teacher" ? { department } : {}),
-    });
+      console.log("Creating new unverified user...");
+      unverifiedUser = new User({
+        name,
+        email,
+        username,
+        password: hashedPassword,
+        role,
+        isVerified: false,
+        otp,
+        otpExpiry,
+        ...(role === "student" ? { yearGroup } : {}),
+        ...(role === "teacher" ? { department } : {}),
+      });
 
-    await newUser.save();
+      await unverifiedUser.save();
+    }
+
+    console.log("Sending OTP email...");
     await sendOTPEmail(email, otp);
 
+    console.log("Signup process completed successfully.");
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to register user", details: err.message });
+    console.error("Error in signupUser:", err);
+    res.status(500).json({
+      error: "Failed to register user",
+      details: err.message,
+      validationErrors: err.errors,
+    });
   }
 };
 
-// Verify OTP Controller
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (user.isVerified) return res.status(400).json({ error: "User is already verified" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-    if (user.otp !== otp) return res.status(400).json({ error: "Invalid OTP" });
+    if (user.isVerified) {
+      return res.status(400).json({ error: "User is already verified" });
+    }
 
-    if (Date.now() > user.otpExpiry) return res.status(400).json({ error: "OTP has expired" });
+    if (user.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    if (Date.now() > user.otpExpiry) {
+      return res.status(400).json({ error: "OTP has expired" });
+    }
 
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
     await user.save();
 
+    console.log("User verified successfully:", user);
+
     res.status(200).json({ message: "User verified successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to verify OTP", details: err.message });
+    console.error("Error in verifyOTP:", {
+      message: err.message,
+      name: err.name,
+      errors: err.errors,
+      stack: err.stack,
+    });
+    res.status(500).json({
+      error: "Failed to verify OTP",
+      details: err.message,
+      validationErrors: err.errors,
+    });
   }
 };
 
