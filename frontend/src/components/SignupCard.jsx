@@ -409,8 +409,8 @@
 
 // export default SignupCard;
 
-  
-// // email verification update
+
+// emial verification update (test one works but has a slight issue where the otp code being sernt is wrong delete this after fix )
 import React, { useState } from "react";
 import {
   Flex,
