@@ -513,48 +513,32 @@ const SignupCard = () => {
   // Handle form submission
   const handleSignup = async () => {
     if (!isOtpVerified) {
-      console.log("OTP not verified. Cannot proceed.");
       setErrorMessage("Please verify your OTP before signing up");
       return;
     }
   
     try {
-      const role =
-        isStudent && yearGroup
-          ? "student"
-          : isTeacher && department
-          ? "teacher"
-          : (inputs.email.toLowerCase().includes("admin") ||
-              inputs.username.toLowerCase().includes("admin"))
-          ? "admin"
-          : "student";
+      const role = isStudent && yearGroup 
+        ? "student" 
+        : isTeacher && department 
+        ? "teacher" 
+        : inputs.email.toLowerCase().includes("admin") 
+        ? "admin" 
+        : "student";
   
-      const signupData = {
-        name: inputs.name,
-        email: inputs.email,
-        username: inputs.username,
-        password: inputs.password,
-        role,
-        ...(role === "student" ? { yearGroup } : {}),
-        ...(role === "teacher" ? { department } : {}),
-      };
-  
-      console.log("Sending signup data:", signupData);
-  
-      const res = await fetch("/api/users/signup", {
+      // Login the user after OTP verification
+      const res = await fetch("/api/users/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(signupData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: inputs.username,
+          password: inputs.password
+        })
       });
   
       const data = await res.json();
   
-      console.log("Signup Response:", data);
-  
       if (data.error) {
-        console.error("Signup Error:", data.error);
         showToast("Error", data.error, "error");
         return;
       }
@@ -563,11 +547,10 @@ const SignupCard = () => {
       setUser(data);
       showToast("Success", "Signup successful!", "success");
     } catch (error) {
-      console.error("Error in handleSignup:", error);
       showToast("Error", error.message, "error");
     }
   };
-
+  
   return (
     <Flex align={"center"} justify={"center"}>
       <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
