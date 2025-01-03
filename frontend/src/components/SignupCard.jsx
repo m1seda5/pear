@@ -498,18 +498,20 @@ const SignupCard = () => {
   // Verify OTP
   const verifyOtp = async () => {
     try {
-      await axios.post("/api/users/verify-otp", {
+      console.log('Sending OTP:', formData.otp);
+      const response = await axios.post("/api/users/verify-otp", {
         email: inputs.email,
         otp: formData.otp,
       });
+      console.log('Verification response:', response.data);
       setIsOtpVerified(true);
       setErrorMessage("");
       showToast("Success", "OTP verified successfully", "success");
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Invalid OTP");
+      console.error('Verification error:', error.response?.data);
+      setErrorMessage(error.response?.data?.error || "Invalid OTP");
     }
   };
-
   // Handle form submission
   const handleSignup = async () => {
     if (!isOtpVerified) {

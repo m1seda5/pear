@@ -1315,11 +1315,20 @@ const signupUser = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
+    console.log('Received OTP:', otp, 'Type:', typeof otp);
+    
     const user = await User.findOne({ email });
+    console.log('Stored OTP:', user.otp, 'Type:', typeof user.otp);
 
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.isVerified) return res.status(400).json({ error: "User already verified" });
-    if (user.otp !== parseInt(otp)) return res.status(400).json({ error: "Invalid OTP" });
+    
+    // Convert both to strings for comparison
+    if (String(user.otp) !== String(otp)) {
+      console.log('OTP mismatch');
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
     if (Date.now() > user.otpExpiry) return res.status(400).json({ error: "OTP expired" });
 
     user.isVerified = true;
@@ -1329,9 +1338,11 @@ const verifyOTP = async (req, res) => {
 
     res.status(200).json({ message: "User verified successfully" });
   } catch (err) {
+    console.error('Verify OTP error:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 const loginUser = async (req, res) => {
   try {
