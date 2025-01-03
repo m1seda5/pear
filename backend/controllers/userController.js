@@ -1315,17 +1315,16 @@ const signupUser = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    console.log('Received OTP:', otp, 'Type:', typeof otp);
-    
     const user = await User.findOne({ email });
-    console.log('Stored OTP:', user.otp, 'Type:', typeof user.otp);
 
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.isVerified) return res.status(400).json({ error: "User already verified" });
-    
-    // Convert both to strings for comparison
-    if (String(user.otp) !== String(otp)) {
-      console.log('OTP mismatch');
+
+    // Convert OTP to number for comparison
+    const receivedOTP = parseInt(otp);
+    console.log('Comparing OTPs:', { stored: user.otp, received: receivedOTP });
+
+    if (user.otp !== receivedOTP) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
