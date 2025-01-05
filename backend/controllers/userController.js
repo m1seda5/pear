@@ -1316,7 +1316,6 @@ const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    // Validate request data
     if (!email || !otp) {
       return res.status(400).json({ error: "Email and OTP are required" });
     }
@@ -1332,12 +1331,15 @@ const verifyOTP = async (req, res) => {
     }
 
     // Convert OTP to number for comparison
-    const receivedOTP = parseInt(otp, 10); // Explicit radix
+    const receivedOTP = parseInt(otp, 10);
+    console.log('Received OTP:', receivedOTP);
+
     if (isNaN(receivedOTP)) {
       return res.status(400).json({ error: "Invalid OTP format" });
     }
 
-    console.log("Comparing OTPs:", { stored: user.otp, received: receivedOTP });
+    // Log stored OTP for comparison
+    console.log('Stored OTP:', user.otp);
 
     if (user.otp !== receivedOTP) {
       return res.status(400).json({ error: "Invalid OTP" });
@@ -1347,7 +1349,6 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ error: "OTP expired" });
     }
 
-    // Update user verification status
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
@@ -1355,7 +1356,7 @@ const verifyOTP = async (req, res) => {
 
     res.status(200).json({ message: "User verified successfully" });
   } catch (err) {
-    console.error("Verify OTP error:", err.message || err);
+    console.error('Verify OTP error:', err.message || err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
