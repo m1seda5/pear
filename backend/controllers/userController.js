@@ -1315,21 +1315,39 @@ const signupUser = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
+    // Validate request data
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required" });
+    }
+
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(404).json({ error: "User not found" });
-    if (user.isVerified) return res.status(400).json({ error: "User already verified" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: "User already verified" });
+    }
 
     // Convert OTP to number for comparison
-    const receivedOTP = parseInt(otp);
-    console.log('Comparing OTPs:', { stored: user.otp, received: receivedOTP });
+    const receivedOTP = parseInt(otp, 10); // Explicit radix
+    if (isNaN(receivedOTP)) {
+      return res.status(400).json({ error: "Invalid OTP format" });
+    }
+
+    console.log("Comparing OTPs:", { stored: user.otp, received: receivedOTP });
 
     if (user.otp !== receivedOTP) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
-    if (Date.now() > user.otpExpiry) return res.status(400).json({ error: "OTP expired" });
+    if (Date.now() > user.otpExpiry) {
+      return res.status(400).json({ error: "OTP expired" });
+    }
 
+    // Update user verification status
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
@@ -1337,10 +1355,11 @@ const verifyOTP = async (req, res) => {
 
     res.status(200).json({ message: "User verified successfully" });
   } catch (err) {
-    console.error('Verify OTP error:', err);
-    res.status(500).json({ error: err.message });
+    console.error("Verify OTP error:", err.message || err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 const loginUser = async (req, res) => {
