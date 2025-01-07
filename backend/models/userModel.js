@@ -171,6 +171,8 @@ const userSchema = mongoose.Schema(
         return this.role === "teacher";
       },
     },
+    otp: { type: Number, required: false }, // Field for OTP
+    otpExpiry: { type: Date, required: false }, // Field for OTP expiration
   },
   { timestamps: true }
 );
