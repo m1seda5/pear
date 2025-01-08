@@ -353,25 +353,25 @@
 //                   placeholder="Select Department"
 //                   onChange={(e) => setDepartment(e.target.value)}
 //                 >
-// <option value="Mathematics">Math</option>
-// <option value="Chemistry">Chemistry</option>
-// <option value="Biology">Biology</option>
-// <option value="Physics">Science</option>
-// <option value="Computer Science">Computer Science</option>
-// <option value="BTEC Business">BTEC Business</option>
-// <option value="BTEC Sport">BTEC Sport</option>
-// <option value="BTEC Art">BTEC Art</option>
-// <option value="BTEC Music">BTEC Music</option>
-// <option value="Buisness">Business</option>
-// <option value="Economics">Economics</option>
-// <option value="English">English</option>
-// <option value="History">History</option>
-// <option value="Sociology">Sociology</option>
-// <option value="Psychology">Psychology</option>
-// <option value="Geography">Geography</option>
-// <option value="Arts">Arts</option>
-// <option value="Music">Music</option>
-// <option value="Physical Education">Physical Education</option>
+//                 <option value="Mathematics">Math</option>
+//                 <option value="Chemistry">Chemistry</option>
+//                 <option value="Biology">Biology</option>
+//                 <option value="Physics">Science</option>
+//                 <option value="Computer Science">Computer Science</option>
+//                 <option value="BTEC Business">BTEC Business</option>
+//                 <option value="BTEC Sport">BTEC Sport</option>
+//                 <option value="BTEC Art">BTEC Art</option>
+//                 <option value="BTEC Music">BTEC Music</option>
+//                 <option value="Buisness">Business</option>
+//                 <option value="Economics">Economics</option>
+//                 <option value="English">English</option>
+//                 <option value="History">History</option>
+//                 <option value="Sociology">Sociology</option>
+//                 <option value="Psychology">Psychology</option>
+//                 <option value="Geography">Geography</option>
+//                 <option value="Arts">Arts</option>
+//                 <option value="Music">Music</option>
+//                 <option value="Physical Education">Physical Education</option>
 // </Select>
 //               </FormControl>
 //             )}
@@ -662,6 +662,22 @@ const SignupCard = () => {
                   placeholder="Select Year Group"
                   onChange={(e) => setYearGroup(e.target.value)}
                 >
+                  <option value="Year 9">Year 9</option>
+                  <option value="Year 10">Year 10</option>
+                  <option value="Year 11">Year 11</option>
+                  <option value="Year 12">Year 12</option>
+                  <option value="Year 13">Year 13</option>
+                </Select>
+              </FormControl>
+            )}
+
+            {isTeacher && (
+              <FormControl isRequired>
+                <FormLabel>Select Department</FormLabel>
+                <Select
+                  placeholder="Select Department"
+                  onChange={(e) => setDepartment(e.target.value)}
+                >
                   <option value="Mathematics">Math</option>
                   <option value="Chemistry">Chemistry</option>
                   <option value="Biology">Biology</option>
@@ -681,23 +697,6 @@ const SignupCard = () => {
                   <option value="Arts">Arts</option>
                   <option value="Music">Music</option>
                   <option value="Physical Education">Physical Education</option>
-                </Select>
-              </FormControl>
-            )}
-
-            {isTeacher && (
-              <FormControl isRequired>
-                <FormLabel>Select Department</FormLabel>
-                <Select
-                  placeholder="Select Department"
-                  onChange={(e) => setDepartment(e.target.value)}
-                >
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="English">English</option>
-                  <option value="History">History</option>
-                  <option value="Geography">Geography</option>
-                  {/* Add more departments here */}
                 </Select>
               </FormControl>
             )}
