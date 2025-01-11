@@ -476,25 +476,64 @@ const SignupCard = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Send OTP
+  // if the first one doesnt work go for this one
+  // const sendOtp = async () => {
+  //   try {
+  //     const role = isStudent && yearGroup ? "student" 
+  //       : isTeacher && department ? "teacher"
+  //       : inputs.email.toLowerCase().includes("admin") ? "admin"
+  //       : "student";
+  
+  //     const signupData = {
+  //       ...inputs,
+  //       role,
+  //       ...(role === "student" ? { yearGroup } : {}),
+  //       ...(role === "teacher" ? { department } : {})
+  //     };
+  
+  //     console.log("Sending OTP with data:", signupData);
+  //     const response = await axios.post("/api/users/signup", signupData);  // Now includes role data
+  //     console.log("OTP Response:", response.data);
+  //     setIsOtpSent(true);
+  //     startTimer();
+  //     showToast("Success", "OTP sent to your email", "success");
+  //   } catch (error) {
+  //     console.error("Error sending OTP:", error.response?.data || error.message);
+  //     setErrorMessage(error.response?.data?.message || "Error sending OTP");
+  //     showToast("Error", errorMessage, "error");
+  //   }
+  // };
   const sendOtp = async () => {
     try {
-      console.log("Sending OTP with data:", inputs);
-      const response = await axios.post("/api/users/signup", { ...inputs });
+      const role = 
+        isStudent && yearGroup ? "student" : 
+        isTeacher && department ? "teacher" :
+        (inputs.email.toLowerCase().includes("admin") ||
+         inputs.username.toLowerCase().includes("admin")) ? "admin" :
+        "student";
+  
+      const signupData = {
+        name: inputs.name,
+        email: inputs.email,
+        username: inputs.username, 
+        password: inputs.password,
+        role,
+        ...(role === "student" ? { yearGroup } : {}),
+        ...(role === "teacher" ? { department } : {})
+      };
+  
+      console.log("Sending OTP with data:", signupData);
+      const response = await axios.post("/api/users/signup", signupData);
       console.log("OTP Response:", response.data);
       setIsOtpSent(true);
       startTimer();
       showToast("Success", "OTP sent to your email", "success");
     } catch (error) {
-      console.error(
-        "Error sending OTP:",
-        error.response?.data || error.message
-      );
+      console.error("Error sending OTP:", error.response?.data || error.message);
       setErrorMessage(error.response?.data?.message || "Error sending OTP");
       showToast("Error", errorMessage, "error");
     }
   };
-
   // Verify OTP
   const verifyOtp = async () => {
     try {
