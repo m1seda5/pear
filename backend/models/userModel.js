@@ -276,7 +276,11 @@ const userSchema = mongoose.Schema(
       },
     },
     otp: { type: Number, required: false }, // Field for OTP
-    otpExpiry: { type: Date, required: false }, // Field for OTP expiration
+    otpExpiry: { type: Date, required: false }, 
+    notificationPreferences: {
+      type: Boolean,
+      default: true, // Enable notifications by default
+    }, // Field for OTP expiration// Field for OTP expiration
   },
   { timestamps: true }
 );

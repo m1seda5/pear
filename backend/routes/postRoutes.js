@@ -35,6 +35,7 @@ import {
   replyToPost,
   getFeedPosts,
   getUserPosts,
+  toggleNotifications,  // Add the new controller
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
@@ -42,13 +43,17 @@ import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
 
 const router = express.Router();
 
+// Existing routes
 router.get("/feed", protectRoute, getFeedPosts);
-router.get("/:id", protectRoute, filterPostsByAudience, getPost); // Apply filter middleware
+router.get("/:id", protectRoute, filterPostsByAudience, getPost);
 router.get("/user/:username", protectRoute, getUserPosts);
 router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.delete("/:id", protectRoute, deletePost);
 router.put("/like/:id", protectRoute, likeUnlikePost);
 router.put("/reply/:id", protectRoute, replyToPost);
+
+// New notification toggle route
+router.post("/toggle-notifications", protectRoute, toggleNotifications);
 
 export default router;
 
