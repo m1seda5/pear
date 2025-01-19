@@ -1643,14 +1643,13 @@ const getFeedPosts = async (req, res) => {
 
     const following = user.following || [];
 
-    // Enhanced post filter with review status
+    // Enhanced post filter
     const postFilter = {
       $and: [
-        // Only show approved posts or user's own pending posts
         {
           $or: [
-            { reviewStatus: "approved" },
-            { postedBy: userId }  // Show user's own posts regardless of status
+            { reviewStatus: "approved" }, // Only show approved posts
+            { postedBy: userId },         // Include the user's own posts
           ]
         },
         {
