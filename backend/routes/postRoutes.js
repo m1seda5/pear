@@ -71,6 +71,9 @@ import {
   reviewPost,  // New controller
   getPendingReviews // New controller
 } from "../controllers/postController.js";
+ import protectRoute from "../middlewares/protectRoute.js";
+ import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
+ import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
 
 const router = express.Router();
 
