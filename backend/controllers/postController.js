@@ -1275,20 +1275,15 @@ const createPost = async (req, res) => {
     } = req.body;
     let { img } = req.body;
 
-    // Validate required fields
     if (!postedBy || !text) {
-      return res
-        .status(400)
-        .json({ error: "PostedBy and text fields are required" });
+      return res.status(400).json({ error: "PostedBy and text fields are required" });
     }
 
-    // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Authorization check
     if (user._id.toString() !== req.user._id.toString()) {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
@@ -1299,10 +1294,11 @@ const createPost = async (req, res) => {
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
-        // Students can only post to 'all'
+        // Students can only post to 'all' and require review
         req.body.targetAudience = "all";
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
+        reviewStatus = "pending";  // Force pending status for students
 
         // Get random reviewers
         const [admin] = await User.aggregate([
@@ -1321,32 +1317,26 @@ const createPost = async (req, res) => {
         ]);
 
         reviewers = [
-          { userId: admin?._id, role: "admin" },
-          { userId: teacher?._id, role: "teacher" },
-          { userId: student?._id, role: "student" },
-        ].filter((reviewer) => reviewer.userId); // Remove any null reviewers
-
-        reviewStatus = "pending";
+          { userId: admin?._id, role: "admin", decision: "pending" },
+          { userId: teacher?._id, role: "teacher", decision: "pending" },
+          { userId: student?._id, role: "student", decision: "pending" },
+        ].filter((reviewer) => reviewer.userId);
         break;
 
       case "teacher":
-        // Teachers must specify year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
             error: "Teachers must specify at least one year group to target",
           });
         }
-        // Ensure the teacher is targeting only year groups
         req.body.targetDepartments = [];
-        req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
+        req.body.targetAudience = targetYearGroups[0];
         break;
 
       case "admin":
-        // Admins must specify a target
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
           return res.status(400).json({
-            error:
-              "Admin must specify a target audience, year groups, or departments",
+            error: "Admin must specify a target audience, year groups, or departments",
           });
         }
         break;
@@ -1355,13 +1345,12 @@ const createPost = async (req, res) => {
         return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
-    // Handle image upload if provided
+    // Handle image upload
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
 
-    // Create the post
     const newPost = new Post({
       postedBy,
       text,
@@ -1375,32 +1364,22 @@ const createPost = async (req, res) => {
 
     await newPost.save();
 
-    // After successfully creating the post, send notifications
-    try {
-      // Only send notifications if post is approved (non-student) or once it gets approved
-      if (reviewStatus === "approved") {
-        // Find all users who have notifications enabled
+    // Only send notifications for approved posts
+    if (reviewStatus === "approved") {
+      try {
         const usersToNotify = await User.find({
           notificationPreferences: true,
-          _id: { $ne: postedBy }, // Exclude the post creator
+          _id: { $ne: postedBy },
         });
 
-        // Send notifications in parallel
         const notificationPromises = usersToNotify.map((recipient) =>
-          sendNotificationEmail(
-            recipient.email,
-            postedBy,
-            newPost._id,
-            user.username
-          )
+          sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
 
-        // Use Promise.allSettled to handle all notification attempts
         await Promise.allSettled(notificationPromises);
+      } catch (notificationError) {
+        console.error("Error sending notifications:", notificationError);
       }
-    } catch (notificationError) {
-      // Log notification errors but don't fail the post creation
-      console.error("Error sending notifications:", notificationError);
     }
 
     res.status(201).json(newPost);
@@ -1451,17 +1430,45 @@ const reviewPost = async (req, res) => {
     post.reviewers[reviewerIndex].decision = decision;
     post.reviewers[reviewerIndex].reviewedAt = new Date();
 
-    // If any reviewer approves, approve the post
+    // Check review status
     if (decision === 'approved') {
-      post.reviewStatus = 'approved';
-      // Send notifications now that post is approved
-      // ... notification logic ...
-    } else if (decision === 'rejected') {
-      // Check if all reviewers rejected
-      const allRejected = post.reviewers.every(
-        r => r.decision === 'rejected' || r.decision === 'pending'
+      // Check if any admin or teacher has approved
+      const hasApproval = post.reviewers.some(
+        r => (r.role === 'admin' || r.role === 'teacher') && r.decision === 'approved'
       );
-      if (allRejected) {
+
+      if (hasApproval) {
+        post.reviewStatus = 'approved';
+        
+        // Send notifications now that post is approved
+        try {
+          const poster = await User.findById(post.postedBy);
+          const usersToNotify = await User.find({
+            notificationPreferences: true,
+            _id: { $ne: post.postedBy },
+          });
+
+          const notificationPromises = usersToNotify.map((recipient) =>
+            sendNotificationEmail(
+              recipient.email,
+              post.postedBy,
+              post._id,
+              poster.username
+            )
+          );
+
+          await Promise.allSettled(notificationPromises);
+        } catch (error) {
+          console.error("Error sending notifications:", error);
+        }
+      }
+    } else if (decision === 'rejected') {
+      // If any admin or teacher rejects, post is rejected
+      const hasRejection = post.reviewers.some(
+        r => (r.role === 'admin' || r.role === 'teacher') && r.decision === 'rejected'
+      );
+      
+      if (hasRejection) {
         post.reviewStatus = 'rejected';
       }
     }
@@ -1626,62 +1633,51 @@ const getFeedPosts = async (req, res) => {
     const userId = req.user && req.user._id;
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized, user not authenticated" });
+      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select(
-      "role following yearGroup department isStudent"
-    );
-
+    const user = await User.findById(userId).select("role following yearGroup department isStudent");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Retrieve the list of users the current user is following
     const following = user.following || [];
 
-    // Construct a precise filtering condition
+    // Enhanced post filter with review status
     const postFilter = {
-      $or: [
-        // Always allow posts targeted to 'all'
-        { targetAudience: "all" },
-
-        // For students, show posts targeting their EXACT year group
-        ...(user.role === "student"
-          ? [
+      $and: [
+        // Only show approved posts or user's own pending posts
+        {
+          $or: [
+            { reviewStatus: "approved" },
+            { postedBy: userId }  // Show user's own posts regardless of status
+          ]
+        },
+        {
+          $or: [
+            { targetAudience: "all" },
+            ...(user.role === "student" ? [
               { targetYearGroups: { $in: [user.yearGroup] } },
               { targetAudience: user.yearGroup },
-            ]
-          : []),
-
-        // For teachers, show posts targeting their EXACT department
-        ...(user.role === "teacher"
-          ? [
+            ] : []),
+            ...(user.role === "teacher" ? [
               { targetDepartments: { $in: [user.department] } },
               { targetAudience: user.department },
-            ]
-          : []),
-
-        // For admin/TV, show additional posts
-        ...(user.role === "admin" || user.role === "tv"
-          ? [{ targetAudience: "tv" }]
-          : []),
-
-        // Always show posts from users the current user is following
-        { postedBy: { $in: following } },
-
-        // Ensure users see their own posts
-        { postedBy: userId }
-      ],
+            ] : []),
+            ...(user.role === "admin" || user.role === "tv" ? [
+              { targetAudience: "tv" }
+            ] : []),
+            { postedBy: { $in: following } },
+            { postedBy: userId }
+          ]
+        }
+      ]
     };
 
-    // Fetch posts matching the filter
     const feedPosts = await Post.find(postFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
-      .limit(50); // Limit to prevent overwhelming results
+      .limit(50);
 
     res.status(200).json(feedPosts);
   } catch (err) {
