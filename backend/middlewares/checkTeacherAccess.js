@@ -43,7 +43,15 @@ const checkTeacherAccess = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Check if the user is attempting to target posts and ensure they have the correct role
+    // If user is a student, force target audience to "all"
+    if (user.role === "student") {
+      req.body.targetAudience = "all";
+      req.body.targetYearGroups = [];
+      req.body.targetDepartments = [];
+      return next();
+    }
+
+    // Check if the user is attempting to target posts
     if (req.body.targetAudience) {
       // If the user is not a teacher or admin, deny access to target posts
       if (user.role !== "teacher" && user.role !== "admin") {

@@ -807,7 +807,416 @@
 // };
 
 
-// post notis
+// post notis(working)
+// import Post from "../models/postModel.js";
+// import User from "../models/userModel.js";
+// import { v2 as cloudinary } from "cloudinary";
+// import nodemailer from 'nodemailer';
+
+// // Email configuration
+// const transporter = nodemailer.createTransport({
+//   host: "smtp-relay.brevo.com",
+//   port: 587,
+//   auth: {
+//     user: "81d810001@smtp-brevo.com",
+//     pass: "6IBdE9hsKrHUxD4G",
+//   },
+// });
+
+// // Helper function to send notification email
+// const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
+//   const mailOptions = {
+//     from: "pearnet104@gmail.com",
+//     to: recipientEmail,
+//     subject: "New Post on Pear! 🍐",
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+//         <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
+//         <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
+//         <p style="font-size: 16px;">Don't miss out on the conversation!</p>
+//         <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
+//            style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+//                   color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+//           View Post
+//         </a>
+//         <p style="color: #666; font-size: 12px; margin-top: 20px;">
+//           You received this email because you have notifications enabled. 
+//           You can disable these in your Pear account settings.
+//         </p>
+//       </div>
+//     `
+//   };
+
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Notification email sent to ${recipientEmail}`);
+//   } catch (error) {
+//     console.error(`Error sending notification email to ${recipientEmail}:`, error);
+//   }
+// };
+
+// const createPost = async (req, res) => {
+//   try {
+//     const {
+//       postedBy,
+//       text,
+//       targetYearGroups,
+//       targetDepartments,
+//       targetAudience,
+//     } = req.body;
+//     let { img } = req.body;
+
+//     // Validate required fields
+//     if (!postedBy || !text) {
+//       return res
+//         .status(400)
+//         .json({ error: "PostedBy and text fields are required" });
+//     }
+
+//     // Find the user who is posting
+//     const user = await User.findById(postedBy);
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     // Authorization check
+//     if (user._id.toString() !== req.user._id.toString()) {
+//       return res.status(401).json({ error: "Unauthorized to create post" });
+//     }
+
+//     // Role-specific post creation rules
+//     switch (user.role) {
+//       case "student":
+//         // Students can only post to 'all'
+//         req.body.targetAudience = "all";
+//         req.body.targetYearGroups = [];
+//         req.body.targetDepartments = [];
+//         break;
+
+//       case "teacher":
+//         // Teachers must specify year groups
+//         if (!targetYearGroups || targetYearGroups.length === 0) {
+//           return res.status(400).json({
+//             error: "Teachers must specify at least one year group to target",
+//           });
+//         }
+//         // Ensure the teacher is targeting only year groups
+//         req.body.targetDepartments = [];
+//         req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
+//         break;
+
+//       case "admin":
+//         // Admins must specify a target
+//         if (!targetAudience && !targetYearGroups && !targetDepartments) {
+//           return res.status(400).json({
+//             error:
+//               "Admin must specify a target audience, year groups, or departments",
+//           });
+//         }
+//         break;
+
+//       default:
+//         return res.status(403).json({ error: "Unauthorized to create posts" });
+//     }
+
+//     // Handle image upload if provided
+//     if (img) {
+//       const uploadedResponse = await cloudinary.uploader.upload(img);
+//       img = uploadedResponse.secure_url;
+//     }
+
+//     // Create the post
+//     const newPost = new Post({
+//       postedBy,
+//       text,
+//       img,
+//       targetYearGroups: targetYearGroups || [],
+//       targetDepartments: targetDepartments || [],
+//       targetAudience: req.body.targetAudience || "all",
+//     });
+
+//     await newPost.save();
+
+//     // After successfully creating the post, send notifications
+//     try {
+//       // Find all users who have notifications enabled
+//       const usersToNotify = await User.find({
+//         notificationPreferences: true,
+//         _id: { $ne: postedBy } // Exclude the post creator
+//       });
+
+//       // Send notifications in parallel
+//       const notificationPromises = usersToNotify.map(recipient => 
+//         sendNotificationEmail(
+//           recipient.email,
+//           postedBy,
+//           newPost._id,
+//           user.username
+//         )
+//       );
+
+//       // Use Promise.allSettled to handle all notification attempts
+//       await Promise.allSettled(notificationPromises);
+      
+//     } catch (notificationError) {
+//       // Log notification errors but don't fail the post creation
+//       console.error("Error sending notifications:", notificationError);
+//     }
+
+//     res.status(201).json(newPost);
+//   } catch (err) {
+//     console.error("Error in createPost:", err.message);
+//     res.status(500).json({ error: "Failed to create post" });
+//   }
+// };
+
+// const toggleNotifications = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     // Toggle the notification preferences
+//     user.notificationPreferences = !user.notificationPreferences;
+//     await user.save();
+
+//     res.status(200).json({
+//       message: `Notifications ${user.notificationPreferences ? 'enabled' : 'disabled'}`,
+//       notificationPreferences: user.notificationPreferences
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// const getPost = async (req, res) => {
+//   try {
+//     const postId = req.params.id;
+
+//     // Fetch the post matching the filter and ID
+//     const post = await Post.findOne({ _id: postId, ...req.filter }).populate(
+//       "postedBy",
+//       "username profilePic"
+//     );
+
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found or access denied" });
+//     }
+
+//     res.status(200).json(post);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// const deletePost = async (req, res) => {
+//   try {
+//     const post = await Post.findById(req.params.id);
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     if (post.postedBy.toString() !== req.user._id.toString()) {
+//       return res.status(401).json({ error: "Unauthorized to delete post" });
+//     }
+
+//     if (post.img) {
+//       const imgId = post.img.split("/").pop().split(".")[0];
+//       await cloudinary.uploader.destroy(imgId);
+//     }
+
+//     await Post.findByIdAndDelete(req.params.id);
+
+//     res.status(200).json({ message: "Post deleted successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// const likeUnlikePost = async (req, res) => {
+//   try {
+//     const { id: postId } = req.params;
+//     const userId = req.user._id;
+
+//     const post = await Post.findById(postId);
+
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     const userLikedPost = post.likes.includes(userId);
+
+//     if (userLikedPost) {
+//       // Unlike post
+//       await Post.updateOne({ _id: postId }, { $pull: { likes: userId } });
+//       res.status(200).json({ message: "Post unliked successfully" });
+//     } else {
+//       // Like post
+//       post.likes.push(userId);
+//       await post.save();
+//       res.status(200).json({ message: "Post liked successfully" });
+//     }
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// const replyToPost = async (req, res) => {
+//   try {
+//     const { text } = req.body;
+//     const postId = req.params.id;
+//     const userId = req.user._id;
+//     const userProfilePic = req.user.profilePic;
+//     const username = req.user.username;
+
+//     if (!text) {
+//       return res.status(400).json({ error: "Text field is required" });
+//     }
+
+//     const post = await Post.findById(postId);
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     const reply = { userId, text, userProfilePic, username };
+
+//     post.replies.push(reply);
+//     await post.save();
+
+//     res.status(200).json(reply);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// // New repostPost method
+// const repostPost = async (req, res) => {
+//   try {
+//     const postId = req.params.id;
+//     const userId = req.user._id;
+
+//     const post = await Post.findById(postId);
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     // Ensure the post is not already reposted by this user
+//     if (post.reposts.includes(userId)) {
+//       return res.status(400).json({ error: "Post already reposted" });
+//     }
+
+//     // Add user ID to reposts array
+//     post.reposts.push(userId);
+//     await post.save();
+
+//     res.status(200).json({ message: "Post reposted successfully", post });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// const getFeedPosts = async (req, res) => {
+//   try {
+//     const userId = req.user && req.user._id;
+
+//     if (!userId) {
+//       return res
+//         .status(401)
+//         .json({ error: "Unauthorized, user not authenticated" });
+//     }
+
+//     const user = await User.findById(userId).select(
+//       "role following yearGroup department isStudent"
+//     );
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     // Retrieve the list of users the current user is following
+//     const following = user.following || [];
+
+//     // Construct a precise filtering condition
+//     const postFilter = {
+//       $or: [
+//         // Always allow posts targeted to 'all'
+//         { targetAudience: "all" },
+
+//         // For students, show posts targeting their EXACT year group
+//         ...(user.role === "student"
+//           ? [
+//               { targetYearGroups: { $in: [user.yearGroup] } },
+//               { targetAudience: user.yearGroup },
+//             ]
+//           : []),
+
+//         // For teachers, show posts targeting their EXACT department
+//         ...(user.role === "teacher"
+//           ? [
+//               { targetDepartments: { $in: [user.department] } },
+//               { targetAudience: user.department },
+//             ]
+//           : []),
+
+//         // For admin/TV, show additional posts
+//         ...(user.role === "admin" || user.role === "tv"
+//           ? [{ targetAudience: "tv" }]
+//           : []),
+
+//         // Always show posts from users the current user is following
+//         { postedBy: { $in: following } },
+
+//         // Ensure users see their own posts
+//         { postedBy: userId }
+//       ],
+//     };
+
+//     // Fetch posts matching the filter
+//     const feedPosts = await Post.find(postFilter)
+//       .populate("postedBy", "username profilePic")
+//       .sort({ createdAt: -1 })
+//       .limit(50); // Limit to prevent overwhelming results
+
+//     res.status(200).json(feedPosts);
+//   } catch (err) {
+//     console.error("Error fetching feed posts:", err.message);
+//     res.status(500).json({ error: "Could not fetch posts" });
+//   }
+// };
+
+// const getUserPosts = async (req, res) => {
+//   const { username } = req.params;
+//   try {
+//     const user = await User.findOne({ username });
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     const posts = await Post.find({ postedBy: user._id }).sort({
+//       createdAt: -1,
+//     });
+
+//     res.status(200).json(posts);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// export {
+//   createPost,
+//   toggleNotifications,
+//   getPost,
+//   deletePost,
+//   likeUnlikePost,
+//   replyToPost,
+//   getFeedPosts,
+//   getUserPosts,
+// };
+
+// post review
 import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
@@ -884,6 +1293,9 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
+    let reviewStatus = "approved";
+    let reviewers = [];
+
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
@@ -891,6 +1303,30 @@ const createPost = async (req, res) => {
         req.body.targetAudience = "all";
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
+
+        // Get random reviewers
+        const [admin] = await User.aggregate([
+          { $match: { role: "admin" } },
+          { $sample: { size: 1 } },
+        ]);
+
+        const [teacher] = await User.aggregate([
+          { $match: { role: "teacher" } },
+          { $sample: { size: 1 } },
+        ]);
+
+        const [student] = await User.aggregate([
+          { $match: { role: "student", _id: { $ne: user._id } } },
+          { $sample: { size: 1 } },
+        ]);
+
+        reviewers = [
+          { userId: admin?._id, role: "admin" },
+          { userId: teacher?._id, role: "teacher" },
+          { userId: student?._id, role: "student" },
+        ].filter((reviewer) => reviewer.userId); // Remove any null reviewers
+
+        reviewStatus = "pending";
         break;
 
       case "teacher":
@@ -933,31 +1369,35 @@ const createPost = async (req, res) => {
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
       targetAudience: req.body.targetAudience || "all",
+      reviewStatus,
+      reviewers,
     });
 
     await newPost.save();
 
     // After successfully creating the post, send notifications
     try {
-      // Find all users who have notifications enabled
-      const usersToNotify = await User.find({
-        notificationPreferences: true,
-        _id: { $ne: postedBy } // Exclude the post creator
-      });
+      // Only send notifications if post is approved (non-student) or once it gets approved
+      if (reviewStatus === "approved") {
+        // Find all users who have notifications enabled
+        const usersToNotify = await User.find({
+          notificationPreferences: true,
+          _id: { $ne: postedBy }, // Exclude the post creator
+        });
 
-      // Send notifications in parallel
-      const notificationPromises = usersToNotify.map(recipient => 
-        sendNotificationEmail(
-          recipient.email,
-          postedBy,
-          newPost._id,
-          user.username
-        )
-      );
+        // Send notifications in parallel
+        const notificationPromises = usersToNotify.map((recipient) =>
+          sendNotificationEmail(
+            recipient.email,
+            postedBy,
+            newPost._id,
+            user.username
+          )
+        );
 
-      // Use Promise.allSettled to handle all notification attempts
-      await Promise.allSettled(notificationPromises);
-      
+        // Use Promise.allSettled to handle all notification attempts
+        await Promise.allSettled(notificationPromises);
+      }
     } catch (notificationError) {
       // Log notification errors but don't fail the post creation
       console.error("Error sending notifications:", notificationError);
@@ -967,6 +1407,69 @@ const createPost = async (req, res) => {
   } catch (err) {
     console.error("Error in createPost:", err.message);
     res.status(500).json({ error: "Failed to create post" });
+  }
+};
+
+const getPendingReviews = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const pendingReviews = await Post.find({
+      'reviewers.userId': userId,
+      'reviewers.decision': 'pending',
+      reviewStatus: 'pending'
+    }).populate('postedBy', 'username profilePic');
+
+    res.status(200).json(pendingReviews);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// New function to handle post reviews
+const reviewPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { decision } = req.body;
+    const reviewerId = req.user._id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Find the reviewer's entry
+    const reviewerIndex = post.reviewers.findIndex(
+      r => r.userId.toString() === reviewerId.toString()
+    );
+
+    if (reviewerIndex === -1) {
+      return res.status(401).json({ error: "Not authorized to review this post" });
+    }
+
+    // Update reviewer's decision
+    post.reviewers[reviewerIndex].decision = decision;
+    post.reviewers[reviewerIndex].reviewedAt = new Date();
+
+    // If any reviewer approves, approve the post
+    if (decision === 'approved') {
+      post.reviewStatus = 'approved';
+      // Send notifications now that post is approved
+      // ... notification logic ...
+    } else if (decision === 'rejected') {
+      // Check if all reviewers rejected
+      const allRejected = post.reviewers.every(
+        r => r.decision === 'rejected' || r.decision === 'pending'
+      );
+      if (allRejected) {
+        post.reviewStatus = 'rejected';
+      }
+    }
+
+    await post.save();
+    res.status(200).json(post);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -1207,6 +1710,8 @@ const getUserPosts = async (req, res) => {
 
 export {
   createPost,
+  getPendingReviews,
+  reviewPost,
   toggleNotifications,
   getPost,
   deletePost,
