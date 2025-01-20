@@ -1648,8 +1648,15 @@ const getFeedPosts = async (req, res) => {
       $and: [
         {
           $or: [
-            { reviewStatus: "approved" }, // Only show approved posts
-            { postedBy: userId },         // Include the user's own posts
+            // For non-student posts, show all posts
+            { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } },
+            // For student posts, only show approved ones
+            {
+              $and: [
+                { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
+                { reviewStatus: "approved" }
+              ]
+            }
           ]
         },
         {
@@ -1684,7 +1691,6 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
