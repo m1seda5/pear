@@ -1,50 +1,32 @@
-import { useEffect, useState } from 'react';
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Text,
-  Box,
-  useColorModeValue,
-  Image,
-  VStack,
-  Divider,
-  Badge,
-  useToast
-} from "@chakra-ui/react";
-import { useRecoilValue } from "recoil";
-import userAtom from "../atoms/userAtom";
+import { useState, useEffect } from 'react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const ReviewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentReview, setCurrentReview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const user = useRecoilValue(userAtom);
-  const toast = useToast();
-  const bgColor = useColorModeValue("white", "gray.800");
-
-  useEffect(() => {
-    checkForPendingReviews();
-    // Poll for new reviews every 30 seconds
-    const interval = setInterval(checkForPendingReviews, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const [error, setError] = useState(null);
 
   const checkForPendingReviews = async () => {
+    if (isOpen) return;
+
     try {
       const res = await fetch("/api/posts/pending-reviews");
-      const data = await res.json();
+      if (!res.ok) throw new Error('Failed to fetch reviews');
       
-      if (data.length > 0 && !isOpen) {
-        setCurrentReview(data[0]);
+      const data = await res.json();
+      console.log('Pending reviews:', data); // Debug log
+      
+      if (data.length > 0) {
+        const newReview = data[0]; // Take first pending review
+        setCurrentReview(newReview);
         setIsOpen(true);
       }
-    } catch (error) {
-      console.error("Error checking reviews:", error);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error checking reviews:", err);
     }
   };
 
@@ -57,111 +39,85 @@ const ReviewModal = () => {
         body: JSON.stringify({ decision }),
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
-
-      // Send email notification about the review decision
-      await fetch("/api/mail/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: currentReview.postedBy.email,
-          subject: `Post Review ${decision === 'approved' ? 'Approved' : 'Rejected'} 🍐`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #4CAF50;">Post Review Update</h2>
-              <p>Your post has been ${decision === 'approved' ? 'approved' : 'rejected'} by a reviewer.</p>
-              ${decision === 'approved' 
-                ? '<p>Your post is now visible to other users.</p>' 
-                : '<p>Please review our posting guidelines and try again.</p>'}
-            </div>
-          `
-        })
-      });
-
-      toast({
-        title: "Success",
-        description: `Post ${decision === 'approved' ? 'approved' : 'rejected'} successfully`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
+      if (!res.ok) throw new Error('Failed to submit review');
+      
       setIsOpen(false);
       setCurrentReview(null);
-      checkForPendingReviews();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      setTimeout(checkForPendingReviews, 1000);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!currentReview) return null;
+  useEffect(() => {
+    // Check immediately on mount
+    checkForPendingReviews();
+    
+    // Then check every 15 seconds
+    const interval = setInterval(checkForPendingReviews, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="fixed bottom-4 right-4">
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
-      <ModalOverlay />
-      <ModalContent bg={bgColor}>
-        <ModalHeader>Review Post</ModalHeader>
-        <ModalBody>
-          <VStack spacing={4} align="stretch">
-            <Box>
-              <Text fontSize="sm" color="gray.500">
-                Posted by: {currentReview.postedBy.username}
-              </Text>
-              <Badge colorScheme="blue">Student Post</Badge>
-            </Box>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      {currentReview && (
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Review Post</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-4">
+            <div className="text-sm text-gray-500">
+              Posted by: {currentReview.postedBy?.username}
+            </div>
             
-            <Text>{currentReview.text}</Text>
+            <p className="text-base">{currentReview.text}</p>
             
             {currentReview.img && (
-              <Image src={currentReview.img} alt="Post content" borderRadius="md" />
+              <img 
+                src={currentReview.img} 
+                alt="Post content" 
+                className="rounded-md max-h-64 object-cover"
+              />
             )}
-            
-            <Divider />
-            
-            <Text fontSize="sm" color="gray.500">
-              Please review this post according to our community guidelines.
-            </Text>
-          </VStack>
-        </ModalBody>
+          </div>
 
-        <ModalFooter>
-          <Button
-            colorScheme="red"
-            mr={3}
-            isLoading={isLoading}
-            onClick={() => handleReview('rejected')}
-          >
-            Reject
-          </Button>
-          <Button
-            colorScheme="green"
-            isLoading={isLoading}
-            onClick={() => handleReview('approved')}
-          >
-            Approve
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+          <DialogFooter className="space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isLoading}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleReview('rejected')}
+              disabled={isLoading}
+            >
+              Reject
+            </Button>
+            <Button
+              onClick={() => handleReview('approved')}
+              disabled={isLoading}
+            >
+              Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      )}
+    </Dialog>
   );
 };
 
