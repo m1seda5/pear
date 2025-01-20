@@ -1643,44 +1643,31 @@ const getFeedPosts = async (req, res) => {
 
     const following = user.following || [];
 
-    // Base filter conditions
-    const baseFilter = {
-      $or: [
-        { targetAudience: "all" },
-        ...(user.role === "student" ? [
-          { targetYearGroups: { $in: [user.yearGroup] } },
-          { targetAudience: user.yearGroup },
-        ] : []),
-        ...(user.role === "teacher" ? [
-          { targetDepartments: { $in: [user.department] } },
-          { targetAudience: user.department },
-        ] : []),
-        ...(user.role === "admin" || user.role === "tv" ? [
-          { targetAudience: "tv" }
-        ] : []),
-        { postedBy: { $in: following } }
-      ]
-    };
-
-    // Enhanced post filter with review status logic
+    // Enhanced post filter
     const postFilter = {
       $and: [
-        baseFilter,
         {
           $or: [
-            // For non-student posts or approved posts
-            {
-              $and: [
-                { reviewStatus: "approved" },
-              ]
-            },
-            // For user's own posts (if they're not a student)
-            {
-              $and: [
-                { postedBy: userId },
-                ...(user.role === "student" ? [{ reviewStatus: "approved" }] : [])
-              ]
-            }
+            { reviewStatus: "approved" }, // Only show approved posts
+            { postedBy: userId },         // Include the user's own posts
+          ]
+        },
+        {
+          $or: [
+            { targetAudience: "all" },
+            ...(user.role === "student" ? [
+              { targetYearGroups: { $in: [user.yearGroup] } },
+              { targetAudience: user.yearGroup },
+            ] : []),
+            ...(user.role === "teacher" ? [
+              { targetDepartments: { $in: [user.department] } },
+              { targetAudience: user.department },
+            ] : []),
+            ...(user.role === "admin" || user.role === "tv" ? [
+              { targetAudience: "tv" }
+            ] : []),
+            { postedBy: { $in: following } },
+            { postedBy: userId }
           ]
         }
       ]
