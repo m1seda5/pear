@@ -68,28 +68,31 @@ import {
   getFeedPosts,
   getUserPosts,
   toggleNotifications,
-  reviewPost,  // New controller
-  getPendingReviews // New controller
+  reviewPost,
+  getPendingReviews
 } from "../controllers/postController.js";
- import protectRoute from "../middlewares/protectRoute.js";
- import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
- import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
+import protectRoute from "../middlewares/protectRoute.js";
+import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
+import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
 
 const router = express.Router();
 
-// Existing routes
-router.post("/create", protectRoute, checkTeacherAccess, createPost);
-router.get("/feed", protectRoute, getFeedPosts);
-router.get("/:id", protectRoute, filterPostsByAudience, getPost);
-router.get("/user/:username", protectRoute, getUserPosts);
-router.delete("/:id", protectRoute, deletePost);
-router.put("/like/:id", protectRoute, likeUnlikePost);
-router.put("/reply/:id", protectRoute, replyToPost);
-router.post("/toggle-notifications", protectRoute, toggleNotifications);
-
-// New review routes
+// Review routes first (specific routes before parameterized routes)
 router.get("/pending-reviews", protectRoute, getPendingReviews);
 router.post("/review/:postId", protectRoute, reviewPost);
 
+// Post creation and feed routes
+router.post("/create", protectRoute, checkTeacherAccess, createPost);
+router.get("/feed", protectRoute, getFeedPosts);
+router.post("/toggle-notifications", protectRoute, toggleNotifications);
+
+// User-specific routes
+router.get("/user/:username", protectRoute, getUserPosts);
+
+// Parameterized routes last
+router.get("/:id", protectRoute, filterPostsByAudience, getPost);
+router.delete("/:id", protectRoute, deletePost);
+router.put("/like/:id", protectRoute, likeUnlikePost);
+router.put("/reply/:id", protectRoute, replyToPost);
 
 export default router;

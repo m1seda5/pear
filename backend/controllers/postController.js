@@ -1396,20 +1396,34 @@ const createPost = async (req, res) => {
 
 const getPendingReviews = async (req, res) => {
   try {
-    const userId = req.user._id;
+    console.log("Getting pending reviews for user:", req.user._id);
     
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // Find posts where this user is a reviewer and hasn't made a decision yet
     const pendingReviews = await Post.find({
-      'reviewers.userId': userId,
-      'reviewers.decision': 'pending',
+      'reviewers': {
+        $elemMatch: {
+          userId: req.user._id,
+          decision: 'pending'
+        }
+      },
       reviewStatus: 'pending'
-    }).populate('postedBy', 'username profilePic');
+    }).populate('postedBy', 'username profilePic email');
+
+    console.log("Found pending reviews:", pendingReviews);
 
     res.status(200).json(pendingReviews);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error in getPendingReviews:", err);
+    res.status(500).json({ 
+      error: "Error fetching pending reviews",
+      details: err.message 
+    });
   }
 };
-
 // New function to handle post reviews
 const reviewPost = async (req, res) => {
   try {
