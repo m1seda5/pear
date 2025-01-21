@@ -193,10 +193,11 @@ import ReviewModal from './components/ReviewModal';
 function App() {
   const user = useRecoilValue(userAtom);
   const { pathname } = useLocation();
-
-  // Retrieve language from localStorage or default to English
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
+
+  // Check if user is a potential reviewer
+  const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -226,7 +227,7 @@ function App() {
           </Routes>
         </Container>
         {/* Add ReviewModal outside the Container to ensure it can appear over any content */}
-        {user && user.role === "admin" && <ReviewModal />}
+        {isPotentialReviewer && <ReviewModal />}
       </Box>
     </I18nextProvider>
   );

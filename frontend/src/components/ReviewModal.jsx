@@ -14,7 +14,8 @@ import {
   VStack,
   Divider,
   Badge,
-  useToast
+  useToast,
+  Spinner
 } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -23,71 +24,80 @@ const ReviewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentReview, setCurrentReview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const user = useRecoilValue(userAtom);
   const toast = useToast();
   const bgColor = useColorModeValue("white", "gray.800");
 
-  useEffect(() => {
-    checkForPendingReviews();
-    // Poll for new reviews every 30 seconds
-    const interval = setInterval(checkForPendingReviews, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const checkForPendingReviews = async () => {
+    if (isFetching) return; // Prevent multiple simultaneous requests
+    
+    setIsFetching(true);
     try {
-      const res = await fetch("/api/posts/pending-reviews");
+      console.log("Checking for pending reviews...");
+      const res = await fetch("/api/posts/pending-reviews", {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: 'include' // Important for authentication
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
-      
+      console.log("Pending reviews response:", data);
+
       if (data.length > 0 && !isOpen) {
+        console.log("Found pending review, opening modal");
         setCurrentReview(data[0]);
         setIsOpen(true);
       }
     } catch (error) {
       console.error("Error checking reviews:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch pending reviews",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsFetching(false);
     }
   };
 
+  useEffect(() => {
+    // Initial check
+    checkForPendingReviews();
+
+    // Set up polling interval
+    const interval = setInterval(checkForPendingReviews, 30000);
+
+    // Cleanup
+    return () => clearInterval(interval);
+  }, []);
+
   const handleReview = async (decision) => {
+    if (!currentReview?._id) return;
+
     setIsLoading(true);
     try {
       const res = await fetch(`/api/posts/review/${currentReview._id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: 'include',
+        body: JSON.stringify({ decision })
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      // Send email notification about the review decision
-      await fetch("/api/mail/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: currentReview.postedBy.email,
-          subject: `Post Review ${decision === 'approved' ? 'Approved' : 'Rejected'} 🍐`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #4CAF50;">Post Review Update</h2>
-              <p>Your post has been ${decision === 'approved' ? 'approved' : 'rejected'} by a reviewer.</p>
-              ${decision === 'approved' 
-                ? '<p>Your post is now visible to other users.</p>' 
-                : '<p>Please review our posting guidelines and try again.</p>'}
-            </div>
-          `
-        })
-      });
+      const data = await res.json();
 
       toast({
         title: "Success",
@@ -99,13 +109,16 @@ const ReviewModal = () => {
 
       setIsOpen(false);
       setCurrentReview(null);
-      checkForPendingReviews();
+      
+      // Check for more pending reviews
+      setTimeout(checkForPendingReviews, 1000);
     } catch (error) {
+      console.error("Error submitting review:", error);
       toast({
         title: "Error",
         description: error.message,
         status: "error",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
@@ -116,31 +129,38 @@ const ReviewModal = () => {
   if (!currentReview) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} closeOnOverlayClick={false}>
       <ModalOverlay />
       <ModalContent bg={bgColor}>
         <ModalHeader>Review Post</ModalHeader>
         <ModalBody>
-          <VStack spacing={4} align="stretch">
-            <Box>
+          {isFetching ? (
+            <VStack spacing={4}>
+              <Spinner />
+              <Text>Loading review...</Text>
+            </VStack>
+          ) : (
+            <VStack spacing={4} align="stretch">
+              <Box>
+                <Text fontSize="sm" color="gray.500">
+                  Posted by: {currentReview.postedBy?.username || 'Unknown'}
+                </Text>
+                <Badge colorScheme="blue">Student Post</Badge>
+              </Box>
+              
+              <Text>{currentReview.text}</Text>
+              
+              {currentReview.img && (
+                <Image src={currentReview.img} alt="Post content" borderRadius="md" />
+              )}
+              
+              <Divider />
+              
               <Text fontSize="sm" color="gray.500">
-                Posted by: {currentReview.postedBy.username}
+                As a {user.role}, your review decision will help determine if this post should be published.
               </Text>
-              <Badge colorScheme="blue">Student Post</Badge>
-            </Box>
-            
-            <Text>{currentReview.text}</Text>
-            
-            {currentReview.img && (
-              <Image src={currentReview.img} alt="Post content" borderRadius="md" />
-            )}
-            
-            <Divider />
-            
-            <Text fontSize="sm" color="gray.500">
-              Please review this post according to our community guidelines.
-            </Text>
-          </VStack>
+            </VStack>
+          )}
         </ModalBody>
 
         <ModalFooter>
