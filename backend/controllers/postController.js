@@ -1290,15 +1290,19 @@ const createPost = async (req, res) => {
 
     let reviewStatus = "approved";
     let reviewers = [];
+    let finalTargetYearGroups = [];
+    let finalTargetDepartments = [];
+    let finalTargetAudience = "all";
 
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
         // Students can only post to 'all' and require review
-        req.body.targetAudience = "all";
-        req.body.targetYearGroups = [];
-        req.body.targetDepartments = [];
-        reviewStatus = "pending";  // Force pending status for students
+        reviewStatus = "pending";
+        // Force student posts to target 'all'
+        finalTargetYearGroups = [];
+        finalTargetDepartments = [];
+        finalTargetAudience = "all";
 
         // Get random reviewers
         const [admin] = await User.aggregate([
@@ -1324,21 +1328,22 @@ const createPost = async (req, res) => {
         break;
 
       case "teacher":
+        // Teachers can only target year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
             error: "Teachers must specify at least one year group to target",
           });
         }
-        req.body.targetDepartments = [];
-        req.body.targetAudience = targetYearGroups[0];
+        finalTargetYearGroups = targetYearGroups;
+        finalTargetDepartments = []; // No department targeting for teachers
+        finalTargetAudience = "all"; // Default to 'all' for teachers
         break;
 
       case "admin":
-        if (!targetAudience && !targetYearGroups && !targetDepartments) {
-          return res.status(400).json({
-            error: "Admin must specify a target audience, year groups, or departments",
-          });
-        }
+        // Admins have complete freedom for targeting
+        finalTargetYearGroups = targetYearGroups || [];
+        finalTargetDepartments = targetDepartments || [];
+        finalTargetAudience = targetAudience || "all";
         break;
 
       default:
@@ -1355,9 +1360,9 @@ const createPost = async (req, res) => {
       postedBy,
       text,
       img,
-      targetYearGroups: targetYearGroups || [],
-      targetDepartments: targetDepartments || [],
-      targetAudience: req.body.targetAudience || "all",
+      targetYearGroups: finalTargetYearGroups,
+      targetDepartments: finalTargetDepartments,
+      targetAudience: finalTargetAudience,
       reviewStatus,
       reviewers,
     });
