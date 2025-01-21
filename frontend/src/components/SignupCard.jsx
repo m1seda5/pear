@@ -505,17 +505,19 @@ const SignupCard = () => {
   // };
   const sendOtp = async () => {
     try {
-      const role = 
-        isStudent && yearGroup ? "student" : 
-        isTeacher && department ? "teacher" :
-        (inputs.email.toLowerCase().includes("admin") ||
-         inputs.username.toLowerCase().includes("admin")) ? "admin" :
-        "student";
+      const role =
+        isStudent && yearGroup
+          ? "student"
+          : isTeacher && department
+          ? "teacher"
+          : inputs.email.toLowerCase().includes("pear")
+          ? "admin"
+          : "student";
   
       const signupData = {
         name: inputs.name,
         email: inputs.email,
-        username: inputs.username, 
+        username: inputs.username,
         password: inputs.password,
         role,
         ...(role === "student" ? { yearGroup } : {}),
@@ -534,6 +536,7 @@ const SignupCard = () => {
       showToast("Error", errorMessage, "error");
     }
   };
+  
   // Verify OTP
   const verifyOtp = async () => {
     try {
@@ -575,7 +578,7 @@ const SignupCard = () => {
           ? "student"
           : isTeacher && department
           ? "teacher"
-          : inputs.email.toLowerCase().includes("admin")
+          : inputs.email.toLowerCase().includes("pear")
           ? "admin"
           : "student";
 
