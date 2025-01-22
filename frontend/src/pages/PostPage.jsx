@@ -132,7 +132,7 @@
 
 
 // verison two with transaltions 
-import { Avatar, Box, Divider, Flex, Image, Spinner, Text } from "@chakra-ui/react";
+import { Avatar, Box, Divider, Flex, Image, Spinner, Text, IconButton } from "@chakra-ui/react";
 import Actions from "../components/Actions";
 import { useEffect, useState } from "react";
 import Comment from "../components/Comment";
@@ -144,7 +144,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { DeleteIcon } from "@chakra-ui/icons";
 import postsAtom from "../atoms/postsAtom";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 const PostPage = () => {
     const { t } = useTranslation();
@@ -162,23 +162,14 @@ const PostPage = () => {
             try {
                 const res = await fetch(`/api/posts/${pid}`);
                 const data = await res.json();
-    
-                console.log("API Response:", data); // Log the API response
-    
+
                 if (!res.ok) {
-                    // Handle error response from API
-                    const errorMessage = data.error || t("Something went wrong");
-                    if (res.status === 403) {
-                        showToast(t("Error"), t("Unauthorized access to this post."), "error");
-                    } else {
-                        showToast(t("Error"), errorMessage, "error");
-                    }
+                    showToast(t("Error"), data.error || t("Something went wrong"), "error");
                     return;
                 }
-    
+
                 setPosts([data]);
             } catch (error) {
-                console.error("Fetch error:", error); // Log the fetch error
                 showToast(t("Error"), error.message || t("Something went wrong"), "error");
             } finally {
                 setLoadingPost(false);
@@ -186,7 +177,6 @@ const PostPage = () => {
         };
         getPost();
     }, [showToast, pid, setPosts, t]);
-    
 
     if (!user && loading) {
         return (
@@ -206,10 +196,31 @@ const PostPage = () => {
 
     const currentPost = posts[0];
 
-    if (!currentPost) return <Text>{t("No post found.")}</Text>; // Handle case when post is not found
+    if (!currentPost) return <Text>{t("No post found.")}</Text>;
 
-    const handleDeletePost = async () => {
-        // Add deletion logic here
+    const handleDeleteComment = async (commentId) => {
+        try {
+            const res = await fetch(`/api/posts/comment/${commentId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${currentUser.token}`, // Assuming a token-based auth
+                },
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                showToast(t("Error"), errorData.error || t("Failed to delete comment"), "error");
+                return;
+            }
+
+            // Remove the deleted comment locally
+            const updatedReplies = currentPost.replies.filter((reply) => reply._id !== commentId);
+            setPosts([{ ...currentPost, replies: updatedReplies }]);
+
+            showToast(t("Success"), t("Comment deleted successfully"), "success");
+        } catch (error) {
+            showToast(t("Error"), error.message || t("Failed to delete comment"), "error");
+        }
     };
 
     return (
@@ -221,16 +232,16 @@ const PostPage = () => {
                         <Text fontSize={"sm"} fontWeight={"bold"}>
                             {user.username}
                         </Text>
-                        <Image src='/verified.png' w='4' h={4} ml={4} />
+                        <Image src="/verified.png" w="4" h="4" ml="4" />
                     </Flex>
                 </Flex>
                 <Flex gap={4} alignItems={"center"}>
                     <Text fontSize={"xs"} width={36} textAlign={"right"} color={"gray.light"}>
                         {formatDistanceToNow(new Date(currentPost.createdAt))} {t("ago")}
                     </Text>
-                    {currentUser?._id === user._id && (
-                        <DeleteIcon size={20} cursor={"pointer"} onClick={handleDeletePost} />
-                    )}
+                    {currentUser?.role === "admin" || currentUser?._id === user._id ? (
+                        <DeleteIcon size={20} cursor={"pointer"} onClick={() => handleDeletePost(currentPost._id)} />
+                    ) : null}
                 </Flex>
             </Flex>
 
@@ -247,12 +258,22 @@ const PostPage = () => {
             </Flex>
 
             <Divider my={4} />
+
             {currentPost.replies?.map((reply) => (
-                <Comment
-                    key={reply._id}
-                    reply={reply}
-                    lastReply={reply._id === currentPost.replies[currentPost.replies.length - 1]._id}
-                />
+                <Flex key={reply._id} alignItems="center" justifyContent="space-between">
+                    <Comment
+                        reply={reply}
+                        lastReply={reply._id === currentPost.replies[currentPost.replies.length - 1]._id}
+                    />
+                    {(currentUser?.role === "admin" || currentUser?._id === reply.userId) && (
+                        <IconButton
+                            aria-label={t("Delete comment")}
+                            icon={<DeleteIcon />}
+                            size="sm"
+                            onClick={() => handleDeleteComment(reply._id)}
+                        />
+                    )}
+                </Flex>
             ))}
         </>
     );

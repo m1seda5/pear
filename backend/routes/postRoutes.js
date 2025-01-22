@@ -58,6 +58,8 @@
 // export default router;
 
 // post review system 
+// File: src/routes/postRoutes.js
+
 import express from "express";
 import {
   createPost,
@@ -69,15 +71,17 @@ import {
   getUserPosts,
   toggleNotifications,
   reviewPost,
-  getPendingReviews
+  getPendingReviews,
+  deleteComment,
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
 import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
+import validateObjectId from "../middlewares/validateObjectId.js"; // Importing the new middleware
 
 const router = express.Router();
 
-// Review routes first (specific routes before parameterized routes)
+// Review routes
 router.get("/pending-reviews", protectRoute, getPendingReviews);
 router.post("/review/:postId", protectRoute, reviewPost);
 
@@ -89,10 +93,13 @@ router.post("/toggle-notifications", protectRoute, toggleNotifications);
 // User-specific routes
 router.get("/user/:username", protectRoute, getUserPosts);
 
-// Parameterized routes last
+// Parameterized routes
 router.get("/:id", protectRoute, filterPostsByAudience, getPost);
 router.delete("/:id", protectRoute, deletePost);
 router.put("/like/:id", protectRoute, likeUnlikePost);
 router.put("/reply/:id", protectRoute, replyToPost);
+
+// Comment-specific routes with validation middleware
+router.delete("/comment/:commentId", protectRoute, validateObjectId, deleteComment); // Using the validateObjectId middleware
 
 export default router;

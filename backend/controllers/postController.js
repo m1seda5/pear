@@ -1740,8 +1740,46 @@ const getUserPosts = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+const deleteComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+
+    // Find the post containing the comment
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Find the comment within the post
+    const comment = post.replies.find((reply) => reply._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Check if the request user is either the admin or the comment owner
+    if (
+      comment.userId.toString() !== req.user._id.toString() &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(401).json({ error: "Unauthorized to delete this comment" });
+    }
+
+    // Remove the comment from the replies array
+    post.replies = post.replies.filter(
+      (reply) => reply._id.toString() !== commentId
+    );
+
+    await post.save();
+    res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export {
   createPost,
+  deleteComment,
   getPendingReviews,
   reviewPost,
   toggleNotifications,
