@@ -1524,53 +1524,34 @@ const toggleNotifications = async (req, res) => {
 const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
-    
-    if (!postId) {
-      return res.status(400).json({ error: "Post ID is required" });
-    }
 
-    // Find post and populate necessary fields
-    const post = await Post.findById(postId)
-      .populate("postedBy", "username profilePic role")
-      .populate({
-        path: "replies.userId",
-        select: "username profilePic"
-      });
+    const post = await Post.findById(postId).populate(
+      "postedBy",
+      "username profilePic"
+    );
 
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    // Handle student posts visibility
-    if (post.postedBy.role === "student" && post.reviewStatus !== "approved") {
-      // Only allow the post author and reviewers to see non-approved posts
-      const isAuthor = post.postedBy._id.toString() === req.user?._id.toString();
-      const isReviewer = post.reviewers?.some(
-        reviewer => reviewer.userId.toString() === req.user?._id.toString()
-      );
-      
-      if (!isAuthor && !isReviewer) {
-        return res.status(403).json({ 
-          error: "This post is not yet approved for viewing" 
-        });
-      }
-    }
-
-    // Add user-specific data to the post
+    // Convert to plain object and ensure likes and reposts arrays exist
     const postObject = post.toObject();
-    postObject.isLiked = post.likes.includes(req.user?._id);
-    postObject.isReposted = post.reposts.includes(req.user?._id);
+    
+    // Initialize arrays if they don't exist
+    postObject.likes = postObject.likes || [];
+    postObject.reposts = postObject.reposts || [];
+    
+    // Only check includes if user exists
+    if (req.user) {
+      postObject.isLiked = postObject.likes.includes(req.user._id.toString());
+      postObject.isReposted = postObject.reposts.includes(req.user._id.toString());
+    }
 
     res.status(200).json(postObject);
   } catch (err) {
-    console.error("Error in getPost:", err);
-    res.status(500).json({ 
-      error: "Failed to fetch post",
-      details: err.message 
-    });
+    res.status(500).json({ error: err.message });
   }
 };
-
 const deletePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -1743,52 +1724,22 @@ const getFeedPosts = async (req, res) => {
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
-    // Find the user and handle case where user doesn't exist
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Find all posts by the user with populated fields
-    const posts = await Post.find({ 
-      postedBy: user._id,
-      $or: [
-        // For non-student posts, show all posts
-        { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } },
-        // For student posts, only show approved ones
-        {
-          $and: [
-            { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
-            { reviewStatus: "approved" }
-          ]
-        }
-      ]
-    })
-    .populate("postedBy", "username profilePic role")
-    .populate({
-      path: "replies.userId",
-      select: "username profilePic"
-    })
-    .sort({ createdAt: -1 });
+    const posts = await Post.find({ postedBy: user._id })
+      .populate("postedBy", "username profilePic")
+      .sort({
+        createdAt: -1,
+      });
 
-    // Add additional user-specific data to each post
-    const postsWithUserData = posts.map(post => {
-      const postObject = post.toObject();
-      postObject.isLiked = post.likes.includes(req.user?._id);
-      postObject.isReposted = post.reposts.includes(req.user?._id);
-      return postObject;
-    });
-
-    res.status(200).json(postsWithUserData);
+    res.status(200).json(posts);
   } catch (error) {
-    console.error("Error in getUserPosts:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch user posts",
-      details: error.message 
-    });
+    res.status(500).json({ error: error.message });
   }
 };
-
 export {
   createPost,
   getPendingReviews,
