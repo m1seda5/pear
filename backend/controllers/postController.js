@@ -1743,16 +1743,18 @@ const getUserPosts = async (req, res) => {
 
 const deleteComment = async (req, res) => {
   try {
-    const { postId, commentId } = req.params;
+    const { commentId } = req.params;
 
     // Find the post containing the comment
-    const post = await Post.findById(postId);
+    const post = await Post.findOne({ 'replies._id': commentId });
+    
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
 
     // Find the comment within the post
     const comment = post.replies.find((reply) => reply._id.toString() === commentId);
+    
     if (!comment) {
       return res.status(404).json({ error: "Comment not found" });
     }

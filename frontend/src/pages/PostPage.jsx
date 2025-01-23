@@ -156,6 +156,53 @@ const PostPage = () => {
     const navigate = useNavigate();
     const [loadingPost, setLoadingPost] = useState(true);
 
+    const handleDeletePost = async (postId) => {
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${currentUser.token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                showToast(t("Error"), errorData.error || t("Failed to delete post"), "error");
+                return;
+            }
+
+            navigate("/");
+            showToast(t("Success"), t("Post deleted successfully"), "success");
+        } catch (error) {
+            showToast(t("Error"), error.message || t("Failed to delete post"), "error");
+        }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+        try {
+            const res = await fetch(`/api/posts/comment/${commentId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${currentUser.token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                showToast(t("Error"), errorData.error || t("Failed to delete comment"), "error");
+                return;
+            }
+
+            // Remove the deleted comment locally
+            const updatedReplies = currentPost.replies.filter((reply) => reply._id !== commentId);
+            setPosts([{ ...currentPost, replies: updatedReplies }]);
+
+            showToast(t("Success"), t("Comment deleted successfully"), "success");
+        } catch (error) {
+            showToast(t("Error"), error.message || t("Failed to delete comment"), "error");
+        }
+    };
+
     useEffect(() => {
         const getPost = async () => {
             setLoadingPost(true);
@@ -198,31 +245,6 @@ const PostPage = () => {
 
     if (!currentPost) return <Text>{t("No post found.")}</Text>;
 
-    const handleDeleteComment = async (commentId) => {
-        try {
-            const res = await fetch(`/api/posts/comment/${commentId}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${currentUser.token}`, // Assuming a token-based auth
-                },
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                showToast(t("Error"), errorData.error || t("Failed to delete comment"), "error");
-                return;
-            }
-
-            // Remove the deleted comment locally
-            const updatedReplies = currentPost.replies.filter((reply) => reply._id !== commentId);
-            setPosts([{ ...currentPost, replies: updatedReplies }]);
-
-            showToast(t("Success"), t("Comment deleted successfully"), "success");
-        } catch (error) {
-            showToast(t("Error"), error.message || t("Failed to delete comment"), "error");
-        }
-    };
-
     return (
         <>
             <Flex>
@@ -240,7 +262,11 @@ const PostPage = () => {
                         {formatDistanceToNow(new Date(currentPost.createdAt))} {t("ago")}
                     </Text>
                     {currentUser?.role === "admin" || currentUser?._id === user._id ? (
-                        <DeleteIcon size={20} cursor={"pointer"} onClick={() => handleDeletePost(currentPost._id)} />
+                        <DeleteIcon 
+                            size={20} 
+                            cursor={"pointer"} 
+                            onClick={() => handleDeletePost(currentPost._id)} 
+                        />
                     ) : null}
                 </Flex>
             </Flex>
@@ -260,7 +286,12 @@ const PostPage = () => {
             <Divider my={4} />
 
             {currentPost.replies?.map((reply) => (
-                <Flex key={reply._id} alignItems="center" justifyContent="space-between">
+                <Flex 
+                    key={reply._id} 
+                    alignItems="center" 
+                    justifyContent="space-between" 
+                    mb={2}
+                >
                     <Comment
                         reply={reply}
                         lastReply={reply._id === currentPost.replies[currentPost.replies.length - 1]._id}
