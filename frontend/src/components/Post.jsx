@@ -154,7 +154,6 @@
 
 // export default Post;
 
-
 // version 2 with translations working
 import { Avatar } from "@chakra-ui/avatar";
 import { Image } from "@chakra-ui/image";
@@ -168,7 +167,7 @@ import { DeleteIcon } from "@chakra-ui/icons";
 import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
-import { useTranslation } from 'react-i18next';  // Import useTranslation
+import { useTranslation } from "react-i18next"; // Import useTranslation
 
 const Post = ({ post, postedBy }) => {
   const [user, setUser] = useState(null);
@@ -176,8 +175,8 @@ const Post = ({ post, postedBy }) => {
   const currentUser = useRecoilValue(userAtom);
   const [posts, setPosts] = useRecoilState(postsAtom);
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();  // Initialize the translation hook
-  const [language, setLanguage] = useState(i18n.language);  // Add a state for language
+  const { t, i18n } = useTranslation(); // Initialize the translation hook
+  const [language, setLanguage] = useState(i18n.language); // Add a state for language
 
   useEffect(() => {
     // Update the language state whenever the i18n language changes
@@ -185,10 +184,10 @@ const Post = ({ post, postedBy }) => {
       setLanguage(lng);
     };
 
-    i18n.on('languageChanged', handleLanguageChange);  // Listen for language change
+    i18n.on("languageChanged", handleLanguageChange); // Listen for language change
 
     return () => {
-      i18n.off('languageChanged', handleLanguageChange);  // Cleanup on component unmount
+      i18n.off("languageChanged", handleLanguageChange); // Cleanup on component unmount
     };
   }, [i18n]);
 
@@ -217,7 +216,7 @@ const Post = ({ post, postedBy }) => {
       console.log("postedBy:", postedBy);
 
       try {
-        const userId = typeof postedBy === 'object' ? postedBy._id : postedBy; // Extract ID if postedBy is an object
+        const userId = typeof postedBy === "object" ? postedBy._id : postedBy; // Extract ID if postedBy is an object
         const res = await fetch("/api/users/profile/" + userId); // Use userId directly in the URL
         const data = await res.json();
         if (data.error) {
@@ -234,14 +233,17 @@ const Post = ({ post, postedBy }) => {
     getUser();
   }, [postedBy, showToast, t]);
 
-
   const handleDeletePost = async (e) => {
     try {
       e.preventDefault();
-      if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
+      if (!window.confirm(t("Are you sure you want to delete this post?")))
+        return;
 
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`, // Add authorization header
+        },
       });
       const data = await res.json();
       if (data.error) {
@@ -262,7 +264,7 @@ const Post = ({ post, postedBy }) => {
       <Flex gap={3} mb={4} py={5}>
         <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
-            size='md'
+            size="md"
             name={user.name}
             src={user?.profilePic}
             onClick={(e) => {
@@ -270,41 +272,41 @@ const Post = ({ post, postedBy }) => {
               navigate(`/${user.username}`);
             }}
           />
-          <Box w='1px' h={"full"} bg='gray.light' my={2}></Box>
+          <Box w="1px" h={"full"} bg="gray.light" my={2}></Box>
           <Box position={"relative"} w={"full"}>
             {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
             {post.replies[0] && (
               <Avatar
-                size='xs'
-                name='John doe'
+                size="xs"
+                name="John doe"
                 src={post.replies[0].userProfilePic}
                 position={"absolute"}
                 top={"0px"}
-                left='15px'
+                left="15px"
                 padding={"2px"}
               />
             )}
 
             {post.replies[1] && (
               <Avatar
-                size='xs'
-                name='John doe'
+                size="xs"
+                name="John doe"
                 src={post.replies[1].userProfilePic}
                 position={"absolute"}
                 bottom={"0px"}
-                right='-5px'
+                right="-5px"
                 padding={"2px"}
               />
             )}
 
             {post.replies[2] && (
               <Avatar
-                size='xs'
-                name='John doe'
+                size="xs"
+                name="John doe"
                 src={post.replies[2].userProfilePic}
                 position={"absolute"}
                 bottom={"0px"}
-                left='4px'
+                left="4px"
                 padding={"2px"}
               />
             )}
@@ -323,20 +325,33 @@ const Post = ({ post, postedBy }) => {
               >
                 {user?.username}
               </Text>
-              <Image src='/verified.png' w={4} h={4} ml={1} />
+              <Image src="/verified.png" w={4} h={4} ml={1} />
             </Flex>
             <Flex gap={4} alignItems={"center"}>
-              <Text fontSize={"xs"} width={36} textAlign={"right"} color={"gray.light"}>
+              <Text
+                fontSize={"xs"}
+                width={36}
+                textAlign={"right"}
+                color={"gray.light"}
+              >
                 {formatDistanceToNow(new Date(post.createdAt))} {t("ago")}
               </Text>
 
-              {currentUser?._id === user._id && <DeleteIcon size={20} onClick={handleDeletePost} />}
+              {(currentUser?._id === user._id ||
+                currentUser?.role === "admin") && (
+                <DeleteIcon size={20} onClick={handleDeletePost} />
+              )}
             </Flex>
           </Flex>
 
           <Text fontSize={"sm"}>{post.text}</Text>
           {post.img && (
-            <Box borderRadius={6} overflow={"hidden"} border={"1px solid"} borderColor={"gray.light"}>
+            <Box
+              borderRadius={6}
+              overflow={"hidden"}
+              border={"1px solid"}
+              borderColor={"gray.light"}
+            >
               <Image src={post.img} w={"full"} />
             </Box>
           )}
@@ -351,6 +366,3 @@ const Post = ({ post, postedBy }) => {
 };
 
 export default Post;
-
-
-
