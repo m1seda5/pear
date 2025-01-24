@@ -1559,7 +1559,11 @@ const deletePost = async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    if (post.postedBy.toString() !== req.user._id.toString()) {
+    // Allow deletion if user is post creator OR admin
+    if (
+      post.postedBy.toString() !== req.user._id.toString() && 
+      req.user.role !== "admin"
+    ) {
       return res.status(401).json({ error: "Unauthorized to delete post" });
     }
 
@@ -1575,7 +1579,6 @@ const deletePost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 const likeUnlikePost = async (req, res) => {
   try {
     const { id: postId } = req.params;
