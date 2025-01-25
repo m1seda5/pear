@@ -24,7 +24,6 @@
 
 // export default router;
 
-
 // this is adding thje dmin role filtering update (working)
 // import express from "express";
 // import {
@@ -57,49 +56,65 @@
 
 // export default router;
 
-// post review system 
+// post review system
 // File: src/routes/postRoutes.js
 
 import express from "express";
 import {
   createPost,
-  deletePost,
+  deleteComment,
+  getPendingReviews,
+  reviewPost,
+  toggleNotifications,
   getPost,
+  deletePost,
   likeUnlikePost,
   replyToPost,
   getFeedPosts,
   getUserPosts,
-  toggleNotifications,
-  reviewPost,
-  getPendingReviews,
-  deleteComment,
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
 import filterPostsByAudience from "../middlewares/filterPostsByAudience.js";
-import validateObjectId from "../middlewares/validateObjectId.js"; // Importing the new middleware
+import validateObjectId from "../middlewares/validateObjectId.js";
 
 const router = express.Router();
 
-// Review routes
+// Review system routes
 router.get("/pending-reviews", protectRoute, getPendingReviews);
-router.post("/review/:postId", protectRoute, reviewPost);
+router.post(
+  "/review/:postId",
+  protectRoute,
+  validateObjectId("postId"),
+  reviewPost
+);
 
-// Post creation and feed routes
+// Post creation and feed
 router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.get("/feed", protectRoute, getFeedPosts);
 router.post("/toggle-notifications", protectRoute, toggleNotifications);
 
-// User-specific routes
+// User-specific posts
 router.get("/user/:username", protectRoute, getUserPosts);
 
-// Parameterized routes
-router.get("/:id", protectRoute, filterPostsByAudience, getPost);
-router.delete("/:id", protectRoute, deletePost);
-router.put("/like/:id", protectRoute, likeUnlikePost);
-router.put("/reply/:id", protectRoute, replyToPost);
+// Single post operations
+router.get(
+  "/:id",
+  protectRoute,
+  validateObjectId("id"),
+  filterPostsByAudience,
+  getPost
+);
+router.delete("/:id", protectRoute, validateObjectId("id"), deletePost);
+router.put("/like/:id", protectRoute, validateObjectId("id"), likeUnlikePost);
+router.put("/reply/:id", protectRoute, validateObjectId("id"), replyToPost);
 
-// Comment-specific routes with validation middleware
-router.delete("/comment/:commentId", protectRoute, validateObjectId, deleteComment); // Using the validateObjectId middleware
+// Comment operations
+router.delete(
+  "/comment/:commentId",
+  protectRoute,
+  validateObjectId("commentId"),
+  deleteComment
+);
 
 export default router;

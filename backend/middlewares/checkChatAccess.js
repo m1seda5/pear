@@ -59,50 +59,54 @@ import User from "../models/userModel.js";
 const checkChatAccess = async (req, res, next) => {
   try {
     if (!req.user || !req.user._id) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const userId = req.user._id;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('role');
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    // Allow admin unrestricted access
+    if (user.role === "admin") {
+      return next();
     }
 
     const currentDate = new Date();
     const dayOfWeek = currentDate.getDay();
     const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
 
-    const schoolStart = 810;
-    const lunchStart = 1250;
-    const lunchEnd = 1340;
-    const schoolEnd = 1535;
+    const schoolStart = 810; // 8:10 AM
+    const lunchStart = 1250; // 12:50 PM
+    const lunchEnd = 1340;   // 1:40 PM
+    const schoolEnd = 1535;  // 3:35 PM
 
-    // Check if the day is a school day (Monday to Friday)
+    // Check if weekday (Monday-Friday)
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       if (user.role === "student") {
-        // Student access based on time (during school hours or lunch break)
-        if (
-          currentTime < schoolStart ||
-          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-          currentTime > schoolEnd
-        ) {
-          return next();
-        } else {
-          return res.status(403).json({ error: "Access denied during school hours" });
+        // Students can only access during non-class hours
+        const isAllowed = currentTime < schoolStart || 
+                         (currentTime >= lunchStart && currentTime <= lunchEnd) || 
+                         currentTime > schoolEnd;
+        
+        if (!isAllowed) {
+          return res.status(403).json({ 
+            error: "Chat access restricted during class hours (8:10 AM - 3:35 PM) except lunch break"
+          });
         }
-      } else {
-        // Teachers and admins have full access during school days
-        return next();
       }
-    } else {
-      // Weekend access (no restrictions)
+      // Teachers have full access on weekdays
       return next();
     }
+
+    // Weekend access for everyone
+    next();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Chat access check error:", error);
+    res.status(500).json({ error: "Server error during access check" });
   }
 };
 
 export default checkChatAccess;
-

@@ -1746,42 +1746,34 @@ const getUserPosts = async (req, res) => {
 
 const deleteComment = async (req, res) => {
   try {
-    const { commentId } = req.params;
+      const { commentId } = req.params;
 
-    // Find the post containing the comment
-    const post = await Post.findOne({ 'replies._id': commentId });
-    
-    if (!post) {
-      return res.status(404).json({ error: "Post not found" });
-    }
+      // Find the post containing the comment
+      const post = await Post.findOne({ "replies._id": commentId });
+      if (!post) {
+          return res.status(404).json({ error: "Post not found" });
+      }
 
-    // Find the comment within the post
-    const comment = post.replies.find((reply) => reply._id.toString() === commentId);
-    
-    if (!comment) {
-      return res.status(404).json({ error: "Comment not found" });
-    }
+      // Find the comment
+      const comment = post.replies.id(commentId);
+      if (!comment) {
+          return res.status(404).json({ error: "Comment not found" });
+      }
 
-    // Check if the request user is either the admin or the comment owner
-    if (
-      comment.userId.toString() !== req.user._id.toString() &&
-      req.user.role !== "admin"
-    ) {
-      return res.status(401).json({ error: "Unauthorized to delete this comment" });
-    }
+      // Authorization check
+      if (req.user.role !== "admin" && comment.userId.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ error: "Unauthorized to delete comment" });
+      }
 
-    // Remove the comment from the replies array
-    post.replies = post.replies.filter(
-      (reply) => reply._id.toString() !== commentId
-    );
+      // Remove the comment from the array
+      post.replies.pull(commentId);
+      await post.save();
 
-    await post.save();
-    res.status(200).json({ message: "Comment deleted successfully" });
+      res.status(200).json({ message: "Comment deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err.message });
   }
 };
-
 export {
   createPost,
   deleteComment,

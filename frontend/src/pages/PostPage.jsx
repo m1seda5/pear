@@ -132,7 +132,7 @@
 
 
 // verison two with transaltions 
-import { Avatar, Box, Divider, Flex, Image, Spinner, Text, IconButton } from "@chakra-ui/react";
+import { Avatar, Box, Divider, Flex, Image, Spinner, Text } from "@chakra-ui/react";
 import Actions from "../components/Actions";
 import { useEffect, useState } from "react";
 import Comment from "../components/Comment";
@@ -178,29 +178,14 @@ const PostPage = () => {
         }
     };
 
-    const handleDeleteComment = async (commentId) => {
-        try {
-            const res = await fetch(`/api/posts/comment/${commentId}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${currentUser.token}`,
-                },
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                showToast(t("Error"), errorData.error || t("Failed to delete comment"), "error");
-                return;
-            }
-
-            // Remove the deleted comment locally
-            const updatedReplies = currentPost.replies.filter((reply) => reply._id !== commentId);
-            setPosts([{ ...currentPost, replies: updatedReplies }]);
-
-            showToast(t("Success"), t("Comment deleted successfully"), "success");
-        } catch (error) {
-            showToast(t("Error"), error.message || t("Failed to delete comment"), "error");
-        }
+    const handleDeleteComment = (deletedCommentId) => {
+        setPosts(prevPosts => {
+            const updatedPost = { 
+                ...prevPosts[0],
+                replies: prevPosts[0].replies.filter(reply => reply._id !== deletedCommentId)
+            };
+            return [updatedPost];
+        });
     };
 
     useEffect(() => {
@@ -261,13 +246,13 @@ const PostPage = () => {
                     <Text fontSize={"xs"} width={36} textAlign={"right"} color={"gray.light"}>
                         {formatDistanceToNow(new Date(currentPost.createdAt))} {t("ago")}
                     </Text>
-                    {currentUser?.role === "admin" || currentUser?._id === user._id ? (
+                    {(currentUser?.role === "admin" || currentUser?._id === user._id) && (
                         <DeleteIcon 
                             size={20} 
                             cursor={"pointer"} 
                             onClick={() => handleDeletePost(currentPost._id)} 
                         />
-                    ) : null}
+                    )}
                 </Flex>
             </Flex>
 
@@ -285,26 +270,18 @@ const PostPage = () => {
 
             <Divider my={4} />
 
-            {currentPost.replies?.map((reply) => (
-                <Flex 
-                    key={reply._id} 
-                    alignItems="center" 
-                    justifyContent="space-between" 
-                    mb={2}
-                >
-                    <Comment
-                        reply={reply}
-                        lastReply={reply._id === currentPost.replies[currentPost.replies.length - 1]._id}
-                    />
-                    {(currentUser?.role === "admin" || currentUser?._id === reply.userId) && (
-                        <IconButton
-                            aria-label={t("Delete comment")}
-                            icon={<DeleteIcon />}
-                            size="sm"
-                            onClick={() => handleDeleteComment(reply._id)}
-                        />
-                    )}
-                </Flex>
+            {currentPost.replies?.map((reply, index) => (
+                <Comment
+                    key={reply._id}
+                    reply={{
+                        ...reply,
+                        userProfilePic: reply.userProfilePic,
+                        userId: reply.userId,
+                        _id: reply._id
+                    }}
+                    lastReply={index === currentPost.replies.length - 1}
+                    onDelete={handleDeleteComment}
+                />
             ))}
         </>
     );
