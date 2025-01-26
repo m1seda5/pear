@@ -225,16 +225,6 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    frozenAt: Date,
-    frozenBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    deletedAt: Date,
-    deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
     verification: {
       type: String,
       enum: ["none", "blue", "golden"],

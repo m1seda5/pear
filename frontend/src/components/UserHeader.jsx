@@ -602,83 +602,41 @@
 
 
 // this updated version with verification(working)
-import {
-  Avatar,
-  Box,
-  Flex,
-  Link,
-  Text,
-  VStack,
-  useToast,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  Button,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Avatar, Box, Flex, Link, Text, VStack, useToast } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
 import { Portal } from "@chakra-ui/portal";
+import { Button } from "@chakra-ui/react";
 import { MdVideoCall } from "react-icons/md";
 import { CgMoreO } from "react-icons/cg";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import useFollowUnfollow from "../hooks/useFollowUnfollow";
-import { useTranslation } from "react-i18next";
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useTranslation } from 'react-i18next';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useDisclosure } from "@chakra-ui/hooks"; // For the animation dropdown
 
 const MotionAvatar = motion(Avatar);
 
-const AdminUserModal = ({ user, isOpen, onClose }) => {
-  const handleFreeze = async () => {
-    // API call to freeze user
-  };
-
-  const handleDelete = async () => {
-    // API call to delete user
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalContent>
-        <ModalHeader>Admin Actions</ModalHeader>
-        <ModalBody>
-          <Button leftIcon={<LockIcon />} onClick={handleFreeze}>
-            {user.isFrozen ? "Unfreeze Account" : "Freeze Account"}
-          </Button>
-          <Button leftIcon={<DeleteIcon />} colorScheme="red" onClick={handleDelete}>
-            Delete Account
-          </Button>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
-  );
-};
-
 const UserHeader = ({ user }) => {
   const toast = useToast();
-  const currentUser = useRecoilValue(userAtom); // logged-in user
+  const currentUser = useRecoilValue(userAtom); // logged in user
   const navigate = useNavigate(); // For navigation
   const { handleFollowUnfollow, following, updating } = useFollowUnfollow(user);
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
-  const {
-    isOpen: isAdminModalOpen,
-    onOpen: onAdminModalOpen,
-    onClose: onAdminModalClose,
-  } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure(); // Chakra UI's disclosure for handling dropdown visibility
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on("languageChanged", handleLanguageChange);
+    i18n.on('languageChanged', handleLanguageChange);
 
     return () => {
-      i18n.off("languageChanged", handleLanguageChange);
+      i18n.off('languageChanged', handleLanguageChange);
     };
   }, [i18n]);
 
@@ -695,10 +653,21 @@ const UserHeader = ({ user }) => {
     });
   };
 
-  const handleProfileDoubleClick = () => {
-    if (currentUser?.role === "admin") {
-      onAdminModalOpen();
-    }
+  const handleProfileClick = () => {
+    navigate('/update'); // Redirect to UpdateProfilePage
+  };
+
+  const awardVerification = (type) => {
+    // Function to handle awarding of verification badges
+    // 'type' can be 'blue' or 'gold'
+    toast({
+      title: t("Verification Awarded"),
+      status: "success",
+      description: t(`User awarded ${type} verification.`),
+      duration: 3000,
+      isClosable: true,
+    });
+    // Send request to server to update the user's verification status here
   };
 
   return (
@@ -713,12 +682,12 @@ const UserHeader = ({ user }) => {
             {user.verification && (
               <Text
                 fontSize={"xs"}
-                bg={user.verification === "gold" ? "gold" : "blue.500"} // Show color based on verification
+                bg={user.verification === 'gold' ? "gold" : "blue.500"} // Show color based on verification
                 color={"white"}
                 p={1}
                 borderRadius={"full"}
               >
-                {user.verification === "gold" ? "Gold Verified" : "Blue Verified"}
+                {user.verification === 'gold' ? "Gold Verified" : "Blue Verified"}
               </Text>
             )}
           </Flex>
@@ -732,7 +701,7 @@ const UserHeader = ({ user }) => {
                 base: "md",
                 md: "xl",
               }}
-              onDoubleClick={handleProfileDoubleClick} // Double-click for admin
+              onClick={onOpen} // Trigger the dropdown on click
               cursor="pointer"
               whileHover={{ scale: 1.05 }} // Popout animation
               transition={{ duration: 0.2 }} // Duration of the animation
@@ -746,11 +715,31 @@ const UserHeader = ({ user }) => {
                 base: "md",
                 md: "xl",
               }}
-              onDoubleClick={handleProfileDoubleClick} // Double-click for admin
+              onClick={onOpen} // Trigger the dropdown on click
               cursor="pointer"
               whileHover={{ scale: 1.05 }} // Popout animation
               transition={{ duration: 0.2 }} // Duration of the animation
             />
+          )}
+
+          {/* Dropdown Menu for Admin Verification */}
+          {currentUser?.role === 'admin' && isOpen && (
+            <Box 
+              position="absolute" 
+              mt={2} 
+              bg="gray.700" 
+              p={3} 
+              borderRadius="md" 
+              boxShadow="md"
+              onMouseLeave={onClose} // Close the dropdown on mouse leave
+            >
+              <Button size={"sm"} colorScheme="blue" onClick={() => awardVerification('blue')}>
+                Award Blue Verification
+              </Button>
+              <Button size={"sm"} colorScheme="yellow" mt={2} onClick={() => awardVerification('gold')}>
+                Award Gold Verification
+              </Button>
+            </Box>
           )}
         </Box>
       </Flex>
@@ -809,15 +798,8 @@ const UserHeader = ({ user }) => {
           <Text fontWeight={"bold"}>{t("Feed")}</Text>
         </Flex>
       </Flex>
-
-      <AdminUserModal
-        user={user}
-        isOpen={isAdminModalOpen}
-        onClose={onAdminModalClose}
-      />
     </VStack>
   );
 };
 
 export default UserHeader;
-

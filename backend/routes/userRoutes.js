@@ -68,7 +68,6 @@ import {
     verifyOTP, // Import verifyOtp
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
-import checkFrozen from "../middlewares/checkFrozen.js";
 
 const router = express.Router();
 
@@ -80,13 +79,9 @@ router.post("/logout", logoutUser);
 router.post("/follow/:id", protectRoute, followUnFollowUser); // Toggle state(follow/unfollow)
 router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
-router.put('/admin/freeze/:userId', protectRoute, validateObjectId('userId'), freezeUser);
-router.delete('/admin/delete/:userId', protectRoute, validateObjectId('userId'), deleteUser);
-router.delete('/me', protectRoute, deleteOwnAccount);
 
 // Add the OTP verification route here
 router.post("/verify-otp", verifyOTP);
-
 
 export default router;
 
