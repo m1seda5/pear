@@ -27,67 +27,62 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 
 const Comment = ({ reply, lastReply, onDelete }) => {
-  const currentUser = useRecoilValue(userAtom);
-  const showToast = useShowToast();
+    const currentUser = useRecoilValue(userAtom);
+    const showToast = useShowToast();
 
-  const handleDelete = async () => {
-    if (currentUser.isFrozen) {
-      showToast("Error", "Your account is frozen. You cannot delete comments.", "error");
-      return;
-    }
+    const handleDelete = async () => {
+        try {
+            const res = await fetch(`/api/posts/comment/${reply._id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${currentUser.token}`,
+                },
+            });
 
-    try {
-      const res = await fetch(`/api/posts/comment/${reply._id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-      });
+            const data = await res.json();
+            
+            if (data.error) {
+                showToast("Error", data.error, "error");
+                return;
+            }
 
-      const data = await res.json();
+            onDelete(reply._id);
+            showToast("Success", "Comment deleted successfully", "success");
+        } catch (error) {
+            showToast("Error", error.message, "error");
+        }
+    };
 
-      if (data.error) {
-        showToast("Error", data.error, "error");
-        return;
-      }
+    const showDeleteButton = currentUser?.role === "admin" || currentUser?._id === reply.userId;
 
-      onDelete(reply._id);
-      showToast("Success", "Comment deleted successfully", "success");
-    } catch (error) {
-      showToast("Error", error.message, "error");
-    }
-  };
-
-  const showDeleteButton = (currentUser?.role === "admin" || currentUser?._id === reply.userId) && !currentUser.isFrozen;
-
-  return (
-    <>
-      <Flex gap={4} py={2} my={2} w={"full"} alignItems="center">
-        <Avatar src={reply.userProfilePic} size={"sm"} />
-        <Flex gap={1} w={"full"} flexDirection={"column"}>
-          <Flex w={"full"} justifyContent={"space-between"} alignItems={"center"}>
-            <Text fontSize='sm' fontWeight='bold'>
-              {reply.username}
-            </Text>
-            {showDeleteButton && (
-              <Tooltip label="Delete comment">
-                <IconButton
-                  aria-label="Delete comment"
-                  icon={<DeleteIcon />}
-                  size="xs"
-                  colorScheme="red"
-                  variant="ghost"
-                  onClick={handleDelete}
-                />
-              </Tooltip>
-            )}
-          </Flex>
-          <Text>{reply.text}</Text>
-        </Flex>
-      </Flex>
-      {!lastReply && <Divider />}
-    </>
-  );
+    return (
+        <>
+            <Flex gap={4} py={2} my={2} w={"full"} alignItems="center">
+                <Avatar src={reply.userProfilePic} size={"sm"} />
+                <Flex gap={1} w={"full"} flexDirection={"column"}>
+                    <Flex w={"full"} justifyContent={"space-between"} alignItems={"center"}>
+                        <Text fontSize='sm' fontWeight='bold'>
+                            {reply.username}
+                        </Text>
+                        {showDeleteButton && (
+                            <Tooltip label="Delete comment">
+                                <IconButton
+                                    aria-label="Delete comment"
+                                    icon={<DeleteIcon />}
+                                    size="xs"
+                                    colorScheme="red"
+                                    variant="ghost"
+                                    onClick={handleDelete}
+                                />
+                            </Tooltip>
+                        )}
+                    </Flex>
+                    <Text>{reply.text}</Text>
+                </Flex>
+            </Flex>
+            {!lastReply && <Divider />}
+        </>
+    );
 };
 
 export default Comment;

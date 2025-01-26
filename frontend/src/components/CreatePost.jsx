@@ -517,8 +517,7 @@ import {
   Select,
   Flex,
   Image,
-  CloseButton,
-  Tooltip,
+  CloseButton
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
@@ -541,7 +540,7 @@ const CreatePost = () => {
   const user = useRecoilValue(userAtom);
   const showToast = useShowToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [postStatus, setPostStatus] = useState(null);
+  const [postStatus, setPostStatus] = useState(null); // null, 'pending', 'approved', 'rejected'
   const progressColor = useColorModeValue("gray.200", "gray.600");
   const progressFilledColor = useColorModeValue("gray.500", "gray.300");
   const { t } = useTranslation();
@@ -553,13 +552,9 @@ const CreatePost = () => {
   };
 
   const handleCreatePost = async () => {
-    if (user.isFrozen) {
-      showToast(t("Error"), t("Your account is frozen. You cannot post."), "error");
-      return;
-    }
-
     setIsLoading(true);
     try {
+      // Default payload for all users
       const payload = {
         postedBy: user._id,
         text: postText,
@@ -568,6 +563,7 @@ const CreatePost = () => {
         targetDepartments: [],
       };
 
+      // Role-specific modifications
       if (user.role === "teacher") {
         if (targetYearGroups.length === 0) {
           showToast(t("Error"), t("Teachers must specify year groups"), "error");
@@ -606,6 +602,7 @@ const CreatePost = () => {
         return;
       }
 
+      // Handle review status for students
       if (user.role === "student") {
         setPostStatus('pending');
         showToast(
@@ -616,6 +613,7 @@ const CreatePost = () => {
       } else {
         setPostStatus('approved');
         showToast(t("Success"), t("Post created successfully"), "success");
+        // Reset form
         setPostText("");
         setImgUrl("");
         setTargetYearGroups([]);
@@ -631,20 +629,17 @@ const CreatePost = () => {
 
   return (
     <>
-      <Tooltip label={user.isFrozen ? "Your account is frozen. You cannot post." : "Create Post"}>
-        <Button
-          position="fixed"
-          bottom={10}
-          right={5}
-          bg={useColorModeValue("gray.300", "gray.dark")}
-          onClick={onOpen}
-          size="md"
-          aria-label={t("Create Post")}
-          isDisabled={user.isFrozen}
-        >
-          <AddIcon />
-        </Button>
-      </Tooltip>
+      <Button
+        position="fixed"
+        bottom={10}
+        right={5}
+        bg={useColorModeValue("gray.300", "gray.dark")}
+        onClick={onOpen}
+        size="md"
+        aria-label={t("Create Post")}
+      >
+        <AddIcon />
+      </Button>
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
@@ -657,7 +652,6 @@ const CreatePost = () => {
                 placeholder={t("Write your post...")}
                 value={postText}
                 onChange={handleTextChange}
-                isDisabled={user.isFrozen}
               />
               <Text
                 fontSize="xs"
@@ -673,15 +667,15 @@ const CreatePost = () => {
                 hidden
                 ref={imageRef}
                 onChange={handleImageChange}
-                isDisabled={user.isFrozen}
               />
               <BsFillImageFill
-                style={{ marginLeft: "5px", cursor: user.isFrozen ? "not-allowed" : "pointer" }}
+                style={{ marginLeft: "5px", cursor: "pointer" }}
                 size={16}
-                onClick={() => !user.isFrozen && imageRef.current.click()}
+                onClick={() => imageRef.current.click()}
                 aria-label={t("Add Image")}
               />
 
+              {/* Role-specific Target Options */}
               {user.role === "teacher" && (
                 <Select
                   mt={4}
@@ -693,7 +687,6 @@ const CreatePost = () => {
                       [...e.target.selectedOptions].map((o) => o.value)
                     )
                   }
-                  isDisabled={user.isFrozen}
                 >
                   <option value="all">{t("All Year Groups")}</option>
                   <option value="Year 9">{t("Year 9")}</option>
@@ -716,7 +709,6 @@ const CreatePost = () => {
                         [...e.target.selectedOptions].map((o) => o.value)
                       )
                     }
-                    isDisabled={user.isFrozen}
                   >
                     <option value="all">{t("All Year Groups")}</option>
                     <option value="Year 9">{t("Year 9")}</option>
@@ -736,7 +728,6 @@ const CreatePost = () => {
                         [...e.target.selectedOptions].map((o) => o.value)
                       )
                     }
-                    isDisabled={user.isFrozen}
                   >
                     <option value="Math">{t("Math")}</option>
                     <option value="Physics">{t("Physics")}</option>
@@ -799,7 +790,7 @@ const CreatePost = () => {
               mr={3}
               isLoading={isLoading}
               onClick={handleCreatePost}
-              isDisabled={postStatus === 'pending' || user.isFrozen}
+              isDisabled={postStatus === 'pending'}
             >
               {t("Post")}
             </Button>

@@ -1256,27 +1256,18 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    // Check if the email is banned
-    const isBanned = await BannedEmail.findOne({ email });
-    if (isBanned) {
-      return res.status(400).json({ error: "This email is banned and cannot be used for signup." });
-    }
-
-    // Check if the email or username already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Generate OTP and set expiry time
     const otp = generateOTP();
     const otpExpiry = Date.now() + 2 * 60 * 1000; // OTP valid for 2 minutes
 
-    // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create a new unverified user
     const unverifiedUser = new User({
       name,
       email,
@@ -1286,17 +1277,14 @@ const signupUser = async (req, res) => {
       isVerified: false,
       otp,
       otpExpiry,
-      ...(role === "student" ? { yearGroup } : {}), // Add yearGroup if role is student
-      ...(role === "teacher" ? { department } : {}), // Add department if role is teacher
+      ...(role === "student" ? { yearGroup } : {}),
+      ...(role === "teacher" ? { department } : {}),
     });
 
-    // Save the unverified user to the database
     await unverifiedUser.save();
 
-    // Send OTP to the user's email
     await sendOTPEmail(email, otp);
 
-    // Return success response
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
       userId: unverifiedUser._id, // Send the userId for reference
@@ -1584,85 +1572,6 @@ const awardVerification = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
     console.log("Error in awardVerification: ", error.message);
-  }
-};
-const freezeUserAccount = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Increment freeze count
-    user.freezeCount += 1;
-    user.isFrozen = true;
-    user.freezeExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-
-    // Automatically delete the account if frozen twice
-    if (user.freezeCount >= 2) {
-      await deleteUserAccount(req, res); // Call the delete function
-      return res.status(200).json({ message: "User account deleted due to multiple freezes" });
-    }
-
-    await user.save();
-
-    // Send email notification to the user
-    const mailOptions = {
-      from: "pearnet104@gmail.com",
-      to: user.email,
-      subject: "Your Account Has Been Frozen",
-      text: `Dear ${user.name},\n\nYour account has been frozen. The freeze will last until ${user.freezeExpiry.toDateString()}. If you believe this is a mistake, please contact support.\n\nBest regards,\nThe Admin Team`,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-      } else {
-        console.log("Email sent:", info.response);
-      }
-    });
-
-    res.status(200).json({ message: "User account frozen successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-    console.log("Error in freezeUserAccount: ", error.message);
-  }
-};
-const deleteUserAccount = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find and delete the user
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Add the user's email to the banned emails collection
-    const bannedEmail = new BannedEmail({ email: user.email });
-    await bannedEmail.save();
-
-    // Delete all posts by the user
-    await Post.deleteMany({ postedBy: userId });
-
-    // Remove the user from other users' followers and following lists
-    await User.updateMany(
-      { $or: [{ followers: userId }, { following: userId }] },
-      { $pull: { followers: userId, following: userId } }
-    );
-
-    // Delete all comments by the user
-    await Comment.deleteMany({ userId });
-
-    // Delete all messages sent or received by the user
-    await Message.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] });
-
-    res.status(200).json({ message: "User account and all related data deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-    console.log("Error in deleteUserAccount: ", error.message);
   }
 };
 // End of integration code

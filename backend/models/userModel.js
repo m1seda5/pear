@@ -225,14 +225,6 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    freezeCount: {
-      type: Number,
-      default: 0,
-    },
-    freezeExpiry: {
-      type: Date,
-      default: null,
-    },
     verification: {
       type: String,
       enum: ["none", "blue", "golden"],
@@ -283,26 +275,15 @@ const userSchema = mongoose.Schema(
         return this.role === "teacher";
       },
     },
-    otp: { type: Number, required: false },
-    otpExpiry: { type: Date, required: false },
+    otp: { type: Number, required: false }, // Field for OTP
+    otpExpiry: { type: Date, required: false }, 
     notificationPreferences: {
       type: Boolean,
-      default: true,
-    },
+      default: true, // Enable notifications by default
+    }, // Field for OTP expiration// Field for OTP expiration
   },
   { timestamps: true }
 );
 
-// Schema for banned emails
-const bannedEmailSchema = mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-});
-
 const User = mongoose.model("User", userSchema);
-const BannedEmail = mongoose.model("BannedEmail", bannedEmailSchema);
-
-export { User, BannedEmail };
+export default User;
