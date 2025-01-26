@@ -617,7 +617,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDisclosure } from "@chakra-ui/hooks";
 import AdminModal from "./AdminModal"; // Import the AdminModal component
-import { freezeUserAccount, deleteUserAccount } from "../api/userApi"; // Import API functions
+import { freezeUserAccount, deleteUserAccount } from "../../../backend/controllers/userController"; // Import API functions
 
 const MotionAvatar = motion(Avatar);
 
