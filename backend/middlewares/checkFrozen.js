@@ -1,3 +1,5 @@
+import User from "../models/userModel.js";
+
 const checkFrozen = async (req, res, next) => {
     try {
       const user = await User.findById(req.user._id);
