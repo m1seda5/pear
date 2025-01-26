@@ -1574,6 +1574,46 @@ const awardVerification = async (req, res) => {
     console.log("Error in awardVerification: ", error.message);
   }
 };
+const freezeUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    user.isFrozen = true;
+    user.frozenAt = new Date();
+    user.frozenBy = req.user._id;
+    await user.save();
+    
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByIdAndUpdate(userId, {
+      deletedAt: new Date(),
+      deletedBy: req.user._id
+    }, { new: true });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Delete user content
+    await Promise.all([
+      Post.deleteMany({ postedBy: user._id }),
+      Comment.deleteMany({ author: user._id }),
+      Conversation.deleteMany({ participants: user._id })
+    ]);
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // End of integration code
 export {
   signupUser,
@@ -1585,5 +1625,7 @@ export {
   getUserProfile,
   getSuggestedUsers,
   freezeAccount,
-  awardVerification, // Exporting the new function
+  awardVerification,
+  freezeUser,
+  deleteUser, // Exporting the new function
 };
