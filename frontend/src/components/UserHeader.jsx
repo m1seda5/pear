@@ -615,18 +615,21 @@ import useFollowUnfollow from "../hooks/useFollowUnfollow";
 import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useDisclosure } from "@chakra-ui/hooks"; // For the animation dropdown
+import { useDisclosure } from "@chakra-ui/hooks";
+import AdminModal from "./AdminModal"; // Import the AdminModal component
+import { freezeUserAccount, deleteUserAccount } from "../api/userApi"; // Import API functions
 
 const MotionAvatar = motion(Avatar);
 
 const UserHeader = ({ user }) => {
   const toast = useToast();
-  const currentUser = useRecoilValue(userAtom); // logged in user
+  const currentUser = useRecoilValue(userAtom); // Logged-in user
   const navigate = useNavigate(); // For navigation
   const { handleFollowUnfollow, following, updating } = useFollowUnfollow(user);
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
-  const { isOpen, onOpen, onClose } = useDisclosure(); // Chakra UI's disclosure for handling dropdown visibility
+  const { isOpen, onOpen, onClose } = useDisclosure(); // For the verification dropdown
+  const [showAdminModal, setShowAdminModal] = useState(false); // For the admin modal
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -659,7 +662,6 @@ const UserHeader = ({ user }) => {
 
   const awardVerification = (type) => {
     // Function to handle awarding of verification badges
-    // 'type' can be 'blue' or 'gold'
     toast({
       title: t("Verification Awarded"),
       status: "success",
@@ -668,6 +670,58 @@ const UserHeader = ({ user }) => {
       isClosable: true,
     });
     // Send request to server to update the user's verification status here
+  };
+
+  const handleDoubleClick = () => {
+    if (currentUser?.role === 'admin') {
+      setShowAdminModal(true); // Show admin modal on double-click
+    }
+  };
+
+  const handleFreezeAccount = async (userId) => {
+    try {
+      await freezeUserAccount(userId); // Freeze the user account
+      toast({
+        title: "Success",
+        status: "success",
+        description: "User account frozen successfully",
+        duration: 3000,
+        isClosable: true,
+      });
+      setShowAdminModal(false); // Close the modal
+    } catch (error) {
+      console.error("Error freezing account:", error);
+      toast({
+        title: "Error",
+        status: "error",
+        description: "Failed to freeze account",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleDeleteAccount = async (userId) => {
+    try {
+      await deleteUserAccount(userId); // Delete the user account
+      toast({
+        title: "Success",
+        status: "success",
+        description: "User account deleted successfully",
+        duration: 3000,
+        isClosable: true,
+      });
+      setShowAdminModal(false); // Close the modal
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error",
+        status: "error",
+        description: "Failed to delete account",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
@@ -701,7 +755,7 @@ const UserHeader = ({ user }) => {
                 base: "md",
                 md: "xl",
               }}
-              onClick={onOpen} // Trigger the dropdown on click
+              onClick={handleDoubleClick} // Trigger admin modal on double-click
               cursor="pointer"
               whileHover={{ scale: 1.05 }} // Popout animation
               transition={{ duration: 0.2 }} // Duration of the animation
@@ -715,10 +769,20 @@ const UserHeader = ({ user }) => {
                 base: "md",
                 md: "xl",
               }}
-              onClick={onOpen} // Trigger the dropdown on click
+              onClick={handleDoubleClick} // Trigger admin modal on double-click
               cursor="pointer"
               whileHover={{ scale: 1.05 }} // Popout animation
               transition={{ duration: 0.2 }} // Duration of the animation
+            />
+          )}
+
+          {/* Admin Modal for Freeze/Delete */}
+          {showAdminModal && (
+            <AdminModal
+              userId={user._id}
+              onClose={() => setShowAdminModal(false)}
+              onFreeze={handleFreezeAccount}
+              onDelete={handleDeleteAccount}
             />
           )}
 
