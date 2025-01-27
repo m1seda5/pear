@@ -672,6 +672,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
 const generateOTP = () => {
   return crypto.randomInt(1000, 10000);
 };
@@ -1037,29 +1038,50 @@ const adminFreezeUser = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    // Prevent self-freezing
     if (userId === req.user._id.toString()) {
-      return res
-        .status(400)
-        .json({ error: "Cannot perform action on yourself" });
+      return res.status(400).json({ error: "Cannot perform action on yourself" });
     }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Handle automatic banning
     if (user.freezeCount >= 1) {
       user.isBanned = true;
       user.isFrozen = false;
       await user.save();
-      await deleteUserData(userId); // Implement this function
+
+      // Send ban notification
+      try {
+        await transporter.sendMail({
+          from: "pearnet104@gmail.com",
+          to: user.email,
+          subject: "Account Banned",
+          text: "Your account has been banned. Unfortunately, until the foreseeable future, you will not be able to create an account with us again until further notice."
+        });
+      } catch (emailError) {
+        console.error("Failed to send ban notification:", emailError);
+      }
+
+      await deleteUserData(userId);
       return res.json({ banned: true });
     }
 
     user.isFrozen = true;
     user.freezeCount += 1;
-    user.freezeUntil = new Date(Date.now() + 14 * 86400000); // 14 days
+    user.freezeUntil = new Date(Date.now() + 14 * 86400000);
     await user.save();
+
+    // Send freeze notification
+    try {
+      await transporter.sendMail({
+        from: "pearnet104@gmail.com",
+        to: user.email,
+        subject: "Account Frozen",
+        text: "You won't be able to access chat, commenting, and posting until you are unfrozen after 2 weeks."
+      });
+    } catch (emailError) {
+      console.error("Failed to send freeze notification:", emailError);
+    }
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -1077,6 +1099,18 @@ const adminDeleteUser = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Send ban notification
+    try {
+      await transporter.sendMail({
+        from: "pearnet104@gmail.com",
+        to: user.email,
+        subject: "Account Banned",
+        text: "Your account has been banned. Unfortunately, until the foreseeable future, you will not be able to create an account with us again until further notice."
+      });
+    } catch (emailError) {
+      console.error("Failed to send ban notification:", emailError);
+    }
 
     await deleteUserData(userId);
     res.status(200).json({ success: true });
