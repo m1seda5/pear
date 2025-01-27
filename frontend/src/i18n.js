@@ -163,6 +163,15 @@ const resources = {
       // translations for create post
       "Add Reply": "Add Reply", 
       "Add Image": "Add Image",
+       // Settings Page Translations
+       "Email Notifications": "Email Notifications",
+       "enabled": "enabled",
+       "disabled": "disabled",
+       "Receive email notifications for new posts": "Receive email notifications for new posts",
+       "Email notifications are disabled": "Email notifications are disabled",
+       "Are you sure you want to freeze your account?": "Are you sure you want to freeze your account?",
+       "Your account has been frozen": "Your account has been frozen",
+ 
     } 
   },
   zh: {
@@ -280,6 +289,14 @@ const resources = {
       // this is adding create post tranalsitons 
       "Add Reply": "添加回复", 
       "Add Image": "添加图片",
+       // Settings Page Translations
+       "Email Notifications": "电子邮件通知",
+       "enabled": "已启用",
+       "disabled": "已禁用",
+       "Receive email notifications for new posts": "接收新帖子的电子邮件通知",
+       "Email notifications are disabled": "电子邮件通知已禁用",
+       "Are you sure you want to freeze your account?": "您确定要冻结您的帐户吗？",
+       "Your account has been frozen": "您的帐户已被冻结",
     }
   }
 };
