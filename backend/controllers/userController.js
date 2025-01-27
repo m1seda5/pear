@@ -632,7 +632,6 @@ import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCooki
 import { v2 as cloudinary } from "cloudinary";
 import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
-import Post from "../models/postModel.js";
 import mongoose from "mongoose";
 
 const getUserProfile = async (req, res) => {
