@@ -695,27 +695,25 @@ const signupUser = async (req, res) => {
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
-    // Banned user check
+    // Check for banned email first
     const bannedUser = await User.findOne({ email, isBanned: true });
     if (bannedUser) {
       return res.status(403).json({ error: "This email is permanently banned" });
     }
 
-    // Check for existing user
+    // Then check for existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Generate OTP and set expiry
+    // Rest of the signup logic remains the same
     const otp = generateOTP();
-    const otpExpiry = Date.now() + 2 * 60 * 1000; // OTP valid for 2 minutes
+    const otpExpiry = Date.now() + 2 * 60 * 1000;
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const unverifiedUser = new User({
       name,
       email,
@@ -729,29 +727,16 @@ const signupUser = async (req, res) => {
       ...(role === "teacher" ? { department } : {}),
     });
 
-    // Save user and send OTP
     await unverifiedUser.save();
     await sendOTPEmail(email, otp);
 
-    // Send success response
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
       userId: unverifiedUser._id,
     });
 
   } catch (err) {
-    // Error handling
     console.error("Error in signupUser:", err.message);
-    
-    // If user was created but email failed, delete the user
-    if (err.message.includes("Failed to send OTP")) {
-      try {
-        await User.findOneAndDelete({ email: req.body.email });
-      } catch (deleteErr) {
-        console.error("Error deleting unverified user:", deleteErr);
-      }
-    }
-
     res.status(500).json({
       error: "Failed to register user",
       details: err.message,
@@ -812,21 +797,15 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+
 const loginUser = async (req, res) => {
   try {
-    const bannedUser = await User.findOne({ email, isBanned: true });
-    if (bannedUser) {
-      return res
-        .status(403)
-        .json({ error: "This email is permanently banned" });
-    }
-
-    // In loginUser controller, add this check:
-    if (user.isBanned) {
-      return res.status(403).json({ error: "Account permanently banned" });
-    }
     const { username, password } = req.body;
+    
+    // First find the user by username
     const user = await User.findOne({ username });
+    
+    // Check credentials before checking ban status
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user?.password || ""
@@ -836,19 +815,23 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
+    // Now check if the user is banned
+    if (user.isBanned) {
+      return res.status(403).json({ error: "Account permanently banned" });
+    }
+
+    // Rest of the login logic remains the same
     if (user.isFrozen) {
       user.isFrozen = false;
       await user.save();
     }
 
-    // Start of auto-follow everyone code
+    // Auto-follow logic
     const allUsers = await User.find({});
     const allUserIds = allUsers.map((u) => u._id.toString());
     user.following = allUserIds;
     await user.save();
-    // End of auto-follow everyone code
 
-    // Send back the role to the front-end so it knows whether the user is a teacher or student
     generateTokenAndSetCookie(user._id, res);
 
     res.status(200).json({
@@ -858,7 +841,7 @@ const loginUser = async (req, res) => {
       username: user.username,
       bio: user.bio,
       profilePic: user.profilePic,
-      role: user.role, // Include the role in the response
+      role: user.role,
       message: "Login successful, now following all users including yourself.",
     });
   } catch (error) {
