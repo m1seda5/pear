@@ -739,7 +739,7 @@ const SignupCard = () => {
                   <option value="Arts">Arts</option>
                   <option value="Music">Music</option>
                   <option value="Physical Education">Physical Education</option>
-                  <option value="media">{t("Pear Media")}</option>
+                  <option value="media">Pear Media</option>
                 </Select>
               </FormControl>
             )}
