@@ -693,22 +693,15 @@ const signupUser = async (req, res) => {
   console.log("Signup request received:", req.body);
 
   try {
+    const { name, email, username, password, role, yearGroup, department } = req.body;
+    
+    // Move banned user check AFTER we get email from req.body
     const bannedUser = await User.findOne({ email, isBanned: true });
     if (bannedUser) {
-      return res
-        .status(403)
-        .json({ error: "This email is permanently banned" });
+      return res.status(403).json({ error: "This email is permanently banned" });
     }
-
-    // In loginUser controller, add this check:
-    if (user.isBanned) {
-      return res.status(403).json({ error: "Account permanently banned" });
-    }
-    const { name, email, username, password, role, yearGroup, department } =
-      req.body;
 
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
@@ -724,7 +717,7 @@ const signupUser = async (req, res) => {
       email,
       username,
       password: hashedPassword,
-      role, // Ensure role is saved
+      role,
       isVerified: false,
       otp,
       otpExpiry,
@@ -733,12 +726,11 @@ const signupUser = async (req, res) => {
     });
 
     await unverifiedUser.save();
-
     await sendOTPEmail(email, otp);
 
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
-      userId: unverifiedUser._id, // Send the userId for reference
+      userId: unverifiedUser._id,
     });
   } catch (err) {
     console.error("Error in signupUser:", err.message);
@@ -748,7 +740,6 @@ const signupUser = async (req, res) => {
     });
   }
 };
-
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
