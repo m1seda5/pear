@@ -694,24 +694,28 @@ const signupUser = async (req, res) => {
 
   try {
     const { name, email, username, password, role, yearGroup, department } = req.body;
-    
-    // Move banned user check AFTER we get email from req.body
+
+    // Banned user check
     const bannedUser = await User.findOne({ email, isBanned: true });
     if (bannedUser) {
       return res.status(403).json({ error: "This email is permanently banned" });
     }
 
+    // Check for existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
+    // Generate OTP and set expiry
     const otp = generateOTP();
     const otpExpiry = Date.now() + 2 * 60 * 1000; // OTP valid for 2 minutes
 
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Create new user
     const unverifiedUser = new User({
       name,
       email,
@@ -725,15 +729,29 @@ const signupUser = async (req, res) => {
       ...(role === "teacher" ? { department } : {}),
     });
 
+    // Save user and send OTP
     await unverifiedUser.save();
     await sendOTPEmail(email, otp);
 
+    // Send success response
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
       userId: unverifiedUser._id,
     });
+
   } catch (err) {
+    // Error handling
     console.error("Error in signupUser:", err.message);
+    
+    // If user was created but email failed, delete the user
+    if (err.message.includes("Failed to send OTP")) {
+      try {
+        await User.findOneAndDelete({ email: req.body.email });
+      } catch (deleteErr) {
+        console.error("Error deleting unverified user:", deleteErr);
+      }
+    }
+
     res.status(500).json({
       error: "Failed to register user",
       details: err.message,
