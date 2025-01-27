@@ -1152,7 +1152,7 @@ export {
   getSuggestedUsers,
   freezeAccount,
   awardVerification,
-  adminFreezerUser,
+  adminFreezeUser,
   adminDeleteUser,
   deleteUserData, // Exporting the new function
 };
