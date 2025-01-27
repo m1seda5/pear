@@ -771,6 +771,7 @@ const CreatePost = () => {
                     <option value="BTEC Art">{t("BTEC Art")}</option>
                     <option value="English">{t("English")}</option>
                     <option value="tv">{t("tv")}</option>
+                    <option value="media">{t("Pear media")}</option>
                   </Select>
                 </>
               )}
