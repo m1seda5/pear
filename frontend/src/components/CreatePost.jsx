@@ -521,6 +521,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
+import { FaLock } from "react-icons/fa";
 import usePreviewImg from "../hooks/usePreviewImg";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -544,6 +545,7 @@ const CreatePost = () => {
   const progressColor = useColorModeValue("gray.200", "gray.600");
   const progressFilledColor = useColorModeValue("gray.500", "gray.300");
   const { t } = useTranslation();
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleTextChange = (e) => {
     const inputText = e.target.value;
@@ -554,7 +556,6 @@ const CreatePost = () => {
   const handleCreatePost = async () => {
     setIsLoading(true);
     try {
-      // Default payload for all users
       const payload = {
         postedBy: user._id,
         text: postText,
@@ -563,7 +564,6 @@ const CreatePost = () => {
         targetDepartments: [],
       };
 
-      // Role-specific modifications
       if (user.role === "teacher") {
         if (targetYearGroups.length === 0) {
           showToast(t("Error"), t("Teachers must specify year groups"), "error");
@@ -602,7 +602,6 @@ const CreatePost = () => {
         return;
       }
 
-      // Handle review status for students
       if (user.role === "student") {
         setPostStatus('pending');
         showToast(
@@ -613,7 +612,6 @@ const CreatePost = () => {
       } else {
         setPostStatus('approved');
         showToast(t("Success"), t("Post created successfully"), "success");
-        // Reset form
         setPostText("");
         setImgUrl("");
         setTargetYearGroups([]);
@@ -626,6 +624,31 @@ const CreatePost = () => {
       setIsLoading(false);
     }
   };
+
+  if (user?.isFrozen) {
+    return (
+      <Button
+        position="fixed"
+        bottom={10}
+        right={5}
+        bg="blue.500"
+        _hover={{ bg: "blue.600" }}
+        color="white"
+        size="md"
+        aria-label="Account Frozen"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {isHovered ? (
+          <Flex align="center" gap={2}>
+            <FaLock /> {t("Account Frozen")}
+          </Flex>
+        ) : (
+          <FaLock />
+        )}
+      </Button>
+    );
+  }
 
   return (
     <>
@@ -675,7 +698,6 @@ const CreatePost = () => {
                 aria-label={t("Add Image")}
               />
 
-              {/* Role-specific Target Options */}
               {user.role === "teacher" && (
                 <Select
                   mt={4}

@@ -225,6 +225,21 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isFrozen: {
+      type: Boolean,
+      default: false,
+    },
+    freezeCount: {
+      type: Number,
+      default: 0,
+    },
+    freezeUntil: {
+      type: Date,
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
     verification: {
       type: String,
       enum: ["none", "blue", "golden"],

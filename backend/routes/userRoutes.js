@@ -65,22 +65,28 @@ import {
     updateUser,
     getSuggestedUsers,
     freezeAccount,
-    verifyOTP, // Import verifyOtp
+    verifyOTP,
+    adminFreezeUser,  // NEW IMPORT
+    adminDeleteUser   // NEW IMPORT
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
+import adminMiddleware from "../middlewares/adminMiddleware.js"; // NEW IMPORT
 
 const router = express.Router();
 
+// Admin routes (NEW SECTION)
+router.post("/admin/freeze-user", protectRoute, adminMiddleware, adminFreezeUser);
+router.delete("/admin/delete-user", protectRoute, adminMiddleware, adminDeleteUser);
+
+// Existing routes
 router.get("/profile/:query", getUserProfile);
 router.get("/suggested", protectRoute, getSuggestedUsers);
 router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
-router.post("/follow/:id", protectRoute, followUnFollowUser); // Toggle state(follow/unfollow)
+router.post("/follow/:id", protectRoute, followUnFollowUser);
 router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
-
-// Add the OTP verification route here
 router.post("/verify-otp", verifyOTP);
 
 export default router;

@@ -30,6 +30,9 @@ const Comment = ({ reply, lastReply, onDelete }) => {
     const currentUser = useRecoilValue(userAtom);
     const showToast = useShowToast();
 
+    // If the current user is frozen, do not display the comment
+    if (currentUser?.isFrozen) return null;
+
     const handleDelete = async () => {
         try {
             const res = await fetch(`/api/posts/comment/${reply._id}`, {
@@ -40,7 +43,7 @@ const Comment = ({ reply, lastReply, onDelete }) => {
             });
 
             const data = await res.json();
-            
+
             if (data.error) {
                 showToast("Error", data.error, "error");
                 return;
@@ -61,7 +64,7 @@ const Comment = ({ reply, lastReply, onDelete }) => {
                 <Avatar src={reply.userProfilePic} size={"sm"} />
                 <Flex gap={1} w={"full"} flexDirection={"column"}>
                     <Flex w={"full"} justifyContent={"space-between"} alignItems={"center"}>
-                        <Text fontSize='sm' fontWeight='bold'>
+                        <Text fontSize="sm" fontWeight="bold">
                             {reply.username}
                         </Text>
                         {showDeleteButton && (
