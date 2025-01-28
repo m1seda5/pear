@@ -1676,44 +1676,74 @@ const getFeedPosts = async (req, res) => {
 
     const following = user.following || [];
 
-    // Enhanced post filter
-    const postFilter = {
-      $and: [
-        {
-          $or: [
-            // For non-student posts, show all posts
-            { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } },
-            // For student posts, only show approved ones
-            {
-              $and: [
-                { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
-                { reviewStatus: "approved" }
-              ]
-            }
-          ]
-        },
-        {
-          $or: [
-            { targetAudience: "all" },
-            ...(user.role === "student" ? [
-              { targetYearGroups: { $in: [user.yearGroup] } },
-              { targetAudience: user.yearGroup },
-            ] : []),
-            ...(user.role === "teacher" ? [
-              { targetDepartments: { $in: [user.department] } },
-              { targetAudience: user.department },
-            ] : []),
-            ...(user.role === "admin" || user.role === "tv" ? [
-              { targetAudience: "tv" }
-            ] : []),
-            { postedBy: { $in: following } },
-            { postedBy: userId }
-          ]
+    // Base filters that apply to all posts
+    const baseFilters = [
+      {
+        $or: [
+          // Non-student posts don't need approval
+          { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } },
+          // Student posts must be approved
+          {
+            $and: [
+              { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
+              { reviewStatus: "approved" }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // Visibility filters based on user role and targeting
+    let visibilityFilters = [];
+
+    // Posts visible to everyone (targetAudience: "all")
+    visibilityFilters.push({ targetAudience: "all" });
+
+    // Posts from followed users
+    visibilityFilters.push({ postedBy: { $in: following } });
+
+    // User's own posts
+    visibilityFilters.push({ postedBy: userId });
+
+    // Role-specific visibility filters
+    switch (user.role) {
+      case "student":
+        if (user.yearGroup) {
+          visibilityFilters.push(
+            { targetYearGroups: user.yearGroup },
+            { targetAudience: user.yearGroup }
+          );
         }
+        break;
+
+      case "teacher":
+        if (user.department) {
+          visibilityFilters.push(
+            { targetDepartments: user.department },
+            { targetAudience: user.department }
+          );
+        }
+        break;
+
+      case "admin":
+        // Admins can see all posts
+        visibilityFilters = [{}]; // Empty filter means no restrictions
+        break;
+
+      case "tv":
+        visibilityFilters.push({ targetAudience: "tv" });
+        break;
+    }
+
+    // Combine base filters with visibility filters
+    const finalFilter = {
+      $and: [
+        ...baseFilters,
+        { $or: visibilityFilters }
       ]
     };
 
-    const feedPosts = await Post.find(postFilter)
+    const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
       .limit(50);
