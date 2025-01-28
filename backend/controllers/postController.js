@@ -1275,140 +1275,107 @@ const createPost = async (req, res) => {
     } = req.body;
     let { img } = req.body;
 
-    // Basic validation
+    // Validate required fields
     if (!postedBy || !text) {
-      return res.status(400).json({ error: "PostedBy and text fields are required" });
+      return res
+        .status(400)
+        .json({ error: "PostedBy and text fields are required" });
     }
 
-    // Get the user who is creating the post
+    // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Verify the requesting user matches the postedBy user
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ error: "Authentication required" });
+    // Authorization check
+    if (user._id.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ error: "Unauthorized to create post" });
     }
-
-    // Convert ObjectId to string for comparison
-    const requestUserId = req.user._id.toString();
-    const postedById = postedBy.toString();
-
-    if (requestUserId !== postedById) {
-      return res.status(401).json({ error: "User ID mismatch" });
-    }
-
-    let reviewStatus = "approved";
-    let reviewers = [];
-    let finalTargetYearGroups = [];
-    let finalTargetDepartments = [];
-    let finalTargetAudience = "all";
 
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
-        // Students' posts need review and are always targeted to 'all'
-        reviewStatus = "pending";
-        finalTargetAudience = "all";
-        
-        // Get reviewers for student posts
-        const [admin] = await User.aggregate([
-          { $match: { role: "admin" } },
-          { $sample: { size: 1 } },
-        ]);
-
-        const [teacher] = await User.aggregate([
-          { $match: { role: "teacher" } },
-          { $sample: { size: 1 } },
-        ]);
-
-        const [student] = await User.aggregate([
-          { $match: { role: "student", _id: { $ne: user._id } } },
-          { $sample: { size: 1 } },
-        ]);
-
-        reviewers = [
-          admin && { userId: admin._id, role: "admin", decision: "pending" },
-          teacher && { userId: teacher._id, role: "teacher", decision: "pending" },
-          student && { userId: student._id, role: "student", decision: "pending" },
-        ].filter(Boolean); // Remove null entries
+        // Students can only post to 'all'
+        req.body.targetAudience = "all";
+        req.body.targetYearGroups = [];
+        req.body.targetDepartments = [];
         break;
 
       case "teacher":
-        // Teachers can target year groups
+        // Teachers must specify year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
             error: "Teachers must specify at least one year group to target",
           });
         }
-        finalTargetYearGroups = targetYearGroups;
+        // Ensure the teacher is targeting only year groups
+        req.body.targetDepartments = [];
+        req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
         break;
 
       case "admin":
-        // Admins can target both year groups and departments
-        finalTargetYearGroups = targetYearGroups || [];
-        finalTargetDepartments = targetDepartments || [];
-        finalTargetAudience = targetAudience || "all";
+        // Admins must specify a target
+        if (!targetAudience && !targetYearGroups && !targetDepartments) {
+          return res.status(400).json({
+            error:
+              "Admin must specify a target audience, year groups, or departments",
+          });
+        }
         break;
 
       default:
-        return res.status(403).json({ error: "Invalid user role" });
+        return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
-    // Handle image upload if present
+    // Handle image upload if provided
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
 
-    // Create the new post
+    // Create the post
     const newPost = new Post({
       postedBy,
       text,
       img,
-      targetYearGroups: finalTargetYearGroups,
-      targetDepartments: finalTargetDepartments,
-      targetAudience: finalTargetAudience,
-      reviewStatus,
-      reviewers,
+      targetYearGroups: targetYearGroups || [],
+      targetDepartments: targetDepartments || [],
+      targetAudience: req.body.targetAudience || "all",
     });
 
     await newPost.save();
 
-    // Send notifications for approved posts
-    if (reviewStatus === "approved") {
-      try {
-        const usersToNotify = await User.find({
-          notificationPreferences: true,
-          _id: { $ne: postedBy },
-        });
+    // After successfully creating the post, send notifications
+    try {
+      // Find all users who have notifications enabled
+      const usersToNotify = await User.find({
+        notificationPreferences: true,
+        _id: { $ne: postedBy } // Exclude the post creator
+      });
 
-        const notificationPromises = usersToNotify.map((recipient) =>
-          sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
-        );
+      // Send notifications in parallel
+      const notificationPromises = usersToNotify.map(recipient => 
+        sendNotificationEmail(
+          recipient.email,
+          postedBy,
+          newPost._id,
+          user.username
+        )
+      );
 
-        await Promise.allSettled(notificationPromises);
-      } catch (notificationError) {
-        console.error("Error sending notifications:", notificationError);
-        // Continue execution even if notifications fail
-      }
+      // Use Promise.allSettled to handle all notification attempts
+      await Promise.allSettled(notificationPromises);
+      
+    } catch (notificationError) {
+      // Log notification errors but don't fail the post creation
+      console.error("Error sending notifications:", notificationError);
     }
-
-    // Log post creation details for debugging
-    console.log("Post created successfully:", {
-      userId: user._id,
-      role: user.role,
-      reviewStatus,
-      targetYearGroups: finalTargetYearGroups,
-      targetDepartments: finalTargetDepartments,
-      targetAudience: finalTargetAudience
-    });
 
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("Error in createPost:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error in createPost:", err.message);
+    res.status(500).json({ error: "Failed to create post" });
   }
 };
 const getPendingReviews = async (req, res) => {
