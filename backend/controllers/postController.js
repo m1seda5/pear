@@ -1275,17 +1275,28 @@ const createPost = async (req, res) => {
     } = req.body;
     let { img } = req.body;
 
+    // Basic validation
     if (!postedBy || !text) {
       return res.status(400).json({ error: "PostedBy and text fields are required" });
     }
 
+    // Get the user who is creating the post
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user._id.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ error: "Unauthorized to create post" });
+    // Verify the requesting user matches the postedBy user
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Convert ObjectId to string for comparison
+    const requestUserId = req.user._id.toString();
+    const postedById = postedBy.toString();
+
+    if (requestUserId !== postedById) {
+      return res.status(401).json({ error: "User ID mismatch" });
     }
 
     let reviewStatus = "approved";
@@ -1297,14 +1308,11 @@ const createPost = async (req, res) => {
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
-        // Students can only post to 'all' and require review
+        // Students' posts need review and are always targeted to 'all'
         reviewStatus = "pending";
-        // Force student posts to target 'all'
-        finalTargetYearGroups = [];
-        finalTargetDepartments = [];
         finalTargetAudience = "all";
-
-        // Get random reviewers
+        
+        // Get reviewers for student posts
         const [admin] = await User.aggregate([
           { $match: { role: "admin" } },
           { $sample: { size: 1 } },
@@ -1321,41 +1329,40 @@ const createPost = async (req, res) => {
         ]);
 
         reviewers = [
-          { userId: admin?._id, role: "admin", decision: "pending" },
-          { userId: teacher?._id, role: "teacher", decision: "pending" },
-          { userId: student?._id, role: "student", decision: "pending" },
-        ].filter((reviewer) => reviewer.userId);
+          admin && { userId: admin._id, role: "admin", decision: "pending" },
+          teacher && { userId: teacher._id, role: "teacher", decision: "pending" },
+          student && { userId: student._id, role: "student", decision: "pending" },
+        ].filter(Boolean); // Remove null entries
         break;
 
       case "teacher":
-        // Teachers can only target year groups
+        // Teachers can target year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
             error: "Teachers must specify at least one year group to target",
           });
         }
         finalTargetYearGroups = targetYearGroups;
-        finalTargetDepartments = []; // No department targeting for teachers
-        finalTargetAudience = "all"; // Default to 'all' for teachers
         break;
 
       case "admin":
-        // Admins have complete freedom for targeting
+        // Admins can target both year groups and departments
         finalTargetYearGroups = targetYearGroups || [];
         finalTargetDepartments = targetDepartments || [];
         finalTargetAudience = targetAudience || "all";
         break;
 
       default:
-        return res.status(403).json({ error: "Unauthorized to create posts" });
+        return res.status(403).json({ error: "Invalid user role" });
     }
 
-    // Handle image upload
+    // Handle image upload if present
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
 
+    // Create the new post
     const newPost = new Post({
       postedBy,
       text,
@@ -1369,7 +1376,7 @@ const createPost = async (req, res) => {
 
     await newPost.save();
 
-    // Only send notifications for approved posts
+    // Send notifications for approved posts
     if (reviewStatus === "approved") {
       try {
         const usersToNotify = await User.find({
@@ -1384,16 +1391,26 @@ const createPost = async (req, res) => {
         await Promise.allSettled(notificationPromises);
       } catch (notificationError) {
         console.error("Error sending notifications:", notificationError);
+        // Continue execution even if notifications fail
       }
     }
 
+    // Log post creation details for debugging
+    console.log("Post created successfully:", {
+      userId: user._id,
+      role: user.role,
+      reviewStatus,
+      targetYearGroups: finalTargetYearGroups,
+      targetDepartments: finalTargetDepartments,
+      targetAudience: finalTargetAudience
+    });
+
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("Error in createPost:", err.message);
-    res.status(500).json({ error: "Failed to create post" });
+    console.error("Error in createPost:", err);
+    res.status(500).json({ error: err.message });
   }
 };
-
 const getPendingReviews = async (req, res) => {
   try {
     console.log("Getting pending reviews for user:", req.user._id);
