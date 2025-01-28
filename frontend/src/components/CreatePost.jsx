@@ -541,7 +541,7 @@ const CreatePost = () => {
   const user = useRecoilValue(userAtom);
   const showToast = useShowToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [postStatus, setPostStatus] = useState(null); // null, 'pending', 'approved', 'rejected'
+  const [postStatus, setPostStatus] = useState(null);
   const progressColor = useColorModeValue("gray.200", "gray.600");
   const progressFilledColor = useColorModeValue("gray.500", "gray.300");
   const { t } = useTranslation();
@@ -556,38 +556,51 @@ const CreatePost = () => {
   const handleCreatePost = async () => {
     setIsLoading(true);
     try {
+      // Base payload without audience info
       const payload = {
         postedBy: user._id,
         text: postText,
-        targetAudience: "all",
-        targetYearGroups: [],
-        targetDepartments: [],
       };
 
+      // Handle image
+      if (imgUrl) payload.img = imgUrl;
+
+      // Student posts (default to all)
+      if (user.role === "student") {
+        payload.targetAudience = "all";
+        payload.targetYearGroups = [];
+        payload.targetDepartments = [];
+      }
+
+      // Teacher posts
       if (user.role === "teacher") {
         if (targetYearGroups.length === 0) {
           showToast(t("Error"), t("Teachers must specify year groups"), "error");
           setIsLoading(false);
           return;
         }
+        payload.targetAudience = "yearGroups";
         payload.targetYearGroups = targetYearGroups;
+        payload.targetDepartments = [];
       }
 
+      // Admin posts
       if (user.role === "admin") {
         if (!targetYearGroups.length && !targetDepartments.length) {
-          showToast(
-            t("Error"),
-            t("Admins must specify target year groups or departments"),
-            "error"
-          );
+          showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
           setIsLoading(false);
           return;
         }
+        
+        // Determine audience type
+        payload.targetAudience = 
+          targetYearGroups.length && targetDepartments.length ? "both" :
+          targetYearGroups.length ? "yearGroups" :
+          "departments";
+
         payload.targetYearGroups = targetYearGroups;
         payload.targetDepartments = targetDepartments;
       }
-
-      if (imgUrl) payload.img = imgUrl;
 
       const res = await fetch("/api/posts/create", {
         method: "POST",
