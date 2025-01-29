@@ -1299,7 +1299,7 @@ const createPost = async (req, res) => {
       img,
       targetYearGroups: [],
       targetDepartments: [],
-      targetAudience: "all"
+      targetAudience: "all" // Default value
     };
 
     // Role-specific post creation rules
@@ -1316,7 +1316,8 @@ const createPost = async (req, res) => {
           });
         }
         postData.targetYearGroups = targetYearGroups;
-        postData.targetAudience = "yearGroups";
+        // Set the first year group as the target audience
+        postData.targetAudience = targetYearGroups[0];
         break;
 
       case "admin":
@@ -1333,11 +1334,11 @@ const createPost = async (req, res) => {
         
         // Set target audience based on what's specified
         if (targetYearGroups?.length && targetDepartments?.length) {
-          postData.targetAudience = "both";
+          postData.targetAudience = "all"; // Use "all" when targeting both
         } else if (targetYearGroups?.length) {
-          postData.targetAudience = "yearGroups";
-        } else {
-          postData.targetAudience = "departments";
+          postData.targetAudience = targetYearGroups[0]; // Use first year group
+        } else if (targetDepartments?.length) {
+          postData.targetAudience = targetDepartments[0]; // Use first department
         }
         break;
 
