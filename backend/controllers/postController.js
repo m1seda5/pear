@@ -1293,13 +1293,19 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
+    let postData = {
+      postedBy,
+      text,
+      img,
+      targetYearGroups: [],
+      targetDepartments: [],
+      targetAudience: "all"
+    };
+
     // Role-specific post creation rules
     switch (user.role) {
       case "student":
-        // Students can only post to 'all'
-        req.body.targetAudience = "all";
-        req.body.targetYearGroups = [];
-        req.body.targetDepartments = [];
+        // Students posts are always set to 'all'
         break;
 
       case "teacher":
@@ -1309,73 +1315,77 @@ const createPost = async (req, res) => {
             error: "Teachers must specify at least one year group to target",
           });
         }
-        // Ensure the teacher is targeting only year groups
-        req.body.targetDepartments = [];
-        req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
+        postData.targetYearGroups = targetYearGroups;
+        postData.targetAudience = "yearGroups";
         break;
 
       case "admin":
-        // Admins must specify a target
-        if (!targetAudience && !targetYearGroups && !targetDepartments) {
+        // Admins must specify either year groups or departments
+        if ((!targetYearGroups || targetYearGroups.length === 0) && 
+            (!targetDepartments || targetDepartments.length === 0)) {
           return res.status(400).json({
-            error:
-              "Admin must specify a target audience, year groups, or departments",
+            error: "Admin must specify year groups or departments",
           });
+        }
+        
+        postData.targetYearGroups = targetYearGroups || [];
+        postData.targetDepartments = targetDepartments || [];
+        
+        // Set target audience based on what's specified
+        if (targetYearGroups?.length && targetDepartments?.length) {
+          postData.targetAudience = "both";
+        } else if (targetYearGroups?.length) {
+          postData.targetAudience = "yearGroups";
+        } else {
+          postData.targetAudience = "departments";
         }
         break;
 
       default:
-        return res.status(403).json({ error: "Unauthorized to create posts" });
+        return res.status(403).json({ error: "Unauthorized role for creating posts" });
     }
 
     // Handle image upload if provided
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
-      img = uploadedResponse.secure_url;
+      postData.img = uploadedResponse.secure_url;
     }
 
-    // Create the post
+    // Create the post with proper review status
     const newPost = new Post({
-      postedBy,
-      text,
-      img,
-      targetYearGroups: targetYearGroups || [],
-      targetDepartments: targetDepartments || [],
-      targetAudience: req.body.targetAudience || "all",
+      ...postData,
+      reviewStatus: user.role === "student" ? "pending" : "approved"
     });
 
     await newPost.save();
 
-    // After successfully creating the post, send notifications
-    try {
-      // Find all users who have notifications enabled
-      const usersToNotify = await User.find({
-        notificationPreferences: true,
-        _id: { $ne: postedBy } // Exclude the post creator
-      });
+    // Only send notifications for non-student posts or approved student posts
+    if (user.role !== "student") {
+      try {
+        const usersToNotify = await User.find({
+          notificationPreferences: true,
+          _id: { $ne: postedBy }
+        });
 
-      // Send notifications in parallel
-      const notificationPromises = usersToNotify.map(recipient => 
-        sendNotificationEmail(
-          recipient.email,
-          postedBy,
-          newPost._id,
-          user.username
-        )
-      );
+        const notificationPromises = usersToNotify.map(recipient => 
+          sendNotificationEmail(
+            recipient.email,
+            postedBy,
+            newPost._id,
+            user.username
+          )
+        );
 
-      // Use Promise.allSettled to handle all notification attempts
-      await Promise.allSettled(notificationPromises);
-      
-    } catch (notificationError) {
-      // Log notification errors but don't fail the post creation
-      console.error("Error sending notifications:", notificationError);
+        await Promise.allSettled(notificationPromises);
+      } catch (notificationError) {
+        console.error("Error sending notifications:", notificationError);
+      }
     }
 
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("Error in createPost:", err.message);
-    res.status(500).json({ error: "Failed to create post" });
+    console.error("Error in createPost:", err);
+    res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
 const getPendingReviews = async (req, res) => {
