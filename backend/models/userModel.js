@@ -285,7 +285,6 @@ const userSchema = mongoose.Schema(
         "BTEC Art",
         "English",
         "tv",
-        "media",
       ],
       required: function () {
         return this.role === "teacher";

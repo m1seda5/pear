@@ -1266,23 +1266,15 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
 
 const createPost = async (req, res) => {
   try {
-    const {
-      postedBy,
-      text,
-      targetYearGroups,
-      targetDepartments,
-      targetAudience,
-    } = req.body;
+    const { postedBy, text, targetYearGroups, targetDepartments, targetAudience } = req.body;
     let { img } = req.body;
 
     // Validate required fields
     if (!postedBy || !text) {
-      return res
-        .status(400)
-        .json({ error: "PostedBy and text fields are required" });
+      return res.status(400).json({ error: "PostedBy and text fields are required" });
     }
 
-    // Find the user who is posting
+    // Find and validate user
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -1293,74 +1285,59 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
+    // Check if user is frozen
+    if (user.isFrozen) {
+      return res.status(403).json({ error: "Account is frozen" });
+    }
+
     let postData = {
       postedBy,
       text,
       img,
+      targetAudience: "all",
       targetYearGroups: [],
       targetDepartments: [],
-      targetAudience: "all" // Default value
+      reviewStatus: user.role === "student" ? "pending" : "approved"
     };
 
-    // Role-specific post creation rules
+    // Role-specific validation and setup
     switch (user.role) {
       case "student":
-        // Students posts are always set to 'all'
+        // Students can only post to all
         break;
 
       case "teacher":
-        // Teachers must specify year groups
-        if (!targetYearGroups || targetYearGroups.length === 0) {
-          return res.status(400).json({
-            error: "Teachers must specify at least one year group to target",
-          });
+        if (!targetYearGroups?.length) {
+          return res.status(400).json({ error: "Teachers must specify year groups" });
         }
         postData.targetYearGroups = targetYearGroups;
-        // Set the first year group as the target audience
-        postData.targetAudience = targetYearGroups[0];
+        postData.targetAudience = "yearGroups";
         break;
 
       case "admin":
-        // Admins must specify either year groups or departments
-        if ((!targetYearGroups || targetYearGroups.length === 0) && 
-            (!targetDepartments || targetDepartments.length === 0)) {
-          return res.status(400).json({
-            error: "Admin must specify year groups or departments",
-          });
+        if (!targetYearGroups?.length && !targetDepartments?.length) {
+          return res.status(400).json({ error: "Admin must specify year groups or departments" });
         }
-        
         postData.targetYearGroups = targetYearGroups || [];
         postData.targetDepartments = targetDepartments || [];
-        
-        // Set target audience based on what's specified
-        if (targetYearGroups?.length && targetDepartments?.length) {
-          postData.targetAudience = "all"; // Use "all" when targeting both
-        } else if (targetYearGroups?.length) {
-          postData.targetAudience = targetYearGroups[0]; // Use first year group
-        } else if (targetDepartments?.length) {
-          postData.targetAudience = targetDepartments[0]; // Use first department
-        }
+        postData.targetAudience = targetAudience; // Use the frontend-provided audience type
         break;
 
       default:
         return res.status(403).json({ error: "Unauthorized role for creating posts" });
     }
 
-    // Handle image upload if provided
+    // Handle image upload
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       postData.img = uploadedResponse.secure_url;
     }
 
-    // Create the post with proper review status
-    const newPost = new Post({
-      ...postData,
-      reviewStatus: user.role === "student" ? "pending" : "approved"
-    });
-
+    // Create and save the post
+    const newPost = new Post(postData);
     await newPost.save();
 
-    // Only send notifications for non-student posts or approved student posts
+    // Send notifications for non-student posts or approved student posts
     if (user.role !== "student") {
       try {
         const usersToNotify = await User.find({
@@ -1369,12 +1346,7 @@ const createPost = async (req, res) => {
         });
 
         const notificationPromises = usersToNotify.map(recipient => 
-          sendNotificationEmail(
-            recipient.email,
-            postedBy,
-            newPost._id,
-            user.username
-          )
+          sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
 
         await Promise.allSettled(notificationPromises);

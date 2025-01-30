@@ -220,7 +220,7 @@ const postSchema = mongoose.Schema(
         "BTEC Art",
         "Englich",
         "tv",
-        "media",
+       
       ],
       default: "all",
     },
