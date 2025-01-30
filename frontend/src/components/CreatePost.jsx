@@ -607,12 +607,8 @@ const CreatePost = () => {
       // Handle successful post creation
       showToast(t("Success"), t("Post created successfully"), "success");
   
-      // Reset form
-      setPostText("");
-      setImgUrl("");
-      setTargetYearGroups([]);
-      setTargetDepartments([]);
-      onClose();
+      // Reset form using resetForm()
+      resetForm();
     } catch (error) {
       showToast(t("Error"), error.message, "error");
     } finally {
@@ -653,6 +649,7 @@ const CreatePost = () => {
       </Button>
     );
   }
+  
   
 
   return (

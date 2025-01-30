@@ -1273,27 +1273,31 @@ const createPost = async (req, res) => {
       targetDepartments,
       targetAudience,
     } = req.body;
-    
+   
     let { img } = req.body;
-
+ 
+ 
     // Validate required fields
     if (!postedBy || !text) {
       return res
         .status(400)
         .json({ error: 'PostedBy and text fields are required' });
     }
-
+ 
+ 
     // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
+ 
+ 
     // Authorization check
     if (user._id.toString() !== req.user._id.toString()) {
       return res.status(401).json({ error: 'Unauthorized to create post' });
     }
-
+ 
+ 
     // Role-specific post creation rules
     switch (user.role) {
       case 'student':
@@ -1302,7 +1306,8 @@ const createPost = async (req, res) => {
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
         break;
-
+ 
+ 
       case 'teacher':
         // Teachers must specify year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
@@ -1314,7 +1319,8 @@ const createPost = async (req, res) => {
         req.body.targetDepartments = [];
         req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
         break;
-
+ 
+ 
       case 'admin':
         // Admins must specify a target
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
@@ -1323,17 +1329,20 @@ const createPost = async (req, res) => {
           });
         }
         break;
-
+ 
+ 
       default:
         return res.status(403).json({ error: 'Unauthorized to create posts' });
     }
-
+ 
+ 
     // Handle image upload if provided
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
-
+ 
+ 
     // Create the post
     const newPost = new Post({
       postedBy,
@@ -1344,9 +1353,11 @@ const createPost = async (req, res) => {
       reviewStatus: user.role === 'student' ? 'pending' : 'approved',
       targetAudience: req.body.targetAudience || 'all',
     });
-
+ 
+ 
     await newPost.save();
-
+ 
+ 
     // Send notifications for non-student posts or approved student posts
     if (user.role !== 'student' || newPost.reviewStatus === 'approved') {
       try {
@@ -1354,23 +1365,28 @@ const createPost = async (req, res) => {
           notificationPreferences: true,
           _id: { $ne: postedBy },
         });
-
+ 
+ 
         const notificationPromises = usersToNotify.map((recipient) =>
           sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
-
+ 
+ 
         await Promise.allSettled(notificationPromises);
       } catch (notificationError) {
         console.error('Error sending notifications:', notificationError);
       }
     }
-
+ 
+ 
     res.status(201).json(newPost);
   } catch (err) {
     console.error('Error in createPost:', err);
     res.status(500).json({ error: err.message || 'Failed to create post' });
   }
-};
+ };
+ 
+ 
 const getPendingReviews = async (req, res) => {
   try {
     console.log("Getting pending reviews for user:", req.user._id);
