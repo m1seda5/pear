@@ -1304,27 +1304,33 @@ const createPost = async (req, res) => {
     switch (user.role) {
       case "student":
         // Students can only post to all
+        postData.targetAudience = "all";
         break;
-
+    
       case "teacher":
         if (!targetYearGroups?.length) {
           return res.status(400).json({ error: "Teachers must specify year groups" });
         }
         postData.targetYearGroups = targetYearGroups;
-        postData.targetAudience = "yearGroups";
+        postData.targetAudience = targetYearGroups[0]; // Using first selected year group
         break;
-
+    
       case "admin":
         if (!targetYearGroups?.length && !targetDepartments?.length) {
           return res.status(400).json({ error: "Admin must specify year groups or departments" });
         }
         postData.targetYearGroups = targetYearGroups || [];
         postData.targetDepartments = targetDepartments || [];
-        postData.targetAudience = targetAudience; // Use the frontend-provided audience type
+        
+        // Set target audience based on what's selected
+        if (targetYearGroups.length && targetDepartments.length) {
+          postData.targetAudience = "all";
+        } else if (targetYearGroups.length) {
+          postData.targetAudience = targetYearGroups[0];
+        } else {
+          postData.targetAudience = targetDepartments[0];
+        }
         break;
-
-      default:
-        return res.status(403).json({ error: "Unauthorized role for creating posts" });
     }
 
     // Handle image upload

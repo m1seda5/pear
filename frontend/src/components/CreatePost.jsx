@@ -569,35 +569,36 @@ const CreatePost = () => {
       if (imgUrl) payload.img = imgUrl;
 
       // Handle role-specific targeting
-      if (user.role === "teacher") {
-        if (targetYearGroups.length === 0) {
-          showToast(t("Error"), t("Teachers must specify year groups"), "error");
-          setIsLoading(false);
-          return;
-        }
-        payload.targetYearGroups = targetYearGroups;
-        payload.targetAudience = "yearGroups";
-      }
+if (user.role === "teacher") {
+  if (targetYearGroups.length === 0) {
+    showToast(t("Error"), t("Teachers must specify year groups"), "error");
+    setIsLoading(false);
+    return;
+  }
+  payload.targetYearGroups = targetYearGroups;
+  // Use the first selected year group as the target audience
+  payload.targetAudience = targetYearGroups[0]; // This will be "Year 9", "Year 10", etc.
+}
 
-      if (user.role === "admin") {
-        if (!targetYearGroups.length && !targetDepartments.length) {
-          showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
-          setIsLoading(false);
-          return;
-        }
-        
-        payload.targetYearGroups = targetYearGroups;
-        payload.targetDepartments = targetDepartments;
-        
-        // Set target audience based on what's being targeted
-        if (targetYearGroups.length && targetDepartments.length) {
-          payload.targetAudience = "all";
-        } else if (targetYearGroups.length) {
-          payload.targetAudience = "yearGroups";
-        } else {
-          payload.targetAudience = "departments";
-        }
-      }
+if (user.role === "admin") {
+  if (!targetYearGroups.length && !targetDepartments.length) {
+    showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
+    setIsLoading(false);
+    return;
+  }
+  
+  payload.targetYearGroups = targetYearGroups;
+  payload.targetDepartments = targetDepartments;
+  
+  // Set target audience based on what's selected
+  if (targetYearGroups.length && targetDepartments.length) {
+    payload.targetAudience = "all";
+  } else if (targetYearGroups.length) {
+    payload.targetAudience = targetYearGroups[0]; // Use first year group
+  } else {
+    payload.targetAudience = targetDepartments[0]; // Use first department
+  }
+}
 
       const res = await fetch("/api/posts/create", {
         method: "POST",
