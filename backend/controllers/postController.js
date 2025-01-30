@@ -1117,7 +1117,7 @@
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-
+// original
 // const getFeedPosts = async (req, res) => {
 //   try {
 //     const userId = req.user && req.user._id;
@@ -1266,105 +1266,109 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
 
 const createPost = async (req, res) => {
   try {
-    const { postedBy, text, targetYearGroups, targetDepartments, targetAudience } = req.body;
+    const {
+      postedBy,
+      text,
+      targetYearGroups,
+      targetDepartments,
+      targetAudience,
+    } = req.body;
+    
     let { img } = req.body;
 
     // Validate required fields
     if (!postedBy || !text) {
-      return res.status(400).json({ error: "PostedBy and text fields are required" });
+      return res
+        .status(400)
+        .json({ error: 'PostedBy and text fields are required' });
     }
 
-    // Find and validate user
+    // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     // Authorization check
     if (user._id.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ error: "Unauthorized to create post" });
+      return res.status(401).json({ error: 'Unauthorized to create post' });
     }
 
-    // Check if user is frozen
-    if (user.isFrozen) {
-      return res.status(403).json({ error: "Account is frozen" });
+    // Role-specific post creation rules
+    switch (user.role) {
+      case 'student':
+        // Students can only post to 'all'
+        req.body.targetAudience = 'all';
+        req.body.targetYearGroups = [];
+        req.body.targetDepartments = [];
+        break;
+
+      case 'teacher':
+        // Teachers must specify year groups
+        if (!targetYearGroups || targetYearGroups.length === 0) {
+          return res.status(400).json({
+            error: 'Teachers must specify at least one year group to target',
+          });
+        }
+        // Ensure the teacher is targeting only year groups
+        req.body.targetDepartments = [];
+        req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
+        break;
+
+      case 'admin':
+        // Admins must specify a target
+        if (!targetAudience && !targetYearGroups && !targetDepartments) {
+          return res.status(400).json({
+            error: 'Admin must specify a target audience, year groups, or departments',
+          });
+        }
+        break;
+
+      default:
+        return res.status(403).json({ error: 'Unauthorized to create posts' });
     }
 
-    let postData = {
+    // Handle image upload if provided
+    if (img) {
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      img = uploadedResponse.secure_url;
+    }
+
+    // Create the post
+    const newPost = new Post({
       postedBy,
       text,
       img,
-      targetAudience: "all",
-      targetYearGroups: [],
-      targetDepartments: [],
-      reviewStatus: user.role === "student" ? "pending" : "approved"
-    };
+      targetYearGroups: targetYearGroups || [],
+      targetDepartments: targetDepartments || [],
+      reviewStatus: user.role === 'student' ? 'pending' : 'approved',
+      targetAudience: req.body.targetAudience || 'all',
+    });
 
-    // Role-specific validation and setup
-    switch (user.role) {
-      case "student":
-        // Students can only post to all
-        postData.targetAudience = "all";
-        break;
-    
-      case "teacher":
-        if (!targetYearGroups?.length) {
-          return res.status(400).json({ error: "Teachers must specify year groups" });
-        }
-        postData.targetYearGroups = targetYearGroups;
-        postData.targetAudience = targetYearGroups[0]; // Using first selected year group
-        break;
-    
-      case "admin":
-        if (!targetYearGroups?.length && !targetDepartments?.length) {
-          return res.status(400).json({ error: "Admin must specify year groups or departments" });
-        }
-        postData.targetYearGroups = targetYearGroups || [];
-        postData.targetDepartments = targetDepartments || [];
-        
-        // Set target audience based on what's selected
-        if (targetYearGroups.length && targetDepartments.length) {
-          postData.targetAudience = "all";
-        } else if (targetYearGroups.length) {
-          postData.targetAudience = targetYearGroups[0];
-        } else {
-          postData.targetAudience = targetDepartments[0];
-        }
-        break;
-    }
-
-    // Handle image upload
-    if (img) {
-      const uploadedResponse = await cloudinary.uploader.upload(img);
-      postData.img = uploadedResponse.secure_url;
-    }
-
-    // Create and save the post
-    const newPost = new Post(postData);
     await newPost.save();
 
     // Send notifications for non-student posts or approved student posts
-    if (user.role !== "student") {
+    if (user.role !== 'student' || newPost.reviewStatus === 'approved') {
       try {
         const usersToNotify = await User.find({
           notificationPreferences: true,
-          _id: { $ne: postedBy }
+          _id: { $ne: postedBy },
         });
 
-        const notificationPromises = usersToNotify.map(recipient => 
+        const notificationPromises = usersToNotify.map((recipient) =>
           sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
 
         await Promise.allSettled(notificationPromises);
       } catch (notificationError) {
-        console.error("Error sending notifications:", notificationError);
+        console.error('Error sending notifications:', notificationError);
       }
     }
 
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("Error in createPost:", err);
-    res.status(500).json({ error: err.message || "Failed to create post" });
+    console.error('Error in createPost:', err);
+    res.status(500).json({ error: err.message || 'Failed to create post' });
   }
 };
 const getPendingReviews = async (req, res) => {
@@ -1633,93 +1637,90 @@ const repostPost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
+// new code
 const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user && req.user._id;
 
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select("role following yearGroup department isStudent");
+    const user = await User.findById(userId).select(
+      "role following yearGroup department isStudent"
+    );
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Retrieve the list of users the current user is following
     const following = user.following || [];
 
-    // Base filters that apply to all posts
-    const baseFilters = [
-      {
-        $or: [
-          // Non-student posts don't need approval
-          { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } },
-          // Student posts must be approved
-          {
-            $and: [
-              { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
-              { reviewStatus: "approved" }
-            ]
-          }
-        ]
-      }
-    ];
+    // First, get the IDs of all students and non-students
+    const studentIds = await User.find({ role: "student" }).distinct('_id');
+    const nonStudentIds = await User.find({ role: { $ne: "student" } }).distinct('_id');
 
-    // Visibility filters based on user role and targeting
-    let visibilityFilters = [];
-
-    // Posts visible to everyone (targetAudience: "all")
-    visibilityFilters.push({ targetAudience: "all" });
-
-    // Posts from followed users
-    visibilityFilters.push({ postedBy: { $in: following } });
-
-    // User's own posts
-    visibilityFilters.push({ postedBy: userId });
-
-    // Role-specific visibility filters
-    switch (user.role) {
-      case "student":
-        if (user.yearGroup) {
-          visibilityFilters.push(
-            { targetYearGroups: user.yearGroup },
-            { targetAudience: user.yearGroup }
-          );
-        }
-        break;
-
-      case "teacher":
-        if (user.department) {
-          visibilityFilters.push(
-            { targetDepartments: user.department },
-            { targetAudience: user.department }
-          );
-        }
-        break;
-
-      case "admin":
-        // Admins can see all posts
-        visibilityFilters = [{}]; // Empty filter means no restrictions
-        break;
-
-      case "tv":
-        visibilityFilters.push({ targetAudience: "tv" });
-        break;
-    }
-
-    // Combine base filters with visibility filters
-    const finalFilter = {
+    // Construct a precise filtering condition
+    const postFilter = {
       $and: [
-        ...baseFilters,
-        { $or: visibilityFilters }
+        // Student approval filter
+        {
+          $or: [
+            // Non-student posts don't need approval
+            { postedBy: { $in: nonStudentIds } },
+            // Student posts must be approved
+            {
+              $and: [
+                { postedBy: { $in: studentIds } },
+                { reviewStatus: "approved" }
+              ]
+            }
+          ]
+        },
+        {
+          $or: [
+            // Always allow posts targeted to 'all'
+            { targetAudience: "all" },
+
+            // For students, show posts targeting their EXACT year group
+            ...(user.role === "student"
+              ? [
+                  { targetYearGroups: { $in: [user.yearGroup] } },
+                  { targetAudience: user.yearGroup },
+                ]
+              : []),
+
+            // For teachers, show posts targeting their EXACT department
+            ...(user.role === "teacher"
+              ? [
+                  { targetDepartments: { $in: [user.department] } },
+                  { targetAudience: user.department },
+                ]
+              : []),
+
+            // For admin/TV, show additional posts
+            ...(user.role === "admin" || user.role === "tv"
+              ? [{ targetAudience: "tv" }]
+              : []),
+
+            // Always show posts from users the current user is following
+            { postedBy: { $in: following } },
+
+            // Ensure users see their own posts
+            { postedBy: userId }
+          ]
+        }
       ]
     };
 
-    const feedPosts = await Post.find(finalFilter)
+    // Fetch posts matching the filter
+    const feedPosts = await Post.find(postFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50); // Limit to prevent overwhelming results
 
     res.status(200).json(feedPosts);
   } catch (err) {

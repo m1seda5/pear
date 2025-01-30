@@ -556,79 +556,70 @@ const CreatePost = () => {
   const handleCreatePost = async () => {
     setIsLoading(true);
     try {
-      // Base payload
+      // Default payload for all users, with special handling for different roles
       const payload = {
         postedBy: user._id,
         text: postText,
-        targetAudience: "all", // Default value
+        targetAudience: "all",
         targetYearGroups: [],
-        targetDepartments: []
+        targetDepartments: [],
       };
-
-      // Add image if exists
+  
+      // Role-specific modifications
+      if (user.role === "teacher") {
+        if (targetYearGroups.length === 0) {
+          showToast(t("Error"), t("Teachers must specify year groups"), "error");
+          setIsLoading(false);
+          return;
+        }
+        payload.targetYearGroups = targetYearGroups;
+      }
+  
+      if (user.role === "admin") {
+        if (!targetYearGroups.length && !targetDepartments.length) {
+          showToast(
+            t("Error"),
+            t("Admins must specify target year groups or departments"),
+            "error"
+          );
+          setIsLoading(false);
+          return;
+        }
+        payload.targetYearGroups = targetYearGroups;
+        payload.targetDepartments = targetDepartments;
+      }
+  
       if (imgUrl) payload.img = imgUrl;
-
-      // Handle role-specific targeting
-if (user.role === "teacher") {
-  if (targetYearGroups.length === 0) {
-    showToast(t("Error"), t("Teachers must specify year groups"), "error");
-    setIsLoading(false);
-    return;
-  }
-  payload.targetYearGroups = targetYearGroups;
-  // Use the first selected year group as the target audience
-  payload.targetAudience = targetYearGroups[0]; // This will be "Year 9", "Year 10", etc.
-}
-
-if (user.role === "admin") {
-  if (!targetYearGroups.length && !targetDepartments.length) {
-    showToast(t("Error"), t("Admins must specify target year groups or departments"), "error");
-    setIsLoading(false);
-    return;
-  }
   
-  payload.targetYearGroups = targetYearGroups;
-  payload.targetDepartments = targetDepartments;
-  
-  // Set target audience based on what's selected
-  if (targetYearGroups.length && targetDepartments.length) {
-    payload.targetAudience = "all";
-  } else if (targetYearGroups.length) {
-    payload.targetAudience = targetYearGroups[0]; // Use first year group
-  } else {
-    payload.targetAudience = targetDepartments[0]; // Use first department
-  }
-}
-
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+  
       const data = await res.json();
-
-      if (!res.ok) {
-        showToast(t("Error"), data.error || "Failed to create post", "error");
+  
+      if (data.error) {
+        showToast(t("Error"), data.error, "error");
         return;
       }
-
+  
       // Handle successful post creation
-      if (user.role === "student") {
-        setPostStatus('pending');
-        showToast(t("Success"), t("Your post has been submitted for review"), "success");
-      } else {
-        setPostStatus('approved');
-        showToast(t("Success"), t("Post created successfully"), "success");
-        resetForm();
-      }
+      showToast(t("Success"), t("Post created successfully"), "success");
+  
+      // Reset form
+      setPostText("");
+      setImgUrl("");
+      setTargetYearGroups([]);
+      setTargetDepartments([]);
+      onClose();
     } catch (error) {
       showToast(t("Error"), error.message, "error");
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const resetForm = () => {
     setPostText("");
     setImgUrl("");
@@ -636,7 +627,7 @@ if (user.role === "admin") {
     setTargetDepartments([]);
     onClose();
   };
-
+  
   // Return frozen account button if account is frozen
   if (user?.isFrozen) {
     return (
@@ -662,6 +653,7 @@ if (user.role === "admin") {
       </Button>
     );
   }
+  
 
   return (
     <>
