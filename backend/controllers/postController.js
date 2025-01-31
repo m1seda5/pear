@@ -1407,21 +1407,49 @@ const getPendingReviews = async (req, res) => {
 // New function to handle post reviews
 const reviewPost = async (req, res) => {
   try {
+    // Add debugging logs
+    console.log("Review request received:", {
+      user: req.user,
+      params: req.params,
+      body: req.body
+    });
+
+    // Check if user is authenticated
+    if (!req.user) {
+      console.log("Authentication failed: No user in request");
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // Check if user is authorized to review (admin or teacher)
+    if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+      console.log("Authorization failed: User role is", req.user.role);
+      return res.status(401).json({ error: "Not authorized to review posts" });
+    }
+
     const { postId } = req.params;
     const { decision } = req.body;
     const reviewerId = req.user._id;
 
+    console.log("Looking for post:", postId);
     const post = await Post.findById(postId);
+    
     if (!post) {
+      console.log("Post not found:", postId);
       return res.status(404).json({ error: "Post not found" });
     }
+
+    console.log("Found post:", post);
+    console.log("Looking for reviewer:", reviewerId);
 
     // Find the reviewer's entry
     const reviewerIndex = post.reviewers.findIndex(
       r => r.userId.toString() === reviewerId.toString()
     );
 
+    console.log("Reviewer index:", reviewerIndex);
+
     if (reviewerIndex === -1) {
+      console.log("Reviewer not found in post.reviewers");
       return res.status(401).json({ error: "Not authorized to review this post" });
     }
 
@@ -1438,6 +1466,7 @@ const reviewPost = async (req, res) => {
 
       if (hasApproval) {
         post.reviewStatus = 'approved';
+        console.log("Post approved");
         
         // Send notifications now that post is approved
         try {
@@ -1469,12 +1498,15 @@ const reviewPost = async (req, res) => {
       
       if (hasRejection) {
         post.reviewStatus = 'rejected';
+        console.log("Post rejected");
       }
     }
 
     await post.save();
+    console.log("Post saved successfully");
     res.status(200).json(post);
   } catch (err) {
+    console.error("Error in reviewPost:", err);
     res.status(500).json({ error: err.message });
   }
 };
