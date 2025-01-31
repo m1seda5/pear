@@ -1335,15 +1335,22 @@ const createPost = async (req, res) => {
     }
 
     // Create the post
-    const newPost = new Post({
-      postedBy,
-      text,
-      img,
-      targetYearGroups: targetYearGroups || [],
-      targetDepartments: targetDepartments || [],
-      reviewStatus: user.role === 'student' ? 'pending' : 'approved',
-      targetAudience: req.body.targetAudience || 'all',
-    });
+  // In createPost controller, modify the post creation:
+const newPost = new Post({
+  postedBy,
+  text,
+  img,
+  targetYearGroups: targetYearGroups || [],
+  targetDepartments: targetDepartments || [],
+  reviewStatus: user.role === 'student' ? 'pending' : 'approved',
+  targetAudience: req.body.targetAudience || 'all',
+  // Add reviewers if it's a student post
+  reviewers: user.role === 'student' ? await User.find({ role: 'admin' }).map(admin => ({
+    userId: admin._id,
+    role: 'admin',
+    decision: 'pending'
+  })) : []
+});
 
     await newPost.save();
 
@@ -1373,20 +1380,12 @@ const createPost = async (req, res) => {
 };
 const getPendingReviews = async (req, res) => {
   try {
-    console.log("Getting pending reviews for user:", req.user._id);
-    
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // Find posts where this user is a reviewer and hasn't made a decision yet
+    // Simplified query to just look for pending posts
     const pendingReviews = await Post.find({
-      'reviewers': {
-        $elemMatch: {
-          userId: req.user._id,
-          decision: 'pending'
-        }
-      },
       reviewStatus: 'pending'
     }).populate('postedBy', 'username profilePic email');
 
