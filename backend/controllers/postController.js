@@ -1297,26 +1297,22 @@ const createPost = async (req, res) => {
     // Role-specific post creation rules
     switch (user.role) {
       case 'student':
-        // Students can only post to 'all'
         req.body.targetAudience = 'all';
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
         break;
 
       case 'teacher':
-        // Teachers must specify year groups
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
             error: 'Teachers must specify at least one year group to target',
           });
         }
-        // Ensure the teacher is targeting only year groups
         req.body.targetDepartments = [];
-        req.body.targetAudience = targetYearGroups[0]; // Set first targeted year group as audience
+        req.body.targetAudience = targetYearGroups[0];
         break;
 
       case 'admin':
-        // Admins must specify a target
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
           return res.status(400).json({
             error: 'Admin must specify a target audience, year groups, or departments',
@@ -1334,23 +1330,24 @@ const createPost = async (req, res) => {
       img = uploadedResponse.secure_url;
     }
 
-    // Create the post
-  // In createPost controller, modify the post creation:
-const newPost = new Post({
-  postedBy,
-  text,
-  img,
-  targetYearGroups: targetYearGroups || [],
-  targetDepartments: targetDepartments || [],
-  reviewStatus: user.role === 'student' ? 'pending' : 'approved',
-  targetAudience: req.body.targetAudience || 'all',
-  // Add reviewers if it's a student post
-  reviewers: user.role === 'student' ? await User.find({ role: 'admin' }).map(admin => ({
-    userId: admin._id,
-    role: 'admin',
-    decision: 'pending'
-  })) : []
-});
+    // Fetch admins and create post with reviewers if it's a student post
+    const adminUsers = await User.find({ role: 'admin' }); // Fetch admins first
+    const reviewers = user.role === 'student' ? adminUsers.map(admin => ({
+      userId: admin._id,
+      role: 'admin',
+      decision: 'pending'
+    })) : [];
+
+    const newPost = new Post({
+      postedBy,
+      text,
+      img,
+      targetYearGroups: targetYearGroups || [],
+      targetDepartments: targetDepartments || [],
+      reviewStatus: user.role === 'student' ? 'pending' : 'approved',
+      targetAudience: req.body.targetAudience || 'all',
+      reviewers
+    });
 
     await newPost.save();
 
@@ -1363,7 +1360,12 @@ const newPost = new Post({
         });
 
         const notificationPromises = usersToNotify.map((recipient) =>
-          sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
+          sendNotificationEmail(
+            recipient.email,
+            postedBy,
+            newPost._id,
+            user.username
+          )
         );
 
         await Promise.allSettled(notificationPromises);
@@ -1378,6 +1380,8 @@ const newPost = new Post({
     res.status(500).json({ error: err.message || 'Failed to create post' });
   }
 };
+
+
 const getPendingReviews = async (req, res) => {
   try {
     if (!req.user) {
