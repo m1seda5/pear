@@ -29,18 +29,41 @@ const ReviewModal = () => {
   const toast = useToast();
   const bgColor = useColorModeValue("white", "gray.800");
 
+  // Add function to check auth status
+  const checkAuthStatus = () => {
+    if (!user || !user._id) {
+      console.error("User not authenticated");
+      return false;
+    }
+    return true;
+  };
+
   const checkForPendingReviews = async () => {
-    if (isFetching) return; // Prevent multiple simultaneous requests
+    if (isFetching || !checkAuthStatus()) return;
     
     setIsFetching(true);
     try {
-      console.log("Checking for pending reviews...");
       const res = await fetch("/api/posts/pending-reviews", {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          // Add Authorization header if you're using JWT
+          // "Authorization": `Bearer ${localStorage.getItem('token')}`,
         },
-        credentials: 'include' // Important for authentication
+        credentials: 'include'
       });
+
+      if (res.status === 401) {
+        console.error("Authentication error - user not authorized");
+        toast({
+          title: "Authentication Error",
+          description: "Please try logging out and logging back in",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
@@ -50,7 +73,6 @@ const ReviewModal = () => {
       console.log("Pending reviews response:", data);
 
       if (data.length > 0 && !isOpen) {
-        console.log("Found pending review, opening modal");
         setCurrentReview(data[0]);
         setIsOpen(true);
       }
@@ -58,7 +80,7 @@ const ReviewModal = () => {
       console.error("Error checking reviews:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch pending reviews",
+        description: error.message || "Failed to fetch pending reviews",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -68,33 +90,32 @@ const ReviewModal = () => {
     }
   };
 
-  useEffect(() => {
-    // Initial check
-    checkForPendingReviews();
-
-    // Set up polling interval
-    const interval = setInterval(checkForPendingReviews, 30000);
-
-    // Cleanup
-    return () => clearInterval(interval);
-  }, []);
-
   const handleReview = async (decision) => {
-    if (!currentReview?._id) return;
+    if (!currentReview?._id || !checkAuthStatus()) return;
 
     setIsLoading(true);
     try {
       const res = await fetch(`/api/posts/review/${currentReview._id}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          // Add Authorization header if you're using JWT
+          // "Authorization": `Bearer ${localStorage.getItem('token')}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ decision })
+        body: JSON.stringify({ 
+          decision,
+          reviewerId: user._id  // Add reviewer ID explicitly
+        })
       });
 
+      if (res.status === 401) {
+        throw new Error("Authentication error - please log in again");
+      }
+
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        const errorData = await res.json();
+        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
       }
 
       const data = await res.json();
@@ -121,10 +142,23 @@ const ReviewModal = () => {
         duration: 5000,
         isClosable: true,
       });
+
+      // If authentication error, you might want to trigger a re-login
+      if (error.message.includes("Authentication error")) {
+        // Implement your logout/redirect logic here
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && (user.role === "admin" || user.role === "teacher")) {
+      checkForPendingReviews();
+      const interval = setInterval(checkForPendingReviews, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   if (!currentReview) return null;
 
