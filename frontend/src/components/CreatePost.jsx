@@ -556,65 +556,118 @@ const CreatePost = () => {
   const handleCreatePost = async () => {
     setIsLoading(true);
     try {
-      // Default payload for all users, with special handling for different roles
+      if (!postText.trim()) {
+        showToast("Error", "Post text cannot be empty", "error");
+        setIsLoading(false);
+        return;
+      }
+  
+      // Base payload structure
       const payload = {
         postedBy: user._id,
         text: postText,
-        targetAudience: "all",
-        targetYearGroups: [],
-        targetDepartments: [],
+        img: imgUrl || undefined
       };
   
-      // Role-specific modifications
-      if (user.role === "teacher") {
-        if (targetYearGroups.length === 0) {
-          showToast(t("Error"), t("Teachers must specify year groups"), "error");
+      // Role-specific payload modifications
+      switch (user.role) {
+        case "student":
+          // Students can only post to everyone
+          payload.targetAudience = "all";
+          payload.targetYearGroups = [];
+          payload.targetDepartments = [];
+          break;
+  
+        case "teacher":
+          // Teachers must specify year groups
+          if (!targetYearGroups.length) {
+            showToast("Error", "Please select at least one year group", "error");
+            setIsLoading(false);
+            return;
+          }
+  
+          // If "all" is selected, that's the only target
+          if (targetYearGroups.includes("all")) {
+            payload.targetAudience = "all";
+            payload.targetYearGroups = [];
+          } else {
+            // Otherwise use specific year groups
+            payload.targetAudience = targetYearGroups[0]; // Primary target
+            payload.targetYearGroups = targetYearGroups; // All selected groups
+          }
+          payload.targetDepartments = []; // Teachers can't target departments
+          break;
+  
+        case "admin":
+          // Admins must specify either year groups or departments
+          if (!targetYearGroups.length && !targetDepartments.length) {
+            showToast(
+              "Error", 
+              "Please select either year groups or departments to target", 
+              "error"
+            );
+            setIsLoading(false);
+            return;
+          }
+  
+          // Handle year group targeting
+          if (targetYearGroups.includes("all")) {
+            payload.targetAudience = "all";
+            payload.targetYearGroups = [];
+          } else if (targetYearGroups.length) {
+            payload.targetYearGroups = targetYearGroups;
+            payload.targetAudience = targetYearGroups[0];
+          }
+  
+          // Handle department targeting
+          if (targetDepartments.length) {
+            // If both year groups and departments are selected, 
+            // departments take precedence
+            payload.targetDepartments = targetDepartments;
+            payload.targetAudience = targetDepartments[0];
+          }
+  
+          // Handle TV targeting
+          if (targetDepartments.includes("tv")) {
+            payload.targetAudience = "tv";
+            payload.targetDepartments = ["tv"];
+            payload.targetYearGroups = [];
+          }
+          break;
+  
+        default:
+          showToast("Error", "Invalid user role", "error");
           setIsLoading(false);
           return;
-        }
-        payload.targetYearGroups = targetYearGroups;
       }
-  
-      if (user.role === "admin") {
-        if (!targetYearGroups.length && !targetDepartments.length) {
-          showToast(
-            t("Error"),
-            t("Admins must specify target year groups or departments"),
-            "error"
-          );
-          setIsLoading(false);
-          return;
-        }
-        payload.targetYearGroups = targetYearGroups;
-        payload.targetDepartments = targetDepartments;
-      }
-  
-      if (imgUrl) payload.img = imgUrl;
   
       const res = await fetch("/api/posts/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
   
       const data = await res.json();
   
       if (data.error) {
-        showToast(t("Error"), data.error, "error");
+        showToast("Error", data.error, "error");
         return;
       }
   
-      // Handle successful post creation
-      showToast(t("Success"), t("Post created successfully"), "success");
-  
+      // Success handling
+      showToast("Success", "Post created successfully", "success");
+      
       // Reset form
       setPostText("");
       setImgUrl("");
       setTargetYearGroups([]);
       setTargetDepartments([]);
       onClose();
+  
     } catch (error) {
-      showToast(t("Error"), error.message, "error");
+      showToast("Error", error.message, "error");
     } finally {
       setIsLoading(false);
     }

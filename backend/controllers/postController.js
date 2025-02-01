@@ -1678,84 +1678,71 @@ const getFeedPosts = async (req, res) => {
     const userId = req.user && req.user._id;
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized, user not authenticated" });
+      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select(
-      "role following yearGroup department isStudent"
-    );
-
+    const user = await User.findById(userId).select("role following yearGroup department");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Retrieve the list of users the current user is following
-    const following = user.following || [];
-
-    // First, get the IDs of all students and non-students
-    const studentIds = await User.find({ role: "student" }).distinct('_id');
-    const nonStudentIds = await User.find({ role: { $ne: "student" } }).distinct('_id');
-
-    // Construct a precise filtering condition
-    const postFilter = {
-      $and: [
-        // Student approval filter
-        {
-          $or: [
-            // Non-student posts don't need approval
-            { postedBy: { $in: nonStudentIds } },
-            // Student posts must be approved
-            {
-              $and: [
-                { postedBy: { $in: studentIds } },
-                { reviewStatus: "approved" }
-              ]
-            }
-          ]
-        },
-        {
-          $or: [
-            // Always allow posts targeted to 'all'
-            { targetAudience: "all" },
-
-            // For students, show posts targeting their EXACT year group
-            ...(user.role === "student"
-              ? [
-                  { targetYearGroups: { $in: [user.yearGroup] } },
-                  { targetAudience: user.yearGroup },
-                ]
-              : []),
-
-            // For teachers, show posts targeting their EXACT department
-            ...(user.role === "teacher"
-              ? [
-                  { targetDepartments: { $in: [user.department] } },
-                  { targetAudience: user.department },
-                ]
-              : []),
-
-            // For admin/TV, show additional posts
-            ...(user.role === "admin" || user.role === "tv"
-              ? [{ targetAudience: "tv" }]
-              : []),
-
-            // Always show posts from users the current user is following
-            { postedBy: { $in: following } },
-
-            // Ensure users see their own posts
-            { postedBy: userId }
-          ]
-        }
+    // Base filter conditions that apply to all posts
+    const baseFilter = {
+      $or: [
+        { postedBy: userId }, // User's own posts
+        { postedBy: { $in: user.following || [] } }, // Posts from followed users
       ]
     };
 
-    // Fetch posts matching the filter
-    const feedPosts = await Post.find(postFilter)
+    // Audience-specific filter based on user role
+    let audienceFilter = {
+      $or: [
+        { targetAudience: "all" }, // Posts targeted to everyone
+      ]
+    };
+
+    // Add role-specific filters
+    if (user.role === "student" && user.yearGroup) {
+      audienceFilter.$or.push(
+        { targetYearGroups: user.yearGroup },
+        { targetAudience: user.yearGroup }
+      );
+    }
+    else if (user.role === "teacher" && user.department) {
+      audienceFilter.$or.push(
+        { targetDepartments: user.department },
+        { targetAudience: user.department }
+      );
+    }
+    else if (user.role === "admin" || user.role === "tv") {
+      // Admins and TV can see all posts
+      audienceFilter = {}; // No additional filtering needed
+    }
+
+    // Combine with approval status filter
+    const approvalFilter = {
+      $or: [
+        { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } }, // Non-student posts
+        { $and: [ // Student posts must be approved
+          { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
+          { reviewStatus: "approved" }
+        ]}
+      ]
+    };
+
+    // Combine all filters
+    const finalFilter = {
+      $and: [
+        baseFilter,
+        audienceFilter,
+        approvalFilter
+      ]
+    };
+
+    const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
-      .limit(50); // Limit to prevent overwhelming results
+      .limit(50);
 
     res.status(200).json(feedPosts);
   } catch (err) {
