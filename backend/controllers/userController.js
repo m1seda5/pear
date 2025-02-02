@@ -633,6 +633,7 @@ import { v2 as cloudinary } from "cloudinary";
 import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
 import mongoose from "mongoose";
+import TempUser from "../models/tempUserModel.js";
 
 const getUserProfile = async (req, res) => {
   // We will fetch user profile either with username or userId
@@ -689,6 +690,9 @@ const sendOTPEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
+const MAX_OTP_ATTEMPTS = 3;
+const OTP_COOLDOWN = 2 * 60 * 1000; // 2 minutes in milliseconds
+
 const signupUser = async (req, res) => {
   console.log("Signup request received:", req.body);
 
@@ -701,48 +705,61 @@ const signupUser = async (req, res) => {
       return res.status(403).json({ error: "This email is permanently banned" });
     }
 
-    // Then check for existing user
+    // Check for existing user
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Rest of the signup logic remains the same
+    // Check for existing temporary signup
+    const existingTemp = await TempUser.findOne({ email });
+    if (existingTemp) {
+      // Check cooldown period
+      const timeSinceLastOtp = Date.now() - existingTemp.lastOtpSent;
+      if (timeSinceLastOtp < OTP_COOLDOWN) {
+        const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
+        return res.status(429).json({ 
+          error: `Please wait ${remainingTime} seconds before requesting another OTP`
+        });
+      }
+    }
+
     const otp = generateOTP();
-    const otpExpiry = Date.now() + 2 * 60 * 1000;
+    const otpExpiry = new Date(Date.now() + OTP_COOLDOWN);
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const unverifiedUser = new User({
+    // Store in temporary collection
+    const tempUser = new TempUser({
       name,
       email,
       username,
       password: hashedPassword,
       role,
-      isVerified: false,
       otp,
       otpExpiry,
       ...(role === "student" ? { yearGroup } : {}),
       ...(role === "teacher" ? { department } : {}),
     });
 
-    await unverifiedUser.save();
+    await tempUser.save();
     await sendOTPEmail(email, otp);
 
     res.status(200).json({
       message: "OTP sent to email. Please verify within 2 minutes.",
-      userId: unverifiedUser._id,
+      email: email
     });
 
   } catch (err) {
     console.error("Error in signupUser:", err.message);
     res.status(500).json({
-      error: "Failed to register user",
+      error: "Failed to initiate signup",
       details: err.message,
     });
   }
 };
+
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -751,49 +768,100 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ error: "Email and OTP are required" });
     }
 
-    const user = await User.findOne({ email });
+    const tempUser = await TempUser.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!tempUser) {
+      return res.status(404).json({ error: "No pending verification found" });
     }
 
-    if (user.isVerified) {
-      return res.status(400).json({ error: "User already verified" });
+    if (tempUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      await TempUser.deleteOne({ email });
+      return res.status(429).json({ 
+        error: "Maximum OTP attempts exceeded. Please start signup process again." 
+      });
     }
 
     const receivedOTP = parseInt(otp, 10);
 
-    if (user.otp !== receivedOTP) {
-      return res.status(400).json({ error: "Invalid OTP" });
+    if (tempUser.otp !== receivedOTP) {
+      tempUser.otpAttempts += 1;
+      await tempUser.save();
+      return res.status(400).json({ 
+        error: `Invalid OTP. ${MAX_OTP_ATTEMPTS - tempUser.otpAttempts} attempts remaining.`
+      });
     }
 
-    if (Date.now() > user.otpExpiry) {
+    if (Date.now() > tempUser.otpExpiry) {
       return res.status(400).json({ error: "OTP expired" });
     }
 
-    user.isVerified = true;
-    user.otp = undefined;
-    user.otpExpiry = undefined;
-    await user.save();
+    // Create actual user after successful verification
+    const newUser = new User({
+      name: tempUser.name,
+      email: tempUser.email,
+      username: tempUser.username,
+      password: tempUser.password,
+      role: tempUser.role,
+      isVerified: true,
+      yearGroup: tempUser.yearGroup,
+      department: tempUser.department
+    });
 
-    // Generate token after verification
-    generateTokenAndSetCookie(user._id, res);
+    await newUser.save();
+    await TempUser.deleteOne({ email });
 
-    // Return complete user data including role, similar to original signup
+    // Generate token and set cookie
+    generateTokenAndSetCookie(newUser._id, res);
+
     res.status(200).json({
-      message: "User verified successfully",
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-      yearGroup: user.yearGroup,
-      department: user.department,
+      message: "User verified and created successfully",
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      username: newUser.username,
+      role: newUser.role,
+      yearGroup: newUser.yearGroup,
+      department: newUser.department,
       isVerified: true,
     });
   } catch (err) {
     console.error("Verify OTP error:", err.message || err);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const tempUser = await TempUser.findOne({ email });
+    if (!tempUser) {
+      return res.status(404).json({ error: "No pending verification found" });
+    }
+
+    const timeSinceLastOtp = Date.now() - tempUser.lastOtpSent;
+    if (timeSinceLastOtp < OTP_COOLDOWN) {
+      const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
+      return res.status(429).json({ 
+        error: `Please wait ${remainingTime} seconds before requesting another OTP`
+      });
+    }
+
+    const newOtp = generateOTP();
+    tempUser.otp = newOtp;
+    tempUser.otpExpiry = new Date(Date.now() + OTP_COOLDOWN);
+    tempUser.lastOtpSent = new Date();
+    await tempUser.save();
+
+    await sendOTPEmail(email, newOtp);
+
+    res.status(200).json({
+      message: "New OTP sent successfully",
+      email: email
+    });
+  } catch (err) {
+    console.error("Resend OTP error:", err.message);
+    res.status(500).json({ error: "Failed to resend OTP" });
   }
 };
 
@@ -1170,6 +1238,7 @@ const deleteUserData = async (userId) => {
 export {
   signupUser,
   verifyOTP,
+  resendOTP,
   loginUser,
   logoutUser,
   followUnFollowUser,

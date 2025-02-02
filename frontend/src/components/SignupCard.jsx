@@ -408,7 +408,7 @@
 // export default SignupCard;
 
 // // email verification update
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Flex,
   Box,
@@ -451,59 +451,35 @@ const SignupCard = () => {
   });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [timer, setTimer] = useState(120); // 2-minute timer
+  const [timer, setTimer] = useState(120);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isResendDisabled, setIsResendDisabled] = useState(true);
 
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const showToast = useShowToast();
   const setUser = useSetRecoilState(userAtom);
 
-  // Start OTP timer
-  const startTimer = () => {
-    let interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
+  useEffect(() => {
+    let interval;
+    if (isOtpSent && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => {
+          if (prev <= 1) {
+            setIsResendDisabled(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isOtpSent, timer]);
 
-  // Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // if the first one doesnt work go for this one
-  // const sendOtp = async () => {
-  //   try {
-  //     const role = isStudent && yearGroup ? "student" 
-  //       : isTeacher && department ? "teacher"
-  //       : inputs.email.toLowerCase().includes("admin") ? "admin"
-  //       : "student";
-  
-  //     const signupData = {
-  //       ...inputs,
-  //       role,
-  //       ...(role === "student" ? { yearGroup } : {}),
-  //       ...(role === "teacher" ? { department } : {})
-  //     };
-  
-  //     console.log("Sending OTP with data:", signupData);
-  //     const response = await axios.post("/api/users/signup", signupData);  // Now includes role data
-  //     console.log("OTP Response:", response.data);
-  //     setIsOtpSent(true);
-  //     startTimer();
-  //     showToast("Success", "OTP sent to your email", "success");
-  //   } catch (error) {
-  //     console.error("Error sending OTP:", error.response?.data || error.message);
-  //     setErrorMessage(error.response?.data?.message || "Error sending OTP");
-  //     showToast("Error", errorMessage, "error");
-  //   }
-  // };
-  const sendOtp = async () => {
+  const sendOtp = async (isResend = false) => {
     try {
       const role =
         isStudent && yearGroup
@@ -513,7 +489,7 @@ const SignupCard = () => {
           : inputs.email.toLowerCase().includes("pear")
           ? "admin"
           : "student";
-  
+
       const signupData = {
         name: inputs.name,
         email: inputs.email,
@@ -523,25 +499,27 @@ const SignupCard = () => {
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {})
       };
-  
-      console.log("Sending OTP with data:", signupData);
-      const response = await axios.post("/api/users/signup", signupData);
-      console.log("OTP Response:", response.data);
+
+      if (isResend) {
+        await axios.post("/api/users/resend-otp", { email: inputs.email });
+      } else {
+        await axios.post("/api/users/signup", signupData);
+      }
+
       setIsOtpSent(true);
-      startTimer();
-      showToast("Success", "OTP sent to your email", "success");
+      setTimer(120);
+      setIsResendDisabled(true);
+      showToast("Success", `OTP ${isResend ? 're-' : ''}sent to your email`, "success");
     } catch (error) {
       console.error("Error sending OTP:", error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.message || "Error sending OTP");
+      setErrorMessage(error.response?.data?.error || "Error sending OTP");
       showToast("Error", errorMessage, "error");
     }
   };
-  
-  // Verify OTP
+
   const verifyOtp = async () => {
     try {
-      // Validate OTP before sending request
-      const numericOTP = parseInt(formData.otp, 10); // Explicit radix
+      const numericOTP = parseInt(formData.otp, 10);
       if (isNaN(numericOTP)) {
         setErrorMessage("OTP must be a numeric value");
         return;
@@ -552,20 +530,20 @@ const SignupCard = () => {
         otp: numericOTP,
       });
 
-      // Update UI state on success
       setIsOtpVerified(true);
       setErrorMessage("");
       showToast("Success", "OTP verified successfully", "success");
     } catch (error) {
-      console.error(
-        "Verify OTP error:",
-        error.response?.data?.error || error.message
-      );
+      console.error("Verify OTP error:", error.response?.data?.error || error.message);
       setErrorMessage(error.response?.data?.error || "Failed to verify OTP");
+      
+      if (error.response?.status === 429) {
+        setIsOtpSent(false);
+        setFormData({ otp: "" });
+      }
     }
   };
 
-  // Handle form submission
   const handleSignup = async () => {
     if (!isOtpVerified) {
       setErrorMessage("Please verify your OTP before signing up");
@@ -573,16 +551,6 @@ const SignupCard = () => {
     }
 
     try {
-      const role =
-        isStudent && yearGroup
-          ? "student"
-          : isTeacher && department
-          ? "teacher"
-          : inputs.email.toLowerCase().includes("pear")
-          ? "admin"
-          : "student";
-
-      // Login the user after OTP verification
       const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -681,7 +649,6 @@ const SignupCard = () => {
               </InputGroup>
             </FormControl>
 
-            {/* Role Selection */}
             <FormControl>
               <Checkbox
                 isChecked={isStudent}
@@ -744,12 +711,12 @@ const SignupCard = () => {
               </FormControl>
             )}
 
-            {/* OTP Section */}
             {!isOtpSent && (
-              <Button colorScheme="blue" onClick={sendOtp}>
+              <Button colorScheme="blue" onClick={() => sendOtp(false)}>
                 Verify Email
               </Button>
             )}
+
             {isOtpSent && (
               <FormControl isRequired>
                 <FormLabel>Enter OTP</FormLabel>
@@ -758,14 +725,23 @@ const SignupCard = () => {
                   name="otp"
                   value={formData.otp}
                   onChange={handleChange}
+                  maxLength={4}
                 />
-                <Button
-                  type="button"
-                  onClick={verifyOtp}
-                  disabled={isOtpVerified}
-                >
-                  Verify OTP
-                </Button>
+                <Stack direction="row" spacing={4} mt={2}>
+                  <Button
+                    onClick={verifyOtp}
+                    disabled={isOtpVerified}
+                    colorScheme="green"
+                  >
+                    Verify OTP
+                  </Button>
+                  <Button
+                    onClick={() => sendOtp(true)}
+                    isDisabled={isResendDisabled || isOtpVerified}
+                  >
+                    Resend OTP {timer > 0 && `(${timer}s)`}
+                  </Button>
+                </Stack>
                 {errorMessage && <Text color="red.500">{errorMessage}</Text>}
               </FormControl>
             )}
@@ -779,13 +755,11 @@ const SignupCard = () => {
                   bg: useColorModeValue("gray.700", "gray.800"),
                 }}
                 onClick={handleSignup}
-                disabled={!isOtpVerified || timer === 0}
+                disabled={!isOtpVerified}
               >
                 Sign up
               </Button>
             </Stack>
-
-            {timer > 0 && isOtpSent && <Text>Time remaining: {timer}s</Text>}
 
             <Stack pt={6}>
               <Text align={"center"}>
