@@ -812,6 +812,7 @@ const SignupCard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [yearGroup, setYearGroup] = useState("");
   const [department, setDepartment] = useState("");
   const [inputs, setInputs] = useState({
@@ -829,33 +830,89 @@ const SignupCard = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [campus, setCampus] = useState("");
 
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const showToast = useShowToast();
   const setUser = useSetRecoilState(userAtom);
 
+  const validateEmailFormat = (email) => {
+    if (!email) return "Email is required";
+    
+    const emailLower = email.toLowerCase();
+    
+    // Allow pear admin emails
+    if (emailLower.includes('pear')) {
+      return "";
+    }
+    
+    // Check for Brookhouse domain
+    if (!emailLower.includes('brookhouse.ac.ke')) {
+      return 'Please use your Brookhouse email address';
+    }
+    
+    return "";
+  };
+
+  const validateUsernameFormat = (username, email) => {
+    if (!username || !email) return "";
+    
+    const emailLower = email.toLowerCase();
+    
+    // Special case for pear admin accounts
+    if (emailLower.includes('pear')) {
+      if (!username.toLowerCase().includes('pear')) {
+        return 'Admin usernames must contain "pear"';
+      }
+      return "";
+    }
+    
+    // Extract surname from email (everything after first letter before @)
+    const userIdentifier = emailLower.split('@')[0];
+    const surname = userIdentifier.slice(1);
+    
+    if (!username.toLowerCase().includes(surname.toLowerCase())) {
+      return `Username must contain your surname (${surname})`;
+    }
+    
+    return "";
+  };
+
   useEffect(() => {
     if (inputs.email) {
+      const error = validateEmailFormat(inputs.email);
+      setEmailError(error);
+      
       const email = inputs.email.toLowerCase();
       
-      // Check for valid Brookhouse domain
-      if (!email.includes('brookhouse.ac.ke') && !email.includes('rundabrookhouse.ac.ke')) {
-        setEmailError('Please use your Brookhouse email address');
+      // Handle pear admin accounts
+      if (email.includes('pear')) {
+        setIsStudent(false);
+        setIsTeacher(false);
+        setIsAdmin(true);
+        setCampus('Admin');
         return;
       }
 
-      // Determine campus
+      setIsAdmin(false);
+      
+      // Determine campus and role for Brookhouse accounts
       const isRunda = email.includes('runda');
       setCampus(isRunda ? 'Runda' : 'Karen');
-
-      // Determine role from email
+      
       const isStudentEmail = email.includes('students');
       setIsStudent(isStudentEmail);
       setIsTeacher(!isStudentEmail);
-      setEmailError('');
     }
   }, [inputs.email]);
+
+  useEffect(() => {
+    if (inputs.username && inputs.email) {
+      const error = validateUsernameFormat(inputs.username, inputs.email);
+      setUsernameError(error);
+    }
+  }, [inputs.username, inputs.email]);
 
   useEffect(() => {
     let interval;
@@ -888,14 +945,21 @@ const SignupCard = () => {
       return false;
     }
 
-    if (isStudent && !yearGroup) {
-      showToast("Error", "Please select your year group", "error");
+    if (usernameError) {
+      showToast("Error", usernameError, "error");
       return false;
     }
 
-    if (isTeacher && !department) {
-      showToast("Error", "Please select your department", "error");
-      return false;
+    if (!isAdmin) {
+      if (isStudent && !yearGroup) {
+        showToast("Error", "Please select your year group", "error");
+        return false;
+      }
+
+      if (isTeacher && !department) {
+        showToast("Error", "Please select your department", "error");
+        return false;
+      }
     }
 
     return true;
@@ -905,7 +969,10 @@ const SignupCard = () => {
     try {
       if (!validateForm()) return;
 
-      const role = isStudent ? "student" : "teacher";
+      let role = "admin";
+      if (!isAdmin) {
+        role = isStudent ? "student" : "teacher";
+      }
       
       const signupData = {
         name: inputs.name,
@@ -913,7 +980,7 @@ const SignupCard = () => {
         username: inputs.username,
         password: inputs.password,
         role,
-        campus: campus.toLowerCase(),
+        ...(campus !== 'Admin' ? { campus: campus.toLowerCase() } : {}),
         ...(role === "student" ? { yearGroup } : {}),
         ...(role === "teacher" ? { department } : {})
       };
@@ -998,7 +1065,7 @@ const SignupCard = () => {
       <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
         <Stack align={"center"}>
           <Heading fontSize={"4xl"} textAlign={"center"}>
-            Sign up {campus && `(${campus} Campus)`}
+            Sign up {campus && `(${campus})`}
           </Heading>
         </Stack>
         <Box
@@ -1022,7 +1089,7 @@ const SignupCard = () => {
                 </FormControl>
               </Box>
               <Box>
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={!!usernameError}>
                   <FormLabel>Username</FormLabel>
                   <Input
                     type="text"
@@ -1031,6 +1098,7 @@ const SignupCard = () => {
                     }
                     value={inputs.username}
                   />
+                  {usernameError && <FormErrorMessage>{usernameError}</FormErrorMessage>}
                 </FormControl>
               </Box>
             </HStack>
@@ -1043,7 +1111,7 @@ const SignupCard = () => {
                   setInputs({ ...inputs, email: e.target.value })
                 }
                 value={inputs.email}
-                placeholder="example@brookhouse.ac.ke"
+                placeholder={isAdmin ? "example@pear.com" : "example@brookhouse.ac.ke"}
               />
               {emailError && <FormErrorMessage>{emailError}</FormErrorMessage>}
             </FormControl>
@@ -1071,22 +1139,24 @@ const SignupCard = () => {
               </InputGroup>
             </FormControl>
 
-            <FormControl>
-              <Checkbox
-                isChecked={isStudent}
-                isDisabled={true}
-              >
-                Student Account
-              </Checkbox>
-              <Checkbox
-                isChecked={isTeacher}
-                isDisabled={true}
-              >
-                Teacher Account
-              </Checkbox>
-            </FormControl>
+            {!isAdmin && (
+              <FormControl>
+                <Checkbox
+                  isChecked={isStudent}
+                  isDisabled={true}
+                >
+                  Student Account
+                </Checkbox>
+                <Checkbox
+                  isChecked={isTeacher}
+                  isDisabled={true}
+                >
+                  Teacher Account
+                </Checkbox>
+              </FormControl>
+            )}
 
-            {isStudent && (
+            {isStudent && !isAdmin && (
               <FormControl isRequired>
                 <FormLabel>Select Year Group</FormLabel>
                 <Select
@@ -1103,7 +1173,7 @@ const SignupCard = () => {
               </FormControl>
             )}
 
-            {isTeacher && (
+            {isTeacher && !isAdmin && (
               <FormControl isRequired>
                 <FormLabel>Select Department</FormLabel>
                 <Select
@@ -1139,8 +1209,11 @@ const SignupCard = () => {
               <Button 
                 colorScheme="blue" 
                 onClick={() => sendOtp(false)}
-                isDisabled={!inputs.email || !inputs.password || !inputs.name || !inputs.username || 
-                           (isStudent && !yearGroup) || (isTeacher && !department)}
+                isDisabled={
+                  !inputs.email || !inputs.password || !inputs.name || !inputs.username || 
+                  !!emailError || !!usernameError ||
+                  (!isAdmin && ((isStudent && !yearGroup) || (isTeacher && !department)))
+                }
               >
                 Verify Email
               </Button>

@@ -1299,15 +1299,27 @@ const validateEmail = (email) => {
   
   const emailLower = email.toLowerCase();
   
+  // Check for admin exception (pear emails)
+  if (emailLower.includes('pear')) {
+    return {
+      isValid: true,
+      emailType: 'admin',
+      campus: null,
+      userIdentifier: 'pear' // Special case for admin accounts
+    };
+  }
+  
   // Check for Brookhouse domain
-  if (!emailLower.includes('brookhouse.ac.ke') && 
-      !emailLower.includes('rundabrookhouse.ac.ke')) {
+  if (!emailLower.includes('brookhouse.ac.ke')) {
     return {
       isValid: false,
       error: 'Please use your Brookhouse email address'
     };
   }
 
+  // Extract user identifier (everything before @)
+  const userIdentifier = emailLower.split('@')[0];
+  
   // Determine email type and campus
   const isStudent = emailLower.includes('students');
   const isRunda = emailLower.includes('runda');
@@ -1315,8 +1327,43 @@ const validateEmail = (email) => {
   return {
     isValid: true,
     emailType: isStudent ? 'student' : 'teacher',
-    campus: isRunda ? 'runda' : 'karen'
+    campus: isRunda ? 'runda' : 'karen',
+    userIdentifier
   };
+};
+const validateUsername = (username, email) => {
+  if (!username || !email) {
+    return { isValid: false, error: 'Username and email are required' };
+  }
+
+  const { isValid, emailType, userIdentifier } = validateEmail(email);
+  
+  if (!isValid) {
+    return { isValid: false, error: 'Invalid email' };
+  }
+
+  // Special case for admin accounts
+  if (emailType === 'admin') {
+    if (!username.toLowerCase().includes('pear')) {
+      return { 
+        isValid: false, 
+        error: 'Admin usernames must contain "pear"'
+      };
+    }
+    return { isValid: true };
+  }
+
+  // For regular accounts, extract surname from email identifier
+  const surname = userIdentifier.slice(1); // Remove first letter to get surname
+
+  if (!username.toLowerCase().includes(surname.toLowerCase())) {
+    return {
+      isValid: false,
+      error: `Username must contain your surname (${surname})`
+    };
+  }
+
+  return { isValid: true };
 };
 
 // Role verification logic
@@ -1385,9 +1432,22 @@ const signupUser = async (req, res) => {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
     // Check for banned email first
+    // Check for banned email first
     const bannedUser = await User.findOne({ email, isBanned: true });
     if (bannedUser) {
       return res.status(403).json({ error: "This email is permanently banned" });
+    }
+
+    // Validate email format
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ error: emailValidation.error });
+    }
+
+    // Validate username contains surname
+    const usernameValidation = validateUsername(username, email);
+    if (!usernameValidation.isValid) {
+      return res.status(400).json({ error: usernameValidation.error });
     }
 
     // Check for existing user
