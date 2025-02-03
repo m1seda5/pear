@@ -622,7 +622,638 @@
 //   awardVerification, // Exporting the new function
 // };
 
-// email verification update
+// email verification update(working)
+// import User from "../models/userModel.js";
+// import Post from "../models/postModel.js";
+// import bcrypt from "bcryptjs";
+// import crypto from "crypto";
+// import nodemailer from "nodemailer";
+// import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
+// import { v2 as cloudinary } from "cloudinary";
+// import Conversation from "../models/conversationModel.js";
+// import Message from "../models/messageModel.js";
+// import mongoose from "mongoose";
+// import TempUser from "../models/tempUserModel.js";
+
+// const getUserProfile = async (req, res) => {
+//   // We will fetch user profile either with username or userId
+//   // query is either username or userId
+//   const { query } = req.params;
+
+//   try {
+//     let user;
+
+//     // query is userId
+//     if (mongoose.Types.ObjectId.isValid(query)) {
+//       user = await User.findOne({ _id: query })
+//         .select("-password")
+//         .select("-updatedAt");
+//     } else {
+//       // query is username
+//       user = await User.findOne({ username: query })
+//         .select("-password")
+//         .select("-updatedAt");
+//     }
+
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     res.status(200).json(user);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//     console.log("Error in getUserProfile: ", err.message);
+//   }
+// };
+
+// const transporter = nodemailer.createTransport({
+//   host: "smtp-relay.brevo.com",
+//   port: 587,
+//   auth: {
+//     user: "81d810001@smtp-brevo.com",
+//     pass: "6IBdE9hsKrHUxD4G",
+//   },
+// });
+
+
+// const generateOTP = () => {
+//   return crypto.randomInt(1000, 10000);
+// };
+
+// const sendOTPEmail = async (email, otp) => {
+//   const mailOptions = {
+//     from: "pearnet104@gmail.com",
+//     to: email,
+//     subject: "Your OTP Code",
+//     text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
+//   };
+
+//   console.log(`Sending OTP Email to ${email} with OTP ${otp}`);
+//   await transporter.sendMail(mailOptions);
+// };
+
+// const MAX_OTP_ATTEMPTS = 3;
+// const OTP_COOLDOWN = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+// const signupUser = async (req, res) => {
+//   console.log("Signup request received:", req.body);
+
+//   try {
+//     const { name, email, username, password, role, yearGroup, department } = req.body;
+
+//     // Check for banned email first
+//     const bannedUser = await User.findOne({ email, isBanned: true });
+//     if (bannedUser) {
+//       return res.status(403).json({ error: "This email is permanently banned" });
+//     }
+
+//     // Check for existing user
+//     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+//     if (existingUser) {
+//       return res.status(400).json({ error: "User already exists" });
+//     }
+
+//     // Check for existing temporary signup
+//     const existingTemp = await TempUser.findOne({ email });
+//     if (existingTemp) {
+//       // Check cooldown period
+//       const timeSinceLastOtp = Date.now() - existingTemp.lastOtpSent;
+//       if (timeSinceLastOtp < OTP_COOLDOWN) {
+//         const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
+//         return res.status(429).json({ 
+//           error: `Please wait ${remainingTime} seconds before requesting another OTP`
+//         });
+//       }
+//     }
+
+//     const otp = generateOTP();
+//     const otpExpiry = new Date(Date.now() + OTP_COOLDOWN);
+
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
+
+//     // Store in temporary collection
+//     const tempUser = new TempUser({
+//       name,
+//       email,
+//       username,
+//       password: hashedPassword,
+//       role,
+//       otp,
+//       otpExpiry,
+//       ...(role === "student" ? { yearGroup } : {}),
+//       ...(role === "teacher" ? { department } : {}),
+//     });
+
+//     await tempUser.save();
+//     await sendOTPEmail(email, otp);
+
+//     res.status(200).json({
+//       message: "OTP sent to email. Please verify within 2 minutes.",
+//       email: email
+//     });
+
+//   } catch (err) {
+//     console.error("Error in signupUser:", err.message);
+//     res.status(500).json({
+//       error: "Failed to initiate signup",
+//       details: err.message,
+//     });
+//   }
+// };
+
+// const verifyOTP = async (req, res) => {
+//   try {
+//     const { email, otp } = req.body;
+
+//     if (!email || !otp) {
+//       return res.status(400).json({ error: "Email and OTP are required" });
+//     }
+
+//     const tempUser = await TempUser.findOne({ email });
+
+//     if (!tempUser) {
+//       return res.status(404).json({ error: "No pending verification found" });
+//     }
+
+//     if (tempUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
+//       await TempUser.deleteOne({ email });
+//       return res.status(429).json({ 
+//         error: "Maximum OTP attempts exceeded. Please start signup process again." 
+//       });
+//     }
+
+//     const receivedOTP = parseInt(otp, 10);
+
+//     if (tempUser.otp !== receivedOTP) {
+//       tempUser.otpAttempts += 1;
+//       await tempUser.save();
+//       return res.status(400).json({ 
+//         error: `Invalid OTP. ${MAX_OTP_ATTEMPTS - tempUser.otpAttempts} attempts remaining.`
+//       });
+//     }
+
+//     if (Date.now() > tempUser.otpExpiry) {
+//       return res.status(400).json({ error: "OTP expired" });
+//     }
+
+//     // Create actual user after successful verification
+//     const newUser = new User({
+//       name: tempUser.name,
+//       email: tempUser.email,
+//       username: tempUser.username,
+//       password: tempUser.password,
+//       role: tempUser.role,
+//       isVerified: true,
+//       yearGroup: tempUser.yearGroup,
+//       department: tempUser.department
+//     });
+
+//     await newUser.save();
+//     await TempUser.deleteOne({ email });
+
+//     // Generate token and set cookie
+//     generateTokenAndSetCookie(newUser._id, res);
+
+//     res.status(200).json({
+//       message: "User verified and created successfully",
+//       _id: newUser._id,
+//       name: newUser.name,
+//       email: newUser.email,
+//       username: newUser.username,
+//       role: newUser.role,
+//       yearGroup: newUser.yearGroup,
+//       department: newUser.department,
+//       isVerified: true,
+//     });
+//   } catch (err) {
+//     console.error("Verify OTP error:", err.message || err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+// const resendOTP = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     const tempUser = await TempUser.findOne({ email });
+//     if (!tempUser) {
+//       return res.status(404).json({ error: "No pending verification found" });
+//     }
+
+//     const timeSinceLastOtp = Date.now() - tempUser.lastOtpSent;
+//     if (timeSinceLastOtp < OTP_COOLDOWN) {
+//       const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
+//       return res.status(429).json({ 
+//         error: `Please wait ${remainingTime} seconds before requesting another OTP`
+//       });
+//     }
+
+//     const newOtp = generateOTP();
+//     tempUser.otp = newOtp;
+//     tempUser.otpExpiry = new Date(Date.now() + OTP_COOLDOWN);
+//     tempUser.lastOtpSent = new Date();
+//     await tempUser.save();
+
+//     await sendOTPEmail(email, newOtp);
+
+//     res.status(200).json({
+//       message: "New OTP sent successfully",
+//       email: email
+//     });
+//   } catch (err) {
+//     console.error("Resend OTP error:", err.message);
+//     res.status(500).json({ error: "Failed to resend OTP" });
+//   }
+// };
+
+
+// const loginUser = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+    
+//     // First find the user by username
+//     const user = await User.findOne({ username });
+    
+//     // Check credentials before checking ban status
+//     const isPasswordCorrect = await bcrypt.compare(
+//       password,
+//       user?.password || ""
+//     );
+
+//     if (!user || !isPasswordCorrect) {
+//       return res.status(400).json({ error: "Invalid username or password" });
+//     }
+
+//     // Now check if the user is banned
+//     if (user.isBanned) {
+//       return res.status(403).json({ error: "Account permanently banned" });
+//     }
+
+//     // Rest of the login logic remains the same
+//     if (user.isFrozen) {
+//       user.isFrozen = false;
+//       await user.save();
+//     }
+
+//     // Auto-follow logic
+//     const allUsers = await User.find({});
+//     const allUserIds = allUsers.map((u) => u._id.toString());
+//     user.following = allUserIds;
+//     await user.save();
+
+//     generateTokenAndSetCookie(user._id, res);
+
+//     res.status(200).json({
+//       _id: user._id,
+//       name: user.name,
+//       email: user.email,
+//       username: user.username,
+//       bio: user.bio,
+//       profilePic: user.profilePic,
+//       role: user.role,
+//       message: "Login successful, now following all users including yourself.",
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//     console.log("Error in loginUser: ", error.message);
+//   }
+// };
+
+// const logoutUser = (req, res) => {
+//   try {
+//     res.cookie("jwt", "", { maxAge: 1 });
+//     res.status(200).json({ message: "User logged out successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//     console.log("Error in logoutUser: ", err.message);
+//   }
+// };
+
+// const followUnFollowUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const userToModify = await User.findById(id);
+//     const currentUser = await User.findById(req.user._id);
+
+//     if (id === req.user._id.toString())
+//       return res
+//         .status(400)
+//         .json({ error: "You cannot follow/unfollow yourself" });
+
+//     if (!userToModify || !currentUser)
+//       return res.status(400).json({ error: "User not found" });
+
+//     const isFollowing = currentUser.following.includes(id);
+
+//     if (isFollowing) {
+//       // Unfollow user
+//       await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
+//       await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
+//       res.status(200).json({ message: "User unfollowed successfully" });
+//     } else {
+//       // Follow user
+//       await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
+//       await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
+//       res.status(200).json({ message: "User followed successfully" });
+//     }
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//     console.log("Error in followUnFollowUser: ", err.message);
+//   }
+// };
+
+// const updateUser = async (req, res) => {
+//   const { name, email, username, password, bio } = req.body;
+//   let { profilePic } = req.body;
+
+//   const userId = req.user._id;
+//   try {
+//     let user = await User.findById(userId);
+//     if (!user) return res.status(400).json({ error: "User not found" });
+
+//     if (req.params.id !== userId.toString())
+//       return res
+//         .status(400)
+//         .json({ error: "You cannot update other user's profile" });
+
+//     if (password) {
+//       const salt = await bcrypt.genSalt(10);
+//       const hashedPassword = await bcrypt.hash(password, salt);
+//       user.password = hashedPassword;
+//     }
+
+//     if (profilePic) {
+//       if (user.profilePic) {
+//         await cloudinary.uploader.destroy(
+//           user.profilePic.split("/").pop().split(".")[0]
+//         );
+//       }
+
+//       const uploadedResponse = await cloudinary.uploader.upload(profilePic);
+//       profilePic = uploadedResponse.secure_url;
+//     }
+
+//     user.name = name || user.name;
+//     user.email = email || user.email;
+//     user.username = username || user.username;
+//     user.profilePic = profilePic || user.profilePic;
+//     user.bio = bio || user.bio;
+
+//     user = await user.save();
+
+//     // Find all posts that this user replied and update username and userProfilePic fields
+//     await Post.updateMany(
+//       { "replies.userId": userId },
+//       {
+//         $set: {
+//           "replies.$[reply].username": user.username,
+//           "replies.$[reply].userProfilePic": user.profilePic,
+//         },
+//       },
+//       { arrayFilters: [{ "reply.userId": userId }] }
+//     );
+
+//     // password should be null in response
+//     user.password = null;
+
+//     res.status(200).json(user);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//     console.log("Error in updateUser: ", err.message);
+//   }
+// };
+
+// // Start of integration code
+// const getSuggestedUsers = async (req, res) => {
+//   try {
+//     // exclude the current user from suggested users array and exclude users that current user is already following
+//     const userId = req.user._id;
+
+//     const usersFollowedByYou = await User.findById(userId).select("following");
+
+//     const users = await User.aggregate([
+//       {
+//         $match: {
+//           _id: { $ne: userId },
+//         },
+//       },
+//       {
+//         $sample: { size: 10 },
+//       },
+//     ]);
+//     const filteredUsers = users.filter(
+//       (user) => !usersFollowedByYou.following.includes(user._id)
+//     );
+//     const suggestedUsers = filteredUsers.slice(0, 4);
+
+//     suggestedUsers.forEach((user) => (user.password = null));
+
+//     res.status(200).json(suggestedUsers);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// const freezeAccount = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user._id);
+//     if (!user) {
+//       return res.status(400).json({ error: "User not found" });
+//     }
+
+//     user.isFrozen = true;
+//     await user.save();
+
+//     res.status(200).json({ success: true });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// // New function for awarding verification
+// const awardVerification = async (req, res) => {
+//   const { userId, verificationType } = req.body;
+
+//   // Validate verification type
+//   if (!["blue", "gold"].includes(verificationType)) {
+//     return res.status(400).json({ error: "Invalid verification type" });
+//   }
+
+//   try {
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     // Set the verification type
+//     user.verification = verificationType;
+//     await user.save();
+
+//     res.status(200).json({ message: "Verification awarded", user });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//     console.log("Error in awardVerification: ", error.message);
+//   }
+// };
+// const adminFreezeUser = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+
+//     if (userId === req.user._id.toString()) {
+//       return res.status(400).json({ error: "Cannot perform action on yourself" });
+//     }
+
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     if (user.freezeCount >= 1) {
+//       user.isBanned = true;
+//       user.isFrozen = false;
+//       await user.save();
+
+//       // Send ban notification
+//       try {
+//         await transporter.sendMail({
+//           from: "pearnet104@gmail.com",
+//           to: user.email,
+//           subject: "Account Banned",
+//           text: "Your account has been banned. Unfortunately, until the foreseeable future, you will not be able to create an account with us again until further notice."
+//         });
+//       } catch (emailError) {
+//         console.error("Failed to send ban notification:", emailError);
+//       }
+
+//       await deleteUserData(userId);
+//       return res.json({ banned: true });
+//     }
+
+//     user.isFrozen = true;
+//     user.freezeCount += 1;
+//     user.freezeUntil = new Date(Date.now() + 14 * 86400000);
+//     await user.save();
+
+//     // Send freeze notification
+//     try {
+//       await transporter.sendMail({
+//         from: "pearnet104@gmail.com",
+//         to: user.email,
+//         subject: "Account Frozen",
+//         text: "You won't be able to access chat, commenting, and posting until you are unfrozen after 2 weeks."
+//       });
+//     } catch (emailError) {
+//       console.error("Failed to send freeze notification:", emailError);
+//     }
+
+//     res.status(200).json({ success: true });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// const adminDeleteUser = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+
+//     if (userId === req.user._id.toString()) {
+//       return res.status(400).json({ error: "Cannot delete yourself" });
+//     }
+
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     // Send ban notification
+//     try {
+//       await transporter.sendMail({
+//         from: "pearnet104@gmail.com",
+//         to: user.email,
+//         subject: "Account Banned",
+//         text: "Your account has been banned. Unfortunately, until the foreseeable future, you will not be able to create an account with us again until further notice."
+//       });
+//     } catch (emailError) {
+//       console.error("Failed to send ban notification:", emailError);
+//     }
+
+//     await deleteUserData(userId);
+//     res.status(200).json({ success: true });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// // Add this helper function (implement actual deletion logic)
+// // userController.js
+// const deleteUserData = async (userId) => {
+//   try {
+//     // 1. Delete user's posts and associated data
+//     await Post.deleteMany({ user: userId });
+
+//     // 2. Remove user's replies from all posts
+//     await Post.updateMany(
+//       { "replies.userId": userId },
+//       { $pull: { replies: { userId: userId } } }
+//     );
+
+//     // 3. Handle conversations and messages
+//     const userConversations = await Conversation.find({
+//       participants: userId,
+//     });
+
+//     // Delete all messages in these conversations
+//     await Message.deleteMany({
+//       conversation: { $in: userConversations.map((c) => c._id) },
+//     });
+
+//     // Delete the conversations themselves
+//     await Conversation.deleteMany({
+//       participants: userId,
+//     });
+
+//     // 4. Remove user from social connections
+//     await User.updateMany(
+//       { $or: [{ followers: userId }, { following: userId }] },
+//       { $pull: { followers: userId, following: userId } }
+//     );
+
+//     // 5. Remove user from chat participants lists
+//     await Conversation.updateMany(
+//       { participants: userId },
+//       { $pull: { participants: userId } }
+//     );
+
+//     // 6. Delete profile picture from Cloudinary
+//     const user = await User.findById(userId);
+//     if (user?.profilePic) {
+//       const publicId = user.profilePic.split("/").pop().split(".")[0];
+//       await cloudinary.uploader.destroy(publicId);
+//     }
+
+//     // 7. Finally delete the user document
+//     await User.findByIdAndDelete(userId);
+
+//     console.log(`Successfully deleted all data for user ${userId}`);
+//   } catch (error) {
+//     console.error("Error deleting user data:", error);
+//     throw error;
+//   }
+// };
+// export {
+//   signupUser,
+//   verifyOTP,
+//   resendOTP,
+//   loginUser,
+//   logoutUser,
+//   followUnFollowUser,
+//   updateUser,
+//   getUserProfile,
+//   getSuggestedUsers,
+//   freezeAccount,
+//   awardVerification,
+//   adminFreezeUser,
+//   adminDeleteUser,
+//   deleteUserData, // Exporting the new function
+// };
+
+
+// this si the validation updatew 
 import User from "../models/userModel.js";
 import Post from "../models/postModel.js";
 import bcrypt from "bcryptjs";
@@ -662,6 +1293,60 @@ const getUserProfile = async (req, res) => {
     res.status(500).json({ error: err.message });
     console.log("Error in getUserProfile: ", err.message);
   }
+};
+const validateEmail = (email) => {
+  if (!email) return { isValid: false, error: 'Email is required' };
+  
+  const emailLower = email.toLowerCase();
+  
+  // Check for Brookhouse domain
+  if (!emailLower.includes('brookhouse.ac.ke') && 
+      !emailLower.includes('rundabrookhouse.ac.ke')) {
+    return {
+      isValid: false,
+      error: 'Please use your Brookhouse email address'
+    };
+  }
+
+  // Determine email type and campus
+  const isStudent = emailLower.includes('students');
+  const isRunda = emailLower.includes('runda');
+  
+  return {
+    isValid: true,
+    emailType: isStudent ? 'student' : 'teacher',
+    campus: isRunda ? 'runda' : 'karen'
+  };
+};
+
+// Role verification logic
+const verifyRoleMatch = (email, selectedRole) => {
+  const { isValid, emailType, error } = validateEmail(email);
+  
+  if (!isValid) {
+    return { isValid: false, error };
+  }
+  
+  // Verify role matches email type
+  if (emailType === 'student' && selectedRole === 'teacher') {
+    return {
+      isValid: false,
+      error: 'Student emails cannot select teacher roles'
+    };
+  }
+  
+  if (emailType === 'teacher' && selectedRole === 'student') {
+    return {
+      isValid: false,
+      error: 'Teacher emails cannot select student roles'
+    };
+  }
+  
+  return { 
+    isValid: true,
+    emailType,
+    role: selectedRole
+  };
 };
 
 const transporter = nodemailer.createTransport({
@@ -1237,6 +1922,8 @@ const deleteUserData = async (userId) => {
 };
 export {
   signupUser,
+  validateEmail,
+  verifyRoleMatch,
   verifyOTP,
   resendOTP,
   loginUser,
