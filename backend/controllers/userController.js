@@ -1537,41 +1537,63 @@ const verifyOTP = async (req, res) => {
     }
 
     if (Date.now() > tempUser.otpExpiry) {
-      return res.status(400).json({ error: "OTP expired" });
+      await TempUser.deleteOne({ email });
+      return res.status(400).json({ error: "OTP expired. Please request a new one." });
     }
 
     // Create actual user after successful verification
-    const newUser = new User({
+    const userData = {
       name: tempUser.name,
       email: tempUser.email,
       username: tempUser.username,
       password: tempUser.password,
       role: tempUser.role,
-      isVerified: true,
-      yearGroup: tempUser.yearGroup,
-      department: tempUser.department
-    });
+      isVerified: true
+    };
 
-    await newUser.save();
-    await TempUser.deleteOne({ email });
+    // Add conditional fields based on role
+    if (tempUser.role === 'student') {
+      userData.yearGroup = tempUser.yearGroup;
+    } else if (tempUser.role === 'teacher') {
+      userData.department = tempUser.department;
+    }
 
-    // Generate token and set cookie
-    generateTokenAndSetCookie(newUser._id, res);
+    try {
+      const newUser = new User(userData);
+      await newUser.save();
+      
+      // Delete temporary user data
+      await TempUser.deleteOne({ email });
 
-    res.status(200).json({
-      message: "User verified and created successfully",
-      _id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      username: newUser.username,
-      role: newUser.role,
-      yearGroup: newUser.yearGroup,
-      department: newUser.department,
-      isVerified: true,
-    });
+      // Generate token and set cookie
+      generateTokenAndSetCookie(newUser._id, res);
+
+      // Return success response
+      return res.status(200).json({
+        message: "User verified and created successfully",
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        username: newUser.username,
+        role: newUser.role,
+        yearGroup: newUser.yearGroup,
+        department: newUser.department,
+        isVerified: true,
+      });
+    } catch (error) {
+      // If user creation fails, cleanup temp user and return error
+      await TempUser.deleteOne({ email });
+      console.error("Error creating verified user:", error);
+      return res.status(500).json({ 
+        error: "Failed to create user account after verification" 
+      });
+    }
   } catch (err) {
-    console.error("Verify OTP error:", err.message || err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Verify OTP error:", err);
+    return res.status(500).json({ 
+      error: "Internal server error during verification",
+      details: err.message 
+    });
   }
 };
 

@@ -1009,15 +1009,22 @@ const SignupCard = () => {
         setErrorMessage("OTP must be a numeric value");
         return;
       }
-
+  
       const response = await axios.post("/api/users/verify-otp", {
         email: inputs.email,
         otp: numericOTP,
       });
-
-      setIsOtpVerified(true);
-      setErrorMessage("");
-      showToast("Success", "OTP verified successfully", "success");
+  
+      if (response.data._id) {
+        // Store user data in localStorage
+        localStorage.setItem("user-threads", JSON.stringify(response.data));
+        setUser(response.data);
+        showToast("Success", "Account created successfully!", "success");
+      } else {
+        setIsOtpVerified(true);
+        setErrorMessage("");
+        showToast("Success", "OTP verified successfully", "success");
+      }
     } catch (error) {
       console.error("Verify OTP error:", error.response?.data?.error || error.message);
       setErrorMessage(error.response?.data?.error || "Failed to verify OTP");
