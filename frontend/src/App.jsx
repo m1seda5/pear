@@ -171,7 +171,7 @@
 // export default App;
 
 // post review 
-import { Box, Container } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
@@ -185,9 +185,9 @@ import CreatePost from "./components/CreatePost";
 import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import VerifyEmail from "./pages/VerifyEmail";
+import TVPage from "./pages/TVPage";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
-import InactivityBackground from './components/InactivityBackground';
 import ReviewModal from './components/ReviewModal';
 
 function App() {
@@ -199,35 +199,41 @@ function App() {
   // Check if user is a potential reviewer
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
 
+  // Don't render container for TV page
+  const isTVPage = pathname === '/tv';
+
   return (
     <I18nextProvider i18n={i18n}>
       <Box position={'relative'} w="full">
-        <Container maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'}>
-          <Header />
-          <Routes>
-            <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
-            <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
-            <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-            <Route 
-              path="/:username" 
-              element={user ? (
-                <>
-                  <UserPage />
-                  <CreatePost />
-                </>
-              ) : (
+        {!isTVPage && (
+          <Box maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'} mx="auto" px={4}>
+            <Header />
+          </Box>
+        )}
+        
+        <Routes>
+          <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
+          <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
+          <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
+          <Route path="/tv" element={user?.role === 'admin' ? <TVPage /> : <Navigate to="/" />} />
+          <Route 
+            path="/:username" 
+            element={user ? (
+              <>
                 <UserPage />
-              )} 
-            />
-            <Route path="/:username/post/:pid" element={<PostPage />} />
-            <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
-            <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
-            {/* New route for email verification - doesn't require auth */}
-            <Route path="/verify-email/:id" element={<VerifyEmail />} />
-          </Routes>
-        </Container>
-        {/* Add ReviewModal outside the Container to ensure it can appear over any content */}
-        {isPotentialReviewer && <ReviewModal />}
+                <CreatePost />
+              </>
+            ) : (
+              <UserPage />
+            )} 
+          />
+          <Route path="/:username/post/:pid" element={<PostPage />} />
+          <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
+          <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
+          <Route path="/verify-email/:id" element={<VerifyEmail />} />
+        </Routes>
+        
+        {!isTVPage && isPotentialReviewer && <ReviewModal />}
       </Box>
     </I18nextProvider>
   );

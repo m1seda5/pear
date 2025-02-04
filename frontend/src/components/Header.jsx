@@ -930,6 +930,7 @@ import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
 import { useState } from "react";
 import { FaLock } from "react-icons/fa";
+import { PiTelevisionSimpleBold } from "react-icons/pi";
 
 const Header = () => {
   const { colorMode, toggleColorMode } = useColorMode();
@@ -940,6 +941,7 @@ const Header = () => {
   const [hoverState, setHoverState] = useState({
     chat: false,
     lock: false,
+    tv: false
   });
 
   // Determine user roles based on `user.role`
@@ -971,8 +973,18 @@ const Header = () => {
       e.preventDefault(); // Prevent navigation if the user doesn't have access
       setHoverState({ ...hoverState, lock: true }); // Show lock when hovering
     } else {
-      setHoverState({ chat: false, lock: false });
+      setHoverState({ ...hoverState, chat: false, lock: false });
       navigate("/chat"); // Navigate to chat page if access is allowed
+    }
+  };
+
+  const handleTVClick = (e) => {
+    if (!isAdmin) {
+      e.preventDefault();
+      setHoverState({ ...hoverState, tv: true });
+    } else {
+      setHoverState({ ...hoverState, tv: false });
+      navigate("/tv");
     }
   };
 
@@ -991,6 +1003,7 @@ const Header = () => {
           <AiFillHome size={24} />
         </Link>
       )}
+      
       {!user && (
         <Link
           as={RouterLink}
@@ -1040,7 +1053,7 @@ const Header = () => {
               cursor: user?.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
             }}
             onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
-            onMouseLeave={() => setHoverState({ chat: false, lock: false })}
+            onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
           >
             {user?.isFrozen ? (
               <FaLock size={20} color="#4299E1" />
@@ -1050,6 +1063,26 @@ const Header = () => {
               <BsFillChatQuoteFill size={20} />
             )}
           </Link>
+
+          {/* TV Icon - Only visible to admin users */}
+          {user && (
+            <Link
+              onClick={handleTVClick}
+              _hover={{
+                color: isAdmin ? "teal.500" : "red.500",
+                transform: "scale(1.2)",
+                cursor: isAdmin ? "pointer" : "not-allowed",
+              }}
+              onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
+              onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
+            >
+              {hoverState.tv && !isAdmin ? (
+                <FaLock size={20} color="#F56565" />
+              ) : (
+                <PiTelevisionSimpleBold size={20} />
+              )}
+            </Link>
+          )}
 
           <Link
             as={RouterLink}
