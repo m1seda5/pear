@@ -1505,43 +1505,56 @@ const signupUser = async (req, res) => {
   }
 };
 
+// In verifyOTP endpoint (userController.js)
 const verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
   try {
-    const { email, otp } = req.body;
-
+    // Input validation
     if (!email || !otp) {
-      return res.status(400).json({ error: "Email and OTP are required" });
-    }
-
-    const tempUser = await TempUser.findOne({ email });
-
-    if (!tempUser) {
-      return res.status(404).json({ error: "No pending verification found" });
-    }
-
-    if (tempUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
-      await TempUser.deleteOne({ email });
-      return res.status(429).json({ 
-        error: "Maximum OTP attempts exceeded. Please start signup process again." 
-      });
-    }
-
-    const receivedOTP = parseInt(otp, 10);
-
-    if (tempUser.otp !== receivedOTP) {
-      tempUser.otpAttempts += 1;
-      await tempUser.save();
       return res.status(400).json({ 
-        error: `Invalid OTP. ${MAX_OTP_ATTEMPTS - tempUser.otpAttempts} attempts remaining.`
+        error: "Email and OTP are required" 
       });
     }
 
-    if (Date.now() > tempUser.otpExpiry) {
-      await TempUser.deleteOne({ email });
-      return res.status(400).json({ error: "OTP expired. Please request a new one." });
+    // Find temporary user record
+    const tempUser = await TempUser.findOne({ email: email.toLowerCase() });
+    if (!tempUser) {
+      console.log(`No temporary user found for email: ${email}`);
+      return res.status(404).json({ 
+        error: "No pending verification found. Please restart the signup process." 
+      });
     }
 
-    // Create actual user after successful verification
+    // Log verification attempt
+    console.log(`OTP Verification attempt for ${email}:`, {
+      receivedOTP: otp,
+      storedOTP: tempUser.otp,
+      attempts: tempUser.otpAttempts,
+      expiry: tempUser.otpExpiry,
+      currentTime: new Date()
+    });
+
+    // Check attempts
+    if (tempUser.otpAttempts >= 3) {
+      console.log(`Max attempts exceeded for ${email}`);
+      await TempUser.deleteOne({ email: email.toLowerCase() });
+      return res.status(429).json({ 
+        error: "Maximum attempts exceeded. Please restart the signup process." 
+      });
+    }
+
+    // Validate OTP
+    if (!tempUser.isValidOtp(otp)) {
+      const remainingAttempts = 3 - (await tempUser.incrementAttempts());
+      console.log(`Invalid OTP for ${email}. ${remainingAttempts} attempts remaining`);
+      
+      return res.status(400).json({ 
+        error: `Invalid OTP. ${remainingAttempts} attempts remaining.`
+      });
+    }
+
+    // Prepare user data for creation
     const userData = {
       name: tempUser.name,
       email: tempUser.email,
@@ -1558,19 +1571,27 @@ const verifyOTP = async (req, res) => {
       userData.department = tempUser.department;
     }
 
+    // Add campus if not admin
+    if (tempUser.campus && tempUser.campus !== 'admin') {
+      userData.campus = tempUser.campus;
+    }
+
     try {
+      // Create new verified user
       const newUser = new User(userData);
       await newUser.save();
       
-      // Delete temporary user data
-      await TempUser.deleteOne({ email });
+      // Clean up temporary user data
+      await TempUser.deleteOne({ email: email.toLowerCase() });
 
-      // Generate token and set cookie
+      // Generate authentication token
       generateTokenAndSetCookie(newUser._id, res);
+
+      // Log successful verification
+      console.log(`Successfully verified and created user: ${email}`);
 
       // Return success response
       return res.status(200).json({
-        message: "User verified and created successfully",
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
@@ -1578,21 +1599,39 @@ const verifyOTP = async (req, res) => {
         role: newUser.role,
         yearGroup: newUser.yearGroup,
         department: newUser.department,
-        isVerified: true,
+        campus: newUser.campus,
+        isVerified: true
       });
+
     } catch (error) {
-      // If user creation fails, cleanup temp user and return error
-      await TempUser.deleteOne({ email });
-      console.error("Error creating verified user:", error);
-      return res.status(500).json({ 
-        error: "Failed to create user account after verification" 
-      });
+      // Handle user creation errors
+      console.error(`Error creating verified user for ${email}:`, error);
+      
+      // Clean up temp user on failure
+      await TempUser.deleteOne({ email: email.toLowerCase() });
+      
+      // Check for duplicate key errors
+      if (error.code === 11000) {
+        return res.status(400).json({ 
+          error: "Username or email already exists. Please try again with different credentials." 
+        });
+      }
+
+      throw error; // Re-throw for general error handling
     }
-  } catch (err) {
-    console.error("Verify OTP error:", err);
+
+  } catch (error) {
+    // Log the full error for debugging
+    console.error('OTP Verification Error:', {
+      email,
+      error: error.message,
+      stack: error.stack
+    });
+
+    // Return appropriate error response
     return res.status(500).json({ 
-      error: "Internal server error during verification",
-      details: err.message 
+      error: "Internal server error during verification. Please try again.",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
