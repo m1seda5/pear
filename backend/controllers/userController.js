@@ -1432,7 +1432,6 @@ const signupUser = async (req, res) => {
     const { name, email, username, password, role, yearGroup, department } = req.body;
 
     // Check for banned email first
-    // Check for banned email first
     const bannedUser = await User.findOne({ email, isBanned: true });
     if (bannedUser) {
       return res.status(403).json({ error: "This email is permanently banned" });
@@ -1456,6 +1455,13 @@ const signupUser = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
+    // Determine campus based on email
+    const emailLower = email.toLowerCase();
+    let campus = 'admin';
+    if (!emailLower.includes('pear')) {
+      campus = emailLower.includes('runda') ? 'runda' : 'karen';
+    }
+
     // Check for existing temporary signup
     const existingTemp = await TempUser.findOne({ email });
     if (existingTemp) {
@@ -1475,17 +1481,18 @@ const signupUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Store in temporary collection
+    // Store in temporary collection with campus
     const tempUser = new TempUser({
       name,
       email,
       username,
       password: hashedPassword,
       role,
+      campus,
       otp,
       otpExpiry,
       ...(role === "student" ? { yearGroup } : {}),
-      ...(role === "teacher" ? { department } : {}),
+      ...(role === "teacher" ? { department } : {})
     });
 
     await tempUser.save();
@@ -1561,6 +1568,7 @@ const verifyOTP = async (req, res) => {
       username: tempUser.username,
       password: tempUser.password,
       role: tempUser.role,
+      campus: tempUser.campus, // Ensure campus is included
       isVerified: true
     };
 
@@ -1569,11 +1577,6 @@ const verifyOTP = async (req, res) => {
       userData.yearGroup = tempUser.yearGroup;
     } else if (tempUser.role === 'teacher') {
       userData.department = tempUser.department;
-    }
-
-    // Add campus if not admin
-    if (tempUser.campus && tempUser.campus !== 'admin') {
-      userData.campus = tempUser.campus;
     }
 
     try {
@@ -1617,7 +1620,7 @@ const verifyOTP = async (req, res) => {
         });
       }
 
-      throw error; // Re-throw for general error handling
+      throw error;
     }
 
   } catch (error) {
@@ -1635,7 +1638,6 @@ const verifyOTP = async (req, res) => {
     });
   }
 };
-
 const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;

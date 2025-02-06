@@ -536,7 +536,7 @@
 //     } catch (error) {
 //       console.error("Verify OTP error:", error.response?.data?.error || error.message);
 //       setErrorMessage(error.response?.data?.error || "Failed to verify OTP");
-      
+
 //       if (error.response?.status === 429) {
 //         setIsOtpSent(false);
 //         setFormData({ otp: "" });
@@ -778,8 +778,6 @@
 
 // export default SignupCard;
 
-
-
 // this is the brookhouse update and stuff
 import React, { useState, useEffect } from "react";
 import {
@@ -839,43 +837,43 @@ const SignupCard = () => {
 
   const validateEmailFormat = (email) => {
     if (!email) return "Email is required";
-    
+
     const emailLower = email.toLowerCase();
-    
+
     // Allow pear admin emails
-    if (emailLower.includes('pear')) {
+    if (emailLower.includes("pear")) {
       return "";
     }
-    
+
     // Check for Brookhouse domain
-    if (!emailLower.includes('brookhouse.ac.ke')) {
-      return 'Please use your Brookhouse email address';
+    if (!emailLower.includes("brookhouse.ac.ke")) {
+      return "Please use your Brookhouse email address";
     }
-    
+
     return "";
   };
 
   const validateUsernameFormat = (username, email) => {
     if (!username || !email) return "";
-    
+
     const emailLower = email.toLowerCase();
-    
+
     // Special case for pear admin accounts
-    if (emailLower.includes('pear')) {
-      if (!username.toLowerCase().includes('pear')) {
+    if (emailLower.includes("pear")) {
+      if (!username.toLowerCase().includes("pear")) {
         return 'Admin usernames must contain "pear"';
       }
       return "";
     }
-    
+
     // Extract surname from email (everything after first letter before @)
-    const userIdentifier = emailLower.split('@')[0];
+    const userIdentifier = emailLower.split("@")[0];
     const surname = userIdentifier.slice(1);
-    
+
     if (!username.toLowerCase().includes(surname.toLowerCase())) {
       return `Username must contain your surname (${surname})`;
     }
-    
+
     return "";
   };
 
@@ -883,25 +881,25 @@ const SignupCard = () => {
     if (inputs.email) {
       const error = validateEmailFormat(inputs.email);
       setEmailError(error);
-      
+
       const email = inputs.email.toLowerCase();
-      
+
       // Handle pear admin accounts
-      if (email.includes('pear')) {
+      if (email.includes("pear")) {
         setIsStudent(false);
         setIsTeacher(false);
         setIsAdmin(true);
-        setCampus('Admin');
+        setCampus("admin");
         return;
       }
 
       setIsAdmin(false);
-      
+
       // Determine campus and role for Brookhouse accounts
-      const isRunda = email.includes('runda');
-      setCampus(isRunda ? 'Runda' : 'Karen');
-      
-      const isStudentEmail = email.includes('students');
+      const isRunda = email.includes("runda");
+      setCampus(isRunda ? "runda" : "karen");
+
+      const isStudentEmail = email.includes("students");
       setIsStudent(isStudentEmail);
       setIsTeacher(!isStudentEmail);
     }
@@ -973,16 +971,16 @@ const SignupCard = () => {
       if (!isAdmin) {
         role = isStudent ? "student" : "teacher";
       }
-      
+
       const signupData = {
         name: inputs.name,
         email: inputs.email,
         username: inputs.username,
         password: inputs.password,
         role,
-        ...(campus !== 'Admin' ? { campus: campus.toLowerCase() } : {}),
+        ...(campus !== "admin" ? { campus: campus.toLowerCase() } : {}),
         ...(role === "student" ? { yearGroup } : {}),
-        ...(role === "teacher" ? { department } : {})
+        ...(role === "teacher" ? { department } : {}),
       };
 
       if (isResend) {
@@ -994,11 +992,22 @@ const SignupCard = () => {
       setIsOtpSent(true);
       setTimer(120);
       setIsResendDisabled(true);
-      showToast("Success", `OTP ${isResend ? 're-' : ''}sent to your email`, "success");
+      showToast(
+        "Success",
+        `OTP ${isResend ? "re-" : ""}sent to your email`,
+        "success"
+      );
     } catch (error) {
-      console.error("Error sending OTP:", error.response?.data || error.message);
+      console.error(
+        "Error sending OTP:",
+        error.response?.data || error.message
+      );
       setErrorMessage(error.response?.data?.error || "Error sending OTP");
-      showToast("Error", error.response?.data?.error || "Error sending OTP", "error");
+      showToast(
+        "Error",
+        error.response?.data?.error || "Error sending OTP",
+        "error"
+      );
     }
   };
 
@@ -1009,12 +1018,12 @@ const SignupCard = () => {
         setErrorMessage("OTP must be a numeric value");
         return;
       }
-  
+
       const response = await axios.post("/api/users/verify-otp", {
         email: inputs.email,
         otp: numericOTP,
       });
-  
+
       if (response.data._id) {
         // Store user data in localStorage
         localStorage.setItem("user-threads", JSON.stringify(response.data));
@@ -1026,9 +1035,12 @@ const SignupCard = () => {
         showToast("Success", "OTP verified successfully", "success");
       }
     } catch (error) {
-      console.error("Verify OTP error:", error.response?.data?.error || error.message);
+      console.error(
+        "Verify OTP error:",
+        error.response?.data?.error || error.message
+      );
       setErrorMessage(error.response?.data?.error || "Failed to verify OTP");
-      
+
       if (error.response?.status === 429) {
         setIsOtpSent(false);
         setFormData({ otp: "" });
@@ -1105,7 +1117,9 @@ const SignupCard = () => {
                     }
                     value={inputs.username}
                   />
-                  {usernameError && <FormErrorMessage>{usernameError}</FormErrorMessage>}
+                  {usernameError && (
+                    <FormErrorMessage>{usernameError}</FormErrorMessage>
+                  )}
                 </FormControl>
               </Box>
             </HStack>
@@ -1118,7 +1132,9 @@ const SignupCard = () => {
                   setInputs({ ...inputs, email: e.target.value })
                 }
                 value={inputs.email}
-                placeholder={isAdmin ? "example@pear.com" : "example@brookhouse.ac.ke"}
+                placeholder={
+                  isAdmin ? "example@pear.com" : "example@brookhouse.ac.ke"
+                }
               />
               {emailError && <FormErrorMessage>{emailError}</FormErrorMessage>}
             </FormControl>
@@ -1148,16 +1164,10 @@ const SignupCard = () => {
 
             {!isAdmin && (
               <FormControl>
-                <Checkbox
-                  isChecked={isStudent}
-                  isDisabled={true}
-                >
+                <Checkbox isChecked={isStudent} isDisabled={true}>
                   Student Account
                 </Checkbox>
-                <Checkbox
-                  isChecked={isTeacher}
-                  isDisabled={true}
-                >
+                <Checkbox isChecked={isTeacher} isDisabled={true}>
                   Teacher Account
                 </Checkbox>
               </FormControl>
@@ -1213,13 +1223,18 @@ const SignupCard = () => {
             )}
 
             {!isOtpSent && (
-              <Button 
-                colorScheme="blue" 
+              <Button
+                colorScheme="blue"
                 onClick={() => sendOtp(false)}
                 isDisabled={
-                  !inputs.email || !inputs.password || !inputs.name || !inputs.username || 
-                  !!emailError || !!usernameError ||
-                  (!isAdmin && ((isStudent && !yearGroup) || (isTeacher && !department)))
+                  !inputs.email ||
+                  !inputs.password ||
+                  !inputs.name ||
+                  !inputs.username ||
+                  !!emailError ||
+                  !!usernameError ||
+                  (!isAdmin &&
+                    ((isStudent && !yearGroup) || (isTeacher && !department)))
                 }
               >
                 Verify Email
