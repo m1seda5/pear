@@ -382,7 +382,7 @@ const userSchema = mongoose.Schema(
     },
     campus: {
       type: String,
-      enum: ['karen', 'runda'],
+      enum: ['karen', 'runda', 'admin'],
       required: true
     },
     role: {
