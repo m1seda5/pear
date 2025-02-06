@@ -837,6 +837,83 @@ const SignupCard = () => {
   const setUser = useSetRecoilState(userAtom);
 
   // Keep all existing validation functions and effects
+  const validateEmailFormat = (email) => {
+    if (!email) return "Email is required";
+
+    const emailLower = email.toLowerCase();
+
+    // Allow pear admin emails
+    if (emailLower.includes("pear")) {
+      return "";
+    }
+
+    // Check for Brookhouse domain
+    if (!emailLower.includes("brookhouse.ac.ke")) {
+      return "Please use your Brookhouse email address";
+    }
+
+    return "";
+  };
+
+  const validateUsernameFormat = (username, email) => {
+    if (!username || !email) return "";
+
+    const emailLower = email.toLowerCase();
+
+    // Special case for pear admin accounts
+    if (emailLower.includes("pear")) {
+      if (!username.toLowerCase().includes("pear")) {
+        return 'Admin usernames must contain "pear"';
+      }
+      return "";
+    }
+
+    // Extract surname from email (everything after first letter before @)
+    const userIdentifier = emailLower.split("@")[0];
+    const surname = userIdentifier.slice(1);
+
+    if (!username.toLowerCase().includes(surname.toLowerCase())) {
+      return `Username must contain your surname (${surname})`;
+    }
+
+    return "";
+  };
+
+  useEffect(() => {
+    if (inputs.email) {
+      const error = validateEmailFormat(inputs.email);
+      setEmailError(error);
+
+      const email = inputs.email.toLowerCase();
+
+      // Handle pear admin accounts
+      if (email.includes("pear")) {
+        setIsStudent(false);
+        setIsTeacher(false);
+        setIsAdmin(true);
+        setCampus("admin");
+        return;
+      }
+
+      setIsAdmin(false);
+
+      // Determine campus and role for Brookhouse accounts
+      const isRunda = email.includes("runda");
+      setCampus(isRunda ? "runda" : "karen");
+
+      const isStudentEmail = email.includes("students");
+      setIsStudent(isStudentEmail);
+      setIsTeacher(!isStudentEmail);
+    }
+  }, [inputs.email]);
+
+  useEffect(() => {
+    if (inputs.username && inputs.email) {
+      const error = validateUsernameFormat(inputs.username, inputs.email);
+      setUsernameError(error);
+    }
+  }, [inputs.username, inputs.email]);
+
 
   useEffect(() => {
     let interval;
@@ -888,6 +965,152 @@ const SignupCard = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  const validateForm = () => {
+    if (!inputs.email || !inputs.password || !inputs.name || !inputs.username) {
+      showToast("Error", "All fields are required", "error");
+      return false;
+    }
+
+    if (emailError) {
+      showToast("Error", emailError, "error");
+      return false;
+    }
+
+    if (usernameError) {
+      showToast("Error", usernameError, "error");
+      return false;
+    }
+
+    if (!isAdmin) {
+      if (isStudent && !yearGroup) {
+        showToast("Error", "Please select your year group", "error");
+        return false;
+      }
+
+      if (isTeacher && !department) {
+        showToast("Error", "Please select your department", "error");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const sendOtp = async (isResend = false) => {
+    try {
+      if (!validateForm()) return;
+
+      let role = "admin";
+      if (!isAdmin) {
+        role = isStudent ? "student" : "teacher";
+      }
+
+      const signupData = {
+        name: inputs.name,
+        email: inputs.email,
+        username: inputs.username,
+        password: inputs.password,
+        role,
+        ...(campus !== "admin" ? { campus: campus.toLowerCase() } : {}),
+        ...(role === "student" ? { yearGroup } : {}),
+        ...(role === "teacher" ? { department } : {}),
+      };
+
+      if (isResend) {
+        await axios.post("/api/users/resend-otp", { email: inputs.email });
+      } else {
+        await axios.post("/api/users/signup", signupData);
+      }
+
+      setIsOtpSent(true);
+      setTimer(120);
+      setIsResendDisabled(true);
+      showToast(
+        "Success",
+        `OTP ${isResend ? "re-" : ""}sent to your email`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "Error sending OTP:",
+        error.response?.data || error.message
+      );
+      setErrorMessage(error.response?.data?.error || "Error sending OTP");
+      showToast(
+        "Error",
+        error.response?.data?.error || "Error sending OTP",
+        "error"
+      );
+    }
+  };
+
+  const verifyOtp = async () => {
+    try {
+      const numericOTP = parseInt(formData.otp, 10);
+      if (isNaN(numericOTP)) {
+        setErrorMessage("OTP must be a numeric value");
+        return;
+      }
+
+      const response = await axios.post("/api/users/verify-otp", {
+        email: inputs.email,
+        otp: numericOTP,
+      });
+
+      if (response.data._id) {
+        // Store user data in localStorage
+        localStorage.setItem("user-threads", JSON.stringify(response.data));
+        setUser(response.data);
+        showToast("Success", "Account created successfully!", "success");
+      } else {
+        setIsOtpVerified(true);
+        setErrorMessage("");
+        showToast("Success", "OTP verified successfully", "success");
+      }
+    } catch (error) {
+      console.error(
+        "Verify OTP error:",
+        error.response?.data?.error || error.message
+      );
+      setErrorMessage(error.response?.data?.error || "Failed to verify OTP");
+
+      if (error.response?.status === 429) {
+        setIsOtpSent(false);
+        setFormData({ otp: "" });
+      }
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!isOtpVerified) {
+      setErrorMessage("Please verify your OTP before signing up");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: inputs.username,
+          password: inputs.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast("Error", data.error, "error");
+        return;
+      }
+
+      localStorage.setItem("user-threads", JSON.stringify(data));
+      setUser(data);
+      showToast("Success", "Signup successful!", "success");
+    } catch (error) {
+      showToast("Error", error.message, "error");
+    }
   };
 
   // Keep all other existing functions (validateForm, sendOtp, verifyOtp, handleSignup)
