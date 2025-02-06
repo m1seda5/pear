@@ -1423,7 +1423,7 @@ const sendOTPEmail = async (email, otp) => {
 };
 
 const MAX_OTP_ATTEMPTS = 3;
-const OTP_COOLDOWN = 2 * 60 * 1000; // 2 minutes in milliseconds
+const OTP_COOLDOWN = 3 * 60 * 1000; // 2 minutes in milliseconds
 
 const signupUser = async (req, res) => {
   console.log("Signup request received:", req.body);
@@ -1641,12 +1641,19 @@ const verifyOTP = async (req, res) => {
 const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
 
     const tempUser = await TempUser.findOne({ email });
     if (!tempUser) {
-      return res.status(404).json({ error: "No pending verification found" });
+      return res.status(404).json({ 
+        error: "No pending verification found. Please restart signup." 
+      });
     }
 
+    // Check cooldown period
     const timeSinceLastOtp = Date.now() - tempUser.lastOtpSent;
     if (timeSinceLastOtp < OTP_COOLDOWN) {
       const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
@@ -1655,24 +1662,30 @@ const resendOTP = async (req, res) => {
       });
     }
 
+    // Generate and save new OTP
     const newOtp = generateOTP();
     tempUser.otp = newOtp;
     tempUser.otpExpiry = new Date(Date.now() + OTP_COOLDOWN);
     tempUser.lastOtpSent = new Date();
+    tempUser.otpAttempts = 0; // Reset attempts for new OTP
     await tempUser.save();
 
+    // Send new OTP
     await sendOTPEmail(email, newOtp);
 
     res.status(200).json({
       message: "New OTP sent successfully",
-      email: email
+      email: email,
+      expiryTime: tempUser.otpExpiry
     });
+
   } catch (err) {
     console.error("Resend OTP error:", err.message);
-    res.status(500).json({ error: "Failed to resend OTP" });
+    res.status(500).json({ 
+      error: "Failed to resend OTP. Please try again." 
+    });
   }
 };
-
 
 const loginUser = async (req, res) => {
   try {

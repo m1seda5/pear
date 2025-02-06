@@ -824,9 +824,10 @@ const SignupCard = () => {
   });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [timer, setTimer] = useState(120);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [timer, setTimer] = useState(180); // 3 minutes in seconds
   const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
   const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [campus, setCampus] = useState("");
@@ -927,6 +928,39 @@ const SignupCard = () => {
     }
     return () => clearInterval(interval);
   }, [isOtpSent, timer]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      setIsResendDisabled(true);
+      setErrorMessage("");
+
+      const response = await axios.post("/api/users/resend-otp", {
+        email: inputs.email
+      });
+
+      if (response.data.message) {
+        setTimer(180); // Reset timer to 3 minutes
+        setResendAttempts(prev => prev + 1);
+        showToast("Success", "New OTP sent successfully", "success");
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || "Failed to resend OTP";
+      setErrorMessage(errorMsg);
+      showToast("Error", errorMsg, "error");
+      
+      // If we got a 429 (too many attempts), keep the resend button disabled
+      if (error.response?.status !== 429) {
+        setIsResendDisabled(false);
+      }
+    }
+  };
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -1241,7 +1275,7 @@ const SignupCard = () => {
               </Button>
             )}
 
-            {isOtpSent && (
+{isOtpSent && (
               <FormControl isRequired>
                 <FormLabel>Enter OTP</FormLabel>
                 <Input
@@ -1250,24 +1284,49 @@ const SignupCard = () => {
                   value={formData.otp}
                   onChange={handleChange}
                   maxLength={4}
+                  placeholder="Enter 4-digit OTP"
                 />
                 <Stack direction="row" spacing={4} mt={2}>
                   <Button
                     onClick={verifyOtp}
-                    disabled={isOtpVerified}
+                    disabled={!formData.otp || isOtpVerified}
                     colorScheme="green"
                   >
                     Verify OTP
                   </Button>
                   <Button
-                    onClick={() => sendOtp(true)}
+                    onClick={handleResendOTP}
                     isDisabled={isResendDisabled || isOtpVerified}
+                    colorScheme="blue"
                   >
-                    Resend OTP {timer > 0 && `(${timer}s)`}
+                    Resend OTP {timer > 0 && `(${formatTime(timer)})`}
                   </Button>
                 </Stack>
-                {errorMessage && <Text color="red.500">{errorMessage}</Text>}
+                {errorMessage && (
+                  <Text color="red.500" mt={2}>
+                    {errorMessage}
+                  </Text>
+                )}
               </FormControl>
+            )}
+
+            {!isOtpSent && (
+              <Button
+                colorScheme="blue"
+                onClick={() => sendOtp(false)}
+                isDisabled={
+                  !inputs.email ||
+                  !inputs.password ||
+                  !inputs.name ||
+                  !inputs.username ||
+                  !!emailError ||
+                  !!usernameError ||
+                  (!isAdmin &&
+                    ((isStudent && !yearGroup) || (isTeacher && !department)))
+                }
+              >
+                Verify Email
+              </Button>
             )}
 
             <Stack spacing={10} pt={2}>
