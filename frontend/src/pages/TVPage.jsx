@@ -15,12 +15,10 @@ const TVPage = () => {
     const { t } = useTranslation();
     const toast = useToast();
 
-    // Constants
-    const SLIDE_DURATION = 7000; // 7 seconds per post
+    const SLIDE_DURATION = 7000;
     const MAX_FEATURED_POSTS = 3;
 
     useEffect(() => {
-        // Load cached posts from localStorage if they exist
         const loadCachedPosts = () => {
             const cached = localStorage.getItem('tvPagePosts');
             if (cached) {
@@ -48,7 +46,6 @@ const TVPage = () => {
                     return;
                 }
 
-                // Sort posts by likes and comments for featuring
                 const sortedPosts = data.sort((a, b) => {
                     const aEngagement = (a.likes?.length || 0) + (a.replies?.length || 0);
                     const bEngagement = (b.likes?.length || 0) + (b.replies?.length || 0);
@@ -57,13 +54,10 @@ const TVPage = () => {
 
                 const featuredPosts = sortedPosts.slice(0, MAX_FEATURED_POSTS);
                 setPosts(featuredPosts);
-                
-                // Cache the posts
                 localStorage.setItem('tvPagePosts', JSON.stringify(featuredPosts));
                 setCachedPosts(featuredPosts);
             } catch (error) {
                 setError(error.message);
-                // Use cached posts if available
                 loadCachedPosts();
                 toast({
                     title: t("Network Error"),
@@ -77,7 +71,6 @@ const TVPage = () => {
             }
         };
 
-        // Only allow access if user is admin
         if (user?.role !== 'admin') {
             toast({
                 title: t("Access Denied"),
@@ -91,7 +84,6 @@ const TVPage = () => {
 
         fetchPosts();
 
-        // Set up auto-rotation for posts
         const interval = setInterval(() => {
             setCurrentPostIndex((prevIndex) => 
                 prevIndex === (posts.length - 1) ? 0 : prevIndex + 1
@@ -101,7 +93,6 @@ const TVPage = () => {
         return () => clearInterval(interval);
     }, [user, t, toast]);
 
-    // Progress bar animation
     const Progress = ({ index }) => (
         <Box
             h="2px"
@@ -127,16 +118,26 @@ const TVPage = () => {
     }
 
     return (
-        <Box p={4}>
+        <Box 
+            className="tv-page-container"
+            height="100vh"
+            width="100vw"
+            overflow="hidden"
+            position="fixed"
+            top="0"
+            left="0"
+            bg="white"
+            _dark={{ bg: "gray.800" }}
+        >
             {loading ? (
-                <Flex justifyContent="center">
+                <Flex justifyContent="center" alignItems="center" height="100%">
                     <Spinner size="xl" />
                 </Flex>
             ) : error ? (
                 <Text color="red.500">{error}</Text>
             ) : (
-                <>
-                    <Flex mb={4} gap={2}>
+                <Box height="100%">
+                    <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
                         {posts.map((_, index) => (
                             <Box key={index} flex={1}>
                                 <Progress index={index} />
@@ -144,22 +145,28 @@ const TVPage = () => {
                         ))}
                     </Flex>
                     <Box
-                        borderWidth="1px"
-                        borderRadius="lg"
+                        height="100%"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
                         p={6}
-                        boxShadow="xl"
-                        bg="white"
-                        _dark={{ bg: "gray.800" }}
-                        transition="all 0.3s"
                     >
                         {posts[currentPostIndex] && (
-                            <Post
-                                post={posts[currentPostIndex]}
-                                postedBy={posts[currentPostIndex].postedBy}
-                            />
+                            <Box
+                                width="100%"
+                                maxWidth="1200px"
+                                mx="auto"
+                                className="tv-post-container"
+                            >
+                                <Post
+                                    post={posts[currentPostIndex]}
+                                    postedBy={posts[currentPostIndex].postedBy}
+                                    isTV={true}
+                                />
+                            </Box>
                         )}
                     </Box>
-                </>
+                </Box>
             )}
         </Box>
     );

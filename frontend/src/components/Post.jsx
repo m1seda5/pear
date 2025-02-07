@@ -167,17 +167,16 @@ import { DeleteIcon } from "@chakra-ui/icons";
 import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
-import { useTranslation } from "react-i18next"; // Import useTranslation
+import { useTranslation } from "react-i18next";
 
-const Post = ({ post, postedBy }) => {
+const Post = ({ post, postedBy, isTV = false }) => {
   const [user, setUser] = useState(null);
   const showToast = useShowToast();
   const currentUser = useRecoilValue(userAtom);
   const [posts, setPosts] = useRecoilState(postsAtom);
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation(); // Initialize the translation hook
-  const [language, setLanguage] = useState(i18n.language); // Add a state for language
-
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState(i18n.language);
   useEffect(() => {
     // Update the language state whenever the i18n language changes
     const handleLanguageChange = (lng) => {
@@ -239,12 +238,31 @@ const Post = ({ post, postedBy }) => {
 
   if (!user) return null;
 
+  const tvStyles = isTV ? {
+    maxWidth: "90vw",
+    margin: "0 auto",
+    padding: "2rem",
+    fontSize: "1.5rem",
+    ".post-text": {
+      fontSize: "2rem",
+      lineHeight: "1.5",
+    },
+    ".post-image": {
+      maxHeight: "80vh",
+      objectFit: "contain",
+    },
+    ".user-avatar": {
+      width: "80px",
+      height: "80px",
+    }
+  } : {};
+
   return (
     <Link to={`/${user.username}/post/${post._id}`}>
       <Flex gap={3} mb={4} py={5}>
         <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
-            size="md"
+            size={isTV ? "xl":"md"}
             name={user.name}
             src={user?.profilePic}
             onClick={(e) => {
@@ -252,7 +270,7 @@ const Post = ({ post, postedBy }) => {
               navigate(`/${user.username}`);
             }}
           />
-          <Box w="1px" h={"full"} bg="gray.light" my={2}></Box>
+          <Box w="1px" h={"full"} bg="gray.light" my={2} display={isTV ? "none" : "block"}></Box>
           <Box position={"relative"} w={"full"}>
             {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
             {post.replies[0] && (
@@ -296,7 +314,7 @@ const Post = ({ post, postedBy }) => {
           <Flex justifyContent={"space-between"} w={"full"}>
             <Flex w={"full"} alignItems={"center"}>
               <Text
-                fontSize={"sm"}
+                fontSize={isTV ? "2xl" : "sm"}
                 fontWeight={"bold"}
                 onClick={(e) => {
                   e.preventDefault();
@@ -305,11 +323,11 @@ const Post = ({ post, postedBy }) => {
               >
                 {user?.username}
               </Text>
-              <Image src="/verified.png" w={4} h={4} ml={1} />
+              <Image src="/verified.png" w={isTV ? 8 : 4} h={isTV ? 8 : 4} ml={1} />
             </Flex>
             <Flex gap={4} alignItems={"center"}>
               <Text
-                fontSize={"xs"}
+                fontSize={isTV ? "lg" : "xs"}
                 width={36}
                 textAlign={"right"}
                 color={"gray.light"}
@@ -317,14 +335,15 @@ const Post = ({ post, postedBy }) => {
                 {formatDistanceToNow(new Date(post.createdAt))} {t("ago")}
               </Text>
 
-              {(currentUser?._id === user._id ||
-                currentUser?.role === "admin") && (
+              {!isTV && (currentUser?._id === user._id || currentUser?.role === "admin") && (
                 <DeleteIcon size={20} onClick={handleDeletePost} />
               )}
             </Flex>
           </Flex>
 
-          <Text fontSize={"sm"}>{post.text}</Text>
+          <Text fontSize={isTV ? "xl" : "sm"} className="post-text">
+            {post.text}
+          </Text>
           {post.img && (
             <Box
               borderRadius={6}
@@ -332,13 +351,23 @@ const Post = ({ post, postedBy }) => {
               border={"1px solid"}
               borderColor={"gray.light"}
             >
-              <Image src={post.img} w={"full"} />
+              <Image 
+                src={post.img} 
+                w={"full"} 
+                className="post-image"
+                sx={isTV ? {
+                  maxHeight: "70vh",
+                  objectFit: "contain"
+                } : {}}
+              />
             </Box>
           )}
 
-          <Flex gap={3} my={1}>
-            <Actions post={post} />
-          </Flex>
+          {!isTV && (
+            <Flex gap={3} my={1}>
+              <Actions post={post} />
+            </Flex>
+          )}
         </Flex>
       </Flex>
     </Link>

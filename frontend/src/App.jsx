@@ -196,43 +196,26 @@ function App() {
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
 
-  // Check if user is a potential reviewer
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
-
-  // Don't render container for TV page
   const isTVPage = pathname === '/tv';
 
   return (
     <I18nextProvider i18n={i18n}>
-      <Box position={'relative'} w="full">
-        {!isTVPage && (
-          <Box maxW={pathname === '/' ? { base: '620px', md: '900px' } : '620px'} mx="auto" px={4}>
-            <Header />
-          </Box>
-        )}
-        
-        <Routes>
-          <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
-          <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
-          <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-          <Route path="/tv" element={user?.role === 'admin' ? <TVPage /> : <Navigate to="/" />} />
-          <Route 
-            path="/:username" 
-            element={user ? (
-              <>
-                <UserPage />
-                <CreatePost />
-              </>
-            ) : (
-              <UserPage />
-            )} 
-          />
-          <Route path="/:username/post/:pid" element={<PostPage />} />
-          <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
-          <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
-          <Route path="/verify-email/:id" element={<VerifyEmail />} />
-        </Routes>
-        
+      <Box>
+        {!isTVPage && <Header />}
+        <Box mx="auto" px={4} maxW={isTVPage ? "100vw" : "600px"}>
+          <Routes>
+            <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
+            <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
+            <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
+            <Route path="/:username" element={<UserPage />} />
+            <Route path="/:username/post/:pid" element={<PostPage />} />
+            <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
+            <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/tv" element={<TVPage />} />
+          </Routes>
+        </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
       </Box>
     </I18nextProvider>
