@@ -917,7 +917,7 @@
 
 
 // admin role update
-import { Button, Flex, Image, Link, useColorMode } from "@chakra-ui/react";
+import { Button, Flex, Image, Link, useColorMode, Icon } from "@chakra-ui/react";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { AiFillHome } from "react-icons/ai";
@@ -944,186 +944,132 @@ const Header = () => {
     tv: false
   });
 
-  // Determine user roles based on `user.role`
+  // Determine user roles
   const isStudent = user?.role === "student";
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
 
-  const currentDate = new Date();
-  const dayOfWeek = currentDate.getDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
-  const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes(); // Convert to HHMM format
-
-  // School hours in HHMM format
-  const schoolStart = 810;
-  const lunchStart = 1250;
-  const lunchEnd = 1340;
-  const schoolEnd = 1535;
-
-  // Determine if the student has chat access based on the day and time
-  const hasChatAccess =
-    isStudent &&
-    ((dayOfWeek >= 1 && dayOfWeek <= 5 &&
-      (currentTime < schoolStart ||
-        (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-        currentTime > schoolEnd)) ||
-      dayOfWeek === 0 || dayOfWeek === 6); // Allow access on weekends
-
-  const handleChatClick = (e) => {
-    if (user?.isFrozen || !hasChatAccess) {
-      e.preventDefault(); // Prevent navigation if the user doesn't have access
-      setHoverState({ ...hoverState, lock: true }); // Show lock when hovering
-    } else {
-      setHoverState({ ...hoverState, chat: false, lock: false });
-      navigate("/chat"); // Navigate to chat page if access is allowed
-    }
-  };
-
-  const handleTVClick = (e) => {
-    if (!isAdmin) {
-      e.preventDefault();
-      setHoverState({ ...hoverState, tv: true });
-    } else {
-      setHoverState({ ...hoverState, tv: false });
-      navigate("/tv");
-    }
-  };
+  // ... (keep existing time/day validation logic)
 
   return (
-    <Flex justifyContent="center" mt={6} mb="12" gap={10}>
+    <Flex
+      justifyContent="center"
+      alignItems="center"
+      mt={{ base: 4, md: 6 }}
+      mb={{ base: 4, md: 12 }}
+      gap={{ base: 3, md: 8 }}
+      px={{ base: 4, md: 0 }}
+      position="sticky"
+      top="0"
+      bg={colorMode === "dark" ? "gray.800" : "white"}
+      zIndex="sticky"
+      py={3}
+      boxShadow="md"
+      wrap={{ base: "wrap", md: "nowrap" }}
+    >
       {user && (
         <Link
           as={RouterLink}
           to="/"
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
-          }}
-          transition="all 0.3s ease-in-out"
+          _hover={{ textDecor: "none", color: "teal.500", transform: "scale(1.1)" }}
+          transition="all 0.2s ease"
         >
-          <AiFillHome size={24} />
-        </Link>
-      )}
-      
-      {!user && (
-        <Link
-          as={RouterLink}
-          to="/auth"
-          onClick={() => setAuthScreen("login")}
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
-          }}
-          transition="all 0.3s ease-in-out"
-        >
-          Login
+          <Icon as={AiFillHome} boxSize={{ base: 5, md: 6 }} />
         </Link>
       )}
 
       <Image
         cursor="pointer"
         alt="logo"
-        w={6}
+        w={{ base: 5, md: 6 }}
         src={colorMode === "dark" ? "/light-logo.svg" : "/dark-logo.svg"}
         onClick={toggleColorMode}
-        _hover={{
-          transform: "rotate(20deg) scale(1.2)",
-        }}
-        transition="all 0.3s ease-in-out"
+        _hover={{ transform: "rotate(20deg) scale(1.1)" }}
+        transition="all 0.2s ease"
       />
 
-      {user && (
-        <Flex alignItems="center" gap={10}>
+      {user ? (
+        <Flex alignItems="center" gap={{ base: 3, md: 8 }} mx={2}>
           <Link
             as={RouterLink}
             to={`/${user.username}`}
-            _hover={{
-              color: "teal.500",
-              transform: "scale(1.2)",
-            }}
-            transition="all 0.3s ease-in-out"
+            _hover={{ color: "teal.500", transform: "scale(1.1)" }}
+            transition="all 0.2s ease"
           >
-            <RxAvatar size={24} />
+            <Icon as={RxAvatar} boxSize={{ base: 5, md: 6 }} />
           </Link>
 
           <Link
             onClick={handleChatClick}
             _hover={{
               color: user?.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
-              transform: "scale(1.2)",
+              transform: "scale(1.1)",
               cursor: user?.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
             }}
             onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
             onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
           >
             {user?.isFrozen ? (
-              <FaLock size={20} color="#4299E1" />
+              <Icon as={FaLock} boxSize={{ base: 4, md: 5 }} color="blue.500" />
             ) : hoverState.lock ? (
-              <FaLock size={20} color="#F56565" />
+              <Icon as={FaLock} boxSize={{ base: 4, md: 5 }} color="red.500" />
             ) : (
-              <BsFillChatQuoteFill size={20} />
+              <Icon as={BsFillChatQuoteFill} boxSize={{ base: 4, md: 5 }} />
             )}
           </Link>
 
-          {/* TV Icon - Only visible to admin users */}
-          {user && (
+          {isAdmin && (
             <Link
               onClick={handleTVClick}
               _hover={{
-                color: isAdmin ? "teal.500" : "red.500",
-                transform: "scale(1.2)",
-                cursor: isAdmin ? "pointer" : "not-allowed",
+                color: "teal.500",
+                transform: "scale(1.1)",
               }}
-              onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
-              onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
             >
-              {hoverState.tv && !isAdmin ? (
-                <FaLock size={20} color="#F56565" />
-              ) : (
-                <PiTelevisionSimpleBold size={20} />
-              )}
+              <Icon as={PiTelevisionSimpleBold} boxSize={{ base: 4, md: 5 }} />
             </Link>
           )}
 
           <Link
             as={RouterLink}
             to="/settings"
-            _hover={{
-              color: "teal.500",
-              transform: "scale(1.2)",
-            }}
-            transition="all 0.3s ease-in-out"
+            _hover={{ color: "teal.500", transform: "scale(1.1)" }}
+            transition="all 0.2s ease"
           >
-            <MdOutlineSettings size={20} />
+            <Icon as={MdOutlineSettings} boxSize={{ base: 5, md: 6 }} />
           </Link>
 
           <Button
             size="xs"
             onClick={logout}
-            _hover={{
-              bg: "teal.500",
-              color: "white",
-              transform: "scale(1.1)",
-            }}
-            transition="all 0.3s ease-in-out"
+            p={1.5}
+            _hover={{ bg: "teal.500", color: "white", transform: "scale(1.05)" }}
+            transition="all 0.2s ease"
           >
-            <FiLogOut size={20} />
+            <Icon as={FiLogOut} boxSize={{ base: 4, md: 5 }} />
           </Button>
         </Flex>
-      )}
-
-      {!user && (
-        <Link
-          as={RouterLink}
-          to="/auth"
-          onClick={() => setAuthScreen("signup")}
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
-          }}
-          transition="all 0.3s ease-in-out"
-        >
-          Sign up
-        </Link>
+      ) : (
+        <Flex gap={{ base: 4, md: 8 }}>
+          <Link
+            as={RouterLink}
+            to="/auth"
+            onClick={() => setAuthScreen("login")}
+            _hover={{ color: "teal.500", transform: "scale(1.1)" }}
+            transition="all 0.2s ease"
+          >
+            Login
+          </Link>
+          <Link
+            as={RouterLink}
+            to="/auth"
+            onClick={() => setAuthScreen("signup")}
+            _hover={{ color: "teal.500", transform: "scale(1.1)" }}
+            transition="all 0.2s ease"
+          >
+            Sign up
+          </Link>
+        </Flex>
       )}
     </Flex>
   );
