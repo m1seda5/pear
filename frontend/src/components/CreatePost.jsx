@@ -494,7 +494,7 @@
 // export default CreatePost;
 
 // post review system
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Button,
   Modal,
@@ -517,7 +517,8 @@ import {
   Select,
   Flex,
   Image,
-  CloseButton
+  CloseButton,
+  keyframes,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
@@ -529,6 +530,23 @@ import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 
 const MAX_CHAR = 500;
+
+
+// Define the pulse animation
+const pulseKeyframes = keyframes`
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.4);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px 10px rgba(49, 130, 206, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(49, 130, 206, 0);
+  }
+`;
 
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -546,6 +564,19 @@ const CreatePost = () => {
   const progressFilledColor = useColorModeValue("gray.500", "gray.300");
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const buttonBg = useColorModeValue("blue.500", "blue.200");
+  const buttonHoverBg = useColorModeValue("blue.600", "blue.300");
+
+  // Add pulsing effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsPulsing(true);
+      setTimeout(() => setIsPulsing(false), 1000);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTextChange = (e) => {
     const inputText = e.target.value;
@@ -688,25 +719,19 @@ const CreatePost = () => {
         position="fixed"
         bottom={10}
         right={5}
-        bg="blue.500"
-        _hover={{ bg: "blue.600" }}
+        bg={buttonBg}
+        _hover={{ bg: buttonHoverBg }}
         color="white"
-        size="md"
+        size="lg"
         aria-label="Account Frozen"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        zIndex={999}
       >
-        {isHovered ? (
-          <Flex align="center" gap={2}>
-            <FaLock /> {t("Account Frozen")}
-          </Flex>
-        ) : (
-          <FaLock />
-        )}
+        <Flex align="center" gap={2}>
+          <FaLock /> {t("Account Frozen")}
+        </Flex>
       </Button>
     );
   }
-  
 
   return (
     <>
@@ -714,13 +739,21 @@ const CreatePost = () => {
         position="fixed"
         bottom={10}
         right={5}
-        bg={useColorModeValue("gray.300", "gray.dark")}
+        bg={buttonBg}
+        color="white"
         onClick={onOpen}
-        size="md"
+        size="lg"
         aria-label={t("Create Post")}
+        zIndex={999}
+        animation={isPulsing ? `${pulseKeyframes} 1s ease-in-out` : undefined}
+        transform="auto"
+        _hover={{
+          bg: buttonHoverBg,
+        }}
       >
         <AddIcon />
       </Button>
+
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
