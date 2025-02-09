@@ -944,37 +944,34 @@ const Header = () => {
     tv: false
   });
 
-  // Determine user roles based on `user.role`
   const isStudent = user?.role === "student";
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
 
   const currentDate = new Date();
-  const dayOfWeek = currentDate.getDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
-  const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes(); // Convert to HHMM format
+  const dayOfWeek = currentDate.getDay();
+  const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
 
-  // School hours in HHMM format
   const schoolStart = 810;
   const lunchStart = 1250;
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
-  // Determine if the student has chat access based on the day and time
   const hasChatAccess =
     isStudent &&
     ((dayOfWeek >= 1 && dayOfWeek <= 5 &&
       (currentTime < schoolStart ||
         (currentTime >= lunchStart && currentTime <= lunchEnd) ||
         currentTime > schoolEnd)) ||
-      dayOfWeek === 0 || dayOfWeek === 6); // Allow access on weekends
+      dayOfWeek === 0 || dayOfWeek === 6);
 
   const handleChatClick = (e) => {
     if (user?.isFrozen || !hasChatAccess) {
-      e.preventDefault(); // Prevent navigation if the user doesn't have access
-      setHoverState({ ...hoverState, lock: true }); // Show lock when hovering
+      e.preventDefault();
+      setHoverState({ ...hoverState, lock: true });
     } else {
       setHoverState({ ...hoverState, chat: false, lock: false });
-      navigate("/chat"); // Navigate to chat page if access is allowed
+      navigate("/chat");
     }
   };
 
@@ -989,7 +986,15 @@ const Header = () => {
   };
 
   return (
-    <Flex justifyContent="center" mt={6} mb="12" gap={10}>
+    <Flex 
+      justifyContent="center" 
+      mt={6} 
+      mb="12" 
+      gap={{ base: 4, md: 10 }}
+      px={{ base: 2, md: 0 }}
+      flexWrap={{ base: "wrap", md: "nowrap" }}
+      width="100%"
+    >
       {user && (
         <Link
           as={RouterLink}
@@ -1032,7 +1037,12 @@ const Header = () => {
       />
 
       {user && (
-        <Flex alignItems="center" gap={10}>
+        <Flex 
+          alignItems="center" 
+          gap={{ base: 4, md: 10 }}
+          flexWrap={{ base: "wrap", md: "nowrap" }}
+          justifyContent={{ base: "center", md: "flex-start" }}
+        >
           <Link
             as={RouterLink}
             to={`/${user.username}`}
@@ -1064,7 +1074,6 @@ const Header = () => {
             )}
           </Link>
 
-          {/* TV Icon - Only visible to admin users */}
           {user && (
             <Link
               onClick={handleTVClick}
