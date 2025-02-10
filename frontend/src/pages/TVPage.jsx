@@ -13,6 +13,7 @@ const TVPage = () => {
     const [error, setError] = useState(null);
     const [cachedPosts, setCachedPosts] = useState([]);
     const [isPaused, setIsPaused] = useState(false);
+    const [key, setKey] = useState(0); // Add key for forcing re-render
     const user = useRecoilValue(userAtom);
     const { t } = useTranslation();
     const toast = useToast();
@@ -25,8 +26,9 @@ const TVPage = () => {
         const loadCachedPosts = () => {
             const cached = localStorage.getItem('tvPagePosts');
             if (cached) {
-                setCachedPosts(JSON.parse(cached));
-                setPosts(JSON.parse(cached));
+                const parsedPosts = JSON.parse(cached);
+                setCachedPosts(parsedPosts);
+                setPosts(parsedPosts);
                 setLoading(false);
             }
         };
@@ -88,12 +90,11 @@ const TVPage = () => {
         fetchPosts();
 
         const interval = setInterval(() => {
-            if (!isPaused) {
+            if (!isPaused && posts.length > 0) {
                 setCurrentPostIndex((prevIndex) => {
-                    if (prevIndex === posts.length - 1) {
-                        return 0; // Loop back to the first post
-                    }
-                    return prevIndex + 1;
+                    const nextIndex = prevIndex === posts.length - 1 ? 0 : prevIndex + 1;
+                    setKey(prev => prev + 1); // Force re-render when changing posts
+                    return nextIndex;
                 });
             }
         }, SLIDE_DURATION);
@@ -103,25 +104,27 @@ const TVPage = () => {
 
     const Progress = ({ index }) => (
         <Box
-            h="2px"
+            h="3px"
             bg="gray.200"
             position="relative"
             overflow="hidden"
             borderRadius="full"
         >
-            <Box
-                position="absolute"
-                bg="green.500"
-                h="100%"
-                w="100%"
-                style={{
-                    transform: index === currentPostIndex ? "translateX(0)" : "translateX(-100%)",
-                    transition: index === currentPostIndex 
-                        ? `transform ${SLIDE_DURATION}ms linear`
-                        : 'none',
-                    transformOrigin: "left"
-                }}
-            />
+            {index === currentPostIndex && (
+                <Box
+                    position="absolute"
+                    left="0"
+                    top="0"
+                    h="100%"
+                    w="full"
+                    bg="green.500"
+                    transition={`transform ${SLIDE_DURATION}ms linear`}
+                    style={{
+                        transform: 'translateX(-100%)',
+                        animation: `progress ${SLIDE_DURATION}ms linear`
+                    }}
+                />
+            )}
         </Box>
     );
 
@@ -155,7 +158,7 @@ const TVPage = () => {
                 <Box height="100%">
                     <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
                         {posts.map((_, index) => (
-                            <Box key={index} flex={1}>
+                            <Box key={`progress-${index}-${key}`} flex={1}>
                                 <Progress index={index} />
                             </Box>
                         ))}
@@ -173,9 +176,7 @@ const TVPage = () => {
                                 maxWidth="1200px"
                                 mx="auto"
                                 className="tv-post-container"
-                                style={{
-                                    animation: "fadeInOut 0.5s ease-in-out"
-                                }}
+                                key={`post-${currentPostIndex}-${key}`}
                             >
                                 <Post
                                     post={posts[currentPostIndex]}
@@ -212,6 +213,14 @@ const TVPage = () => {
                     100% {
                         opacity: 1;
                         transform: scale(1);
+                    }
+                }
+                @keyframes progress {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(0%);
                     }
                 }
                 .tv-post-container {
