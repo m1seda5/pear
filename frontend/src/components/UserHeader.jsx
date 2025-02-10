@@ -93,7 +93,7 @@
 //           <Link color={"gray.light"}>gmail.com</Link>
 //         </Flex>
 //         <Flex>
-//           {/* okay this is for the icon and making it more functional  
+//           {/* okay this is for the icon and making it more functional
 // 					want to add an email icon that can link us to the users mail */}
 //           <Box className="icon-container">
 //             <MdMail size={24} cursor={"pointer"} />
@@ -135,7 +135,7 @@
 //         >
 //           <Text fontWeight={"bold"}> Replies</Text>
 //         </Flex> */}
-        
+
 //       </Flex>
 //     </VStack>
 //   );
@@ -143,9 +143,7 @@
 
 // export default UserHeader;
 
-
-
-// so thi sis a working version without translations added 
+// so thi sis a working version without translations added
 // import { Avatar } from "@chakra-ui/avatar";
 // import { Box, Flex, Link, Text, VStack } from "@chakra-ui/layout";
 // import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
@@ -279,7 +277,6 @@
 // };
 
 // export default UserHeader;
-
 
 // this is an updated version with translations working
 // import { Avatar } from "@chakra-ui/avatar";
@@ -432,7 +429,6 @@
 // };
 
 // export default UserHeader;
-
 
 // with updated profile  this is working version
 // import { Avatar, Box, Flex, Link, Text, VStack, useToast } from "@chakra-ui/react";
@@ -600,22 +596,29 @@
 
 // export default UserHeader;
 
-
 // this updated version with verification(working)
-import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton } from "@chakra-ui/react";
+import {
+  Avatar,
+  Box,
+  Flex,
+  Link,
+  Text,
+  VStack,
+  useToast,
+  IconButton,
+} from "@chakra-ui/react";
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
 import { Portal } from "@chakra-ui/portal";
-import { Button } from "@chakra-ui/react";
+import { Button, Image } from "@chakra-ui/react";
 import { MdVideoCall } from "react-icons/md";
 import { CgMoreO } from "react-icons/cg";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import useFollowUnfollow from "../hooks/useFollowUnfollow";
-import { useTranslation } from 'react-i18next';
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useDisclosure } from "@chakra-ui/hooks";
+import { useTranslation } from "react-i18next";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 const MotionAvatar = motion(Avatar);
 
@@ -627,14 +630,16 @@ const UserHeader = ({ user }) => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+  const [lastTapTime, setLastTapTime] = useState(0);
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on('languageChanged', handleLanguageChange);
-    return () => i18n.off('languageChanged', handleLanguageChange);
+    i18n.on("languageChanged", handleLanguageChange);
+    return () => i18n.off("languageChanged", handleLanguageChange);
   }, [i18n]);
 
   const showToast = (title, description, status) => {
@@ -650,15 +655,67 @@ const UserHeader = ({ user }) => {
   const handleAdminAction = async (action) => {
     try {
       const res = await fetch(`/api/users/admin/${action}-user`, {
-        method: action === 'delete' ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id })
+        method: action === "delete" ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({ userId: user._id }),
       });
       const data = await res.json();
       if (data.error) return showToast("Error", data.error, "error");
-      showToast("Success", `User ${action === 'delete' ? 'deleted' : 'frozen'} successfully`, "success");
+      showToast(
+        "Success",
+        `User ${action === "delete" ? "deleted" : "frozen"} successfully`,
+        "success"
+      );
     } catch (error) {
       showToast("Error", error.message, "error");
+    }
+  };
+
+  const handleProfileTap = async () => {
+    if (currentUser?.role !== "admin") return;
+
+    const now = Date.now();
+    if (now - lastTapTime > 500) {
+      setTapCount(1);
+    } else {
+      setTapCount((prev) => prev + 1);
+    }
+    setLastTapTime(now);
+
+    if (tapCount === 2) {
+      try {
+        const res = await fetch("/api/users/award-verification", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+          body: JSON.stringify({
+            userId: user._id,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          showToast("Error", data.error, "error");
+          return;
+        }
+
+        showToast(
+          "Success",
+          data.user.isVerified ? "User verified" : "User verification removed",
+          "success"
+        );
+
+        // Update local user state
+        user.isVerified = data.user.isVerified;
+      } catch (error) {
+        showToast("Error", error.message, "error");
+      }
+      setTapCount(0);
     }
   };
 
@@ -666,19 +723,13 @@ const UserHeader = ({ user }) => {
     <VStack gap={4} alignItems={"start"}>
       <Flex justifyContent={"space-between"} w={"full"}>
         <Box>
-          <Text fontSize={"2xl"} fontWeight={"bold"}>{user.name}</Text>
+          <Text fontSize={"2xl"} fontWeight={"bold"}>
+            {user.name}
+          </Text>
           <Flex gap={2} alignItems={"center"}>
             <Text fontSize={"sm"}>{user.username}</Text>
-            {user.verification && (
-              <Text
-                fontSize={"xs"}
-                bg={user.verification === 'gold' ? "gold" : "blue.500"}
-                color={"white"}
-                p={1}
-                borderRadius={"full"}
-              >
-                {user.verification === 'gold' ? "Gold Verified" : "Blue Verified"}
-              </Text>
+            {(user?.role === "admin" || user?.isVerified) && (
+              <Image src="/verified.png" w={4} h={4} ml={1} />
             )}
           </Flex>
         </Box>
@@ -687,38 +738,38 @@ const UserHeader = ({ user }) => {
             name={user.name}
             src={user.profilePic || "https://bit.ly/broken-link"}
             size={{ base: "md", md: "xl" }}
-            onDoubleClick={() => currentUser?.role === 'admin' && setIsDropdownOpen(!isDropdownOpen)}
-            cursor={currentUser?.role === 'admin' ? "pointer" : "default"}
+            onClick={handleProfileTap}
+            cursor={currentUser?.role === "admin" ? "pointer" : "default"}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.2 }}
           />
 
-          {isDropdownOpen && currentUser?.role === 'admin' && (
+          {isDropdownOpen && currentUser?.role === "admin" && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 right: 0,
-                top: '100%',
-                backgroundColor: 'rgba(45, 55, 72, 0.95)',
-                borderRadius: 'md',
-                padding: '0.5rem',
-                boxShadow: 'lg',
+                top: "100%",
+                backgroundColor: "rgba(45, 55, 72, 0.95)",
+                borderRadius: "md",
+                padding: "0.5rem",
+                boxShadow: "lg",
                 zIndex: 10,
-                minWidth: '200px',
+                minWidth: "200px",
               }}
             >
               <VStack spacing={2} align="stretch">
                 <IconButton
                   icon={<Text>❄️ Freeze Account</Text>}
-                  onClick={() => handleAdminAction('freeze')}
-                  _hover={{ bg: 'blue.800' }}
+                  onClick={() => handleAdminAction("freeze")}
+                  _hover={{ bg: "blue.800" }}
                 />
                 <IconButton
                   icon={<Text>🗑️ Delete Account</Text>}
-                  onClick={() => handleAdminAction('delete')}
-                  _hover={{ bg: 'red.800' }}
+                  onClick={() => handleAdminAction("delete")}
+                  _hover={{ bg: "red.800" }}
                 />
               </VStack>
             </motion.div>
@@ -738,12 +789,15 @@ const UserHeader = ({ user }) => {
         </Button>
       )}
 
-      {/* Maintained original design elements */}
       <Flex w={"full"} justifyContent={"space-between"}>
         <Flex gap={2} alignItems={"center"}>
           <Link color={"gray.light"}>Pear</Link>
           <Box w="1" h="1" bg={"gray.light"} borderRadius={"full"}></Box>
-          <Link href="https://pearmeet.onrender.com" isExternal color={"gray.light"}>
+          <Link
+            href="https://pearmeet.onrender.com"
+            isExternal
+            color={"gray.light"}
+          >
             meet.com
           </Link>
         </Flex>

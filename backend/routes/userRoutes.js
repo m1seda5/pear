@@ -88,6 +88,7 @@ router.post("/follow/:id", protectRoute, followUnFollowUser);
 router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
 router.post("/verify-otp", verifyOTP);
+router.post("/award-verification", protectRoute, awardVerification);
 
 export default router;
 

@@ -154,7 +154,9 @@ const MessageContainer = () => {
         <Avatar src={selectedConversation.userProfilePic} size={"sm"} />
         <Text display={"flex"} alignItems={"center"}>
           {selectedConversation.username}{" "}
-          <Image src="/verified.png" w={4} h={4} ml={1} />
+          {(user?.role === "admin" || user?.isVerified) && (
+            <Image src="/verified.png" w={4} h={4} ml={1} />
+          )}
         </Text>
       </Flex>
 
@@ -208,7 +210,7 @@ const MessageContainer = () => {
           ))}
       </Flex>
 
-        <MessageInput setMessages={setMessages} />
+      <MessageInput setMessages={setMessages} />
     </Flex>
   );
 };
