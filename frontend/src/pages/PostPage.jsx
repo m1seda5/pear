@@ -1,4 +1,4 @@
-// working version one
+// working version one 
 // import { Avatar, Box, Button, Divider, Flex, Image, Spinner, Text } from "@chakra-ui/react";
 // import Actions from "../components/Actions";
 // import { useEffect } from "react";
@@ -130,16 +130,9 @@
 
 // export default PostPage;
 
-// verison two with transaltions
-import {
-  Avatar,
-  Box,
-  Divider,
-  Flex,
-  Image,
-  Spinner,
-  Text,
-} from "@chakra-ui/react";
+
+// verison two with transaltions 
+import { Avatar, Box, Divider, Flex, Image, Spinner, Text } from "@chakra-ui/react";
 import Actions from "../components/Actions";
 import { useEffect, useState } from "react";
 import Comment from "../components/Comment";
@@ -154,174 +147,144 @@ import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
 
 const PostPage = () => {
-  const { t } = useTranslation();
-  const { user, loading } = useGetUserProfile();
-  const [posts, setPosts] = useRecoilState(postsAtom);
-  const showToast = useShowToast();
-  const { pid } = useParams();
-  const currentUser = useRecoilValue(userAtom);
-  const navigate = useNavigate();
-  const [loadingPost, setLoadingPost] = useState(true);
+    const { t } = useTranslation();
+    const { user, loading } = useGetUserProfile();
+    const [posts, setPosts] = useRecoilState(postsAtom);
+    const showToast = useShowToast();
+    const { pid } = useParams();
+    const currentUser = useRecoilValue(userAtom);
+    const navigate = useNavigate();
+    const [loadingPost, setLoadingPost] = useState(true);
 
-  const handleDeletePost = async (postId) => {
-    try {
-      const res = await fetch(`/api/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-      });
+    const handleDeletePost = async (postId) => {
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${currentUser.token}`,
+                },
+            });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        showToast(
-          t("Error"),
-          errorData.error || t("Failed to delete post"),
-          "error"
-        );
-        return;
-      }
+            if (!res.ok) {
+                const errorData = await res.json();
+                showToast(t("Error"), errorData.error || t("Failed to delete post"), "error");
+                return;
+            }
 
-      navigate("/");
-      showToast(t("Success"), t("Post deleted successfully"), "success");
-    } catch (error) {
-      showToast(
-        t("Error"),
-        error.message || t("Failed to delete post"),
-        "error"
-      );
-    }
-  };
-
-  const handleDeleteComment = (deletedCommentId) => {
-    setPosts((prevPosts) => {
-      const updatedPost = {
-        ...prevPosts[0],
-        replies: prevPosts[0].replies.filter(
-          (reply) => reply._id !== deletedCommentId
-        ),
-      };
-      return [updatedPost];
-    });
-  };
-
-  useEffect(() => {
-    const getPost = async () => {
-      setLoadingPost(true);
-      try {
-        const res = await fetch(`/api/posts/${pid}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          showToast(
-            t("Error"),
-            data.error || t("Something went wrong"),
-            "error"
-          );
-          return;
+            navigate("/");
+            showToast(t("Success"), t("Post deleted successfully"), "success");
+        } catch (error) {
+            showToast(t("Error"), error.message || t("Failed to delete post"), "error");
         }
-
-        setPosts([data]);
-      } catch (error) {
-        showToast(
-          t("Error"),
-          error.message || t("Something went wrong"),
-          "error"
-        );
-      } finally {
-        setLoadingPost(false);
-      }
     };
-    getPost();
-  }, [showToast, pid, setPosts, t]);
 
-  if (!user && loading) {
+    const handleDeleteComment = (deletedCommentId) => {
+        setPosts(prevPosts => {
+            const updatedPost = { 
+                ...prevPosts[0],
+                replies: prevPosts[0].replies.filter(reply => reply._id !== deletedCommentId)
+            };
+            return [updatedPost];
+        });
+    };
+
+    useEffect(() => {
+        const getPost = async () => {
+            setLoadingPost(true);
+            try {
+                const res = await fetch(`/api/posts/${pid}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(t("Error"), data.error || t("Something went wrong"), "error");
+                    return;
+                }
+
+                setPosts([data]);
+            } catch (error) {
+                showToast(t("Error"), error.message || t("Something went wrong"), "error");
+            } finally {
+                setLoadingPost(false);
+            }
+        };
+        getPost();
+    }, [showToast, pid, setPosts, t]);
+
+    if (!user && loading) {
+        return (
+            <Flex justifyContent={"center"}>
+                <Spinner size={"xl"} />
+            </Flex>
+        );
+    }
+
+    if (loadingPost) {
+        return (
+            <Flex justifyContent={"center"}>
+                <Spinner size={"xl"} />
+            </Flex>
+        );
+    }
+
+    const currentPost = posts[0];
+
+    if (!currentPost) return <Text>{t("No post found.")}</Text>;
+
     return (
-      <Flex justifyContent={"center"}>
-        <Spinner size={"xl"} />
-      </Flex>
-    );
-  }
+        <>
+            <Flex>
+                <Flex w={"full"} alignItems={"center"} gap={3}>
+                    <Avatar src={user.profilePic} size={"md"} name={user.username} />
+                    <Flex>
+                        <Text fontSize={"sm"} fontWeight={"bold"}>
+                            {user.username}
+                        </Text>
+                        <Image src="/verified.png" w="4" h="4" ml="4" />
+                    </Flex>
+                </Flex>
+                <Flex gap={4} alignItems={"center"}>
+                    <Text fontSize={"xs"} width={36} textAlign={"right"} color={"gray.light"}>
+                        {formatDistanceToNow(new Date(currentPost.createdAt))} {t("ago")}
+                    </Text>
+                    {(currentUser?.role === "admin" || currentUser?._id === user._id) && (
+                        <DeleteIcon 
+                            size={20} 
+                            cursor={"pointer"} 
+                            onClick={() => handleDeletePost(currentPost._id)} 
+                        />
+                    )}
+                </Flex>
+            </Flex>
 
-  if (loadingPost) {
-    return (
-      <Flex justifyContent={"center"}>
-        <Spinner size={"xl"} />
-      </Flex>
-    );
-  }
+            <Text my={3}>{currentPost.text}</Text>
 
-  const currentPost = posts[0];
-
-  if (!currentPost) return <Text>{t("No post found.")}</Text>;
-
-  return (
-    <>
-      <Flex>
-        <Flex w={"full"} alignItems={"center"} gap={3}>
-          <Avatar src={user.profilePic} size={"md"} name={user.username} />
-          <Flex>
-            <Text fontSize={"sm"} fontWeight={"bold"}>
-              {user.username}
-            </Text>
-            {(user?.role === "admin" || user?.isVerified) && (
-              <Image src="/verified.png" w={4} h={4} ml={1} />
+            {currentPost.img && (
+                <Box borderRadius={6} overflow={"hidden"} border={"1px solid"} borderColor={"gray.light"}>
+                    <Image src={currentPost.img} w={"full"} />
+                </Box>
             )}
-          </Flex>
-        </Flex>
-        <Flex gap={4} alignItems={"center"}>
-          <Text
-            fontSize={"xs"}
-            width={36}
-            textAlign={"right"}
-            color={"gray.light"}
-          >
-            {formatDistanceToNow(new Date(currentPost.createdAt))} {t("ago")}
-          </Text>
-          {(currentUser?.role === "admin" || currentUser?._id === user._id) && (
-            <DeleteIcon
-              size={20}
-              cursor={"pointer"}
-              onClick={() => handleDeletePost(currentPost._id)}
-            />
-          )}
-        </Flex>
-      </Flex>
 
-      <Text my={3}>{currentPost.text}</Text>
+            <Flex gap={3} my={3}>
+                <Actions post={currentPost} />
+            </Flex>
 
-      {currentPost.img && (
-        <Box
-          borderRadius={6}
-          overflow={"hidden"}
-          border={"1px solid"}
-          borderColor={"gray.light"}
-        >
-          <Image src={currentPost.img} w={"full"} />
-        </Box>
-      )}
+            <Divider my={4} />
 
-      <Flex gap={3} my={3}>
-        <Actions post={currentPost} />
-      </Flex>
-
-      <Divider my={4} />
-
-      {currentPost.replies?.map((reply, index) => (
-        <Comment
-          key={reply._id}
-          reply={{
-            ...reply,
-            userProfilePic: reply.userProfilePic,
-            userId: reply.userId,
-            _id: reply._id,
-          }}
-          lastReply={index === currentPost.replies.length - 1}
-          onDelete={handleDeleteComment}
-        />
-      ))}
-    </>
-  );
+            {currentPost.replies?.map((reply, index) => (
+                <Comment
+                    key={reply._id}
+                    reply={{
+                        ...reply,
+                        userProfilePic: reply.userProfilePic,
+                        userId: reply.userId,
+                        _id: reply._id
+                    }}
+                    lastReply={index === currentPost.replies.length - 1}
+                    onDelete={handleDeleteComment}
+                />
+            ))}
+        </>
+    );
 };
 
 export default PostPage;
