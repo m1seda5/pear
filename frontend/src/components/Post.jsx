@@ -238,31 +238,33 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
   if (!user) return null;
 
-  const tvStyles = isTV ? {
-    maxWidth: "90vw",
-    margin: "0 auto",
-    padding: "2rem",
-    fontSize: "1.5rem",
-    ".post-text": {
-      fontSize: "2rem",
-      lineHeight: "1.5",
-    },
-    ".post-image": {
-      maxHeight: "80vh",
-      objectFit: "contain",
-    },
-    ".user-avatar": {
-      width: "80px",
-      height: "80px",
-    }
-  } : {};
+  const tvStyles = isTV
+    ? {
+        maxWidth: "90vw",
+        margin: "0 auto",
+        padding: "2rem",
+        fontSize: "1.5rem",
+        ".post-text": {
+          fontSize: "2rem",
+          lineHeight: "1.5",
+        },
+        ".post-image": {
+          maxHeight: "80vh",
+          objectFit: "contain",
+        },
+        ".user-avatar": {
+          width: "80px",
+          height: "80px",
+        },
+      }
+    : {};
 
   return (
     <Link to={`/${user.username}/post/${post._id}`}>
       <Flex gap={3} mb={4} py={5}>
         <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
-            size={isTV ? "xl":"md"}
+            size={isTV ? "xl" : "md"}
             name={user.name}
             src={user?.profilePic}
             onClick={(e) => {
@@ -270,7 +272,13 @@ const Post = ({ post, postedBy, isTV = false }) => {
               navigate(`/${user.username}`);
             }}
           />
-          <Box w="1px" h={"full"} bg="gray.light" my={2} display={isTV ? "none" : "block"}></Box>
+          <Box
+            w="1px"
+            h={"full"}
+            bg="gray.light"
+            my={2}
+            display={isTV ? "none" : "block"}
+          ></Box>
           <Box position={"relative"} w={"full"}>
             {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
             {post.replies[0] && (
@@ -323,7 +331,9 @@ const Post = ({ post, postedBy, isTV = false }) => {
               >
                 {user?.username}
               </Text>
-              <Image src="/verified.png" w={isTV ? 8 : 4} h={isTV ? 8 : 4} ml={1} />
+              {user?.role === "admin" && (
+                <Image src="/verified.png" w={4} h={4} ml={1} />
+              )}
             </Flex>
             <Flex gap={4} alignItems={"center"}>
               <Text
@@ -335,9 +345,11 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 {formatDistanceToNow(new Date(post.createdAt))} {t("ago")}
               </Text>
 
-              {!isTV && (currentUser?._id === user._id || currentUser?.role === "admin") && (
-                <DeleteIcon size={20} onClick={handleDeletePost} />
-              )}
+              {!isTV &&
+                (currentUser?._id === user._id ||
+                  currentUser?.role === "admin") && (
+                  <DeleteIcon size={20} onClick={handleDeletePost} />
+                )}
             </Flex>
           </Flex>
 
@@ -351,14 +363,18 @@ const Post = ({ post, postedBy, isTV = false }) => {
               border={"1px solid"}
               borderColor={"gray.light"}
             >
-              <Image 
-                src={post.img} 
-                w={"full"} 
+              <Image
+                src={post.img}
+                w={"full"}
                 className="post-image"
-                sx={isTV ? {
-                  maxHeight: "70vh",
-                  objectFit: "contain"
-                } : {}}
+                sx={
+                  isTV
+                    ? {
+                        maxHeight: "70vh",
+                        objectFit: "contain",
+                      }
+                    : {}
+                }
               />
             </Box>
           )}
