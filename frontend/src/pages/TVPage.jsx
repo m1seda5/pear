@@ -12,7 +12,6 @@ const TVPage = () => {
     const [loading, setLoading] = useState(true);
     const [currentPostIndex, setCurrentPostIndex] = useState(0);
     const [error, setError] = useState(null);
-    const [cachedPosts, setCachedPosts] = useState([]);
     const user = useRecoilValue(userAtom);
     const { t } = useTranslation();
     const toast = useToast();
@@ -22,16 +21,6 @@ const TVPage = () => {
     const MAX_FEATURED_POSTS = 4;
 
     useEffect(() => {
-        const loadCachedPosts = () => {
-            const cached = localStorage.getItem('tvPagePosts');
-            if (cached) {
-                const parsedCached = JSON.parse(cached);
-                setCachedPosts(parsedCached);
-                setPosts(parsedCached);
-                setLoading(false);
-            }
-        };
-
         const fetchPosts = async () => {
             setLoading(true);
             try {
@@ -50,7 +39,10 @@ const TVPage = () => {
                     return;
                 }
 
-                const sortedPosts = data.sort((a, b) => {
+                // Ensure each post has a postedBy property
+                const validPosts = data.filter(post => post.postedBy);
+
+                const sortedPosts = validPosts.sort((a, b) => {
                     const aEngagement = (a.likes?.length || 0) + (a.replies?.length || 0);
                     const bEngagement = (b.likes?.length || 0) + (b.replies?.length || 0);
                     return bEngagement - aEngagement;
@@ -58,14 +50,12 @@ const TVPage = () => {
 
                 const featuredPosts = sortedPosts.slice(0, MAX_FEATURED_POSTS);
                 setPosts(featuredPosts);
-                localStorage.setItem('tvPagePosts', JSON.stringify(featuredPosts));
-                setCachedPosts(featuredPosts);
+                setCurrentPostIndex(0);
             } catch (error) {
                 setError(error.message);
-                loadCachedPosts();
                 toast({
                     title: t("Network Error"),
-                    description: t("Using cached content"),
+                    description: t("Failed to load posts"),
                     status: "warning",
                     duration: 3000,
                     isClosable: true,
@@ -89,6 +79,11 @@ const TVPage = () => {
         fetchPosts();
 
         const interval = setInterval(() => {
+            setPosts(currentPosts => {
+                if (currentPosts.length === 0) return currentPosts;
+                return currentPosts;
+            });
+
             setCurrentPostIndex((prevIndex) => 
                 (prevIndex + 1) % posts.length
             );
@@ -158,9 +153,13 @@ const TVPage = () => {
                 <Flex justifyContent="center" alignItems="center" height="100%">
                     <Spinner size="xl" />
                 </Flex>
-            ) : error ? (
-                <Text color="red.500">{error}</Text>
-            ) : posts.length > 0 ? (
+            ) : error || posts.length === 0 ? (
+                <Flex justifyContent="center" alignItems="center" height="100%">
+                    <Text color="red.500">
+                        {error || t("No posts available")}
+                    </Text>
+                </Flex>
+            ) : (
                 <Box height="100%">
                     <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
                         {posts.map((_, index) => (
@@ -179,25 +178,23 @@ const TVPage = () => {
                         justifyContent="center"
                         p={6}
                     >
-                        <Box
-                            width="100%"
-                            maxWidth="800px"
-                            mx="auto"
-                            className="tv-post-container"
-                        >
-                            <Post
-                                post={posts[currentPostIndex]}
-                                postedBy={posts[currentPostIndex].postedBy}
-                                isTV={true}
-                                isTVPage={true}
-                            />
-                        </Box>
+                        {posts[currentPostIndex] && posts[currentPostIndex].postedBy && (
+                            <Box
+                                width="100%"
+                                maxWidth="800px"
+                                mx="auto"
+                                className="tv-post-container"
+                            >
+                                <Post
+                                    post={posts[currentPostIndex]}
+                                    postedBy={posts[currentPostIndex].postedBy}
+                                    isTV={true}
+                                    isTVPage={true}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 </Box>
-            ) : (
-                <Flex justifyContent="center" alignItems="center" height="100%">
-                    <Text>No posts available</Text>
-                </Flex>
             )}
         </Box>
     );
