@@ -240,19 +240,20 @@ const Post = ({ post, postedBy, isTV = false, isTVPage = false }) => {
     ? {
         maxWidth: "90vw",
         margin: "0 auto",
-        padding: "1rem",
-        fontSize: "1.75rem", // Slightly larger than original
+        padding: "2rem",
+        fontSize: "2.5rem",
         ".post-text": {
-          fontSize: "2rem", // Slightly larger text
+          fontSize: "3rem",
           lineHeight: "1.4",
+          fontWeight: "bold",
         },
         ".post-image": {
-          maxHeight: "70vh",
+          maxHeight: "80vh",
           objectFit: "contain",
         },
         ".user-avatar": {
-          width: "100px", // Slightly larger avatar
-          height: "100px",
+          width: "120px",
+          height: "120px",
         },
       }
     : {};
@@ -320,7 +321,7 @@ const Post = ({ post, postedBy, isTV = false, isTVPage = false }) => {
           <Flex justifyContent={"space-between"} w={"full"}>
             <Flex w={"full"} alignItems={"center"}>
               <Text
-                fontSize={isTV ? "xl" : "sm"}
+                fontSize={isTV ? "2xl" : "sm"}
                 fontWeight={"bold"}
                 onClick={(e) => {
                   e.preventDefault();

@@ -25,9 +25,8 @@ const TVPage = () => {
         const loadCachedPosts = () => {
             const cached = localStorage.getItem('tvPagePosts');
             if (cached) {
-                const parsedCached = JSON.parse(cached);
-                setCachedPosts(parsedCached);
-                setPosts(parsedCached);
+                setCachedPosts(JSON.parse(cached));
+                setPosts(JSON.parse(cached));
                 setLoading(false);
             }
         };
@@ -142,7 +141,7 @@ const TVPage = () => {
         >
             <Box 
                 position="absolute" 
-                bottom={4} 
+                top={4} 
                 right={4} 
                 zIndex="20"
             >
@@ -160,7 +159,7 @@ const TVPage = () => {
                 </Flex>
             ) : error ? (
                 <Text color="red.500">{error}</Text>
-            ) : posts.length > 0 ? (
+            ) : (
                 <Box height="100%">
                     <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
                         {posts.map((_, index) => (
@@ -179,25 +178,23 @@ const TVPage = () => {
                         justifyContent="center"
                         p={6}
                     >
-                        <Box
-                            width="100%"
-                            maxWidth="800px"
-                            mx="auto"
-                            className="tv-post-container"
-                        >
-                            <Post
-                                post={posts[currentPostIndex]}
-                                postedBy={posts[currentPostIndex].postedBy}
-                                isTV={true}
-                                isTVPage={true}
-                            />
-                        </Box>
+                        {posts[currentPostIndex] && (
+                            <Box
+                                width="100%"
+                                maxWidth="1200px"
+                                mx="auto"
+                                className="tv-post-container"
+                            >
+                                <Post
+                                    post={posts[currentPostIndex]}
+                                    postedBy={posts[currentPostIndex].postedBy}
+                                    isTV={true}
+                                    isTVPage={true}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 </Box>
-            ) : (
-                <Flex justifyContent="center" alignItems="center" height="100%">
-                    <Text>No posts available</Text>
-                </Flex>
             )}
         </Box>
     );
