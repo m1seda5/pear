@@ -169,7 +169,7 @@ import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
 
-const Post = ({ post, postedBy, isTV = false }) => {
+const Post = ({ post, postedBy, isTV = false, isTVPage = false }) => {
   const [user, setUser] = useState(null);
   const showToast = useShowToast();
   const currentUser = useRecoilValue(userAtom);
@@ -177,26 +177,24 @@ const Post = ({ post, postedBy, isTV = false }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+  
   useEffect(() => {
-    // Update the language state whenever the i18n language changes
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on("languageChanged", handleLanguageChange); // Listen for language change
+    i18n.on("languageChanged", handleLanguageChange);
 
     return () => {
-      i18n.off("languageChanged", handleLanguageChange); // Cleanup on component unmount
+      i18n.off("languageChanged", handleLanguageChange);
     };
   }, [i18n]);
 
   useEffect(() => {
     const getUser = async () => {
-      console.log("postedBy:", postedBy);
-
       try {
-        const userId = typeof postedBy === "object" ? postedBy._id : postedBy; // Extract ID if postedBy is an object
-        const res = await fetch("/api/users/profile/" + userId); // Use userId directly in the URL
+        const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
+        const res = await fetch("/api/users/profile/" + userId);
         const data = await res.json();
         if (data.error) {
           showToast(t("Error"), data.error, "error");
@@ -221,7 +219,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${currentUser.token}`, // Add authorization header
+          Authorization: `Bearer ${currentUser.token}`,
         },
       });
       const data = await res.json();
@@ -243,25 +241,26 @@ const Post = ({ post, postedBy, isTV = false }) => {
         maxWidth: "90vw",
         margin: "0 auto",
         padding: "2rem",
-        fontSize: "1.5rem",
+        fontSize: "2.5rem",
         ".post-text": {
-          fontSize: "2rem",
-          lineHeight: "1.5",
+          fontSize: "3rem",
+          lineHeight: "1.4",
+          fontWeight: "bold",
         },
         ".post-image": {
           maxHeight: "80vh",
           objectFit: "contain",
         },
         ".user-avatar": {
-          width: "80px",
-          height: "80px",
+          width: "120px",
+          height: "120px",
         },
       }
     : {};
 
   return (
     <Link to={`/${user.username}/post/${post._id}`}>
-      <Flex gap={3} mb={4} py={5}>
+      <Flex gap={3} mb={4} py={5} sx={tvStyles}>
         <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
             size={isTV ? "xl" : "md"}
@@ -280,7 +279,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
             display={isTV ? "none" : "block"}
           ></Box>
           <Box position={"relative"} w={"full"}>
-            {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
+            {!isTVPage && post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
             {post.replies[0] && (
               <Avatar
                 size="xs"
