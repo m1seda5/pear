@@ -1891,30 +1891,6 @@ const freezeAccount = async (req, res) => {
 };
 
 // New function for awarding verification
-const awardVerification = async (req, res) => {
-  const { userId, verificationType } = req.body;
-
-  // Validate verification type
-  if (!["blue", "gold"].includes(verificationType)) {
-    return res.status(400).json({ error: "Invalid verification type" });
-  }
-
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Set the verification type
-    user.verification = verificationType;
-    await user.save();
-
-    res.status(200).json({ message: "Verification awarded", user });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-    console.log("Error in awardVerification: ", error.message);
-  }
-};
 const adminFreezeUser = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -2069,7 +2045,6 @@ export {
   getUserProfile,
   getSuggestedUsers,
   freezeAccount,
-  awardVerification,
   adminFreezeUser,
   adminDeleteUser,
   deleteUserData, // Exporting the new function

@@ -667,20 +667,7 @@ const UserHeader = ({ user }) => {
       <Flex justifyContent={"space-between"} w={"full"}>
         <Box>
           <Text fontSize={"2xl"} fontWeight={"bold"}>{user.name}</Text>
-          <Flex gap={2} alignItems={"center"}>
-            <Text fontSize={"sm"}>{user.username}</Text>
-            {user.verification && (
-              <Text
-                fontSize={"xs"}
-                bg={user.verification === 'gold' ? "gold" : "blue.500"}
-                color={"white"}
-                p={1}
-                borderRadius={"full"}
-              >
-                {user.verification === 'gold' ? "Gold Verified" : "Blue Verified"}
-              </Text>
-            )}
-          </Flex>
+          <Text fontSize={"sm"}>{user.username}</Text>
         </Box>
         <Box position="relative">
           <MotionAvatar
@@ -738,7 +725,6 @@ const UserHeader = ({ user }) => {
         </Button>
       )}
 
-      {/* Maintained original design elements */}
       <Flex w={"full"} justifyContent={"space-between"}>
         <Flex gap={2} alignItems={"center"}>
           <Link color={"gray.light"}>Pear</Link>
