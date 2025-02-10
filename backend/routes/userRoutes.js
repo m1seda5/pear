@@ -67,7 +67,8 @@ import {
     freezeAccount,
     verifyOTP,
     adminFreezeUser,  // NEW IMPORT
-    adminDeleteUser   // NEW IMPORT
+    adminDeleteUser,
+    awardVerification  // NEW IMPORT
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js"; // NEW IMPORT
