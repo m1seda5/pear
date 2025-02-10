@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Flex, Spinner, Text, useToast } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
-import { CloseIcon } from "@chakra-ui/icons";
-import { useNavigate } from "react-router-dom";
 import userAtom from "../atoms/userAtom";
 import Post from "../components/Post";
 import { useTranslation } from 'react-i18next';
@@ -16,10 +14,9 @@ const TVPage = () => {
     const user = useRecoilValue(userAtom);
     const { t } = useTranslation();
     const toast = useToast();
-    const navigate = useNavigate();
 
-    const SLIDE_DURATION = 6000;
-    const MAX_FEATURED_POSTS = 4;
+    const SLIDE_DURATION = 7000;
+    const MAX_FEATURED_POSTS = 3;
 
     useEffect(() => {
         const loadCachedPosts = () => {
@@ -89,37 +86,30 @@ const TVPage = () => {
 
         const interval = setInterval(() => {
             setCurrentPostIndex((prevIndex) => 
-                (prevIndex + 1) % posts.length
+                prevIndex === (posts.length - 1) ? 0 : prevIndex + 1
             );
         }, SLIDE_DURATION);
 
         return () => clearInterval(interval);
     }, [user, t, toast]);
 
-    const Progress = ({ index, isActive }) => (
+    const Progress = ({ index }) => (
         <Box
-            h="4px"
+            h="2px"
             bg="gray.200"
             position="relative"
             overflow="hidden"
             borderRadius="full"
         >
-            {isActive && (
-                <Box
-                    position="absolute"
-                    bg="teal.500"
-                    h="100%"
-                    w="100%"
-                    animation={`progressBar ${SLIDE_DURATION}ms linear`}
-                    transformOrigin="left"
-                    sx={{
-                        "@keyframes progressBar": {
-                            "0%": { transform: "scaleX(0)" },
-                            "100%": { transform: "scaleX(1)" }
-                        }
-                    }}
-                />
-            )}
+            <Box
+                position="absolute"
+                bg="teal.500"
+                h="100%"
+                w="100%"
+                transition={`transform ${SLIDE_DURATION}ms linear`}
+                transform={index === currentPostIndex ? "translateX(0)" : "translateX(-100%)"}
+                transformOrigin="left"
+            />
         </Box>
     );
 
@@ -139,20 +129,6 @@ const TVPage = () => {
             bg="white"
             _dark={{ bg: "gray.800" }}
         >
-            <Box 
-                position="absolute" 
-                top={4} 
-                right={4} 
-                zIndex="20"
-            >
-                <CloseIcon 
-                    boxSize={6} 
-                    color="gray.500" 
-                    cursor="pointer" 
-                    onClick={() => navigate("/")} 
-                />
-            </Box>
-
             {loading ? (
                 <Flex justifyContent="center" alignItems="center" height="100%">
                     <Spinner size="xl" />
@@ -164,10 +140,7 @@ const TVPage = () => {
                     <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
                         {posts.map((_, index) => (
                             <Box key={index} flex={1}>
-                                <Progress 
-                                    index={index} 
-                                    isActive={index === currentPostIndex} 
-                                />
+                                <Progress index={index} />
                             </Box>
                         ))}
                     </Flex>
@@ -189,7 +162,6 @@ const TVPage = () => {
                                     post={posts[currentPostIndex]}
                                     postedBy={posts[currentPostIndex].postedBy}
                                     isTV={true}
-                                    isTVPage={true}
                                 />
                             </Box>
                         )}
