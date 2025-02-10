@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Flex, Spinner, Text, useToast } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useToast, CloseButton } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
+import { useNavigate } from 'react-router-dom';
 import userAtom from "../atoms/userAtom";
 import Post from "../components/Post";
 import { useTranslation } from 'react-i18next';
@@ -11,9 +12,11 @@ const TVPage = () => {
     const [currentPostIndex, setCurrentPostIndex] = useState(0);
     const [error, setError] = useState(null);
     const [cachedPosts, setCachedPosts] = useState([]);
+    const [isPaused, setIsPaused] = useState(false);
     const user = useRecoilValue(userAtom);
     const { t } = useTranslation();
     const toast = useToast();
+    const navigate = useNavigate();
 
     const SLIDE_DURATION = 7000;
     const MAX_FEATURED_POSTS = 3;
@@ -85,13 +88,18 @@ const TVPage = () => {
         fetchPosts();
 
         const interval = setInterval(() => {
-            setCurrentPostIndex((prevIndex) => 
-                prevIndex === (posts.length - 1) ? 0 : prevIndex + 1
-            );
+            if (!isPaused) {
+                setCurrentPostIndex((prevIndex) => {
+                    if (prevIndex === posts.length - 1) {
+                        return 0; // Loop back to the first post
+                    }
+                    return prevIndex + 1;
+                });
+            }
         }, SLIDE_DURATION);
 
         return () => clearInterval(interval);
-    }, [user, t, toast]);
+    }, [user, t, toast, isPaused, posts.length]);
 
     const Progress = ({ index }) => (
         <Box
@@ -103,15 +111,23 @@ const TVPage = () => {
         >
             <Box
                 position="absolute"
-                bg="teal.500"
+                bg="green.500"
                 h="100%"
                 w="100%"
-                transition={`transform ${SLIDE_DURATION}ms linear`}
-                transform={index === currentPostIndex ? "translateX(0)" : "translateX(-100%)"}
-                transformOrigin="left"
+                style={{
+                    transform: index === currentPostIndex ? "translateX(0)" : "translateX(-100%)",
+                    transition: index === currentPostIndex 
+                        ? `transform ${SLIDE_DURATION}ms linear`
+                        : 'none',
+                    transformOrigin: "left"
+                }}
             />
         </Box>
     );
+
+    const handleClose = () => {
+        navigate('/');
+    };
 
     if (!user || user.role !== 'admin') {
         return <Box p={4}>{t("Access Denied")}</Box>;
@@ -157,6 +173,9 @@ const TVPage = () => {
                                 maxWidth="1200px"
                                 mx="auto"
                                 className="tv-post-container"
+                                style={{
+                                    animation: "fadeInOut 0.5s ease-in-out"
+                                }}
                             >
                                 <Post
                                     post={posts[currentPostIndex]}
@@ -166,8 +185,40 @@ const TVPage = () => {
                             </Box>
                         )}
                     </Box>
+                    <Box
+                        position="fixed"
+                        bottom="4"
+                        right="4"
+                        zIndex="20"
+                    >
+                        <CloseButton
+                            size="lg"
+                            bg="gray.800"
+                            color="white"
+                            onClick={handleClose}
+                            _hover={{ bg: "gray.700" }}
+                            p="3"
+                            borderRadius="full"
+                        />
+                    </Box>
                 </Box>
             )}
+            <style jsx global>{`
+                @keyframes fadeInOut {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                .tv-post-container {
+                    opacity: 0;
+                    animation: fadeInOut 0.5s ease-in-out forwards;
+                }
+            `}</style>
         </Box>
     );
 };
