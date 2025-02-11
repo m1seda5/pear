@@ -13,14 +13,14 @@ const TVPage = () => {
     const [error, setError] = useState(null);
     const [cachedPosts, setCachedPosts] = useState([]);
     const [isPaused, setIsPaused] = useState(false);
-    const [key, setKey] = useState(0); // Add key for forcing re-render
+    const [key, setKey] = useState(0);
     const user = useRecoilValue(userAtom);
     const { t } = useTranslation();
     const toast = useToast();
     const navigate = useNavigate();
 
-    const SLIDE_DURATION = 7000;
-    const MAX_FEATURED_POSTS = 3;
+    const SLIDE_DURATION = 11000;
+    const MAX_FEATURED_POSTS = 4;
 
     useEffect(() => {
         const loadCachedPosts = () => {
@@ -93,7 +93,7 @@ const TVPage = () => {
             if (!isPaused && posts.length > 0) {
                 setCurrentPostIndex((prevIndex) => {
                     const nextIndex = prevIndex === posts.length - 1 ? 0 : prevIndex + 1;
-                    setKey(prev => prev + 1); // Force re-render when changing posts
+                    setKey(prev => prev + 1);
                     return nextIndex;
                 });
             }
@@ -208,11 +208,19 @@ const TVPage = () => {
                 @keyframes fadeInOut {
                     0% {
                         opacity: 0;
-                        transform: scale(0.95);
+                        transform: scale(0.98) translateY(10px);
+                    }
+                    15% {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                    85% {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
                     }
                     100% {
-                        opacity: 1;
-                        transform: scale(1);
+                        opacity: 0;
+                        transform: scale(0.98) translateY(-10px);
                     }
                 }
                 @keyframes progress {
@@ -225,7 +233,7 @@ const TVPage = () => {
                 }
                 .tv-post-container {
                     opacity: 0;
-                    animation: fadeInOut 0.5s ease-in-out forwards;
+                    animation: fadeInOut ${SLIDE_DURATION}ms ease-in-out forwards;
                 }
             `}</style>
         </Box>
