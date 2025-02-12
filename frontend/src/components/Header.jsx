@@ -985,11 +985,6 @@ const Header = () => {
     }
   };
 
-  const handleProfileClick = (e) => {
-    e.preventDefault();
-    navigate(`/profile/${user.username}`);
-  };
-
   return (
     <Flex 
       justifyContent="center" 
@@ -1049,7 +1044,8 @@ const Header = () => {
           justifyContent={{ base: "center", md: "flex-start" }}
         >
           <Link
-            onClick={handleProfileClick}
+            as={RouterLink}
+            to={`/${user.username}`}
             _hover={{
               color: "teal.500",
               transform: "scale(1.2)",
