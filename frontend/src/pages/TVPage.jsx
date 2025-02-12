@@ -84,7 +84,6 @@ const TVPage = () => {
                 duration: 3000,
                 isClosable: true,
             });
-            navigate('/');
             return;
         }
 
@@ -101,7 +100,7 @@ const TVPage = () => {
         }, SLIDE_DURATION);
 
         return () => clearInterval(interval);
-    }, [user, t, toast, isPaused, posts.length, navigate]);
+    }, [user, t, toast, isPaused, posts.length]);
 
     const Progress = ({ index }) => (
         <Box
@@ -134,7 +133,7 @@ const TVPage = () => {
     };
 
     if (!user || user.role !== 'admin') {
-        return null;
+        return <Box p={4}>{t("Access Denied")}</Box>;
     }
 
     return (
