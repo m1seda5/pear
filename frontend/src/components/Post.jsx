@@ -177,26 +177,24 @@ const Post = ({ post, postedBy, isTV = false }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+
   useEffect(() => {
-    // Update the language state whenever the i18n language changes
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on("languageChanged", handleLanguageChange); // Listen for language change
+    i18n.on("languageChanged", handleLanguageChange);
 
     return () => {
-      i18n.off("languageChanged", handleLanguageChange); // Cleanup on component unmount
+      i18n.off("languageChanged", handleLanguageChange);
     };
   }, [i18n]);
 
   useEffect(() => {
     const getUser = async () => {
-      console.log("postedBy:", postedBy);
-
       try {
-        const userId = typeof postedBy === "object" ? postedBy._id : postedBy; // Extract ID if postedBy is an object
-        const res = await fetch("/api/users/profile/" + userId); // Use userId directly in the URL
+        const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
+        const res = await fetch("/api/users/profile/" + userId);
         const data = await res.json();
         if (data.error) {
           showToast(t("Error"), data.error, "error");
@@ -215,13 +213,12 @@ const Post = ({ post, postedBy, isTV = false }) => {
   const handleDeletePost = async (e) => {
     try {
       e.preventDefault();
-      if (!window.confirm(t("Are you sure you want to delete this post?")))
-        return;
+      if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
 
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${currentUser.token}`, // Add authorization header
+          Authorization: `Bearer ${currentUser.token}`,
         },
       });
       const data = await res.json();
@@ -236,28 +233,35 @@ const Post = ({ post, postedBy, isTV = false }) => {
     }
   };
 
+  const handleProfileClick = (e) => {
+    if (isTV) {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    navigate(`/${user.username}`);
+  };
+
   if (!user) return null;
 
-  const tvStyles = isTV
-    ? {
-        maxWidth: "90vw",
-        margin: "0 auto",
-        padding: "2rem",
-        fontSize: "1.5rem",
-        ".post-text": {
-          fontSize: "2rem",
-          lineHeight: "1.5",
-        },
-        ".post-image": {
-          maxHeight: "80vh",
-          objectFit: "contain",
-        },
-        ".user-avatar": {
-          width: "80px",
-          height: "80px",
-        },
-      }
-    : {};
+  const tvStyles = isTV ? {
+    maxWidth: "90vw",
+    margin: "0 auto",
+    padding: "2rem",
+    fontSize: "1.5rem",
+    ".post-text": {
+      fontSize: "2rem",
+      lineHeight: "1.5",
+    },
+    ".post-image": {
+      maxHeight: "80vh",
+      objectFit: "contain",
+    },
+    ".user-avatar": {
+      width: "80px",
+      height: "80px",
+    },
+  } : {};
 
   return (
     <Link to={`/${user.username}/post/${post._id}`}>
@@ -267,10 +271,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
             size={isTV ? "xl" : "md"}
             name={user.name}
             src={user?.profilePic}
-            onClick={(e) => {
-              e.preventDefault();
-              navigate(`/${user.username}`);
-            }}
+            onClick={handleProfileClick}
           />
           <Box
             w="1px"
@@ -292,7 +293,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 padding={"2px"}
               />
             )}
-
             {post.replies[1] && (
               <Avatar
                 size="xs"
@@ -304,7 +304,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 padding={"2px"}
               />
             )}
-
             {post.replies[2] && (
               <Avatar
                 size="xs"
@@ -318,16 +317,14 @@ const Post = ({ post, postedBy, isTV = false }) => {
             )}
           </Box>
         </Flex>
+
         <Flex flex={1} flexDirection={"column"} gap={2}>
           <Flex justifyContent={"space-between"} w={"full"}>
             <Flex w={"full"} alignItems={"center"}>
               <Text
                 fontSize={isTV ? "2xl" : "sm"}
                 fontWeight={"bold"}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(`/${user.username}`);
-                }}
+                onClick={handleProfileClick}
               >
                 {user?.username}
               </Text>
@@ -345,11 +342,9 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 {formatDistanceToNow(new Date(post.createdAt))} {t("ago")}
               </Text>
 
-              {!isTV &&
-                (currentUser?._id === user._id ||
-                  currentUser?.role === "admin") && (
-                  <DeleteIcon size={20} onClick={handleDeletePost} />
-                )}
+              {!isTV && (currentUser?._id === user._id || currentUser?.role === "admin") && (
+                <DeleteIcon size={20} onClick={handleDeletePost} />
+              )}
             </Flex>
           </Flex>
 
@@ -367,14 +362,10 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 src={post.img}
                 w={"full"}
                 className="post-image"
-                sx={
-                  isTV
-                    ? {
-                        maxHeight: "70vh",
-                        objectFit: "contain",
-                      }
-                    : {}
-                }
+                sx={isTV ? {
+                  maxHeight: "70vh",
+                  objectFit: "contain",
+                } : {}}
               />
             </Box>
           )}
