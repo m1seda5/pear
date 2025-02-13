@@ -181,7 +181,6 @@ import AuthPage from "./pages/AuthPage";
 import { useRecoilValue } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
-import CreatePost from "./components/CreatePost";
 import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -202,7 +201,8 @@ function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
-        {!isTVPage && <Header />}
+        {/* Only render Header if not on TV page and not on user profile page */}
+        {!isTVPage && !pathname.match(/^\/[^/]+$/) && <Header />}
         <Box mx="auto" px={4} maxW={isTVPage ? "100vw" : "600px"}>
           <Routes>
             <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
