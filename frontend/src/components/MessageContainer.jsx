@@ -18,7 +18,7 @@ import {
 } from "../atoms/messagesAtom";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { useSocket } from "../context/SocketContext.jsx";
+import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
 
 const MessageContainer = () => {
@@ -31,31 +31,28 @@ const MessageContainer = () => {
   const setConversations = useSetRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
 
-  // Function to handle message deletion
   const handleDelete = async (messageId) => {
     try {
-      // Make an API call to delete the message from the backend
       const res = await fetch(`/api/messages/${messageId}`, {
         method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${currentUser.token}`,
+        },
       });
 
       if (!res.ok) {
-        throw new Error("Failed to delete the message.");
+        throw new Error("Failed to delete the message");
       }
 
-      // Update local state to remove the deleted message
-      setMessages((prev) =>
-        prev.filter((message) => message._id !== messageId)
-      );
-      showToast("Success", "Message deleted successfully.", "success");
+      setMessages((prev) => prev.filter((message) => message._id !== messageId));
+      showToast("Success", "Message deleted successfully", "success");
     } catch (error) {
       showToast("Error", error.message, "error");
     }
   };
 
-  // Socket event handlers for new messages and marking messages as seen
   useEffect(() => {
-    socket.on("newMessage", (message) => {
+    const handleNewMessage = (message) => {
       if (selectedConversation._id === message.conversationId) {
         setMessages((prev) => [...prev, message]);
       }
@@ -66,7 +63,7 @@ const MessageContainer = () => {
       }
 
       setConversations((prev) => {
-        const updatedConversations = prev.map((conversation) => {
+        return prev.map((conversation) => {
           if (conversation._id === message.conversationId) {
             return {
               ...conversation,
@@ -78,40 +75,40 @@ const MessageContainer = () => {
           }
           return conversation;
         });
-        return updatedConversations;
       });
-    });
+    };
 
-    return () => socket.off("newMessage");
-  }, [socket, selectedConversation, setConversations]);
+    socket?.on("newMessage", handleNewMessage);
+    return () => socket?.off("newMessage", handleNewMessage);
+  }, [socket, selectedConversation._id, setConversations]);
 
   useEffect(() => {
     const lastMessageIsFromOtherUser =
       messages.length &&
       messages[messages.length - 1].sender !== currentUser._id;
-    if (lastMessageIsFromOtherUser) {
-      socket.emit("markMessagesAsSeen", {
+
+    if (lastMessageIsFromOtherUser && selectedConversation._id) {
+      socket?.emit("markMessagesAsSeen", {
         conversationId: selectedConversation._id,
         userId: selectedConversation.userId,
       });
     }
 
-    socket.on("messagesSeen", ({ conversationId }) => {
+    const handleMessagesSeen = ({ conversationId }) => {
       if (selectedConversation._id === conversationId) {
         setMessages((prev) => {
-          const updatedMessages = prev.map((message) => {
+          return prev.map((message) => {
             if (!message.seen) {
-              return {
-                ...message,
-                seen: true,
-              };
+              return { ...message, seen: true };
             }
             return message;
           });
-          return updatedMessages;
         });
       }
-    });
+    };
+
+    socket?.on("messagesSeen", handleMessagesSeen);
+    return () => socket?.off("messagesSeen", handleMessagesSeen);
   }, [socket, currentUser._id, messages, selectedConversation]);
 
   useEffect(() => {
@@ -124,12 +121,18 @@ const MessageContainer = () => {
       setMessages([]);
       try {
         if (selectedConversation.mock) return;
-        const res = await fetch(`/api/messages/${selectedConversation.userId}`);
+
+        const res = await fetch(`/api/messages/${selectedConversation.userId}`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+          },
+        });
         const data = await res.json();
-        if (data.error) {
-          showToast("Error", data.error, "error");
-          return;
+        
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to fetch messages");
         }
+
         setMessages(data);
       } catch (error) {
         showToast("Error", error.message, "error");
@@ -138,23 +141,25 @@ const MessageContainer = () => {
       }
     };
 
-    getMessages();
-  }, [showToast, selectedConversation.userId, selectedConversation.mock]);
+    if (selectedConversation.userId) {
+      getMessages();
+    }
+  }, [showToast, selectedConversation.userId, selectedConversation.mock, currentUser.token]);
 
   return (
     <Flex
       flex="70"
       bg={useColorModeValue("gray.200", "gray.dark")}
-      borderRadius={"md"}
+      borderRadius="md"
       p={2}
-      flexDirection={"column"}
+      flexDirection="column"
     >
       {/* Message header */}
-      <Flex w={"full"} h={12} alignItems={"center"} gap={2}>
-        <Avatar src={selectedConversation.userProfilePic} size={"sm"} />
-        <Text display={"flex"} alignItems={"center"}>
-          {selectedConversation.username}{" "}
-          {user?.role === "admin" && (
+      <Flex w="full" h={12} alignItems="center" gap={2}>
+        <Avatar src={selectedConversation.userProfilePic} size="sm" />
+        <Text display="flex" alignItems="center">
+          {selectedConversation.username}
+          {currentUser?.role === "admin" && (
             <Image src="/verified.png" w={4} h={4} ml={1} />
           )}
         </Text>
@@ -163,25 +168,25 @@ const MessageContainer = () => {
       <Divider />
 
       <Flex
-        flexDir={"column"}
+        flexDir="column"
         gap={4}
         my={4}
         p={2}
-        height={"400px"}
-        overflowY={"auto"}
+        height="400px"
+        overflowY="auto"
       >
         {loadingMessages &&
           [...Array(5)].map((_, i) => (
             <Flex
               key={i}
               gap={2}
-              alignItems={"center"}
+              alignItems="center"
               p={1}
-              borderRadius={"md"}
+              borderRadius="md"
               alignSelf={i % 2 === 0 ? "flex-start" : "flex-end"}
             >
               {i % 2 === 0 && <SkeletonCircle size={7} />}
-              <Flex flexDir={"column"} gap={2}>
+              <Flex flexDir="column" gap={2}>
                 <Skeleton h="8px" w="250px" />
                 <Skeleton h="8px" w="250px" />
                 <Skeleton h="8px" w="250px" />
@@ -191,15 +196,11 @@ const MessageContainer = () => {
           ))}
 
         {!loadingMessages &&
-          messages.map((message) => (
+          messages.map((message, idx) => (
             <Flex
               key={message._id}
-              direction={"column"}
-              ref={
-                messages.length - 1 === messages.indexOf(message)
-                  ? messageEndRef
-                  : null
-              }
+              direction="column"
+              ref={idx === messages.length - 1 ? messageEndRef : null}
             >
               <Message
                 message={message}
