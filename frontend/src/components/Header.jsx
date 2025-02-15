@@ -941,7 +941,7 @@ const Header = () => {
   const [hoverState, setHoverState] = useState({
     chat: false,
     lock: false,
-    tv: false,
+    tv: false
   });
 
   const isStudent = user?.role === "student";
@@ -958,16 +958,12 @@ const Header = () => {
   const schoolEnd = 1535;
 
   const hasChatAccess =
-    isTeacher ||
-    isAdmin ||
-    (isStudent &&
-      ((dayOfWeek >= 1 &&
-        dayOfWeek <= 5 &&
-        (currentTime < schoolStart ||
-          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-          currentTime > schoolEnd)) ||
-        dayOfWeek === 0 ||
-        dayOfWeek === 6));
+    isStudent &&
+    ((dayOfWeek >= 1 && dayOfWeek <= 5 &&
+      (currentTime < schoolStart ||
+        (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+        currentTime > schoolEnd)) ||
+      dayOfWeek === 0 || dayOfWeek === 6);
 
   const handleChatClick = (e) => {
     if (user?.isFrozen || !hasChatAccess) {
@@ -990,10 +986,10 @@ const Header = () => {
   };
 
   return (
-    <Flex
-      justifyContent="center"
-      mt={6}
-      mb="12"
+    <Flex 
+      justifyContent="center" 
+      mt={6} 
+      mb="12" 
       gap={{ base: 4, md: 10 }}
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
@@ -1012,7 +1008,7 @@ const Header = () => {
           <AiFillHome size={24} />
         </Link>
       )}
-
+      
       {!user && (
         <Link
           as={RouterLink}
@@ -1041,8 +1037,8 @@ const Header = () => {
       />
 
       {user && (
-        <Flex
-          alignItems="center"
+        <Flex 
+          alignItems="center" 
           gap={{ base: 4, md: 10 }}
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}

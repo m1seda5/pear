@@ -63,14 +63,14 @@ const checkChatAccess = async (req, res, next) => {
     }
 
     const userId = req.user._id;
-    const user = await User.findById(userId).select("role");
+    const user = await User.findById(userId).select('role');
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Unrestricted access for teachers and admins
-    if (user.role === "admin" || user.role === "teacher") {
+    // Allow admin unrestricted access
+    if (user.role === "admin") {
       return next();
     }
 
@@ -80,25 +80,28 @@ const checkChatAccess = async (req, res, next) => {
 
     const schoolStart = 810; // 8:10 AM
     const lunchStart = 1250; // 12:50 PM
-    const lunchEnd = 1340; // 1:40 PM
-    const schoolEnd = 1535; // 3:35 PM
+    const lunchEnd = 1340;   // 1:40 PM
+    const schoolEnd = 1535;  // 3:35 PM
 
-    if (user.role === "student") {
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        const isAllowed =
-          currentTime < schoolStart ||
-          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-          currentTime > schoolEnd;
-
+    // Check if weekday (Monday-Friday)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      if (user.role === "student") {
+        // Students can only access during non-class hours
+        const isAllowed = currentTime < schoolStart || 
+                         (currentTime >= lunchStart && currentTime <= lunchEnd) || 
+                         currentTime > schoolEnd;
+        
         if (!isAllowed) {
-          return res.status(403).json({
-            error:
-              "Chat access restricted during class hours (8:10 AM - 3:35 PM) except lunch break",
+          return res.status(403).json({ 
+            error: "Chat access restricted during class hours (8:10 AM - 3:35 PM) except lunch break"
           });
         }
       }
+      // Teachers have full access on weekdays
+      return next();
     }
 
+    // Weekend access for everyone
     next();
   } catch (error) {
     console.error("Chat access check error:", error);
