@@ -657,12 +657,18 @@ const ChatPage = () => {
   const [language, setLanguage] = useState(i18n.language);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
-  // Join group chat rooms when selected
+  // Join socket rooms for group chats
   useEffect(() => {
-    if (socket && selectedConversation.isGroup) {
-      socket.emit("joinGroups", [selectedConversation._id]);
+    if (socket && conversations) {
+      const groupIds = conversations
+        .filter(conv => conv.isGroup)
+        .map(conv => conv._id);
+      
+      if (groupIds.length > 0) {
+        socket.emit("joinGroups", groupIds);
+      }
     }
-  }, [socket, selectedConversation]);
+  }, [socket, conversations]);
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -729,6 +735,7 @@ const ChatPage = () => {
     };
   }, [socket, setConversations, selectedConversation._id, setSelectedConversation]);
 
+  // Fetch conversations
   useEffect(() => {
     const getConversations = async () => {
       try {
@@ -748,10 +755,6 @@ const ChatPage = () => {
           showToast(t("Error"), data.error || t("Failed to fetch conversations"), "error");
           setConversations([]);
           return;
-        }
-
-        if (!Array.isArray(data)) {
-          throw new Error(t("Invalid response format"));
         }
 
         setConversations(data);
@@ -826,42 +829,29 @@ const ChatPage = () => {
     }
   };
 
-  const handleEnterMonitoringMode = () => {
-    setIsMonitoring(true);
-    setSelectedConversation({});
-  };
-
-  const handleExitMonitoringMode = () => {
-    setIsMonitoring(false);
-    setSelectedConversation({});
-  };
-
-  const sendMonitoringNotification = async (conversationId) => {
-    try {
-      const res = await fetch(`/api/messages/notify-monitoring/${conversationId}`, {
-        method: "POST",
-        headers: { 'Authorization': `Bearer ${currentUser.token}` },
-      });
-      if (!res.ok) throw new Error("Notification failed");
-    } catch (error) {
-      console.error("Notification error:", error);
-    }
-  };
-
   const handleConversationClick = (conversation) => {
     if (isMonitoring) {
       sendMonitoringNotification(conversation._id);
     }
     
-    setSelectedConversation({
-      _id: conversation._id,
-      userId: conversation.isGroup ? null : conversation.participants[0]._id,
-      username: conversation.isGroup ? conversation.groupName : conversation.participants[0].username,
-      userProfilePic: conversation.isGroup ? null : conversation.participants[0].profilePic,
-      isGroup: conversation.isGroup,
-      participants: conversation.participants,
-      groupAdmin: conversation.groupAdmin,
-    });
+    if (conversation.isGroup) {
+      setSelectedConversation({
+        _id: conversation._id,
+        isGroup: true,
+        groupName: conversation.groupName,
+        participants: conversation.participants,
+        groupAdmin: conversation.groupAdmin,
+        lastMessage: conversation.lastMessage,
+      });
+    } else {
+      setSelectedConversation({
+        _id: conversation._id,
+        userId: conversation.participants[0]._id,
+        username: conversation.participants[0].username,
+        userProfilePic: conversation.participants[0].profilePic,
+        isGroup: false,
+      });
+    }
   };
 
   return (
@@ -881,6 +871,7 @@ const ChatPage = () => {
         }}
         mx={"auto"}
       >
+        {/* Admin monitoring controls */}
         {currentUser?.role === "admin" && !isMonitoring && (
           <IconButton
             icon={<ViewIcon />}
@@ -888,7 +879,7 @@ const ChatPage = () => {
             position="absolute"
             top="2"
             right="2"
-            onClick={handleEnterMonitoringMode}
+            onClick={() => setIsMonitoring(true)}
             colorScheme="blue"
           />
         )}
@@ -898,7 +889,10 @@ const ChatPage = () => {
             position="absolute"
             top="2"
             right="2"
-            onClick={handleExitMonitoringMode}
+            onClick={() => {
+              setIsMonitoring(false);
+              setSelectedConversation({});
+            }}
             colorScheme="red"
             size="sm"
           >
@@ -906,6 +900,7 @@ const ChatPage = () => {
           </Button>
         )}
 
+        {/* Conversations list */}
         <Flex flex={30} gap={2} flexDirection={"column"} maxW={{ sm: "250px", md: "full" }} mx={"auto"}>
           <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.400")}>
             {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
@@ -926,6 +921,7 @@ const ChatPage = () => {
             </form>
           )}
 
+          {/* Loading skeletons */}
           {loadingConversations &&
             [0, 1, 2, 3, 4].map((_, i) => (
               <Flex key={i} gap={4} alignItems={"center"} p={"1"} borderRadius={"md"}>
@@ -939,6 +935,7 @@ const ChatPage = () => {
               </Flex>
             ))}
 
+          {/* Conversations list */}
           {!loadingConversations && (
             Array.isArray(conversations) && conversations.length > 0 ? (
               conversations.map((conversation) => (
@@ -958,7 +955,8 @@ const ChatPage = () => {
           )}
         </Flex>
 
-        {!selectedConversation._id && (
+        {/* Message container or placeholder */}
+        {!selectedConversation._id ? (
           <Flex
             flex={70}
             borderRadius={"md"}
@@ -975,16 +973,15 @@ const ChatPage = () => {
                 : t("Select a conversation to start messaging")}
             </Text>
           </Flex>
-        )}
-
-        {selectedConversation._id && (
+        ) : (
           <MessageContainer 
             isMonitoring={isMonitoring}
             onMonitoringNotification={sendMonitoringNotification}
           />
         )}
 
-        {['admin', 'teacher'].includes(currentUser.role) && (
+        {/* Group creation button */}
+        {['admin', 'teacher'].includes(currentUser.role) && !isMonitoring && (
           <IconButton
             icon={<AddIcon />}
             aria-label="Create group"
@@ -996,6 +993,7 @@ const ChatPage = () => {
           />
         )}
 
+        {/* Group creation modal */}
         <GroupCreationModal 
           isOpen={isGroupCreationOpen}
           onClose={() => setIsGroupCreationOpen(false)}

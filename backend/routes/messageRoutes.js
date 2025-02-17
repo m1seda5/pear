@@ -28,20 +28,20 @@ import {
   createGroupChat,
   addToGroup,
   removeFromGroup,
-  updateGroup
+  updateGroup,
+  getGroupMessages, // Add this import
 } from "../controllers/messageController.js";
 
 const router = express.Router();
 
-// Add this new route for group limits
+// Config route
 router.get("/config/group-limits", protectRoute, (req, res) => {
   res.json({ maxMembers: parseInt(process.env.MAX_GROUP_MEMBERS) || 30 });
 });
 
-// Group Routes
+// Group Chat Routes
 router.post("/groups/create", protectRoute, createGroupChat);
-
-// Group Management Routes
+router.get("/groups/:groupId/messages", protectRoute, checkChatAccess, getGroupMessages); // Add this route
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
 router.put("/groups/:conversationId", protectRoute, updateGroup);

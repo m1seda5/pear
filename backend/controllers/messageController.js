@@ -394,7 +394,20 @@ async function createGroupChat(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+async function getGroupMessages(req, res) {
+  const { groupId } = req.params;
+  try {
+    const messages = await Message.find({
+      conversationId: groupId,
+    }).sort({ createdAt: 1 });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 
 
-export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup,  };
+
+export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup, getGroupMessages,  };

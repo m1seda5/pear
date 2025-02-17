@@ -126,11 +126,11 @@ const MessageContainer = ({ isMonitoring }) => {
       setMessages([]);
       try {
         if (selectedConversation.mock) return;
-
-        const endpoint = selectedConversation.isGroup
+  
+        const endpoint = selectedConversation.isGroup 
           ? `/api/messages/group/${selectedConversation._id}`
           : `/api/messages/${selectedConversation.userId}`;
-
+  
         const res = await fetch(endpoint, {
           headers: {
             'Authorization': `Bearer ${currentUser.token}`,
@@ -141,7 +141,7 @@ const MessageContainer = ({ isMonitoring }) => {
         if (!res.ok) {
           throw new Error(data.error || "Failed to fetch messages");
         }
-
+  
         setMessages(data);
       } catch (error) {
         showToast("Error", error.message, "error");
@@ -149,12 +149,11 @@ const MessageContainer = ({ isMonitoring }) => {
         setLoadingMessages(false);
       }
     };
-
-    if (selectedConversation.userId || selectedConversation.isGroup) {
+  
+    if (selectedConversation._id) {  // Change this condition
       getMessages();
     }
   }, [showToast, selectedConversation, currentUser.token]);
-
   return (
     <Flex
       flex="70"
