@@ -33,6 +33,11 @@ import {
 
 const router = express.Router();
 
+// Add this new route for group limits
+router.get("/config/group-limits", protectRoute, (req, res) => {
+  res.json({ maxMembers: parseInt(process.env.MAX_GROUP_MEMBERS) || 30 });
+});
+
 // Group Routes
 router.post("/groups/create", protectRoute, createGroupChat);
 
