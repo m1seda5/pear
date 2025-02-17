@@ -162,6 +162,60 @@ async function deleteMessage(req, res) {
    }
 }
 // End of deleteMessage function
+// Add new controller functions
+async function getAllConversations(req, res) {
+    try {
+      const conversations = await Conversation.find()
+        .populate({
+          path: "participants",
+          select: "username profilePic role",
+        })
+        .where('participants.role').in(['student', 'teacher'])
+        .where('participants.1').exists(true);
+  
+      const studentTeacherConvos = conversations.filter(conv => {
+        const roles = conv.participants.map(p => p.role);
+        return roles.includes('student') && roles.includes('teacher');
+      });
+  
+      res.status(200).json(studentTeacherConvos);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+  
+  async function sendMonitoringNotification(req, res) {
+    const { conversationId } = req.params;
+    try {
+      const conversation = await Conversation.findById(conversationId)
+        .populate('participants', 'email');
+  
+      const participants = conversation.participants;
+      const transporter = nodemailer.createTransport({
+        host: "smtp-relay.brevo.com",
+        port: 587,
+        auth: {
+          user: "81d810001@smtp-brevo.com",
+          pass: "6IBdE9hsKrHUxD4G"
+        }
+      });
+  
+      await Promise.all(participants.map(async (user) => {
+        const mailOptions = {
+          from: "pearnet104@gmail.com",
+          to: user.email,
+          subject: "Conversation Monitoring Notification",
+          text: `Your conversation is being monitored by an admin.`
+        };
+        await transporter.sendMail(mailOptions);
+      }));
+  
+      res.status(200).json({ message: "Notifications sent" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+  
 
 
-export { sendMessage, getMessages, getConversations, deleteMessage };
+export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification };

@@ -26,6 +26,9 @@ import checkChatAccess from "../middlewares/checkChatAccess.js"; // Import the n
 import { getMessages, sendMessage, getConversations, deleteMessage } from "../controllers/messageController.js";
 
 const router = express.Router();
+// Add new routes
+router.get("/admin/conversations", protectRoute, checkChatAccess, getAllConversations);
+router.post("/notify-monitoring/:conversationId", protectRoute, checkChatAccess, sendMonitoringNotification);
 
 // Apply both protectRoute and checkChatAccess middleware
 router.get("/conversations", protectRoute, checkChatAccess, getConversations);

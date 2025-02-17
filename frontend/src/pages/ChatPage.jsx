@@ -629,8 +629,8 @@
 // export default ChatPage;
 
 // this is the api format issue 
-import { SearchIcon } from "@chakra-ui/icons";
-import { Box, Button, Flex, Input, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
+import { ViewIcon, SearchIcon } from "@chakra-ui/icons";
+import { Box, Button, Flex, IconButton, Input, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
 import Conversation from "../components/Conversation";
 import { GiConversation } from "react-icons/gi";
 import MessageContainer from "../components/MessageContainer";
@@ -653,6 +653,7 @@ const ChatPage = () => {
   const { socket, onlineUsers } = useSocket();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -687,7 +688,11 @@ const ChatPage = () => {
   useEffect(() => {
     const getConversations = async () => {
       try {
-        const res = await fetch("/api/messages/conversations", {
+        const endpoint = isMonitoring 
+          ? "/api/messages/admin/conversations"
+          : "/api/messages/conversations";
+
+        const res = await fetch(endpoint, {
           headers: {
             'Authorization': `Bearer ${currentUser.token}`,
           },
@@ -715,7 +720,7 @@ const ChatPage = () => {
     };
 
     getConversations();
-  }, [showToast, setConversations, t, currentUser.token]);
+  }, [showToast, setConversations, t, currentUser.token, isMonitoring]);
 
   const handleConversationSearch = async (e) => {
     e.preventDefault();
@@ -775,6 +780,40 @@ const ChatPage = () => {
     }
   };
 
+  const handleEnterMonitoringMode = () => {
+    setIsMonitoring(true);
+    setSelectedConversation({});
+  };
+
+  const handleExitMonitoringMode = () => {
+    setIsMonitoring(false);
+    setSelectedConversation({});
+  };
+
+  const sendMonitoringNotification = async (conversationId) => {
+    try {
+      const res = await fetch(`/api/messages/notify-monitoring/${conversationId}`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${currentUser.token}` },
+      });
+      if (!res.ok) throw new Error("Notification failed");
+    } catch (error) {
+      console.error("Notification error:", error);
+    }
+  };
+
+  const handleConversationClick = (conversation) => {
+    if (isMonitoring) {
+      sendMonitoringNotification(conversation._id);
+    }
+    setSelectedConversation({
+      _id: conversation._id,
+      userId: conversation.participants[0]._id,
+      username: conversation.participants[0].username,
+      userProfilePic: conversation.participants[0].profilePic,
+    });
+  };
+
   return (
     <Box
       position={"absolute"}
@@ -792,22 +831,50 @@ const ChatPage = () => {
         }}
         mx={"auto"}
       >
+        {currentUser?.role === "admin" && !isMonitoring && (
+          <IconButton
+            icon={<ViewIcon />}
+            aria-label="Monitor conversations"
+            position="absolute"
+            top="2"
+            right="2"
+            onClick={handleEnterMonitoringMode}
+            colorScheme="blue"
+          />
+        )}
+
+        {isMonitoring && (
+          <Button
+            position="absolute"
+            top="2"
+            right="2"
+            onClick={handleExitMonitoringMode}
+            colorScheme="red"
+            size="sm"
+          >
+            {t("Exit Monitoring")}
+          </Button>
+        )}
+
         <Flex flex={30} gap={2} flexDirection={"column"} maxW={{ sm: "250px", md: "full" }} mx={"auto"}>
           <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.400")}>
-            {t("Your Conversations")}
+            {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
           </Text>
-          <form onSubmit={handleConversationSearch}>
-            <Flex alignItems={"center"} gap={2}>
-              <Input 
-                placeholder={t('Search for a user')} 
-                onChange={(e) => setSearchText(e.target.value)}
-                value={searchText}
-              />
-              <Button type="submit" size={"sm"} isLoading={searchingUser}>
-                <SearchIcon />
-              </Button>
-            </Flex>
-          </form>
+          
+          {!isMonitoring && (
+            <form onSubmit={handleConversationSearch}>
+              <Flex alignItems={"center"} gap={2}>
+                <Input 
+                  placeholder={t('Search for a user')} 
+                  onChange={(e) => setSearchText(e.target.value)}
+                  value={searchText}
+                />
+                <Button type="submit" size={"sm"} isLoading={searchingUser}>
+                  <SearchIcon />
+                </Button>
+              </Flex>
+            </form>
+          )}
 
           {loadingConversations &&
             [0, 1, 2, 3, 4].map((_, i) => (
@@ -829,11 +896,13 @@ const ChatPage = () => {
                   key={conversation._id}
                   isOnline={onlineUsers.includes(conversation.participants[0]._id)}
                   conversation={conversation}
+                  onClick={() => handleConversationClick(conversation)}
+                  isMonitoring={isMonitoring}
                 />
               ))
             ) : (
               <Text fontSize="sm" color="gray.500" p={2}>
-                {t("No conversations found")}
+                {isMonitoring ? t("No conversations to monitor") : t("No conversations found")}
               </Text>
             )
           )}
@@ -850,11 +919,20 @@ const ChatPage = () => {
             height={"400px"}
           >
             <GiConversation size={100} />
-            <Text fontSize={20}>{t("Select a conversation to start messaging")}</Text>
+            <Text fontSize={20}>
+              {isMonitoring 
+                ? t("Select a conversation to monitor") 
+                : t("Select a conversation to start messaging")}
+            </Text>
           </Flex>
         )}
 
-        {selectedConversation._id && <MessageContainer />}
+        {selectedConversation._id && (
+          <MessageContainer 
+            isMonitoring={isMonitoring}
+            onMonitoringNotification={sendMonitoringNotification}
+          />
+        )}
       </Flex>
     </Box>
   );

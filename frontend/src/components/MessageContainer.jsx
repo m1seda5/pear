@@ -21,7 +21,7 @@ import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
 
-const MessageContainer = () => {
+const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const [loadingMessages, setLoadingMessages] = useState(true);
@@ -154,6 +154,15 @@ const MessageContainer = () => {
       p={2}
       flexDirection="column"
     >
+      {/* Monitoring Mode Header */}
+      {isMonitoring && (
+        <Flex bg="yellow.100" p={2} borderRadius="md" mb={2}>
+          <Text fontSize="sm" fontWeight="bold">
+            🔒 Monitoring Mode - Read Only
+          </Text>
+        </Flex>
+      )}
+
       {/* Message header */}
       <Flex w="full" h={12} alignItems="center" gap={2}>
         <Avatar src={selectedConversation.userProfilePic} size="sm" />
@@ -205,13 +214,13 @@ const MessageContainer = () => {
               <Message
                 message={message}
                 ownMessage={currentUser._id === message.sender}
-                onDelete={handleDelete}
+                onDelete={isMonitoring ? null : handleDelete}
               />
             </Flex>
           ))}
       </Flex>
 
-      <MessageInput setMessages={setMessages} />
+      {!isMonitoring && <MessageInput setMessages={setMessages} />}
     </Flex>
   );
 };
