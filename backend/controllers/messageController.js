@@ -194,10 +194,18 @@ async function getAllConversations(req, res) {
   async function sendMonitoringNotification(req, res) {
     const { conversationId } = req.params;
     try {
-      const conversation = await Conversation.findById(conversationId)
-        .populate('participants', 'email');
+      // Verify admin role
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can send monitoring notifications" });
+      }
   
-      const participants = conversation.participants;
+      const conversation = await Conversation.findById(conversationId)
+        .populate('participants', 'email username');
+  
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+  
       const transporter = nodemailer.createTransport({
         host: "smtp-relay.brevo.com",
         port: 587,
@@ -207,22 +215,37 @@ async function getAllConversations(req, res) {
         }
       });
   
-      await Promise.all(participants.map(async (user) => {
+      // Send email to all participants
+      const emailPromises = conversation.participants.map(async (participant) => {
         const mailOptions = {
           from: "pearnet104@gmail.com",
-          to: user.email,
-          subject: "Conversation Monitoring Notification",
-          text: `Your conversation is being monitored by an admin.`
+          to: participant.email,
+          subject: "Conversation Monitoring Notice",
+          text: `Dear ${participant.username},\n\nThis is to inform you that your conversation is now being monitored by an administrator.\n\nRegards,\nSupport Team`
         };
-        await transporter.sendMail(mailOptions);
-      }));
   
-      res.status(200).json({ message: "Notifications sent" });
+        return transporter.sendMail(mailOptions);
+      });
+  
+      // Send socket notifications to online participants
+      conversation.participants.forEach(participant => {
+        const recipientSocketId = getRecipientSocketId(participant._id.toString());
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("monitoringNotification", {
+            message: "Your conversation is being monitored by an administrator",
+            conversationId
+          });
+        }
+      });
+  
+      await Promise.all(emailPromises);
+  
+      res.status(200).json({ message: "Monitoring notifications sent successfully" });
     } catch (error) {
+      console.error("Error sending monitoring notification:", error);
       res.status(500).json({ error: error.message });
     }
   }
-  
   // Configurable constant at top of file
 
 

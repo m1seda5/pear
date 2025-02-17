@@ -829,31 +829,49 @@ const ChatPage = () => {
     }
   };
 
-  const handleConversationClick = (conversation) => {
-    if (isMonitoring) {
-      sendMonitoringNotification(conversation._id);
-    }
-    
-    if (conversation.isGroup) {
-      setSelectedConversation({
-        _id: conversation._id,
-        isGroup: true,
-        groupName: conversation.groupName,
-        participants: conversation.participants,
-        groupAdmin: conversation.groupAdmin,
-        lastMessage: conversation.lastMessage,
+ // In ChatPage.jsx
+const handleConversationClick = async (conversation) => {
+  if (isMonitoring) {
+    try {
+      const res = await fetch(`/api/messages/notify-monitoring/${conversation._id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentUser.token}`,
+          'Content-Type': 'application/json'
+        }
       });
-    } else {
-      setSelectedConversation({
-        _id: conversation._id,
-        userId: conversation.participants[0]._id,
-        username: conversation.participants[0].username,
-        userProfilePic: conversation.participants[0].profilePic,
-        isGroup: false,
-      });
-    }
-  };
 
+      if (!res.ok) {
+        const data = await res.json();
+        showToast("Error", data.error || "Failed to send monitoring notification", "error");
+        return;
+      }
+      
+      showToast("Success", "Monitoring notification sent", "success");
+    } catch (error) {
+      showToast("Error", error.message, "error");
+    }
+  }
+  
+  if (conversation.isGroup) {
+    setSelectedConversation({
+      _id: conversation._id,
+      isGroup: true,
+      groupName: conversation.groupName,
+      participants: conversation.participants,
+      groupAdmin: conversation.groupAdmin,
+      lastMessage: conversation.lastMessage,
+    });
+  } else {
+    setSelectedConversation({
+      _id: conversation._id,
+      userId: conversation.participants[0]._id,
+      username: conversation.participants[0].username,
+      userProfilePic: conversation.participants[0].profilePic,
+      isGroup: false,
+    });
+  }
+};
   return (
     <Box
       position={"absolute"}
