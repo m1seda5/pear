@@ -218,39 +218,8 @@ async function getAllConversations(req, res) {
   }
   
   // Configurable constant at top of file
-const MAX_GROUP_MEMBERS = process.env.MAX_GROUP_MEMBERS || 30;
 
-async function createGroupChat(req, res) {
-  try {
-    const { participants, groupName } = req.body;
-    const adminId = req.user._id;
 
-    if (participants.length + 1 > MAX_GROUP_MEMBERS) {
-      return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
-    }
-
-    const groupChat = new Conversation({
-      participants: [adminId, ...participants],
-      isGroup: true,
-      groupName,
-      groupAdmin: adminId,
-      lastMessage: {
-        text: `${req.user.username} created the group`,
-        sender: adminId
-      }
-    });
-
-    await groupChat.save();
-    await groupChat.populate('participants', 'username profilePic');
-    
-    // Send notifications to participants
-    await sendGroupNotifications(participants, groupChat._id);
-    
-    res.status(201).json(groupChat);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
 
 async function addToGroup(req, res) {
   try {
@@ -273,6 +242,153 @@ async function addToGroup(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+async function removeFromGroup(req, res) {
+  try {
+    const { conversationId } = req.params;
+    const { userId } = req.body;
+    const adminId = req.user._id;
+
+    const conversation = await Conversation.findById(conversationId);
+    
+    if (!conversation) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    if (conversation.groupAdmin.toString() !== adminId.toString()) {
+      return res.status(403).json({ error: "Only admin can remove members" });
+    }
+
+    if (userId === conversation.groupAdmin.toString()) {
+      return res.status(403).json({ error: "Admin cannot be removed" });
+    }
+
+    // Remove the user from participants
+    conversation.participants = conversation.participants.filter(
+      p => p.toString() !== userId.toString()
+    );
+
+    await conversation.save();
+    
+    // Optionally notify the removed user
+    const recipientSocketId = getRecipientSocketId(userId);
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit("removedFromGroup", {
+        conversationId,
+        message: "You have been removed from the group"
+      });
+    }
+
+    res.status(200).json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function updateGroup(req, res) {
+  try {
+    const { conversationId } = req.params;
+    const { groupName } = req.body;
+    const adminId = req.user._id;
+
+    const conversation = await Conversation.findById(conversationId);
+    
+    if (!conversation) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    if (conversation.groupAdmin.toString() !== adminId.toString()) {
+      return res.status(403).json({ error: "Only admin can update group" });
+    }
+
+    conversation.groupName = groupName;
+    await conversation.save();
+
+    // Notify all participants about the group update
+    conversation.participants.forEach(participantId => {
+      const recipientSocketId = getRecipientSocketId(participantId.toString());
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("groupUpdated", {
+          conversationId,
+          groupName
+        });
+      }
+    });
+
+    res.status(200).json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function createGroupChat(req, res) {
+  try {
+    const { participants, groupName } = req.body;
+    const adminId = req.user._id;
+
+    if (participants.length + 1 > MAX_GROUP_MEMBERS) {
+      return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
+    }
+
+    const groupChat = new Conversation({
+      participants: [adminId, ...participants],
+      isGroup: true,
+      groupName,
+      groupAdmin: adminId,
+      lastMessage: {
+        text: `${req.user.username} created the group`,
+        sender: adminId
+      }
+    });
+
+    await groupChat.save();
+    await groupChat.populate('participants', 'username profilePic email');
+    
+    // Direct email notification implementation
+    const transporter = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com",
+      port: 587,
+      auth: {
+        user: "81d810001@smtp-brevo.com",
+        pass: "6IBdE9hsKrHUxD4G"
+      }
+    });
+
+    // Send email notifications to all participants
+    const emailPromises = groupChat.participants.map(async (participant) => {
+      if (participant._id.toString() !== adminId.toString()) {
+        const mailOptions = {
+          from: "pearnet104@gmail.com",
+          to: participant.email,
+          subject: "New Group Chat Invitation",
+          text: `You have been added to the group "${groupName}" by ${req.user.username}.`
+        };
+        
+        return transporter.sendMail(mailOptions);
+      }
+    });
+
+    // Send socket notifications to online participants
+    groupChat.participants.forEach(participant => {
+      if (participant._id.toString() !== adminId.toString()) {
+        const recipientSocketId = getRecipientSocketId(participant._id.toString());
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("newGroup", {
+            message: `You have been added to ${groupName}`,
+            groupChat
+          });
+        }
+      }
+    });
+
+    // Wait for all email notifications to be sent
+    await Promise.all(emailPromises.filter(Boolean));
+    
+    res.status(201).json(groupChat);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 
-export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroup, addToGroup };
+
+export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup,  };
