@@ -993,9 +993,8 @@ const handleConversationClick = async (conversation) => {
           </Flex>
         ) : (
           <MessageContainer 
-            isMonitoring={isMonitoring}
-            onMonitoringNotification={sendMonitoringNotification}
-          />
+          isMonitoring={isMonitoring}
+        />
         )}
 
         {/* Group creation button */}
