@@ -23,7 +23,7 @@
 import express from "express";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkChatAccess from "../middlewares/checkChatAccess.js"; // Import the new middleware
-import { getMessages, sendMessage, getConversations, deleteMessage } from "../controllers/messageController.js";
+import { getMessages, sendMessage, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification } from "../controllers/messageController.js";
 
 const router = express.Router();
 // Add new routes
