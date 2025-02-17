@@ -634,7 +634,7 @@ import { Box, Button, Flex, IconButton, Input, Skeleton, SkeletonCircle, Text, u
 import Conversation from "../components/Conversation";
 import { GiConversation } from "react-icons/gi";
 import MessageContainer from "../components/MessageContainer";
-import GroupCreationModal from "./GroupCreationModal";
+import GroupCreationModal from "../components/GroupCreationModal";
 import { useEffect, useState } from "react";
 import useShowToast from "../hooks/useShowToast";
 import { useRecoilState, useRecoilValue } from "recoil";
