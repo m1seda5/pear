@@ -20,6 +20,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
+import GroupMessageHeader from "./GroupMessageHeader";
 
 const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
@@ -79,7 +80,11 @@ const MessageContainer = ({ isMonitoring }) => {
     };
 
     socket?.on("newMessage", handleNewMessage);
-    return () => socket?.off("newMessage", handleNewMessage);
+    socket?.on("newGroupMessage", handleNewMessage); // Add group message handler
+    return () => {
+      socket?.off("newMessage", handleNewMessage);
+      socket?.off("newGroupMessage", handleNewMessage);
+    };
   }, [socket, selectedConversation._id, setConversations]);
 
   useEffect(() => {
@@ -122,7 +127,11 @@ const MessageContainer = ({ isMonitoring }) => {
       try {
         if (selectedConversation.mock) return;
 
-        const res = await fetch(`/api/messages/${selectedConversation.userId}`, {
+        const endpoint = selectedConversation.isGroup
+          ? `/api/messages/group/${selectedConversation._id}`
+          : `/api/messages/${selectedConversation.userId}`;
+
+        const res = await fetch(endpoint, {
           headers: {
             'Authorization': `Bearer ${currentUser.token}`,
           },
@@ -141,10 +150,10 @@ const MessageContainer = ({ isMonitoring }) => {
       }
     };
 
-    if (selectedConversation.userId) {
+    if (selectedConversation.userId || selectedConversation.isGroup) {
       getMessages();
     }
-  }, [showToast, selectedConversation.userId, selectedConversation.mock, currentUser.token]);
+  }, [showToast, selectedConversation, currentUser.token]);
 
   return (
     <Flex
@@ -164,15 +173,19 @@ const MessageContainer = ({ isMonitoring }) => {
       )}
 
       {/* Message header */}
-      <Flex w="full" h={12} alignItems="center" gap={2}>
-        <Avatar src={selectedConversation.userProfilePic} size="sm" />
-        <Text display="flex" alignItems="center">
-          {selectedConversation.username}
-          {currentUser?.role === "admin" && (
-            <Image src="/verified.png" w={4} h={4} ml={1} />
-          )}
-        </Text>
-      </Flex>
+      {selectedConversation.isGroup ? (
+        <GroupMessageHeader conversation={selectedConversation} />
+      ) : (
+        <Flex w="full" h={12} alignItems="center" gap={2}>
+          <Avatar src={selectedConversation.userProfilePic} size="sm" />
+          <Text display="flex" alignItems="center">
+            {selectedConversation.username}
+            {currentUser?.role === "admin" && (
+              <Image src="/verified.png" w={4} h={4} ml={1} />
+            )}
+          </Text>
+        </Flex>
+      )}
 
       <Divider />
 

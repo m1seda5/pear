@@ -2,6 +2,7 @@ import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
 import { getRecipientSocketId, io } from "../socket/socket.js";
 import { v2 as cloudinary } from "cloudinary";
+import { sendGroupNotifications } from '../utils/notifications.js';
 
 // this is is just a comment to see if anything is actually being affected and if im pushing changes as a head master thats all 
 // Start of sendMessage function
@@ -216,6 +217,62 @@ async function getAllConversations(req, res) {
     }
   }
   
+  // Configurable constant at top of file
+const MAX_GROUP_MEMBERS = process.env.MAX_GROUP_MEMBERS || 30;
+
+async function createGroupChat(req, res) {
+  try {
+    const { participants, groupName } = req.body;
+    const adminId = req.user._id;
+
+    if (participants.length + 1 > MAX_GROUP_MEMBERS) {
+      return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
+    }
+
+    const groupChat = new Conversation({
+      participants: [adminId, ...participants],
+      isGroup: true,
+      groupName,
+      groupAdmin: adminId,
+      lastMessage: {
+        text: `${req.user.username} created the group`,
+        sender: adminId
+      }
+    });
+
+    await groupChat.save();
+    await groupChat.populate('participants', 'username profilePic');
+    
+    // Send notifications to participants
+    await sendGroupNotifications(participants, groupChat._id);
+    
+    res.status(201).json(groupChat);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function addToGroup(req, res) {
+  try {
+    const { conversationId } = req.params;
+    const { userId } = req.body;
+    
+    const conversation = await Conversation.findById(conversationId);
+    
+    if (conversation.participants.length >= conversation.groupMembersLimit) {
+      return res.status(400).json({ error: "Group member limit reached" });
+    }
+    
+    if (!conversation.participants.includes(userId)) {
+      conversation.participants.push(userId);
+      await conversation.save();
+    }
+    
+    res.status(200).json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 
-export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification };
+export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroup, addToGroup };

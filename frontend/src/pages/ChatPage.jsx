@@ -629,11 +629,12 @@
 // export default ChatPage;
 
 // this is the api format issue 
-import { ViewIcon, SearchIcon } from "@chakra-ui/icons";
+import { ViewIcon, SearchIcon, AddIcon } from "@chakra-ui/icons";
 import { Box, Button, Flex, IconButton, Input, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
 import Conversation from "../components/Conversation";
 import { GiConversation } from "react-icons/gi";
 import MessageContainer from "../components/MessageContainer";
+import GroupCreationModal from "./GroupCreationModal";
 import { useEffect, useState } from "react";
 import useShowToast from "../hooks/useShowToast";
 import { useRecoilState, useRecoilValue } from "recoil";
@@ -648,12 +649,20 @@ const ChatPage = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedConversation, setSelectedConversation] = useRecoilState(selectedConversationAtom);
   const [conversations, setConversations] = useRecoilState(conversationsAtom);
+  const [isGroupCreationOpen, setIsGroupCreationOpen] = useState(false);
   const currentUser = useRecoilValue(userAtom);
   const showToast = useShowToast();
   const { socket, onlineUsers } = useSocket();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isMonitoring, setIsMonitoring] = useState(false);
+
+  // Join group chat rooms when selected
+  useEffect(() => {
+    if (socket && selectedConversation.isGroup) {
+      socket.emit("joinGroups", [selectedConversation._id]);
+    }
+  }, [socket, selectedConversation]);
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -667,7 +676,7 @@ const ChatPage = () => {
   }, [i18n]);
 
   useEffect(() => {
-    socket?.on("messagesSeen", ({ conversationId }) => {
+    const handleMessagesSeen = ({ conversationId }) => {
       setConversations((prev) => {
         return prev.map((conversation) => {
           if (conversation._id === conversationId) {
@@ -682,8 +691,43 @@ const ChatPage = () => {
           return conversation;
         });
       });
-    });
-  }, [socket, setConversations]);
+    };
+
+    const handleGroupUpdate = (updatedGroup) => {
+      setConversations((prev) => {
+        return prev.map((conversation) => {
+          if (conversation._id === updatedGroup._id) {
+            return {
+              ...conversation,
+              participants: updatedGroup.participants,
+              groupName: updatedGroup.groupName,
+              groupAdmin: updatedGroup.groupAdmin,
+              lastMessage: updatedGroup.lastMessage || conversation.lastMessage,
+            };
+          }
+          return conversation;
+        });
+      });
+
+      // Update selected conversation if it's the current group
+      if (selectedConversation._id === updatedGroup._id) {
+        setSelectedConversation(prev => ({
+          ...prev,
+          participants: updatedGroup.participants,
+          groupName: updatedGroup.groupName,
+          groupAdmin: updatedGroup.groupAdmin,
+        }));
+      }
+    };
+
+    socket?.on("messagesSeen", handleMessagesSeen);
+    socket?.on("groupUpdated", handleGroupUpdate);
+
+    return () => {
+      socket?.off("messagesSeen", handleMessagesSeen);
+      socket?.off("groupUpdated", handleGroupUpdate);
+    };
+  }, [socket, setConversations, selectedConversation._id, setSelectedConversation]);
 
   useEffect(() => {
     const getConversations = async () => {
@@ -744,7 +788,7 @@ const ChatPage = () => {
       }
 
       const conversationAlreadyExists = conversations.find(
-        (conversation) => conversation.participants[0]._id === searchedUser._id
+        (conversation) => !conversation.isGroup && conversation.participants[0]._id === searchedUser._id
       );
 
       if (conversationAlreadyExists) {
@@ -753,6 +797,7 @@ const ChatPage = () => {
           userId: searchedUser._id,
           username: searchedUser.username,
           userProfilePic: searchedUser.profilePic,
+          isGroup: false,
         });
         return;
       }
@@ -764,6 +809,7 @@ const ChatPage = () => {
           sender: "",
         },
         _id: Date.now(),
+        isGroup: false,
         participants: [
           {
             _id: searchedUser._id,
@@ -806,11 +852,15 @@ const ChatPage = () => {
     if (isMonitoring) {
       sendMonitoringNotification(conversation._id);
     }
+    
     setSelectedConversation({
       _id: conversation._id,
-      userId: conversation.participants[0]._id,
-      username: conversation.participants[0].username,
-      userProfilePic: conversation.participants[0].profilePic,
+      userId: conversation.isGroup ? null : conversation.participants[0]._id,
+      username: conversation.isGroup ? conversation.groupName : conversation.participants[0].username,
+      userProfilePic: conversation.isGroup ? null : conversation.participants[0].profilePic,
+      isGroup: conversation.isGroup,
+      participants: conversation.participants,
+      groupAdmin: conversation.groupAdmin,
     });
   };
 
@@ -894,7 +944,7 @@ const ChatPage = () => {
               conversations.map((conversation) => (
                 <Conversation
                   key={conversation._id}
-                  isOnline={onlineUsers.includes(conversation.participants[0]._id)}
+                  isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
                   conversation={conversation}
                   onClick={() => handleConversationClick(conversation)}
                   isMonitoring={isMonitoring}
@@ -933,6 +983,27 @@ const ChatPage = () => {
             onMonitoringNotification={sendMonitoringNotification}
           />
         )}
+
+        {['admin', 'teacher'].includes(currentUser.role) && (
+          <IconButton
+            icon={<AddIcon />}
+            aria-label="Create group"
+            onClick={() => setIsGroupCreationOpen(true)}
+            position="absolute"
+            right="4"
+            bottom="4"
+            colorScheme="green"
+          />
+        )}
+
+        <GroupCreationModal 
+          isOpen={isGroupCreationOpen}
+          onClose={() => setIsGroupCreationOpen(false)}
+          onGroupCreated={(newGroup) => {
+            setConversations(prev => [newGroup, ...prev]);
+            setIsGroupCreationOpen(false);
+          }}
+        />
       </Flex>
     </Box>
   );
