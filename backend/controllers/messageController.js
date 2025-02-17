@@ -2,7 +2,6 @@ import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
 import { getRecipientSocketId, io } from "../socket/socket.js";
 import { v2 as cloudinary } from "cloudinary";
-import { sendGroupNotifications } from '../utils/notifications.js';
 
 // this is is just a comment to see if anything is actually being affected and if im pushing changes as a head master thats all 
 // Start of sendMessage function
