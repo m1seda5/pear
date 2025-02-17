@@ -5,6 +5,9 @@ import { v2 as cloudinary } from "cloudinary";
 
 // this is is just a comment to see if anything is actually being affected and if im pushing changes as a head master thats all 
 // Start of sendMessage function
+// Add at the top of messageController.js
+const MAX_GROUP_MEMBERS = 50; // Adjust number as needed
+
 async function sendMessage(req, res) {
    try {
        const { recipientId, message } = req.body;
