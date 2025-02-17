@@ -11,26 +11,34 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
+  Box,
+  Text,
+  List,
+  ListItem,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 
-const MAX_GROUP_MEMBERS = 50; // Define the maximum number of group members
+const MAX_GROUP_MEMBERS = 50;
 
 const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const showToast = useShowToast();
   const currentUser = useRecoilValue(userAtom);
 
   const handleSearchUser = async () => {
-    if (!searchInput.trim() || selectedUsers.length >= MAX_GROUP_MEMBERS - 1) return;
+    if (!searchInput.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
 
     try {
-      const res = await fetch(`/api/users/search/${searchInput}`, {
+      const res = await fetch(`/api/users/profile/${searchInput}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`
         }
@@ -38,13 +46,27 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Failed to search user");
-      if (data._id === currentUser._id) return;
-
-      setSelectedUsers(prev => [...new Set([...prev, data])]);
-      setSearchInput("");
+      
+      // Don't show current user or already selected users in results
+      if (data._id !== currentUser._id && !selectedUsers.some(user => user._id === data._id)) {
+        setSearchResults([data]);
+      }
     } catch (error) {
       showToast("Error", error.message, "error");
+    } finally {
+      setSearching(false);
     }
+  };
+
+  const handleSelectUser = (user) => {
+    if (selectedUsers.length >= MAX_GROUP_MEMBERS - 1) {
+      showToast("Error", `Maximum ${MAX_GROUP_MEMBERS} members allowed`, "error");
+      return;
+    }
+    
+    setSelectedUsers(prev => [...prev, user]);
+    setSearchResults([]);
+    setSearchInput("");
   };
 
   const handleCreateGroup = async () => {
@@ -110,20 +132,51 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
             ))}
           </Flex>
 
-          <Flex gap={2}>
-            <Input
-              placeholder="Search users..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearchUser()}
-            />
-            <Button
-              onClick={handleSearchUser}
-              isDisabled={selectedUsers.length >= MAX_GROUP_MEMBERS - 1}
-            >
-              Add
-            </Button>
-          </Flex>
+          <Box position="relative">
+            <Flex gap={2}>
+              <Input
+                placeholder="Search users..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchUser()}
+              />
+              <Button
+                onClick={handleSearchUser}
+                isLoading={searching}
+                isDisabled={selectedUsers.length >= MAX_GROUP_MEMBERS - 1}
+              >
+                Search
+              </Button>
+            </Flex>
+
+            {searchResults.length > 0 && (
+              <List
+                position="absolute"
+                top="100%"
+                left={0}
+                right={0}
+                bg="white"
+                boxShadow="md"
+                borderRadius="md"
+                mt={2}
+                maxH="200px"
+                overflowY="auto"
+                zIndex={1}
+              >
+                {searchResults.map(user => (
+                  <ListItem
+                    key={user._id}
+                    p={2}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.100" }}
+                    onClick={() => handleSelectUser(user)}
+                  >
+                    <Text>{user.username}</Text>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
 
           <Button
             colorScheme="green"
