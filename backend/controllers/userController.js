@@ -1423,7 +1423,7 @@ const sendOTPEmail = async (email, otp) => {
 };
 
 const MAX_OTP_ATTEMPTS = 3;
-const OTP_COOLDOWN = 3 * 60 * 1000; // 2 minutes in milliseconds
+const OTP_COOLDOWN = 7 * 60 * 1000;// 7 minutes in milliseconds
 
 const signupUser = async (req, res) => {
   console.log("Signup request received:", req.body);
@@ -1658,8 +1658,9 @@ const resendOTP = async (req, res) => {
     if (timeSinceLastOtp < OTP_COOLDOWN) {
       const remainingTime = Math.ceil((OTP_COOLDOWN - timeSinceLastOtp) / 1000);
       return res.status(429).json({ 
-        error: `Please wait ${remainingTime} seconds before requesting another OTP`
+        error: `Please wait ${Math.ceil(remainingTime / 60)} minutes before requesting another OTP`
       });
+      
     }
 
     // Generate and save new OTP
