@@ -381,7 +381,12 @@ async function createGroupChat(req, res) {
     await groupChat.save();
     
     // Ensure proper population of participants
-    await groupChat.populate('participants', 'username profilePic email');
+   // Update createGroupChat controller to ensure participants array
+await groupChat.populate({
+  path: 'participants',
+  select: 'username profilePic email',
+  transform: (doc) => doc || null // Handle potential nulls
+});
     
     // Direct email notification implementation
     const transporter = nodemailer.createTransport({

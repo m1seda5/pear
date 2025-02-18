@@ -61,10 +61,11 @@ const Conversation = ({ conversation, isOnline }) => {
       {conversation.isGroup ? (
         <>
           <Icon as={FaUsers} color="blue.500" mr={2} />
+          // Update the group participants rendering in Conversation.jsx
           <AvatarGroup size="sm" max={3}>
-            {conversation.participants.slice(0, 3).map(p => (
-              <Avatar 
-                key={p._id} 
+            {(conversation.participants || []).slice(0, 3).map((p) => (
+              <Avatar
+                key={p._id}
                 src={p.profilePic}
                 size={{
                   base: "xs",
@@ -81,7 +82,12 @@ const Conversation = ({ conversation, isOnline }) => {
                 {conversation.participants.length} members
               </Text>
             </Text>
-            <Text fontSize={"xs"} display={"flex"} alignItems={"center"} gap={1}>
+            <Text
+              fontSize={"xs"}
+              display={"flex"}
+              alignItems={"center"}
+              gap={1}
+            >
               {currentUser._id === lastMessage.sender ? (
                 <Box color={lastMessage.seen ? "blue.400" : ""}>
                   <BsCheck2All size={16} />
@@ -117,7 +123,12 @@ const Conversation = ({ conversation, isOnline }) => {
                 <Image src="/verified.png" w={4} h={4} ml={1} />
               )}
             </Text>
-            <Text fontSize={"xs"} display={"flex"} alignItems={"center"} gap={1}>
+            <Text
+              fontSize={"xs"}
+              display={"flex"}
+              alignItems={"center"}
+              gap={1}
+            >
               {currentUser._id === lastMessage.sender ? (
                 <Box color={lastMessage.seen ? "blue.400" : ""}>
                   <BsCheck2All size={16} />

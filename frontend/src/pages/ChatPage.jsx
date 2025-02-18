@@ -640,7 +640,6 @@ import useShowToast from "../hooks/useShowToast";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
-import { useSocket } from "../context/SocketContext";
 import { useTranslation } from 'react-i18next';
 
 const ChatPage = () => {
