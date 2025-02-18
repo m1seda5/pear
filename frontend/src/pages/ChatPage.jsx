@@ -657,11 +657,15 @@ const ChatPage = () => {
   const [language, setLanguage] = useState(i18n.language);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
-  // Join socket rooms for group chats
+  // Color mode values
+  const cardBg = useColorModeValue("white", "gray.800");
+  const subtleBg = useColorModeValue("gray.50", "gray.700");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
+
   useEffect(() => {
     if (socket && conversations) {
       const groupIds = conversations
-        .filter(conv => conv.isGroup && !conv.mock) // Add mock check
+        .filter(conv => conv.isGroup && !conv.mock)
         .map(conv => conv._id);
       
       if (groupIds.length > 0) {
@@ -715,7 +719,6 @@ const ChatPage = () => {
         });
       });
 
-      // Update selected conversation if it's the current group
       if (selectedConversation._id === updatedGroup._id) {
         setSelectedConversation(prev => ({
           ...prev,
@@ -735,7 +738,6 @@ const ChatPage = () => {
     };
   }, [socket, setConversations, selectedConversation._id, setSelectedConversation]);
 
-  // Fetch conversations
   useEffect(() => {
     const getConversations = async () => {
       try {
@@ -771,9 +773,10 @@ const ChatPage = () => {
 
   const handleConversationSearch = async (e) => {
     e.preventDefault();
+    if (!searchText.trim()) return;
     setSearchingUser(true);
     try {
-      const res = await fetch(`/api/users/profile/${searchText}`, {
+      const res = await fetch(`/api/users/search/${encodeURIComponent(searchText.toLowerCase())}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
         },
@@ -792,7 +795,7 @@ const ChatPage = () => {
   
       const conversationAlreadyExists = conversations.find((conversation) => {
         if (conversation.isGroup) {
-          return conversation.groupName === searchedUser.username; // Group specific check
+          return conversation.groupName === searchedUser.username;
         }
         return conversation.participants[0]._id === searchedUser._id;
       });
@@ -831,50 +834,49 @@ const ChatPage = () => {
       setSearchingUser(false);
     }
   };
- // In ChatPage.jsx
- const handleConversationClick = async (conversation) => {
-  if (isMonitoring) {
-    try {
-      const res = await fetch(`/api/messages/notify-monitoring/${conversation._id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentUser.token}`,
-          'Content-Type': 'application/json'
+
+  const handleConversationClick = async (conversation) => {
+    if (isMonitoring) {
+      try {
+        const res = await fetch(`/api/messages/notify-monitoring/${conversation._id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          showToast("Error", data.error || "Failed to send monitoring notification", "error");
+          return;
         }
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        showToast("Error", data.error || "Failed to send monitoring notification", "error");
-        return;
+        
+        showToast("Success", "Monitoring notification sent", "success");
+      } catch (error) {
+        showToast("Error", error.message, "error");
       }
-      
-      showToast("Success", "Monitoring notification sent", "success");
-    } catch (error) {
-      showToast("Error", error.message, "error");
     }
-  }
-  
-  if (conversation.isGroup) {
-    setSelectedConversation({
-      _id: conversation._id,
-      isGroup: true,
-      groupName: conversation.groupName,
-      participants: conversation.participants || [], // Ensure this isn't undefined
-      groupAdmin: conversation.groupAdmin,
-      lastMessage: conversation.lastMessage || {},
-    });
-  } else {
-    setSelectedConversation({
-      _id: conversation._id,
-      userId: conversation.participants[0]._id,
-      username: conversation.participants[0].username,
-      userProfilePic: conversation.participants[0].profilePic,
-      isGroup: false,
-    });
-  }
-};
-
+    
+    if (conversation.isGroup) {
+      setSelectedConversation({
+        _id: conversation._id,
+        isGroup: true,
+        groupName: conversation.groupName,
+        participants: conversation.participants || [],
+        groupAdmin: conversation.groupAdmin,
+        lastMessage: conversation.lastMessage || {},
+      });
+    } else {
+      setSelectedConversation({
+        _id: conversation._id,
+        userId: conversation.participants[0]._id,
+        username: conversation.participants[0].username,
+        userProfilePic: conversation.participants[0].profilePic,
+        isGroup: false,
+      });
+    }
+  };
 
   return (
     <Box
@@ -883,7 +885,50 @@ const ChatPage = () => {
       w={{ base: "100%", md: "80%", lg: "750px" }}
       p={4}
       transform={"translateX(-50%)"}
+      bg={cardBg}
+      borderRadius="lg"
+      boxShadow="md"
     >
+      <Flex position="relative" justifyContent="space-between" alignItems="center" mb={4}>
+        <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.100")}>
+          {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
+        </Text>
+        
+        <Flex gap={2}>
+          {currentUser?.role === "admin" && !isMonitoring && (
+            <IconButton
+              icon={<ViewIcon />}
+              aria-label="Monitor conversations"
+              onClick={() => setIsMonitoring(true)}
+              size="sm"
+              variant="ghost"
+            />
+          )}
+          {isMonitoring && (
+            <Button
+              onClick={() => {
+                setIsMonitoring(false);
+                setSelectedConversation({});
+              }}
+              size="sm"
+              variant="outline"
+              colorScheme="red"
+            >
+              {t("Exit Monitoring")}
+            </Button>
+          )}
+          {['admin', 'teacher'].includes(currentUser.role) && !isMonitoring && (
+            <IconButton
+              icon={<AddIcon />}
+              aria-label="Create group"
+              onClick={() => setIsGroupCreationOpen(true)}
+              size="sm"
+              variant="ghost"
+            />
+          )}
+        </Flex>
+      </Flex>
+
       <Flex
         gap={4}
         flexDirection={{ base: "column", md: "row" }}
@@ -893,41 +938,7 @@ const ChatPage = () => {
         }}
         mx={"auto"}
       >
-        {/* Admin monitoring controls */}
-        {currentUser?.role === "admin" && !isMonitoring && (
-          <IconButton
-            icon={<ViewIcon />}
-            aria-label="Monitor conversations"
-            position="absolute"
-            top="2"
-            right="2"
-            onClick={() => setIsMonitoring(true)}
-            colorScheme="blue"
-          />
-        )}
-
-        {isMonitoring && (
-          <Button
-            position="absolute"
-            top="2"
-            right="2"
-            onClick={() => {
-              setIsMonitoring(false);
-              setSelectedConversation({});
-            }}
-            colorScheme="red"
-            size="sm"
-          >
-            {t("Exit Monitoring")}
-          </Button>
-        )}
-
-        {/* Conversations list */}
         <Flex flex={30} gap={2} flexDirection={"column"} maxW={{ sm: "250px", md: "full" }} mx={"auto"}>
-          <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.400")}>
-            {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
-          </Text>
-          
           {!isMonitoring && (
             <form onSubmit={handleConversationSearch}>
               <Flex alignItems={"center"} gap={2}>
@@ -935,6 +946,9 @@ const ChatPage = () => {
                   placeholder={t('Search for a user')} 
                   onChange={(e) => setSearchText(e.target.value)}
                   value={searchText}
+                  variant="filled"
+                  _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
+                  _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
                 />
                 <Button type="submit" size={"sm"} isLoading={searchingUser}>
                   <SearchIcon />
@@ -943,7 +957,6 @@ const ChatPage = () => {
             </form>
           )}
 
-          {/* Loading skeletons */}
           {loadingConversations &&
             [0, 1, 2, 3, 4].map((_, i) => (
               <Flex key={i} gap={4} alignItems={"center"} p={"1"} borderRadius={"md"}>
@@ -957,27 +970,31 @@ const ChatPage = () => {
               </Flex>
             ))}
 
-          {/* Conversations list */}
-          {!loadingConversations && (
-            Array.isArray(conversations) && conversations.length > 0 ? (
-              conversations.map((conversation) => (
-                <Conversation
-                  key={conversation._id}
-                  isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
-                  conversation={conversation}
-                  onClick={() => handleConversationClick(conversation)}
-                  isMonitoring={isMonitoring}
-                />
-              ))
-            ) : (
-              <Text fontSize="sm" color="gray.500" p={2}>
-                {isMonitoring ? t("No conversations to monitor") : t("No conversations found")}
-              </Text>
-            )
+          {!loadingConversations && Array.isArray(conversations) &&
+            conversations.map((conversation) => (
+              <Conversation
+                key={conversation._id}
+                isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
+                conversation={conversation}
+                onClick={() => handleConversationClick(conversation)}
+                isMonitoring={isMonitoring}
+                bg={subtleBg}
+                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
+                borderRadius="md"
+                border="1px solid"
+                borderColor={borderColor}
+                mb={2}
+              />
+            ))
+          }
+
+          {!loadingConversations && (!Array.isArray(conversations) || conversations.length === 0) && (
+            <Text fontSize="sm" color="gray.500" p={2}>
+              {isMonitoring ? t("No conversations to monitor") : t("No conversations found")}
+            </Text>
           )}
         </Flex>
 
-        {/* Message container or placeholder */}
         {!selectedConversation._id ? (
           <Flex
             flex={70}
@@ -996,25 +1013,9 @@ const ChatPage = () => {
             </Text>
           </Flex>
         ) : (
-          <MessageContainer 
-          isMonitoring={isMonitoring}
-        />
+          <MessageContainer isMonitoring={isMonitoring} />
         )}
 
-        {/* Group creation button */}
-        {['admin', 'teacher'].includes(currentUser.role) && !isMonitoring && (
-          <IconButton
-            icon={<AddIcon />}
-            aria-label="Create group"
-            onClick={() => setIsGroupCreationOpen(true)}
-            position="absolute"
-            right="4"
-            bottom="4"
-            colorScheme="green"
-          />
-        )}
-
-        {/* Group creation modal */}
         <GroupCreationModal 
           isOpen={isGroupCreationOpen}
           onClose={() => setIsGroupCreationOpen(false)}

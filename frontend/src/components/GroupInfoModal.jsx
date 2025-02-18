@@ -15,6 +15,7 @@ import {
   MenuItem,
   Input,
   Button,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { HamburgerIcon, EditIcon, DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import { useState } from "react";
@@ -96,8 +97,8 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
     <>
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
+        <ModalContent bg={useColorModeValue("white", "gray.800")}>
+          <ModalHeader borderBottom="1px solid" borderColor={useColorModeValue("gray.200", "gray.600")}>
             {isEditing ? (
               <Flex gap={2}>
                 <Input
@@ -138,7 +139,7 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
             )}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody pb={6}>
+          <ModalBody pb={6} bg={useColorModeValue("gray.50", "gray.700")}>
             <Text fontWeight="bold" mb={4}>
               Members ({conversation.participants.length})
             </Text>
@@ -150,7 +151,7 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
                 justify="space-between" 
                 p={2}
                 borderRadius="md"
-                _hover={{ bg: "gray.50" }}
+                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
               >
                 <Flex align="center" gap={2}>
                   <Avatar 

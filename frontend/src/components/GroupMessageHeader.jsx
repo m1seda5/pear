@@ -15,7 +15,6 @@ const GroupMessageHeader = ({ conversation }) => {
   return (
     <>
       <Flex w="full" h={12} alignItems="center" gap={2}>
-        // Update GroupMessageHeader.jsx
         <AvatarGroup size="sm" max={3} mr={2}>
           {(conversation.participants || []).map((participant) => (
             <Avatar
