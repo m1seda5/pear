@@ -87,6 +87,17 @@ const MessageContainer = ({ isMonitoring }) => {
     };
   }, [socket, selectedConversation._id, setConversations]);
 
+  // In MessageContainer.jsx - Add proper group message handling
+  useEffect(() => {
+    const handleGroupMessage = (message) => {
+      if (selectedConversation._id === message.conversationId) {
+        setMessages(prev => [...prev, message]);
+      }
+    };
+    socket?.on("newGroupMessage", handleGroupMessage);
+    return () => socket?.off("newGroupMessage", handleGroupMessage);
+  }, [socket, selectedConversation._id]);
+
   useEffect(() => {
     const lastMessageIsFromOtherUser =
       messages.length &&
@@ -120,28 +131,26 @@ const MessageContainer = ({ isMonitoring }) => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // In MessageContainer.jsx - Update the useEffect for fetching messages
   useEffect(() => {
     const getMessages = async () => {
       setLoadingMessages(true);
       setMessages([]);
       try {
         if (selectedConversation.mock) return;
-  
+
+        // Correct endpoint for group messages
         const endpoint = selectedConversation.isGroup 
-          ? `/api/messages/group/${selectedConversation._id}`
+          ? `/api/messages/groups/${selectedConversation._id}/messages`
           : `/api/messages/${selectedConversation.userId}`;
-  
+
         const res = await fetch(endpoint, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
-          },
+          headers: { 'Authorization': `Bearer ${currentUser.token}` },
         });
-        const data = await res.json();
         
-        if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch messages");
-        }
-  
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch messages");
+
         setMessages(data);
       } catch (error) {
         showToast("Error", error.message, "error");
@@ -149,11 +158,10 @@ const MessageContainer = ({ isMonitoring }) => {
         setLoadingMessages(false);
       }
     };
-  
-    if (selectedConversation._id) {  // Change this condition
-      getMessages();
-    }
+
+    if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
+
   return (
     <Flex
       flex="70"

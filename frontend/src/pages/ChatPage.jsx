@@ -784,16 +784,19 @@ const ChatPage = () => {
         showToast(t("Error"), searchedUser.error || t("User not found"), "error");
         return;
       }
-
+  
       if (searchedUser._id === currentUser._id) {
         showToast(t("Error"), t("You cannot message yourself"), "error");
         return;
       }
-
-      const conversationAlreadyExists = conversations.find(
-        (conversation) => !conversation.isGroup && conversation.participants[0]._id === searchedUser._id
-      );
-
+  
+      const conversationAlreadyExists = conversations.find((conversation) => {
+        if (conversation.isGroup) {
+          return conversation.groupName === searchedUser.username; // Group specific check
+        }
+        return conversation.participants[0]._id === searchedUser._id;
+      });
+  
       if (conversationAlreadyExists) {
         setSelectedConversation({
           _id: conversationAlreadyExists._id,
@@ -804,7 +807,7 @@ const ChatPage = () => {
         });
         return;
       }
-
+  
       const mockConversation = {
         mock: true,
         lastMessage: {
@@ -828,9 +831,8 @@ const ChatPage = () => {
       setSearchingUser(false);
     }
   };
-
  // In ChatPage.jsx
-const handleConversationClick = async (conversation) => {
+ const handleConversationClick = async (conversation) => {
   if (isMonitoring) {
     try {
       const res = await fetch(`/api/messages/notify-monitoring/${conversation._id}`, {
@@ -861,6 +863,7 @@ const handleConversationClick = async (conversation) => {
       participants: conversation.participants,
       groupAdmin: conversation.groupAdmin,
       lastMessage: conversation.lastMessage,
+      userProfilePic: conversation.participants[0]?.profilePic // Fallback for group avatar
     });
   } else {
     setSelectedConversation({
@@ -872,6 +875,8 @@ const handleConversationClick = async (conversation) => {
     });
   }
 };
+
+
   return (
     <Box
       position={"absolute"}

@@ -107,10 +107,13 @@ async function getMessages(req, res) {
 async function getConversations(req, res) {
    const userId = req.user._id;
    try {
-       const conversations = await Conversation.find({ participants: userId }).populate({
-           path: "participants",
-           select: "username profilePic",
-       });
+    const conversations = await Conversation.find({ participants: req.user._id })
+    .populate({
+      path: "participants",
+      select: "username profilePic"
+    })
+    .populate("lastMessage.sender", "username")
+    .sort({ updatedAt: -1 });
 
 
        // remove the current user from the participants array
@@ -417,14 +420,26 @@ async function createGroupChat(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+// In messageController.js - Improve getGroupMessages
 async function getGroupMessages(req, res) {
-  const { groupId } = req.params;
   try {
-    const messages = await Message.find({
-      conversationId: groupId,
-    }).sort({ createdAt: 1 });
+    const messages = await Message.find({ conversationId: req.params.groupId })
+      .sort({ createdAt: 1 })
+      .populate('sender', 'username profilePic');
 
     res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+// In messageController.js
+async function checkExistingGroup(req, res) {
+  try {
+    const group = await Conversation.findOne({
+      groupName: req.query.name,
+      isGroup: true
+    });
+    res.status(200).json(!!group);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -433,4 +448,4 @@ async function getGroupMessages(req, res) {
 
 
 
-export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup, getGroupMessages,  };
+export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup, getGroupMessages, checkExistingGroup,  };

@@ -41,7 +41,8 @@ router.get("/config/group-limits", protectRoute, (req, res) => {
 
 // Group Chat Routes
 router.post("/groups/create", protectRoute, createGroupChat);
-router.get("/groups/:groupId/messages", protectRoute, checkChatAccess, getGroupMessages); // Add this route
+// In messageRoutes.js - Correct route path
+router.get("/groups/:groupId/messages", protectRoute, checkChatAccess, getGroupMessages);
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
 router.put("/groups/:conversationId", protectRoute, updateGroup);

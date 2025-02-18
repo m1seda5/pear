@@ -32,6 +32,15 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
   const showToast = useShowToast();
   const currentUser = useRecoilValue(userAtom);
 
+  const checkExistingGroup = async (name) => {
+    const res = await fetch(`/api/groups/check?name=${encodeURIComponent(name)}`, {
+      headers: {
+        Authorization: `Bearer ${currentUser.token}`
+      }
+    });
+    return res.json();
+  };
+
   const handleSearchUser = async () => {
     if (!searchInput.trim()) return;
     setSearching(true);
@@ -83,6 +92,14 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
 
     setLoading(true);
     try {
+      // Check if group already exists
+      const existingGroup = await checkExistingGroup(groupName);
+      if (existingGroup) {
+        showToast("Error", "Group with this name already exists", "error");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/messages/groups/create", {
         method: "POST",
         headers: {
