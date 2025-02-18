@@ -31,7 +31,7 @@ import {
   removeFromGroup,
   updateGroup,
   getGroupMessages,
-  checkExistingGroup, // Add this import
+  checkExistingGroup,
 } from "../controllers/messageController.js";
 
 const router = express.Router();
@@ -42,9 +42,9 @@ router.get("/config/group-limits", protectRoute, (req, res) => {
 });
 
 // Group Chat Routes
-router.get("/groups/check", protectRoute, checkExistingGroup); // Add this new route
+router.get("/groups/check", protectRoute, checkExistingGroup);
 router.post("/groups/create", protectRoute, createGroupChat);
-router.get("/groups/:groupId/messages", protectRoute, checkChatAccess, getGroupMessages);
+router.get("/group/:conversationId", protectRoute, checkChatAccess, getGroupMessages); // Updated to match frontend
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
 router.put("/groups/:conversationId", protectRoute, updateGroup);
@@ -55,7 +55,7 @@ router.post("/notify-monitoring/:conversationId", protectRoute, checkChatAccess,
 
 // Regular Chat Routes
 router.get("/conversations", protectRoute, checkChatAccess, getConversations);
-router.get("/:otherUserId", protectRoute, checkChatAccess, getMessages);
+router.get("/:otherUserId", protectRoute, checkChatAccess, getMessages); // This already matches frontend
 router.post("/", protectRoute, checkChatAccess, sendMessage);
 router.delete("/:messageId", protectRoute, checkChatAccess, deleteMessage);
 

@@ -61,7 +61,12 @@ io.on("connection", (socket) => {
     });
 
     socket.on("groupMessage", (message) => {
-        socket.to(`group_${message.conversationId}`).emit("newGroupMessage", message);
+        // Ensure the message is sent to all members except sender
+        socket.to(`group_${message.conversationId}`).emit("newGroupMessage", {
+            ...message,
+            seen: false,
+            createdAt: new Date(),
+        });
     });
 
     // Disconnect handler

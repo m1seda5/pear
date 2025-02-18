@@ -357,6 +357,11 @@ async function createGroupChat(req, res) {
     const { participants, groupName } = req.body;
     const adminId = req.user._id;
 
+    // Validate participants array
+    if (!Array.isArray(participants) || participants.length === 0) {
+      return res.status(400).json({ error: "Invalid participants" });
+    }
+
     if (participants.length + 1 > MAX_GROUP_MEMBERS) {
       return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
     }
@@ -368,11 +373,14 @@ async function createGroupChat(req, res) {
       groupAdmin: adminId,
       lastMessage: {
         text: `${req.user.username} created the group`,
-        sender: adminId
+        sender: adminId,
+        seen: false
       }
     });
 
     await groupChat.save();
+    
+    // Ensure proper population of participants
     await groupChat.populate('participants', 'username profilePic email');
     
     // Direct email notification implementation
@@ -415,7 +423,16 @@ async function createGroupChat(req, res) {
     // Wait for all email notifications to be sent
     await Promise.all(emailPromises.filter(Boolean));
     
-    res.status(201).json(groupChat);
+    // Return fully populated group data with mapped participants
+    res.status(201).json({
+      ...groupChat.toJSON(),
+      participants: groupChat.participants.map(p => ({
+        _id: p._id,
+        username: p.username,
+        profilePic: p.profilePic,
+        email: p.email
+      }))
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

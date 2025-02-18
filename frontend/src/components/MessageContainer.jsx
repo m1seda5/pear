@@ -53,50 +53,37 @@ const MessageContainer = ({ isMonitoring }) => {
   };
 
   useEffect(() => {
-    const handleNewMessage = (message) => {
+    const handleMessage = (message) => {
       if (selectedConversation._id === message.conversationId) {
         setMessages((prev) => [...prev, message]);
-      }
-
-      if (!document.hasFocus()) {
-        const sound = new Audio(messageSound);
-        sound.play();
-      }
-
-      setConversations((prev) => {
-        return prev.map((conversation) => {
-          if (conversation._id === message.conversationId) {
-            return {
-              ...conversation,
-              lastMessage: {
-                text: message.text,
-                sender: message.sender,
-              },
-            };
-          }
-          return conversation;
+        if (!document.hasFocus()) {
+          const sound = new Audio(messageSound);
+          sound.play();
+        }
+        setConversations((prev) => {
+          return prev.map((conversation) => {
+            if (conversation._id === message.conversationId) {
+              return {
+                ...conversation,
+                lastMessage: {
+                  text: message.text,
+                  sender: message.sender,
+                },
+              };
+            }
+            return conversation;
+          });
         });
-      });
+      }
     };
-
-    socket?.on("newMessage", handleNewMessage);
-    socket?.on("newGroupMessage", handleNewMessage); // Add group message handler
+    socket?.on("newMessage", handleMessage);
+    socket?.on("newGroupMessage", handleMessage); // Single handler for both types
+    
     return () => {
-      socket?.off("newMessage", handleNewMessage);
-      socket?.off("newGroupMessage", handleNewMessage);
+      socket?.off("newMessage", handleMessage);
+      socket?.off("newGroupMessage", handleMessage);
     };
   }, [socket, selectedConversation._id, setConversations]);
-
-  // In MessageContainer.jsx - Add proper group message handling
-  useEffect(() => {
-    const handleGroupMessage = (message) => {
-      if (selectedConversation._id === message.conversationId) {
-        setMessages(prev => [...prev, message]);
-      }
-    };
-    socket?.on("newGroupMessage", handleGroupMessage);
-    return () => socket?.off("newGroupMessage", handleGroupMessage);
-  }, [socket, selectedConversation._id]);
 
   useEffect(() => {
     const lastMessageIsFromOtherUser =
@@ -131,7 +118,6 @@ const MessageContainer = ({ isMonitoring }) => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // In MessageContainer.jsx - Update the useEffect for fetching messages
   useEffect(() => {
     const getMessages = async () => {
       setLoadingMessages(true);
@@ -224,20 +210,19 @@ const MessageContainer = ({ isMonitoring }) => {
             </Flex>
           ))}
 
-        {!loadingMessages &&
-          messages.map((message, idx) => (
-            <Flex
-              key={message._id}
-              direction="column"
-              ref={idx === messages.length - 1 ? messageEndRef : null}
-            >
-              <Message
-                message={message}
-                ownMessage={currentUser._id === message.sender}
-                onDelete={isMonitoring ? null : handleDelete}
-              />
-            </Flex>
-          ))}
+        {!loadingMessages && messages && Array.isArray(messages) && messages.map((message, idx) => (
+          <Flex
+            key={message._id || idx}
+            direction="column"
+            ref={idx === messages.length - 1 ? messageEndRef : null}
+          >
+            <Message
+              message={message}
+              ownMessage={currentUser._id === message.sender}
+              onDelete={isMonitoring ? null : handleDelete}
+            />
+          </Flex>
+        ))}
       </Flex>
 
       {!isMonitoring && <MessageInput setMessages={setMessages} />}

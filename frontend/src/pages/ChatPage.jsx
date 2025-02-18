@@ -661,7 +661,7 @@ const ChatPage = () => {
   useEffect(() => {
     if (socket && conversations) {
       const groupIds = conversations
-        .filter(conv => conv.isGroup)
+        .filter(conv => conv.isGroup && !conv.mock) // Add mock check
         .map(conv => conv._id);
       
       if (groupIds.length > 0) {
@@ -860,10 +860,9 @@ const ChatPage = () => {
       _id: conversation._id,
       isGroup: true,
       groupName: conversation.groupName,
-      participants: conversation.participants,
+      participants: conversation.participants || [], // Ensure this isn't undefined
       groupAdmin: conversation.groupAdmin,
-      lastMessage: conversation.lastMessage,
-      userProfilePic: conversation.participants[0]?.profilePic // Fallback for group avatar
+      lastMessage: conversation.lastMessage || {},
     });
   } else {
     setSelectedConversation({
