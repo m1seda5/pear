@@ -105,27 +105,34 @@ async function getMessages(req, res) {
 
 // Start of getConversations function
 async function getConversations(req, res) {
-   const userId = req.user._id;
-   try {
-    const conversations = await Conversation.find({ participants: req.user._id })
-    .populate({
-      path: "participants",
-      select: "username profilePic"
-    })
-    .populate("lastMessage.sender", "username")
-    .sort({ updatedAt: -1 });
+  const userId = req.user._id;
+  try {
+      const conversations = await Conversation.find({ participants: userId })
+          .populate({
+              path: "participants",
+              select: "username profilePic"
+          })
+          .populate("lastMessage.sender", "username")
+          .sort({ updatedAt: -1 });
 
+      // For non-group conversations, filter out current user
+      conversations.forEach((conversation) => {
+          if (!conversation.isGroup) {
+              conversation.participants = conversation.participants.filter(
+                  (participant) => participant._id.toString() !== userId.toString()
+              );
+          }
+      });
 
-       // remove the current user from the participants array
-       conversations.forEach((conversation) => {
-           conversation.participants = conversation.participants.filter(
-               (participant) => participant._id.toString() !== userId.toString()
-           );
-       });
-       res.status(200).json(conversations);
-   } catch (error) {
-       res.status(500).json({ error: error.message });
-   }
+      // Remove duplicates based on conversation._id
+      const uniqueConversations = Array.from(new Map(
+          conversations.map(conv => [conv._id.toString(), conv])
+      ).values());
+
+      res.status(200).json(uniqueConversations);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
 }
 // End of getConversations function
 
