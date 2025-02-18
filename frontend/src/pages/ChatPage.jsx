@@ -641,6 +641,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
 import { useTranslation } from 'react-i18next';
+import { useSocket } from "../context/SocketContext";
 
 const ChatPage = () => {
   const [searchingUser, setSearchingUser] = useState(false);
