@@ -15,6 +15,7 @@
 // export default router;
 
 // version 2
+// messageController.js
 import express from "express";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkChatAccess from "../middlewares/checkChatAccess.js";
@@ -29,7 +30,8 @@ import {
   addToGroup,
   removeFromGroup,
   updateGroup,
-  getGroupMessages, // Add this import
+  getGroupMessages,
+  checkExistingGroup, // Add this import
 } from "../controllers/messageController.js";
 
 const router = express.Router();
@@ -40,8 +42,8 @@ router.get("/config/group-limits", protectRoute, (req, res) => {
 });
 
 // Group Chat Routes
+router.get("/groups/check", protectRoute, checkExistingGroup); // Add this new route
 router.post("/groups/create", protectRoute, createGroupChat);
-// In messageRoutes.js - Correct route path
 router.get("/groups/:groupId/messages", protectRoute, checkChatAccess, getGroupMessages);
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
