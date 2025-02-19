@@ -1423,7 +1423,7 @@ const sendOTPEmail = async (email, otp) => {
 };
 
 const MAX_OTP_ATTEMPTS = 3;
-const OTP_COOLDOWN = 7 * 60 * 1000;// 7 minutes in milliseconds
+const OTP_COOLDOWN = 10 * 60 * 1000;// 7 minutes in milliseconds
 
 const signupUser = async (req, res) => {
   console.log("Signup request received:", req.body);

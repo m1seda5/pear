@@ -824,7 +824,7 @@ const SignupCard = () => {
   });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [timer, setTimer] = useState(180); // 3 minutes in seconds
+  const [timer, setTimer] = useState(600); // 3 minutes in seconds
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [resendAttempts, setResendAttempts] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -947,7 +947,7 @@ const SignupCard = () => {
       });
 
       if (response.data.message) {
-        setTimer(180); // Reset timer to 3 minutes
+        setTimer(600); // Reset timer to 3 minutes
         setResendAttempts(prev => prev + 1);
         showToast("Success", "New OTP sent successfully", "success");
       }
@@ -1028,7 +1028,7 @@ const SignupCard = () => {
       setIsResendDisabled(true);
       showToast(
         "Success",
-        `OTP ${isResend ? "re-" : ""}sent to your email`,
+        `OTP ${isResend ? "re-" : ""}sent to your email. Please verify within 10 minutes.`,
         "success"
       );
     } catch (error) {
