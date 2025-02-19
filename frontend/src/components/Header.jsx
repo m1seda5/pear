@@ -944,9 +944,10 @@ const Header = () => {
     tv: false,
   });
 
-  const isStudent = user?.role === "student";
-  const isTeacher = user?.role === "teacher";
-  const isAdmin = user?.role === "admin";
+  // Add null checks for user role
+  const isStudent = user?.role === "student" || false;
+  const isTeacher = user?.role === "teacher" || false;
+  const isAdmin = user?.role === "admin" || false;
 
   const currentDate = new Date();
   const dayOfWeek = currentDate.getDay();
@@ -957,7 +958,8 @@ const Header = () => {
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
-  const hasChatAccess =
+  // Safely handle chat access checking
+  const hasChatAccess = user && (
     isTeacher ||
     isAdmin ||
     (isStudent &&
@@ -967,10 +969,11 @@ const Header = () => {
           (currentTime >= lunchStart && currentTime <= lunchEnd) ||
           currentTime > schoolEnd)) ||
         dayOfWeek === 0 ||
-        dayOfWeek === 6));
+        dayOfWeek === 6))
+  );
 
   const handleChatClick = (e) => {
-    if (user?.isFrozen || !hasChatAccess) {
+    if (!user || user?.isFrozen || !hasChatAccess) {
       e.preventDefault();
       setHoverState({ ...hoverState, lock: true });
     } else {
@@ -980,7 +983,7 @@ const Header = () => {
   };
 
   const handleTVClick = (e) => {
-    if (!isAdmin) {
+    if (!user || !isAdmin) {
       e.preventDefault();
       setHoverState({ ...hoverState, tv: true });
     } else {
@@ -1078,24 +1081,22 @@ const Header = () => {
             )}
           </Link>
 
-          {user && (
-            <Link
-              onClick={handleTVClick}
-              _hover={{
-                color: isAdmin ? "teal.500" : "red.500",
-                transform: "scale(1.2)",
-                cursor: isAdmin ? "pointer" : "not-allowed",
-              }}
-              onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
-              onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
-            >
-              {hoverState.tv && !isAdmin ? (
-                <FaLock size={20} color="#F56565" />
-              ) : (
-                <PiTelevisionSimpleBold size={20} />
-              )}
-            </Link>
-          )}
+          <Link
+            onClick={handleTVClick}
+            _hover={{
+              color: isAdmin ? "teal.500" : "red.500",
+              transform: "scale(1.2)",
+              cursor: isAdmin ? "pointer" : "not-allowed",
+            }}
+            onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
+            onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
+          >
+            {hoverState.tv && !isAdmin ? (
+              <FaLock size={20} color="#F56565" />
+            ) : (
+              <PiTelevisionSimpleBold size={20} />
+            )}
+          </Link>
 
           <Link
             as={RouterLink}
