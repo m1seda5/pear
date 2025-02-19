@@ -94,13 +94,13 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
       showToast("Error", "Please add at least one member", "error");
       return;
     }
-
+  
     const groupName = document.getElementById("groupName").value;
     if (!groupName.trim()) {
       showToast("Error", "Please enter a group name", "error");
       return;
     }
-
+  
     setLoading(true);
     try {
       // Check if group already exists
@@ -110,7 +110,8 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
         setLoading(false);
         return;
       }
-
+  
+      // Fix: Use the correct API endpoint path that matches your router config
       const res = await fetch("/api/messages/groups/create", {
         method: "POST",
         headers: {
@@ -122,10 +123,19 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
           groupName: groupName,
         }),
       });
-
-      const data = await res.json();
+  
+      // Safely handle response parsing
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("Failed to parse response:", text.substring(0, 100));
+        throw new Error("Server returned invalid JSON response");
+      }
+  
       if (!res.ok) throw new Error(data.error || "Failed to create group");
-
+  
       onGroupCreated(data);
       onClose();
     } catch (error) {
@@ -134,7 +144,6 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
       setLoading(false);
     }
   };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
