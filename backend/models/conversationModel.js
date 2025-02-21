@@ -2,52 +2,33 @@ import mongoose from "mongoose";
 
 const conversationSchema = new mongoose.Schema(
   {
-    participants: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-    ],
+    participants: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    }],
     isGroup: {
       type: Boolean,
       default: false,
     },
-    groupName: String,
+    groupName: {
+      type: String,
+      required: function() {
+        return this.isGroup === true;
+      }
+    },
     groupAdmin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: function() {
+        return this.isGroup === true;
+      }
     },
     groupMembersLimit: {
       type: Number,
       default: 30,
       max: 100,
     },
-    auditLog: [
-      {
-        action: {
-          type: String,
-          enum: [
-            "CREATE",
-            "UPDATE",
-            "ADD_MEMBER",
-            "REMOVE_MEMBER",
-            "CHANGE_ADMIN",
-          ],
-          required: true,
-        },
-        performedBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        details: mongoose.Schema.Types.Mixed,
-        timestamp: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ], // Absolute maximum for safety
     lastMessage: {
       text: String,
       sender: {
@@ -57,15 +38,27 @@ const conversationSchema = new mongoose.Schema(
       seen: {
         type: Boolean,
         default: false,
-      },
+      }
     },
     monitored: {
       type: Boolean,
       default: false,
-    },
+    }
   },
   { timestamps: true }
 );
+
+// Add a pre-save middleware to validate participants
+conversationSchema.pre('save', function(next) {
+  if (this.isGroup && this.participants.length < 2) {
+    next(new Error('Group conversations must have at least 2 participants'));
+  } else if (!this.isGroup && this.participants.length !== 2) {
+    next(new Error('Direct conversations must have exactly 2 participants'));
+  } else {
+    next();
+  }
+});
+
 const Conversation = mongoose.model("Conversation", conversationSchema);
 
 export default Conversation;

@@ -12,65 +12,77 @@ dotenv.config();
 const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
  // Adjust number as needed
 
-async function sendMessage(req, res) {
-   try {
-       const { recipientId, message } = req.body;
-       let { img } = req.body;
-       const senderId = req.user._id;
+ async function sendMessage(req, res) {
+  try {
+    const { conversationId, message } = req.body;
+    const senderId = req.user._id;
 
+    // Find the conversation and validate participant
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
 
-       let conversation = await Conversation.findOne({
-           participants: { $all: [senderId, recipientId] },
-       });
+    // Verify sender is a participant
+    if (!conversation.participants.includes(senderId)) {
+      return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+    }
 
+    const newMessage = new Message({
+      conversationId: conversation._id,
+      sender: senderId,
+      text: message,
+    });
 
-       if (!conversation) {
-           conversation = new Conversation({
-               participants: [senderId, recipientId],
-               lastMessage: {
-                   text: message,
-                   sender: senderId,
-               },
-           });
-           await conversation.save();
-       }
+    await Promise.all([
+      newMessage.save(),
+      conversation.updateOne({
+        lastMessage: {
+          text: message,
+          sender: senderId,
+        },
+      }),
+    ]);
 
+    // For group chats, emit to all participants except sender
+    if (conversation.isGroup) {
+      conversation.participants.forEach((participantId) => {
+        if (participantId.toString() !== senderId.toString()) {
+          const recipientSocketId = getRecipientSocketId(participantId.toString());
+          if (recipientSocketId) {
+            io.to(recipientSocketId).emit("newMessage", {
+              message: newMessage,
+              conversation: {
+                _id: conversation._id,
+                isGroup: true,
+                groupName: conversation.groupName,
+              },
+            });
+          }
+        }
+      });
+    } else {
+      // For direct messages, emit to the other participant
+      const recipientId = conversation.participants.find(
+        (p) => p.toString() !== senderId.toString()
+      );
+      const recipientSocketId = getRecipientSocketId(recipientId.toString());
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("newMessage", {
+          message: newMessage,
+          conversation: {
+            _id: conversation._id,
+            isGroup: false,
+          },
+        });
+      }
+    }
 
-       if (img) {
-           const uploadedResponse = await cloudinary.uploader.upload(img);
-           img = uploadedResponse.secure_url;
-       }
-
-
-       const newMessage = new Message({
-           conversationId: conversation._id,
-           sender: senderId,
-           text: message,
-           img: img || "",
-       });
-
-
-       await Promise.all([
-           newMessage.save(),
-           conversation.updateOne({
-               lastMessage: {
-                   text: message,
-                   sender: senderId,
-               },
-           }),
-       ]);
-
-
-       const recipientSocketId = getRecipientSocketId(recipientId);
-       if (recipientSocketId) {
-           io.to(recipientSocketId).emit("newMessage", newMessage);
-       }
-
-
-       res.status(201).json(newMessage);
-   } catch (error) {
-       res.status(500).json({ error: error.message });
-   }
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error("Error sending message:", error);
+    res.status(500).json({ error: error.message });
+  }
 }
 // End of sendMessage function
 
