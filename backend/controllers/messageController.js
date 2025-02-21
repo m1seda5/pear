@@ -6,24 +6,19 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// this is is just a comment to see if anything is actually being affected and if im pushing changes as a head master thats all 
-// Start of sendMessage function
-// Add at the top of messageController.js
 const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
- // Adjust number as needed
 
- async function sendMessage(req, res) {
+async function sendMessage(req, res) {
   try {
     const { conversationId, message } = req.body;
     const senderId = req.user._id;
 
-    // Find the conversation and validate participant
-    const conversation = await Conversation.findById(conversationId);
+    // Populate participants to ensure validity
+    const conversation = await Conversation.findById(conversationId).populate('participants');
     if (!conversation) {
       return res.status(404).json({ error: "Conversation not found" });
     }
 
-    // Verify sender is a participant
     if (!conversation.participants.includes(senderId)) {
       return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
     }
@@ -44,7 +39,6 @@ const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
       }),
     ]);
 
-    // For group chats, emit to all participants except sender
     if (conversation.isGroup) {
       conversation.participants.forEach((participantId) => {
         if (participantId.toString() !== senderId.toString()) {
@@ -62,7 +56,6 @@ const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
         }
       });
     } else {
-      // For direct messages, emit to the other participant
       const recipientId = conversation.participants.find(
         (p) => p.toString() !== senderId.toString()
       );
@@ -84,10 +77,7 @@ const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
     res.status(500).json({ error: error.message });
   }
 }
-// End of sendMessage function
 
-
-// Start of getMessages function
 async function getMessages(req, res) {
    const { otherUserId } = req.params;
    const userId = req.user._id;
@@ -96,26 +86,20 @@ async function getMessages(req, res) {
            participants: { $all: [userId, otherUserId] },
        });
 
-
        if (!conversation) {
            return res.status(404).json({ error: "Conversation not found" });
        }
 
-
        const messages = await Message.find({
            conversationId: conversation._id,
        }).sort({ createdAt: 1 });
-
 
        res.status(200).json(messages);
    } catch (error) {
        res.status(500).json({ error: error.message });
    }
 }
-// End of getMessages function
 
-
-// Start of getConversations function
 async function getConversations(req, res) {
   const userId = req.user._id;
   try {
@@ -127,7 +111,6 @@ async function getConversations(req, res) {
           .populate("lastMessage.sender", "username")
           .sort({ updatedAt: -1 });
 
-      // For non-group conversations, filter out current user
       conversations.forEach((conversation) => {
           if (!conversation.isGroup) {
               conversation.participants = conversation.participants.filter(
@@ -136,7 +119,6 @@ async function getConversations(req, res) {
           }
       });
 
-      // Remove duplicates based on conversation._id
       const uniqueConversations = Array.from(new Map(
           conversations.map(conv => [conv._id.toString(), conv])
       ).values());
@@ -146,30 +128,20 @@ async function getConversations(req, res) {
       res.status(500).json({ error: error.message });
   }
 }
-// End of getConversations function
 
-
-// Start of deleteMessage function
 async function deleteMessage(req, res) {
    try {
        const { messageId } = req.params;
        const userId = req.user._id;
 
-
        const message = await Message.findById(messageId);
 
-
-       // Check if the message exists and if the user is the sender
        if (!message || message.sender.toString() !== userId.toString()) {
            return res.status(403).json({ error: "You can only delete your own messages" });
        }
 
-
-       // Delete the message
        await message.deleteOne();
 
-
-       // Optionally, you can update the conversation's last message if the deleted message was the last one
        const conversation = await Conversation.findById(message.conversationId);
        if (conversation && conversation.lastMessage && conversation.lastMessage.text === message.text) {
            const lastMessage = await Message.findOne({ conversationId: message.conversationId }).sort({ createdAt: -1 });
@@ -184,14 +156,12 @@ async function deleteMessage(req, res) {
            await conversation.save();
        }
 
-
        res.status(200).json({ message: "Message deleted successfully" });
    } catch (error) {
        res.status(500).json({ error: error.message });
    }
 }
-// End of deleteMessage function
-// Add new controller functions
+
 async function getAllConversations(req, res) {
     try {
       const conversations = await Conversation.find()
@@ -211,12 +181,11 @@ async function getAllConversations(req, res) {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  }
-  
-  async function sendMonitoringNotification(req, res) {
+}
+
+async function sendMonitoringNotification(req, res) {
     const { conversationId } = req.params;
     try {
-      // Verify admin role
       if (req.user.role !== 'admin') {
         return res.status(403).json({ error: "Only admins can send monitoring notifications" });
       }
@@ -237,7 +206,6 @@ async function getAllConversations(req, res) {
         }
       });
   
-      // Send email to all participants
       const emailPromises = conversation.participants.map(async (participant) => {
         const mailOptions = {
           from: "pearnet104@gmail.com",
@@ -249,7 +217,6 @@ async function getAllConversations(req, res) {
         return transporter.sendMail(mailOptions);
       });
   
-      // Send socket notifications to online participants
       conversation.participants.forEach(participant => {
         const recipientSocketId = getRecipientSocketId(participant._id.toString());
         if (recipientSocketId) {
@@ -267,10 +234,91 @@ async function getAllConversations(req, res) {
       console.error("Error sending monitoring notification:", error);
       res.status(500).json({ error: error.message });
     }
+}
+
+async function createGroupChat(req, res) {
+  try {
+    const { participants, groupName } = req.body;
+    const adminId = req.user._id;
+
+    // Validate participants array
+    if (!Array.isArray(participants) || participants.length === 0) {
+      return res.status(400).json({ error: "Invalid participants" });
+    }
+
+    if (participants.length + 1 > MAX_GROUP_MEMBERS) {
+      return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
+    }
+
+    const groupChat = new Conversation({
+      participants: [adminId, ...participants],
+      isGroup: true,
+      groupName,
+      groupAdmin: adminId,
+      lastMessage: {
+        text: `${req.user.username} created the group`,
+        sender: adminId,
+        seen: false
+      }
+    });
+
+    await groupChat.save();
+    
+    await groupChat.populate({
+      path: 'participants',
+      select: 'username profilePic email',
+      transform: (doc) => doc || null
+    });
+    
+    const transporter = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com",
+      port: 587,
+      auth: {
+        user: "81d810001@smtp-brevo.com",
+        pass: "6IBdE9hsKrHUxD4G"
+      }
+    });
+
+    const emailPromises = groupChat.participants.map(async (participant) => {
+      if (participant._id.toString() !== adminId.toString()) {
+        const mailOptions = {
+          from: "pearnet104@gmail.com",
+          to: participant.email,
+          subject: "New Group Chat Invitation",
+          text: `You have been added to the group "${groupName}" by ${req.user.username}.`
+        };
+        
+        return transporter.sendMail(mailOptions);
+      }
+    });
+
+    groupChat.participants.forEach(participant => {
+      if (participant._id.toString() !== adminId.toString()) {
+        const recipientSocketId = getRecipientSocketId(participant._id.toString());
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("newGroup", {
+            message: `You have been added to ${groupName}`,
+            groupChat
+          });
+        }
+      }
+    });
+
+    await Promise.all(emailPromises.filter(Boolean));
+    
+    res.status(201).json({
+      ...groupChat.toJSON(),
+      participants: groupChat.participants.map(p => ({
+        _id: p._id,
+        username: p.username,
+        profilePic: p.profilePic,
+        email: p.email
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-  // Configurable constant at top of file
-
-
+}
 
 async function addToGroup(req, res) {
   try {
@@ -293,6 +341,7 @@ async function addToGroup(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
 async function removeFromGroup(req, res) {
   try {
     const { conversationId } = req.params;
@@ -313,14 +362,17 @@ async function removeFromGroup(req, res) {
       return res.status(403).json({ error: "Admin cannot be removed" });
     }
 
-    // Remove the user from participants
     conversation.participants = conversation.participants.filter(
       p => p.toString() !== userId.toString()
     );
 
+    // Check minimum participants after removal
+    if (conversation.participants.length < 2) {
+      return res.status(400).json({ error: "Group must have at least 2 members" });
+    }
+
     await conversation.save();
     
-    // Optionally notify the removed user
     const recipientSocketId = getRecipientSocketId(userId);
     if (recipientSocketId) {
       io.to(recipientSocketId).emit("removedFromGroup", {
@@ -354,7 +406,6 @@ async function updateGroup(req, res) {
     conversation.groupName = groupName;
     await conversation.save();
 
-    // Notify all participants about the group update
     conversation.participants.forEach(participantId => {
       const recipientSocketId = getRecipientSocketId(participantId.toString());
       if (recipientSocketId) {
@@ -371,97 +422,6 @@ async function updateGroup(req, res) {
   }
 }
 
-async function createGroupChat(req, res) {
-  try {
-    const { participants, groupName } = req.body;
-    const adminId = req.user._id;
-
-    // Validate participants array
-    if (!Array.isArray(participants) || participants.length === 0) {
-      return res.status(400).json({ error: "Invalid participants" });
-    }
-
-    if (participants.length + 1 > MAX_GROUP_MEMBERS) {
-      return res.status(400).json({ error: `Maximum ${MAX_GROUP_MEMBERS} members allowed` });
-    }
-
-    const groupChat = new Conversation({
-      participants: [adminId, ...participants],
-      isGroup: true,
-      groupName,
-      groupAdmin: adminId,
-      lastMessage: {
-        text: `${req.user.username} created the group`,
-        sender: adminId,
-        seen: false
-      }
-    });
-
-    await groupChat.save();
-    
-    // Ensure proper population of participants
-   // Update createGroupChat controller to ensure participants array
-await groupChat.populate({
-  path: 'participants',
-  select: 'username profilePic email',
-  transform: (doc) => doc || null // Handle potential nulls
-});
-    
-    // Direct email notification implementation
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      auth: {
-        user: "81d810001@smtp-brevo.com",
-        pass: "6IBdE9hsKrHUxD4G"
-      }
-    });
-
-    // Send email notifications to all participants
-    const emailPromises = groupChat.participants.map(async (participant) => {
-      if (participant._id.toString() !== adminId.toString()) {
-        const mailOptions = {
-          from: "pearnet104@gmail.com",
-          to: participant.email,
-          subject: "New Group Chat Invitation",
-          text: `You have been added to the group "${groupName}" by ${req.user.username}.`
-        };
-        
-        return transporter.sendMail(mailOptions);
-      }
-    });
-
-    // Send socket notifications to online participants
-    groupChat.participants.forEach(participant => {
-      if (participant._id.toString() !== adminId.toString()) {
-        const recipientSocketId = getRecipientSocketId(participant._id.toString());
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit("newGroup", {
-            message: `You have been added to ${groupName}`,
-            groupChat
-          });
-        }
-      }
-    });
-
-    // Wait for all email notifications to be sent
-    await Promise.all(emailPromises.filter(Boolean));
-    
-    // Return fully populated group data with mapped participants
-    res.status(201).json({
-      ...groupChat.toJSON(),
-      participants: groupChat.participants.map(p => ({
-        _id: p._id,
-        username: p.username,
-        profilePic: p.profilePic,
-        email: p.email
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
-// In messageController.js - Improve getGroupMessages
 async function getGroupMessages(req, res) {
   try {
     const messages = await Message.find({ conversationId: req.params.groupId })
@@ -473,7 +433,7 @@ async function getGroupMessages(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
-// In messageController.js
+
 async function checkExistingGroup(req, res) {
   try {
     const group = await Conversation.findOne({
@@ -486,7 +446,17 @@ async function checkExistingGroup(req, res) {
   }
 }
 
-
-
-
-export { sendMessage, getMessages, getConversations, deleteMessage, getAllConversations, sendMonitoringNotification, createGroupChat, addToGroup, updateGroup, removeFromGroup, getGroupMessages, checkExistingGroup,  };
+export {
+  sendMessage,
+  getMessages,
+  getConversations,
+  deleteMessage,
+  getAllConversations,
+  sendMonitoringNotification,
+  createGroupChat,
+  addToGroup,
+  updateGroup,
+  removeFromGroup,
+  getGroupMessages,
+  checkExistingGroup,
+};
