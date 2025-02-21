@@ -34,13 +34,24 @@ async function sendMessage(req, res) {
     } 
     // Handle group chat (new behavior)
     else if (conversationId) {
-      conversation = await Conversation.findById(conversationId).populate('participants');
+      // First fetch without populating to check membership
+      conversation = await Conversation.findById(conversationId);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      if (!conversation.participants.includes(senderId)) {
+      // Check if user is a participant using string comparison of IDs
+      const isParticipant = conversation.participants.some(
+        participantId => participantId.toString() === senderId.toString()
+      );
+
+      if (!isParticipant) {
         return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+      }
+      
+      // Now populate if needed for later operations
+      if (conversation.isGroup) {
+        await conversation.populate('participants');
       }
     }
     else {
@@ -73,9 +84,15 @@ async function sendMessage(req, res) {
 
     // Handle socket notifications
     if (conversation.isGroup) {
-      conversation.participants.forEach((participantId) => {
-        if (participantId.toString() !== senderId.toString()) {
-          const recipientSocketId = getRecipientSocketId(participantId.toString());
+      // Make sure we have the populated participants
+      const participants = Array.isArray(conversation.participants[0]) 
+        ? conversation.participants 
+        : conversation.participants.map(p => typeof p === 'object' ? p._id : p);
+      
+      participants.forEach((participantId) => {
+        const participantIdStr = participantId.toString();
+        if (participantIdStr !== senderId.toString()) {
+          const recipientSocketId = getRecipientSocketId(participantIdStr);
           if (recipientSocketId) {
             io.to(recipientSocketId).emit("newMessage", {
               message: newMessage,
@@ -104,7 +121,6 @@ async function sendMessage(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
-
 async function getMessages(req, res) {
    const { otherUserId } = req.params;
    const userId = req.user._id;

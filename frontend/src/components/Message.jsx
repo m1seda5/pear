@@ -432,69 +432,75 @@ const Message = ({ ownMessage, message, onDelete }) => {
           <Avatar src={user.profilePic} w="7" h={7} />
         </Flex>
       ) : (
-        <Flex gap={2} position="relative" flexDirection="column">
-          {!ownMessage && message.conversation?.isGroup && (
-            <Text fontSize="xs" color="gray.500" mb={1}>
+        <Flex gap={2} position="relative">
+          {!ownMessage && selectedConversation.isGroup && (
+            <Text 
+              fontSize="xs" 
+              color="gray.500" 
+              position="absolute"
+              top="-15px"
+              left="0"
+              fontWeight={"semibold"}
+            >
               {message.sender.username}
             </Text>
           )}
-          <Flex gap={2}>
-            <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
-            {message.text && (
-              <Flex
-                position="relative"
-                maxW={"350px"}
-                bg={"gray.400"}
-                p={1}
-                borderRadius={"md"}
-              >
-                <IconButton
-                  icon={<CloseIcon />}
-                  size="2xs"
-                  fontSize="6px"
-                  variant="ghost"
-                  colorScheme="whiteAlpha"
-                  position="absolute"
-                  top="-2px"
-                  right="-2px"
-                  onClick={() => onDelete(message._id)}
-                  borderRadius="full"
-                  aria-label={t("Delete message")}
-                />
-                <Text color={"black"}>{message.text}</Text>
-              </Flex>
-            )}
-            {message.img && !imgLoaded && (
-              <Flex mt={5} w={"200px"}>
-                <Image
-                  src={message.img}
-                  hidden
-                  onLoad={() => setImgLoaded(true)}
-                  alt={t("Message image")}
-                  borderRadius={4}
-                />
-                <Skeleton w={"200px"} h={"200px"} />
-              </Flex>
-            )}
-            {message.img && imgLoaded && (
-              <Flex mt={5} w={"200px"} position="relative">
-                <Image src={message.img} alt={t("Message image")} borderRadius={4} />
-                <IconButton
-                  icon={<CloseIcon />}
-                  size="2xs"
-                  fontSize="6px"
-                  variant="ghost"
-                  colorScheme="whiteAlpha"
-                  position="absolute"
-                  top="-2px"
-                  right="-2px"
-                  onClick={() => onDelete(message._id)}
-                  borderRadius="full"
-                  aria-label={t("Delete message")}
-                />
-              </Flex>
-            )}
-          </Flex>
+          <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
+          {message.text && (
+            <Flex
+              position="relative"
+              maxW={"350px"}
+              bg={selectedConversation.isGroup ? "gray.100" : "gray.400"}
+              p={1}
+              borderRadius={"md"}
+              mt={selectedConversation.isGroup ? 6 : 0} // Add space for username
+            >
+              <IconButton
+                icon={<CloseIcon />}
+                size="2xs"
+                fontSize="6px"
+                variant="ghost"
+                colorScheme="whiteAlpha"
+                position="absolute"
+                top="-2px"
+                right="-2px"
+                onClick={() => onDelete(message._id)}
+                borderRadius="full"
+                aria-label={t("Delete message")}
+              />
+              <Text color={"black"}>{message.text}</Text>
+            </Flex>
+          )}
+          {message.img && !imgLoaded && (
+            <Flex mt={5} w={"200px"}>
+              <Image
+                src={message.img}
+                hidden
+                onLoad={() => setImgLoaded(true)}
+                alt={t("Message image")}
+                borderRadius={4}
+              />
+              <Skeleton w={"200px"} h={"200px"} />
+            </Flex>
+          )}
+          {message.img && imgLoaded && (
+            <Flex mt={5} w={"200px"} position="relative">
+              <Image src={message.img} alt={t("Message image")} borderRadius={4} />
+              <IconButton
+                icon={<CloseIcon />}
+                size="2xs"
+                fontSize="6px"
+                variant="ghost"
+                colorScheme="whiteAlpha"
+                position="absolute"
+                top="-2px"
+                right="-2px"
+                onClick={() => onDelete(message._id)}
+                borderRadius="full"
+                aria-label={t("Delete message")}
+              />
+            </Flex>
+          )}
         </Flex>
       )}
     </>
@@ -502,4 +508,3 @@ const Message = ({ ownMessage, message, onDelete }) => {
 };
 
 export default Message;
-
