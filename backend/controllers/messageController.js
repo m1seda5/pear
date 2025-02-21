@@ -484,9 +484,12 @@ async function updateGroup(req, res) {
 
 async function getGroupMessages(req, res) {
   try {
-    const messages = await Message.find({ conversationId: req.params.groupId })
-      .sort({ createdAt: 1 })
-      .populate('sender', 'username profilePic');
+    const messages = await Message.find({ 
+      conversationId: req.params.groupId 
+    })
+    .sort({ createdAt: 1 })
+    .populate('sender', 'username profilePic');
+    
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -506,6 +509,8 @@ async function checkExistingGroup(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
+
 
 export {
   sendMessage,
