@@ -10,23 +10,55 @@ const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
 
 async function sendMessage(req, res) {
   try {
-    const { conversationId, message } = req.body;
+    const { conversationId, recipientId, message } = req.body;
     const senderId = req.user._id;
+    let conversation;
 
-    // Populate participants to ensure validity
-    const conversation = await Conversation.findById(conversationId).populate('participants');
-    if (!conversation) {
-      return res.status(404).json({ error: "Conversation not found" });
+    // Handle one-on-one chat (old behavior)
+    if (recipientId && !conversationId) {
+      conversation = await Conversation.findOne({
+        participants: { $all: [senderId, recipientId] },
+      });
+      
+      // Create conversation if it doesn't exist (for direct messages)
+      if (!conversation) {
+        conversation = new Conversation({
+          participants: [senderId, recipientId],
+          lastMessage: {
+            text: message,
+            sender: senderId,
+          },
+        });
+        await conversation.save();
+      }
+    } 
+    // Handle group chat (new behavior)
+    else if (conversationId) {
+      conversation = await Conversation.findById(conversationId).populate('participants');
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (!conversation.participants.includes(senderId)) {
+        return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+      }
+    }
+    else {
+      return res.status(400).json({ error: "Invalid request - either conversationId or recipientId is required" });
     }
 
-    if (!conversation.participants.includes(senderId)) {
-      return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+    // Process image if provided
+    let img = req.body.img;
+    if (img) {
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      img = uploadedResponse.secure_url;
     }
 
     const newMessage = new Message({
       conversationId: conversation._id,
       sender: senderId,
       text: message,
+      img: img || "",
     });
 
     await Promise.all([
@@ -39,6 +71,7 @@ async function sendMessage(req, res) {
       }),
     ]);
 
+    // Handle socket notifications
     if (conversation.isGroup) {
       conversation.participants.forEach((participantId) => {
         if (participantId.toString() !== senderId.toString()) {
@@ -56,18 +89,12 @@ async function sendMessage(req, res) {
         }
       });
     } else {
-      const recipientId = conversation.participants.find(
+      const recipient = recipientId || conversation.participants.find(
         (p) => p.toString() !== senderId.toString()
       );
-      const recipientSocketId = getRecipientSocketId(recipientId.toString());
+      const recipientSocketId = getRecipientSocketId(recipient.toString());
       if (recipientSocketId) {
-        io.to(recipientSocketId).emit("newMessage", {
-          message: newMessage,
-          conversation: {
-            _id: conversation._id,
-            isGroup: false,
-          },
-        });
+        io.to(recipientSocketId).emit("newMessage", newMessage);
       }
     }
 

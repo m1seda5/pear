@@ -36,52 +36,70 @@ const MessageInput = ({ setMessages }) => {
 		e.preventDefault();
 		if (!messageText && !imgUrl) return;
 		if (isSending) return;
-
+	  
 		setIsSending(true);
-
+	  
 		try {
-			const res = await fetch("/api/messages", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					message: messageText,
-					recipientId: selectedConversation.userId,
-					img: imgUrl,
-				}),
+		  // Check if we're in a group chat or direct message
+		  const isGroupChat = selectedConversation.isGroup;
+		  
+		  // Prepare the request body based on message type
+		  let requestBody;
+		  if (isGroupChat) {
+			requestBody = {
+			  conversationId: selectedConversation._id,
+			  message: messageText,
+			  img: imgUrl
+			};
+		  } else {
+			requestBody = {
+			  recipientId: selectedConversation.userId,
+			  message: messageText,
+			  img: imgUrl
+			};
+		  }
+		  
+		  const res = await fetch("/api/messages", {
+			method: "POST",
+			headers: {
+			  "Content-Type": "application/json",
+			},
+			body: JSON.stringify(requestBody),
+		  });
+		  
+		  const data = await res.json();
+		  if (data.error) {
+			showToast("Error", data.error, "error");
+			return;
+		  }
+		  
+		  console.log(data);
+		  setMessages((messages) => [...messages, data]);
+	  
+		  setConversations((prevConvs) => {
+			const updatedConversations = prevConvs.map((conversation) => {
+			  if (conversation._id === selectedConversation._id) {
+				return {
+				  ...conversation,
+				  lastMessage: {
+					text: messageText,
+					sender: data.sender,
+				  },
+				};
+			  }
+			  return conversation;
 			});
-			const data = await res.json();
-			if (data.error) {
-				showToast("Error", data.error, "error");
-				return;
-			}
-			console.log(data);
-			setMessages((messages) => [...messages, data]);
-
-			setConversations((prevConvs) => {
-				const updatedConversations = prevConvs.map((conversation) => {
-					if (conversation._id === selectedConversation._id) {
-						return {
-							...conversation,
-							lastMessage: {
-								text: messageText,
-								sender: data.sender,
-							},
-						};
-					}
-					return conversation;
-				});
-				return updatedConversations;
-			});
-			setMessageText("");
-			setImgUrl("");
+			return updatedConversations;
+		  });
+		  
+		  setMessageText("");
+		  setImgUrl("");
 		} catch (error) {
-			showToast("Error", error.message, "error");
+		  showToast("Error", error.message, "error");
 		} finally {
-			setIsSending(false);
+		  setIsSending(false);
 		}
-	};
+	  };
 	return (
 		<Flex gap={2} alignItems={"center"}>
 			<form onSubmit={handleSendMessage} style={{ flex: 95 }}>
