@@ -776,6 +776,7 @@ const ChatPage = () => {
     if (!searchText.trim()) return;
     setSearchingUser(true);
     try {
+      // Fix: Update endpoint to match backend route
       const res = await fetch(`/api/users/search/${encodeURIComponent(searchText.toLowerCase())}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,

@@ -35,7 +35,7 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
 
   const checkExistingGroup = async (name) => {
     const res = await fetch(
-      `/api/groups/check?name=${encodeURIComponent(name)}`,
+      `/api/messages/groups/check?name=${encodeURIComponent(name)}`,
       {
         headers: {
           Authorization: `Bearer ${currentUser.token}`,
@@ -51,7 +51,8 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
     setSearchResults([]);
 
     try {
-      const res = await fetch(`/api/users/profile/${encodeURIComponent(searchInput.toLowerCase())}`, {
+      // Fix: Update to match the route in your backend
+      const res = await fetch(`/api/users/search/${encodeURIComponent(searchInput.toLowerCase())}`, {
         headers: {
           Authorization: `Bearer ${currentUser.token}`,
         },
@@ -111,7 +112,7 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
         return;
       }
   
-      // Fix: Use the correct API endpoint path that matches your router config
+      // Fix: Update API endpoint to match backend routes
       const res = await fetch("/api/messages/groups/create", {
         method: "POST",
         headers: {
