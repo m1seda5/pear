@@ -442,7 +442,7 @@ const Message = ({ ownMessage, message, onDelete }) => {
               left="0"
               fontWeight={"semibold"}
             >
-              {message.sender.username}
+              {message.sender?.username}
             </Text>
           )}
           <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />

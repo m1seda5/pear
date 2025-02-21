@@ -50,6 +50,12 @@ io.on("connection", (socket) => {
         });
     });
 
+    // New single group join handler
+    socket.on("joinGroup", (groupId) => {
+        socket.join(`group_${groupId}`);
+        console.log(`User joined group: group_${groupId}`);
+    });
+
     socket.on("groupUpdate", async (groupId) => {
         try {
             const updatedGroup = await Conversation.findById(groupId)
@@ -58,15 +64,6 @@ io.on("connection", (socket) => {
         } catch (error) {
             console.log(error);
         }
-    });
-
-    socket.on("groupMessage", (message) => {
-        // Ensure the message is sent to all members except sender
-        socket.to(`group_${message.conversationId}`).emit("newGroupMessage", {
-            ...message,
-            seen: false,
-            createdAt: new Date(),
-        });
     });
 
     // Disconnect handler

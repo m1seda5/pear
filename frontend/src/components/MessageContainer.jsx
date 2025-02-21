@@ -51,6 +51,11 @@ const MessageContainer = ({ isMonitoring }) => {
       showToast("Error", error.message, "error");
     }
   };
+  useEffect(() => {
+    if (selectedConversation.isGroup && selectedConversation._id) {
+      socket?.emit("joinGroup", selectedConversation._id);
+    }
+  }, [selectedConversation, socket]);
 
   useEffect(() => {
     const handleMessage = (message) => {
@@ -76,8 +81,9 @@ const MessageContainer = ({ isMonitoring }) => {
         });
       }
     };
+    
     socket?.on("newMessage", handleMessage);
-    socket?.on("newGroupMessage", handleMessage); // Single handler for both types
+    socket?.on("newGroupMessage", handleMessage); // Use the same handler
     
     return () => {
       socket?.off("newMessage", handleMessage);

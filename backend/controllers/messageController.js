@@ -82,6 +82,10 @@ async function sendMessage(req, res) {
       }),
     ]);
 
+    // After saving the newMessage, populate the sender
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate('sender', 'username profilePic');
+
     // Handle socket notifications
     if (conversation.isGroup) {
       // Make sure we have the populated participants
@@ -94,8 +98,8 @@ async function sendMessage(req, res) {
         if (participantIdStr !== senderId.toString()) {
           const recipientSocketId = getRecipientSocketId(participantIdStr);
           if (recipientSocketId) {
-            io.to(recipientSocketId).emit("newMessage", {
-              message: newMessage,
+            io.to(recipientSocketId).emit("newGroupMessage", {
+              message: populatedMessage,
               conversation: {
                 _id: conversation._id,
                 isGroup: true,
@@ -111,11 +115,11 @@ async function sendMessage(req, res) {
       );
       const recipientSocketId = getRecipientSocketId(recipient.toString());
       if (recipientSocketId) {
-        io.to(recipientSocketId).emit("newMessage", newMessage);
+        io.to(recipientSocketId).emit("newMessage", populatedMessage);
       }
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(populatedMessage);
   } catch (error) {
     console.error("Error sending message:", error);
     res.status(500).json({ error: error.message });
@@ -470,12 +474,13 @@ async function getGroupMessages(req, res) {
     const messages = await Message.find({ conversationId: req.params.groupId })
       .sort({ createdAt: 1 })
       .populate('sender', 'username profilePic');
-
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 }
+
+
 
 async function checkExistingGroup(req, res) {
   try {
