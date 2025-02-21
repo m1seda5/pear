@@ -10,30 +10,17 @@ const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
 
 async function sendMessage(req, res) {
   try {
-    const { conversationId, recipientId, message } = req.body;
+    const { conversationId, recipientId, message, img } = req.body;
     const senderId = req.user._id;
     let conversation;
 
-    // Handle one-on-one chat (old behavior)
-    if (recipientId && !conversationId) {
-      conversation = await Conversation.findOne({
-        participants: { $all: [senderId, recipientId] },
-      });
-      
-      // Create conversation if it doesn't exist (for direct messages)
-      if (!conversation) {
-        conversation = new Conversation({
-          participants: [senderId, recipientId],
-          lastMessage: {
-            text: message,
-            sender: senderId,
-          },
-        });
-        await conversation.save();
-      }
-    } 
-    // Handle group chat (new behavior)
-    else if (conversationId) {
+    // Input validation
+    if (!message && !img) {
+      return res.status(400).json({ error: "Message or image is required" });
+    }
+
+    // Handle group chat message
+    if (conversationId) {
       // First fetch without populating to check membership
       conversation = await Conversation.findById(conversationId);
       if (!conversation) {
@@ -53,23 +40,48 @@ async function sendMessage(req, res) {
       if (conversation.isGroup) {
         await conversation.populate('participants');
       }
-    }
+    } 
+    // Handle direct message
+    else if (recipientId) {
+      conversation = await Conversation.findOne({
+        participants: { $all: [senderId, recipientId] },
+        isGroup: { $ne: true }  // Ensure it's not a group conversation
+      });
+      
+      // Create new conversation for direct messages if it doesn't exist
+      if (!conversation) {
+        conversation = new Conversation({
+          participants: [senderId, recipientId],
+          lastMessage: {
+            text: message,
+            sender: senderId,
+          },
+        });
+        await conversation.save();
+      }
+    } 
     else {
       return res.status(400).json({ error: "Invalid request - either conversationId or recipientId is required" });
     }
 
     // Process image if provided
-    let img = req.body.img;
+    let imageUrl = "";
     if (img) {
-      const uploadedResponse = await cloudinary.uploader.upload(img);
-      img = uploadedResponse.secure_url;
+      try {
+        const uploadedResponse = await cloudinary.uploader.upload(img);
+        imageUrl = uploadedResponse.secure_url;
+      } catch (error) {
+        console.error("Image upload error:", error);
+        return res.status(400).json({ error: "Failed to upload image" });
+      }
     }
 
+    // Create and save the new message
     const newMessage = new Message({
       conversationId: conversation._id,
       sender: senderId,
       text: message,
-      img: img || "",
+      img: imageUrl,
     });
 
     await Promise.all([
@@ -82,21 +94,21 @@ async function sendMessage(req, res) {
       }),
     ]);
 
-    // After saving the newMessage, populate the sender
+    // Populate sender details for the response
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender', 'username profilePic');
 
     // Handle socket notifications
     if (conversation.isGroup) {
-      // Make sure we have the populated participants
-      const participants = Array.isArray(conversation.participants[0]) 
-        ? conversation.participants 
-        : conversation.participants.map(p => typeof p === 'object' ? p._id : p);
+      // Ensure we have populated participants
+      const participants = conversation.participants.map(p => 
+        typeof p === 'object' ? p._id.toString() : p.toString()
+      );
       
+      // Emit to all participants except sender
       participants.forEach((participantId) => {
-        const participantIdStr = participantId.toString();
-        if (participantIdStr !== senderId.toString()) {
-          const recipientSocketId = getRecipientSocketId(participantIdStr);
+        if (participantId !== senderId.toString()) {
+          const recipientSocketId = getRecipientSocketId(participantId);
           if (recipientSocketId) {
             io.to(recipientSocketId).emit("newGroupMessage", {
               message: populatedMessage,
@@ -110,6 +122,7 @@ async function sendMessage(req, res) {
         }
       });
     } else {
+      // Handle direct message socket notification
       const recipient = recipientId || conversation.participants.find(
         (p) => p.toString() !== senderId.toString()
       );
@@ -121,7 +134,7 @@ async function sendMessage(req, res) {
 
     res.status(201).json(populatedMessage);
   } catch (error) {
-    console.error("Error sending message:", error);
+    console.error("Error in sendMessage:", error);
     res.status(500).json({ error: error.message });
   }
 }

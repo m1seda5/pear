@@ -130,26 +130,30 @@ const MessageContainer = ({ isMonitoring }) => {
       setMessages([]);
       try {
         if (selectedConversation.mock) return;
-
-        // Correct endpoint for group messages
+    
+        // Update the endpoint to match your backend route
         const endpoint = selectedConversation.isGroup 
-          ? `/api/messages/groups/${selectedConversation._id}/messages`
+          ? `/api/messages/groups/${selectedConversation._id}/messages`  // This matches your backend route
           : `/api/messages/${selectedConversation.userId}`;
-
+    
         const res = await fetch(endpoint, {
-          headers: { 'Authorization': `Bearer ${currentUser.token}` },
+          headers: { 
+            'Authorization': `Bearer ${currentUser.token}` 
+          },
         });
         
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch messages");
-
+    
         setMessages(data);
       } catch (error) {
         showToast("Error", error.message, "error");
+        console.error("Error fetching messages:", error); // Add error logging
       } finally {
         setLoadingMessages(false);
       }
     };
+    
 
     if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
