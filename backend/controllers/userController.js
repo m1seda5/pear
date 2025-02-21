@@ -2033,6 +2033,35 @@ const deleteUserData = async (userId) => {
     throw error;
   }
 };
+const searchUsers = async (req, res) => {
+  try {
+      const { query } = req.params;
+      
+      // Find user by username or email
+      const user = await User.findOne({
+          $or: [
+              { username: { $regex: query, $options: "i" } },
+              { email: { $regex: query, $options: "i" } }
+          ]
+      });
+
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return user without sensitive information
+      const userToReturn = {
+          _id: user._id,
+          username: user.username,
+          profilePic: user.profilePic,
+          // Add any other fields you need
+      };
+
+      res.status(200).json(userToReturn);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
 export {
   signupUser,
   validateEmail,
@@ -2048,5 +2077,6 @@ export {
   freezeAccount,
   adminFreezeUser,
   adminDeleteUser,
-  deleteUserData, // Exporting the new function
+  deleteUserData,
+  searchUsers, // Exporting the new function
 };

@@ -66,15 +66,19 @@ import {
     getSuggestedUsers,
     freezeAccount,
     verifyOTP,
-    adminFreezeUser,  // NEW IMPORT
-    adminDeleteUser   // NEW IMPORT
+    adminFreezeUser,
+    adminDeleteUser,
+    searchUsers // Add this new import
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
-import adminMiddleware from "../middlewares/adminMiddleware.js"; // NEW IMPORT
+import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
-// Admin routes (NEW SECTION)
+// Add the search route
+router.get("/search/:query", protectRoute, searchUsers);
+
+// Admin routes
 router.post("/admin/freeze-user", protectRoute, adminMiddleware, adminFreezeUser);
 router.delete("/admin/delete-user", protectRoute, adminMiddleware, adminDeleteUser);
 
