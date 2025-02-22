@@ -1,80 +1,96 @@
-/* Icon container hover effect */
-.icon-container {
+/* Chat container variables and styles */
+.chat-container {
+	--chat-spacing: 8px;
+	--bubble-radius: 12px;
+	--avatar-size: 28px;
+  }
+  
+  /* Message bubble hover effect */
+  .message-bubble {
+	transition: transform 0.1s ease-in-out;
+  }
+  
+  .message-bubble:hover {
+	transform: translateY(-1px);
+  }
+  
+  /* Icon container hover effect */
+  .icon-container {
 	border-radius: 50%;
 	padding: 8px;
 	width: 40px;
 	height: 40px;
 	transition: background-color 0.3s ease-in-out;
-}
-
-.icon-container:hover {
+  }
+  
+  .icon-container:hover {
 	background-color: #1e1e1e;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
 	width: 7px;
-}
-
-::-webkit-scrollbar-track {
+  }
+  
+  ::-webkit-scrollbar-track {
 	background-color: #1e1e1e;
-}
-
-::-webkit-scrollbar-thumb {
+  }
+  
+  ::-webkit-scrollbar-thumb {
 	background-color: #888;
-}
-
-::-webkit-scrollbar-thumb:hover {
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
 	background-color: #555;
-}
-
-/* Popout and rotation hover effect for posts */
-@keyframes subtleColorChange {
+  }
+  
+  /* Post container animations and effects */
+  @keyframes subtleColorChange {
 	0% {
-		background-color: #ffffff; /* Light mode */
+	  background-color: #ffffff; /* Light mode */
 	}
 	100% {
-		background-color: #E6F7EB; /* Subtle green shade */
+	  background-color: #E6F7EB; /* Subtle green shade */
 	}
-}
-
-/* Hover effect for the post container */
-.postContainer {
+  }
+  
+  /* Hover effect for the post container */
+  .postContainer {
 	transition: all 0.3s ease-in-out;
 	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Initial shadow */
 	transform: rotate(0deg); /* Ensure initial rotation is 0 */
-}
-
-.postContainer:hover {
+  }
+  
+  .postContainer:hover {
 	transform: scale(1.05) rotate(3deg); /* Slight popout and rotation on hover */
 	box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15); /* Figma-inspired shadow on hover */
 	animation: subtleColorChange 0.5s ease-in-out forwards;
-}
-
-/* New to You text color change effect */
-@keyframes pulseEffect {
+  }
+  
+  /* New to You text animation */
+  @keyframes pulseEffect {
 	0% {
-		color: #FF6F61; /* Orangish-red for the 'N' */
+	  color: #FF6F61; /* Orangish-red for the 'N' */
 	}
 	20% {
-		color: #FF7043; /* Slightly lighter orangish-red */
+	  color: #FF7043; /* Slightly lighter orangish-red */
 	}
 	40% {
-		color: #FF8A65;
+	  color: #FF8A65;
 	}
 	60% {
-		color: #FFAB91;
+	  color: #FFAB91;
 	}
 	80% {
-		color: #FF7043;
+	  color: #FF7043;
 	}
 	100% {
-		color: #FF6F61; /* Back to the original color */
+	  color: #FF6F61; /* Back to the original color */
 	}
-}
-
-.newToYouText {
+  }
+  
+  .newToYouText {
 	display: inline-block;
 	animation: pulseEffect 2s ease-in-out infinite;
 	text-shadow: 0 0 5px rgba(255, 112, 67, 0.2), 0 0 10px rgba(255, 112, 67, 0.1); /* Subtle glow */
-}
+  }

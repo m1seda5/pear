@@ -1,10 +1,10 @@
-// this is the first version without the redisign working
 import {
 	Flex,
 	Image,
 	Input,
 	InputGroup,
 	InputRightElement,
+	InputLeftElement,
 	Modal,
 	ModalBody,
 	ModalCloseButton,
@@ -13,142 +13,196 @@ import {
 	ModalOverlay,
 	Spinner,
 	useDisclosure,
-} from "@chakra-ui/react";
-import { useRef, useState } from "react";
-import { IoSendSharp } from "react-icons/io5";
-import useShowToast from "../hooks/useShowToast";
-import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
-import { useRecoilValue, useSetRecoilState } from "recoil";
-import { BsFillImageFill } from "react-icons/bs";
-import usePreviewImg from "../hooks/usePreviewImg";
-
-const MessageInput = ({ setMessages }) => {
+	IconButton,
+	Tooltip,
+	Box
+  } from "@chakra-ui/react";
+  import { useRef, useState } from "react";
+  import { IoSendSharp } from "react-icons/io5";
+  import { RiImageAddLine, RiEmojiStickerLine } from "react-icons/ri";
+  import useShowToast from "../hooks/useShowToast";
+  import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
+  import { useRecoilValue, useSetRecoilState } from "recoil";
+  import usePreviewImg from "../hooks/usePreviewImg";
+  import EmojiPicker from "emoji-picker-react";
+  
+  const MessageInput = ({ setMessages }) => {
 	const [messageText, setMessageText] = useState("");
+	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const showToast = useShowToast();
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
 	const setConversations = useSetRecoilState(conversationsAtom);
 	const imageRef = useRef(null);
-	const { onClose } = useDisclosure();
+	const emojiRef = useRef(null);
+	const { isOpen, onOpen, onClose } = useDisclosure();
 	const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
 	const [isSending, setIsSending] = useState(false);
-
+  
 	const handleSendMessage = async (e) => {
-		e.preventDefault();
-		if (!messageText && !imgUrl) return;
-		if (isSending) return;
-	  
-		setIsSending(true);
-	  
-		try {
-		  // Check if we're in a group chat or direct message
-		  const isGroupChat = selectedConversation.isGroup;
-		  
-		  // Prepare the request body based on message type
-		  let requestBody;
-		  if (isGroupChat) {
-			requestBody = {
-			  conversationId: selectedConversation._id,
-			  message: messageText,
-			  img: imgUrl
-			};
-		  } else {
-			requestBody = {
-			  recipientId: selectedConversation.userId,
-			  message: messageText,
-			  img: imgUrl
-			};
-		  }
-		  
-		  const res = await fetch("/api/messages", {
-			method: "POST",
-			headers: {
-			  "Content-Type": "application/json",
-			},
-			body: JSON.stringify(requestBody),
-		  });
-		  
-		  const data = await res.json();
-		  if (data.error) {
-			showToast("Error", data.error, "error");
-			return;
-		  }
-		  
-		  console.log(data);
-		  setMessages((messages) => [...messages, data]);
-	  
-		  setConversations((prevConvs) => {
-			const updatedConversations = prevConvs.map((conversation) => {
-			  if (conversation._id === selectedConversation._id) {
-				return {
-				  ...conversation,
-				  lastMessage: {
-					text: messageText,
-					sender: data.sender,
-				  },
-				};
-			  }
-			  return conversation;
-			});
-			return updatedConversations;
-		  });
-		  
-		  setMessageText("");
-		  setImgUrl("");
-		} catch (error) {
-		  showToast("Error", error.message, "error");
-		} finally {
-		  setIsSending(false);
+	  if (e) e.preventDefault();
+	  if (!messageText.trim() && !imgUrl) return;
+	  if (isSending) return;
+  
+	  setIsSending(true);
+  
+	  try {
+		const isGroupChat = selectedConversation.isGroup;
+		
+		const requestBody = isGroupChat ? {
+		  conversationId: selectedConversation._id,
+		  message: messageText,
+		  img: imgUrl
+		} : {
+		  recipientId: selectedConversation.userId,
+		  message: messageText,
+		  img: imgUrl
+		};
+  
+		const res = await fetch("/api/messages", {
+		  method: "POST",
+		  headers: {
+			"Content-Type": "application/json",
+		  },
+		  body: JSON.stringify(requestBody),
+		});
+  
+		const data = await res.json();
+		if (data.error) {
+		  showToast("Error", data.error, "error");
+		  return;
 		}
-	  };
+  
+		setMessages((messages) => [...messages, data]);
+  
+		setConversations((prevConvs) => {
+		  const updatedConversations = prevConvs.map((conversation) => {
+			if (conversation._id === selectedConversation._id) {
+			  return {
+				...conversation,
+				lastMessage: {
+				  text: messageText,
+				  sender: data.sender,
+				},
+			  };
+			}
+			return conversation;
+		  });
+		  return updatedConversations;
+		});
+  
+		setMessageText("");
+		setImgUrl("");
+		setShowEmojiPicker(false);
+	  } catch (error) {
+		showToast("Error", error.message, "error");
+	  } finally {
+		setIsSending(false);
+	  }
+	};
+  
+	const handleEmojiClick = (emojiData) => {
+	  setMessageText(prev => prev + emojiData.emoji);
+	};
+  
 	return (
-		<Flex gap={2} alignItems={"center"}>
-			<form onSubmit={handleSendMessage} style={{ flex: 95 }}>
-				<InputGroup>
-					<Input
-						w={"full"}
-						placeholder='Type a message'
-						onChange={(e) => setMessageText(e.target.value)}
-						value={messageText}
-					/>
-					<InputRightElement onClick={handleSendMessage} cursor={"pointer"}>
-						<IoSendSharp />
-					</InputRightElement>
-				</InputGroup>
-			</form>
-			<Flex flex={5} cursor={"pointer"}>
-				<BsFillImageFill size={20} onClick={() => imageRef.current.click()} />
-				<Input type={"file"} hidden ref={imageRef} onChange={handleImageChange} />
-			</Flex>
-			<Modal
-				isOpen={imgUrl}
-				onClose={() => {
-					onClose();
-					setImgUrl("");
-				}}
-			>
-				<ModalOverlay />
-				<ModalContent>
-					<ModalHeader></ModalHeader>
-					<ModalCloseButton />
-					<ModalBody>
-						<Flex mt={5} w={"full"}>
-							<Image src={imgUrl} />
-						</Flex>
-						<Flex justifyContent={"flex-end"} my={2}>
-							{!isSending ? (
-								<IoSendSharp size={24} cursor={"pointer"} onClick={handleSendMessage} />
-							) : (
-								<Spinner size={"md"} />
-							)}
-						</Flex>
-					</ModalBody>
-				</ModalContent>
-			</Modal>
-		</Flex>
+	  <Flex position="relative" px={4} pb={4}>
+		<form onSubmit={handleSendMessage} style={{ width: '100%' }}>
+		  <InputGroup size="lg">
+			<InputLeftElement>
+			  <IconButton
+				icon={<RiImageAddLine />}
+				variant="ghost"
+				aria-label="Add image"
+				onClick={() => imageRef.current.click()}
+			  />
+			</InputLeftElement>
+  
+			<Input
+			  placeholder="Type a message..."
+			  value={messageText}
+			  onChange={(e) => setMessageText(e.target.value)}
+			  borderRadius="full"
+			  pr="4.5rem"
+			  fontSize="md"
+			  onFocus={() => setShowEmojiPicker(false)}
+			/>
+  
+			<InputRightElement width="6rem">
+			  <Flex gap={2}>
+				<Tooltip label="Add emoji">
+				  <IconButton
+					icon={<RiEmojiStickerLine />}
+					size="sm"
+					variant="ghost"
+					onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+					aria-label="Add emoji"
+				  />
+				</Tooltip>
+  
+				<IconButton
+				  icon={<IoSendSharp />}
+				  colorScheme="blue"
+				  size="sm"
+				  borderRadius="full"
+				  aria-label="Send message"
+				  onClick={handleSendMessage}
+				  isDisabled={!messageText.trim() && !imgUrl}
+				  _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+				/>
+			  </Flex>
+			</InputRightElement>
+		  </InputGroup>
+		</form>
+  
+		<Input 
+		  type="file"
+		  hidden
+		  ref={imageRef}
+		  onChange={handleImageChange}
+		  accept="image/*"
+		/>
+  
+		{showEmojiPicker && (
+		  <Box position="absolute" bottom="65px" right="20px" zIndex={10}>
+			<EmojiPicker
+			  onEmojiClick={handleEmojiClick}
+			  previewConfig={{ showPreview: false }}
+			/>
+		  </Box>
+		)}
+  
+		<Modal
+		  isOpen={imgUrl}
+		  onClose={() => {
+			onClose();
+			setImgUrl("");
+		  }}
+		>
+		  <ModalOverlay />
+		  <ModalContent>
+			<ModalHeader>Preview Image</ModalHeader>
+			<ModalCloseButton />
+			<ModalBody>
+			  <Flex mt={5} w="full">
+				<Image src={imgUrl} alt="Preview" />
+			  </Flex>
+			  <Flex justifyContent="flex-end" my={2}>
+				{!isSending ? (
+				  <IconButton
+					icon={<IoSendSharp />}
+					colorScheme="blue"
+					onClick={handleSendMessage}
+					aria-label="Send image"
+				  />
+				) : (
+				  <Spinner size="md" />
+				)}
+			  </Flex>
+			</ModalBody>
+		  </ModalContent>
+		</Modal>
+	  </Flex>
 	);
-};
-
-export default MessageInput;
-
-
-// this is version 2 with the redesign 
+  };
+  
+  export default MessageInput;

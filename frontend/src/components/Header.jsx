@@ -932,7 +932,7 @@ import { useState } from "react";
 import { FaLock } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 
-const Header = () => {
+const Header = ({ unreadCount = 0 }) => {
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useRecoilValue(userAtom);
   const logout = useLogout();
@@ -944,7 +944,6 @@ const Header = () => {
     tv: false,
   });
 
-  // Add null checks for user role
   const isStudent = user?.role === "student" || false;
   const isTeacher = user?.role === "teacher" || false;
   const isAdmin = user?.role === "admin" || false;
@@ -958,7 +957,6 @@ const Header = () => {
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
-  // Safely handle chat access checking
   const hasChatAccess = user && (
     isTeacher ||
     isAdmin ||
@@ -1063,6 +1061,7 @@ const Header = () => {
           </Link>
 
           <Link
+            position="relative"
             onClick={handleChatClick}
             _hover={{
               color: user?.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
@@ -1078,6 +1077,25 @@ const Header = () => {
               <FaLock size={20} color="#F56565" />
             ) : (
               <BsFillChatQuoteFill size={20} />
+            )}
+            
+            {unreadCount > 0 && !user?.isFrozen && hasChatAccess && (
+              <Flex
+                position="absolute"
+                top="-2px"
+                right="-2px"
+                bg="red.500"
+                color="white"
+                borderRadius="full"
+                w="18px"
+                h="18px"
+                fontSize="xs"
+                alignItems="center"
+                justifyContent="center"
+                boxShadow="md"
+              >
+                {unreadCount}
+              </Flex>
             )}
           </Link>
 

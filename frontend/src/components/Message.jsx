@@ -283,14 +283,20 @@ import {
   Image,
   Skeleton,
   Text,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { selectedConversationAtom } from "../atoms/messagesAtom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { BsCheck2All } from "react-icons/bs";
-import { CloseIcon } from "@chakra-ui/icons";
-import { useState, useEffect } from "react";
+import { BsCheck2All, BsThreeDotsVertical } from "react-icons/bs";
+import { FiCopy, FiTrash2, FiCornerUpLeft } from "react-icons/fi";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from 'react-i18next';
+import EmojiPicker from "emoji-picker-react";
 
 const restrictedWords = [
   // Hate Speech & Discriminatory Terms  
@@ -321,7 +327,6 @@ const restrictedWords = [
   "kkk", "neo-nazi", "white supremacist", "black supremacist", "race war"
 ];
 
-
 const isMessageRestricted = (text) => {
   return restrictedWords.some((word) => text.toLowerCase().includes(word));
 };
@@ -330,8 +335,20 @@ const Message = ({ ownMessage, message, onDelete }) => {
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const user = useRecoilValue(userAtom);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiRef = useRef(null);
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+
+  const bubbleBg = useColorModeValue(
+    ownMessage ? "blue.500" : "gray.100",
+    ownMessage ? "blue.600" : "gray.700"
+  );
+  
+  const textColor = useColorModeValue(
+    ownMessage ? "white" : "gray.800",
+    ownMessage ? "white" : "gray.100"
+  );
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -356,154 +373,111 @@ const Message = ({ ownMessage, message, onDelete }) => {
   }
 
   return (
-    <>
-      {ownMessage ? (
-        <Flex gap={2} alignSelf={"flex-end"} position="relative">
-          {message.text && (
-            <Flex
-              bg={"green.800"}
-              maxW={"350px"}
-              p={1}
-              borderRadius={"md"}
-              position="relative"
-            >
-              <IconButton
-                icon={<CloseIcon />}
-                size="xs"
-                fontSize="10px"
-                variant="ghost"
-                colorScheme="whiteAlpha"
-                position="absolute"
-                top="-4px"
-                right="-4px"
-                onClick={() => onDelete(message._id)}
-                borderRadius="full"
-                aria-label={t("Delete message")}
-              />
-              <Text color={"white"}>{message.text}</Text>
-              <Box
-                alignSelf={"flex-end"}
-                ml={1}
-                color={message.seen ? "blue.400" : ""}
-                fontWeight={"bold"}
-              >
-                <BsCheck2All size={16} />
-              </Box>
-            </Flex>
-          )}
-          {message.img && !imgLoaded && (
-            <Flex mt={5} w={"200px"}>
-              <Image
-                src={message.img}
-                hidden
-                onLoad={() => setImgLoaded(true)}
-                alt={t("Message image")}
-                borderRadius={4}
-              />
-              <Skeleton w={"200px"} h={"200px"} />
-            </Flex>
-          )}
-          {message.img && imgLoaded && (
-            <Flex mt={5} w={"200px"} position="relative">
-              <Image src={message.img} alt={t("Message image")} borderRadius={4} />
-              <IconButton
-                icon={<CloseIcon />}
-                size="2xs"
-                fontSize="6px"
-                variant="ghost"
-                colorScheme="whiteAlpha"
-                position="absolute"
-                top="-2px"
-                right="-2px"
-                onClick={() => onDelete(message._id)}
-                borderRadius="full"
-                aria-label={t("Delete message")}
-              />
-              <Box
-                alignSelf={"flex-end"}
-                ml={1}
-                color={message.seen ? "blue.400" : ""}
-                fontWeight={"bold"}
-              >
-                <BsCheck2All size={16} />
-              </Box>
-            </Flex>
-          )}
-          <Avatar src={user.profilePic} w="7" h={7} />
-        </Flex>
-      ) : (
-        <Flex gap={2} position="relative">
-          {!ownMessage && selectedConversation.isGroup && (
-            <Text 
-              fontSize="xs" 
-              color="gray.500" 
-              position="absolute"
-              top="-15px"
-              left="0"
-              fontWeight={"semibold"}
-            >
-              {message.sender?.username}
-            </Text>
-          )}
-          <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
-          {message.text && (
-            <Flex
-              position="relative"
-              maxW={"350px"}
-              bg={selectedConversation.isGroup ? "gray.100" : "gray.400"}
-              p={1}
-              borderRadius={"md"}
-              mt={selectedConversation.isGroup ? 6 : 0} // Add space for username
-            >
-              <IconButton
-                icon={<CloseIcon />}
-                size="2xs"
-                fontSize="6px"
-                variant="ghost"
-                colorScheme="whiteAlpha"
-                position="absolute"
-                top="-2px"
-                right="-2px"
-                onClick={() => onDelete(message._id)}
-                borderRadius="full"
-                aria-label={t("Delete message")}
-              />
-              <Text color={"black"}>{message.text}</Text>
-            </Flex>
-          )}
-          {message.img && !imgLoaded && (
-            <Flex mt={5} w={"200px"}>
-              <Image
-                src={message.img}
-                hidden
-                onLoad={() => setImgLoaded(true)}
-                alt={t("Message image")}
-                borderRadius={4}
-              />
-              <Skeleton w={"200px"} h={"200px"} />
-            </Flex>
-          )}
-          {message.img && imgLoaded && (
-            <Flex mt={5} w={"200px"} position="relative">
-              <Image src={message.img} alt={t("Message image")} borderRadius={4} />
-              <IconButton
-                icon={<CloseIcon />}
-                size="2xs"
-                fontSize="6px"
-                variant="ghost"
-                colorScheme="whiteAlpha"
-                position="absolute"
-                top="-2px"
-                right="-2px"
-                onClick={() => onDelete(message._id)}
-                borderRadius="full"
-                aria-label={t("Delete message")}
-              />
-            </Flex>
-          )}
-        </Flex>
+    <Flex 
+      direction="column" 
+      align={ownMessage ? "flex-end" : "flex-start"}
+      gap={2}
+      my={2}
+      maxW="80%"
+    >
+      {!ownMessage && selectedConversation.isGroup && (
+        <Text fontSize="xs" color="gray.500" pl={1}>
+          {message.sender?.username}
+        </Text>
       )}
-    </>
+
+      <Flex
+        position="relative"
+        bg={bubbleBg}
+        color={textColor}
+        borderRadius="2xl"
+        p={3}
+        boxShadow="md"
+        _hover={{ transform: "translateY(-2px)" }}
+        transition="all 0.2s ease"
+      >
+        <Menu placement={ownMessage ? "left-start" : "right-start"}>
+          <MenuButton
+            as={IconButton}
+            icon={<BsThreeDotsVertical />}
+            variant="ghost"
+            size="xs"
+            position="absolute"
+            top={1}
+            right={1}
+            opacity={0}
+            _groupHover={{ opacity: 1 }}
+            aria-label={t("Message actions")}
+          />
+          
+          <MenuList>
+            <MenuItem 
+              icon={<FiCopy />} 
+              onClick={() => navigator.clipboard.writeText(message.text)}
+            >
+              {t("Copy")}
+            </MenuItem>
+            <MenuItem icon={<FiCornerUpLeft />}>
+              {t("Reply")}
+            </MenuItem>
+            <MenuItem 
+              icon={<FiTrash2 />} 
+              color="red.500"
+              onClick={() => onDelete(message._id)}
+            >
+              {t("Delete")}
+            </MenuItem>
+          </MenuList>
+        </Menu>
+
+        {message.text && <Text fontSize="md">{message.text}</Text>}
+        
+        {message.img && !imgLoaded && (
+          <Flex mt={5} w={"200px"}>
+            <Image
+              src={message.img}
+              hidden
+              onLoad={() => setImgLoaded(true)}
+              alt={t("Message image")}
+              borderRadius={4}
+            />
+            <Skeleton w={"200px"} h={"200px"} />
+          </Flex>
+        )}
+
+        {message.img && imgLoaded && (
+          <Flex mt={5} w={"200px"} position="relative">
+            <Image 
+              src={message.img} 
+              alt={t("Message image")} 
+              borderRadius={4} 
+            />
+          </Flex>
+        )}
+
+        <Flex align="center" gap={1} mt={1} ml={2}>
+          <Text fontSize="xs" opacity={0.7}>
+            {new Date(message.createdAt).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </Text>
+          {ownMessage && (
+            <BsCheck2All 
+              color={message.seen ? "#48BB78" : "currentColor"} 
+              size="14px" 
+            />
+          )}
+        </Flex>
+      </Flex>
+
+      {ownMessage && (
+        <Avatar src={user.profilePic} w="7" h={7} />
+      )}
+      {!ownMessage && (
+        <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
+      )}
+    </Flex>
   );
 };
 
