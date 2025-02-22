@@ -287,14 +287,23 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  useColorModeValue
+  useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalFooter,
+  Button,
+  useDisclosure,
+  Slide,
+  useToast
 } from "@chakra-ui/react";
 import { selectedConversationAtom } from "../atoms/messagesAtom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { BsCheck2All, BsThreeDotsVertical } from "react-icons/bs";
 import { FiCopy, FiTrash2, FiCornerUpLeft } from "react-icons/fi";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import EmojiPicker from "emoji-picker-react";
 
@@ -339,6 +348,10 @@ const Message = ({ ownMessage, message, onDelete }) => {
   const emojiRef = useRef(null);
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+  const [lastTap, setLastTap] = useState(0);
+  const [isDeletable, setIsDeletable] = useState(false);
 
   const bubbleBg = useColorModeValue(
     ownMessage ? "blue.500" : "gray.100",
@@ -362,6 +375,35 @@ const Message = ({ ownMessage, message, onDelete }) => {
     };
   }, [i18n]);
 
+  useEffect(() => {
+    const now = new Date();
+    const messageTime = new Date(message.createdAt);
+    const diff = now - messageTime;
+    setIsDeletable(diff < 3600000); // 1 hour in milliseconds
+  }, [message.createdAt]);
+
+  const handleDoubleTap = useCallback(() => {
+    if (!ownMessage || !isDeletable) return;
+    
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+    if (lastTap && now - lastTap < DOUBLE_PRESS_DELAY) {
+      onOpen();
+    }
+    setLastTap(now);
+  }, [lastTap, ownMessage, isDeletable, onOpen]);
+
+  const handleDelete = () => {
+    onDelete(message._id);
+    onClose();
+    toast({
+      title: "Message deleted",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
   if (message.text && isMessageRestricted(message.text)) {
     return (
       <Flex justifyContent={"center"} p={2}>
@@ -373,111 +415,160 @@ const Message = ({ ownMessage, message, onDelete }) => {
   }
 
   return (
-    <Flex 
-      direction="column" 
-      align={ownMessage ? "flex-end" : "flex-start"}
-      gap={2}
-      my={2}
-      maxW="80%"
-    >
-      {!ownMessage && selectedConversation.isGroup && (
-        <Text fontSize="xs" color="gray.500" pl={1}>
-          {message.sender?.username}
-        </Text>
-      )}
-
-      <Flex
-        position="relative"
-        bg={bubbleBg}
-        color={textColor}
-        borderRadius="2xl"
-        p={3}
-        boxShadow="md"
-        _hover={{ transform: "translateY(-2px)" }}
-        transition="all 0.2s ease"
+    <>
+      <Flex 
+        direction="column" 
+        align={ownMessage ? "flex-end" : "flex-start"}
+        gap={2}
+        my={2}
+        maxW="80%"
       >
-        <Menu placement={ownMessage ? "left-start" : "right-start"}>
-          <MenuButton
-            as={IconButton}
-            icon={<BsThreeDotsVertical />}
-            variant="ghost"
-            size="xs"
-            position="absolute"
-            top={1}
-            right={1}
-            opacity={0}
-            _groupHover={{ opacity: 1 }}
-            aria-label={t("Message actions")}
-          />
-          
-          <MenuList>
-            <MenuItem 
-              icon={<FiCopy />} 
-              onClick={() => navigator.clipboard.writeText(message.text)}
-            >
-              {t("Copy")}
-            </MenuItem>
-            <MenuItem icon={<FiCornerUpLeft />}>
-              {t("Reply")}
-            </MenuItem>
-            <MenuItem 
-              icon={<FiTrash2 />} 
-              color="red.500"
-              onClick={() => onDelete(message._id)}
-            >
-              {t("Delete")}
-            </MenuItem>
-          </MenuList>
-        </Menu>
-
-        {message.text && <Text fontSize="md">{message.text}</Text>}
-        
-        {message.img && !imgLoaded && (
-          <Flex mt={5} w={"200px"}>
-            <Image
-              src={message.img}
-              hidden
-              onLoad={() => setImgLoaded(true)}
-              alt={t("Message image")}
-              borderRadius={4}
-            />
-            <Skeleton w={"200px"} h={"200px"} />
-          </Flex>
-        )}
-
-        {message.img && imgLoaded && (
-          <Flex mt={5} w={"200px"} position="relative">
-            <Image 
-              src={message.img} 
-              alt={t("Message image")} 
-              borderRadius={4} 
-            />
-          </Flex>
-        )}
-
-        <Flex align="center" gap={1} mt={1} ml={2}>
-          <Text fontSize="xs" opacity={0.7}>
-            {new Date(message.createdAt).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+        {!ownMessage && selectedConversation.isGroup && (
+          <Text fontSize="xs" color="gray.500" pl={1}>
+            {message.sender?.username}
           </Text>
-          {ownMessage && (
-            <BsCheck2All 
-              color={message.seen ? "#48BB78" : "currentColor"} 
-              size="14px" 
-            />
-          )}
-        </Flex>
-      </Flex>
+        )}
 
-      {ownMessage && (
-        <Avatar src={user.profilePic} w="7" h={7} />
-      )}
-      {!ownMessage && (
-        <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
-      )}
-    </Flex>
+        <Flex
+          position="relative"
+          bg={bubbleBg}
+          color={textColor}
+          borderRadius="2xl"
+          p={3}
+          boxShadow="md"
+          _hover={{ transform: "translateY(-2px)" }}
+          transition="all 0.2s ease"
+          onTouchStart={handleDoubleTap}
+          onClick={handleDoubleTap}
+          cursor={ownMessage && isDeletable ? 'pointer' : 'default'}
+        >
+          <Menu placement={ownMessage ? "left-start" : "right-start"}>
+            <MenuButton
+              as={IconButton}
+              icon={<BsThreeDotsVertical />}
+              variant="ghost"
+              size="xs"
+              position="absolute"
+              top={1}
+              right={1}
+              opacity={0}
+              _groupHover={{ opacity: 1 }}
+              aria-label={t("Message actions")}
+            />
+            
+            <MenuList>
+              <MenuItem 
+                icon={<FiCopy />} 
+                onClick={() => navigator.clipboard.writeText(message.text)}
+              >
+                {t("Copy")}
+              </MenuItem>
+              <MenuItem icon={<FiCornerUpLeft />}>
+                {t("Reply")}
+              </MenuItem>
+              <MenuItem 
+                icon={<FiTrash2 />} 
+                color="red.500"
+                onClick={() => onDelete(message._id)}
+              >
+                {t("Delete")}
+              </MenuItem>
+            </MenuList>
+          </Menu>
+
+          {message.text && <Text fontSize="md">{message.text}</Text>}
+          
+          {message.img && !imgLoaded && (
+            <Flex mt={5} w={"200px"}>
+              <Image
+                src={message.img}
+                hidden
+                onLoad={() => setImgLoaded(true)}
+                alt={t("Message image")}
+                borderRadius={4}
+              />
+              <Skeleton w={"200px"} h={"200px"} />
+            </Flex>
+          )}
+
+          {message.img && imgLoaded && (
+            <Flex mt={5} w={"200px"} position="relative">
+              <Image 
+                src={message.img} 
+                alt={t("Message image")} 
+                borderRadius={4} 
+              />
+            </Flex>
+          )}
+
+          <Flex align="center" gap={1} mt={1} ml={2}>
+            <Text fontSize="xs" opacity={0.7}>
+              {new Date(message.createdAt).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+            {ownMessage && (
+              <BsCheck2All 
+                color={message.seen ? "#48BB78" : "currentColor"} 
+                size="14px" 
+              />
+            )}
+          </Flex>
+        </Flex>
+
+        {ownMessage && (
+          <Avatar src={user.profilePic} w="7" h={7} />
+        )}
+        {!ownMessage && (
+          <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
+          <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
+          <Slide in={isOpen} direction="bottom">
+            <ModalContent 
+              bg={useColorModeValue('white', 'gray.800')}
+              mx={4}
+              mb={4}
+              borderRadius="xl"
+              boxShadow="xl"
+            >
+              <ModalBody py={4} textAlign="center">
+                <Text fontSize="lg" fontWeight="semibold">
+                  Delete this message?
+                </Text>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  This action cannot be undone
+                </Text>
+              </ModalBody>
+              <ModalFooter borderTopWidth={1} p={0}>
+                <Button 
+                  w="full"
+                  variant="ghost" 
+                  onClick={onClose}
+                  borderRadius="0 0 0 xl"
+                  _hover={{ bg: 'gray.100' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  w="full"
+                  colorScheme="red"
+                  variant="solid"
+                  borderRadius="0 0 xl 0"
+                  onClick={handleDelete}
+                  _hover={{ bg: 'red.600' }}
+                >
+                  Delete
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Slide>
+        </Modal>
+      </Flex>
+    </>
   );
 };
 
