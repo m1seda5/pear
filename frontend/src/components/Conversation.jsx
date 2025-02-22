@@ -19,6 +19,14 @@ import userAtom from "../atoms/userAtom";
 import { BsCheck2All, BsFillImageFill } from "react-icons/bs";
 import { FaUsers } from "react-icons/fa";
 
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
 const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
   // Early return if conversation is invalid
   if (!conversation || typeof conversation !== 'object') {
