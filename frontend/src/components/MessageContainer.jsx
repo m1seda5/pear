@@ -133,8 +133,8 @@ const MessageContainer = ({ isMonitoring }) => {
     
         // Update the endpoint to match your backend route
         const endpoint = selectedConversation.isGroup 
-          ? `/api/messages/groups/${selectedConversation._id}/messages`  // This matches your backend route
-          : `/api/messages/${selectedConversation.userId}`;
+        ? `/api/messages/groups/${selectedConversation._id}/messages`
+        : `/api/messages/${selectedConversation.userId}`;
     
         const res = await fetch(endpoint, {
           headers: { 

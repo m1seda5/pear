@@ -484,15 +484,34 @@ async function updateGroup(req, res) {
 
 async function getGroupMessages(req, res) {
   try {
+    // Update to use conversationId from params to match the route
+    const conversationId = req.params.conversationId;
+    
+    // Verify the conversation exists and is a group
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+    
+    if (!conversation.isGroup) {
+      return res.status(400).json({ error: "This is not a group conversation" });
+    }
+
+    // Fetch messages with proper population and sorting
     const messages = await Message.find({ 
-      conversationId: req.params.groupId 
+      conversationId: conversationId 
     })
     .sort({ createdAt: 1 })
-    .populate('sender', 'username profilePic');
+    .populate('sender', 'username profilePic')
+    .lean(); // Use lean() for better performance
     
     res.status(200).json(messages);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in getGroupMessages:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch group messages",
+      details: error.message 
+    });
   }
 }
 
