@@ -37,12 +37,19 @@ const MessageContainer = ({ isMonitoring }) => {
 
   const messageContainerStyles = {
     '&::-webkit-scrollbar': {
-      width: '6px',
+      width: '4px',
     },
     '&::-webkit-scrollbar-thumb': {
-      backgroundColor: useColorModeValue('gray.400', 'gray.600'),
-      borderRadius: '3px',
+      backgroundColor: useColorModeValue('gray.300', 'gray.600'),
+      borderRadius: '2px',
     },
+    '&::-webkit-scrollbar-track': {
+      backgroundColor: 'transparent',
+    },
+    '&::-webkit-scrollbar-thumb:hover': {
+      backgroundColor: useColorModeValue('gray.400', 'gray.500'),
+    },
+    overflowX: 'hidden',
     scrollBehavior: 'smooth',
     overscrollBehavior: 'contain'
   };
@@ -199,7 +206,7 @@ const MessageContainer = ({ isMonitoring }) => {
   return (
     <Flex
       flex="70"
-      bg={useColorModeValue("gray.200", "gray.dark")}
+      bg={useColorModeValue("gray.50", "gray.dark")}
       borderRadius="md"
       p={2}
       flexDirection="column"
@@ -258,16 +265,12 @@ const MessageContainer = ({ isMonitoring }) => {
           ))}
 
         {!loadingMessages && messages && Array.isArray(messages) && messages.map((message) => (
-          <Flex
+          <Message
             key={message._id}
-            direction="column"
-          >
-            <Message
-              message={message}
-              ownMessage={currentUser._id === message.sender?._id}
-              onDelete={isMonitoring ? null : handleDelete}
-            />
-          </Flex>
+            message={message}
+            ownMessage={currentUser._id === message.sender?._id}
+            onDelete={isMonitoring ? null : handleDelete}
+          />
         ))}
 
         {isTyping && (

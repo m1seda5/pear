@@ -355,13 +355,13 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
   const [isDeletable, setIsDeletable] = useState(false);
 
   const bubbleBg = useColorModeValue(
-    ownMessage ? "blue.400" : "gray.100",  // Light mode - softer blue
-    ownMessage ? "blue.500" : "gray.700"   // Dark mode - richer blue
+    ownMessage ? "#DCF8C6" : "gray.200", // Light mode - WhatsApp green
+    ownMessage ? "#2A9D8F" : "gray.700"  // Dark mode - Teal-ish green
   );
   
   const textColor = useColorModeValue(
-    ownMessage ? "white" : "gray.800",
-    ownMessage ? "white" : "gray.100"
+    ownMessage ? "gray.800" : "gray.800", // Light mode text
+    ownMessage ? "white" : "gray.100"     // Dark mode text
   );
 
   useEffect(() => {
@@ -419,23 +419,16 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
     <>
       <Flex 
         direction="column" 
-        align={ownMessage ? "flex-end" : "flex-start"}
-        gap={2}
+        align={ownMessage ? "flex-end" : "flex-start"} 
+        gap={2} 
         my={2}
+        alignSelf={ownMessage ? "flex-end" : "flex-start"}
         maxW="80%"
       >
         {!ownMessage && selectedConversation.isGroup && (
-          <Flex align="center" gap={2}>
-            <Avatar 
-              src={message.sender?.profilePic} 
-              size="xs" 
-              w={4} 
-              h={4} 
-            />
-            <Text fontSize="xs" color="gray.500">
-              {message.sender?.username}
-            </Text>
-          </Flex>
+          <Text fontSize="xs" color="gray.500" ml={2}>
+            {message.sender?.username}
+          </Text>
         )}
 
         <Flex
@@ -444,7 +437,7 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
           color={textColor}
           borderRadius="2xl"
           p={3}
-          boxShadow="md"
+          boxShadow="sm"
           _hover={{ transform: "translateY(-2px)" }}
           transition="all 0.2s ease"
           onTouchStart={handleDoubleTap}
@@ -525,16 +518,6 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
             )}
           </Flex>
         </Flex>
-
-        {!ownMessage && selectedConversation.isGroup && (
-          <Avatar 
-            src={message.sender?.profilePic} 
-            size="xs" 
-            w={6} 
-            h={6} 
-            mt={1}
-          />
-        )}
       </Flex>
 
       {/* Delete Confirmation Modal */}
