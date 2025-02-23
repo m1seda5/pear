@@ -3,10 +3,12 @@ import Message from "../models/messageModel.js";
 import { getRecipientSocketId, io } from "../socket/socket.js";
 import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
+import NodeCache from 'node-cache';
 import dotenv from 'dotenv';
 dotenv.config();
 
 const MAX_GROUP_MEMBERS = parseInt(process.env.MAX_GROUP_MEMBERS) || 50;
+const messageCache = new NodeCache({ stdTTL: 60 });
 
 async function sendMessage(req, res) {
   try {
@@ -94,6 +96,10 @@ async function sendMessage(req, res) {
       }),
     ]);
 
+    // Invalidate cache after new message
+    const cacheKey = `groupMessages:${conversation._id}`;
+    messageCache.del(cacheKey);
+
     // Populate sender details for the response
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender', 'username profilePic');
@@ -138,28 +144,40 @@ async function sendMessage(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+// messageController.js - Update getMessages function
 async function getMessages(req, res) {
-   const { otherUserId } = req.params;
-   const userId = req.user._id;
-   try {
-       const conversation = await Conversation.findOne({
-           participants: { $all: [userId, otherUserId] },
-       });
+  const { otherUserId } = req.params;
+  const userId = req.user._id;
+  
+  try {
+    const conversation = await Conversation.findOne({
+      participants: { $all: [userId, otherUserId] },
+    });
 
-       if (!conversation) {
-           return res.status(404).json({ error: "Conversation not found" });
-       }
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
 
-       const messages = await Message.find({
-           conversationId: conversation._id,
-       }).sort({ createdAt: 1 });
+    const cacheKey = `messages:${conversation._id}`;
+    const cachedMessages = await cache.get(cacheKey);
+    
+    if (cachedMessages) {
+      return res.status(200).json(cachedMessages);
+    }
 
-       res.status(200).json(messages);
-   } catch (error) {
-       res.status(500).json({ error: error.message });
-   }
+    const messages = await Message.find({
+      conversationId: conversation._id,
+    })
+    .populate('sender', 'username profilePic')
+    .sort({ createdAt: 1 });
+
+    await cache.set(cacheKey, messages, 60); // Cache for 60 seconds
+    
+    res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
-
 async function getConversations(req, res) {
   const userId = req.user._id;
   try {
@@ -484,9 +502,15 @@ async function updateGroup(req, res) {
 
 async function getGroupMessages(req, res) {
   try {
-    // Update to use conversationId from params to match the route
     const conversationId = req.params.conversationId;
+    const cacheKey = `groupMessages:${conversationId}`;
     
+    // Try to get cached messages
+    const cachedMessages = messageCache.get(cacheKey);
+    if (cachedMessages) {
+      return res.status(200).json(cachedMessages);
+    }
+
     // Verify the conversation exists and is a group
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
@@ -498,12 +522,13 @@ async function getGroupMessages(req, res) {
     }
 
     // Fetch messages with proper population and sorting
-    const messages = await Message.find({ 
-      conversationId: conversationId 
-    })
-    .sort({ createdAt: 1 })
-    .populate('sender', 'username profilePic')
-    .lean(); // Use lean() for better performance
+    const messages = await Message.find({ conversationId })
+      .sort({ createdAt: 1 })
+      .populate('sender', 'username profilePic')
+      .lean(); // Use lean() for better performance
+
+    // Cache the messages with the conversation ID as key
+    messageCache.set(cacheKey, messages);
     
     res.status(200).json(messages);
   } catch (error) {
@@ -514,7 +539,6 @@ async function getGroupMessages(req, res) {
     });
   }
 }
-
 
 
 async function checkExistingGroup(req, res) {

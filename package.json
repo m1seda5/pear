@@ -29,6 +29,7 @@
 		"i18next": "^23.14.0",
 		"jsonwebtoken": "^9.0.1",
 		"mongoose": "^7.4.0",
+		"node-cache": "^5.1.2",
 		"nodemailer": "^6.9.16",
 		"react-i18next": "^15.0.1",
 		"react-tsparticles": "^2.12.2",

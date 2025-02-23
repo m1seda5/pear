@@ -305,7 +305,6 @@ import { BsCheck2All, BsThreeDotsVertical } from "react-icons/bs";
 import { FiCopy, FiTrash2, FiCornerUpLeft } from "react-icons/fi";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
-import EmojiPicker from "emoji-picker-react";
 
 const restrictedWords = [
   // Hate Speech & Discriminatory Terms  
@@ -340,12 +339,10 @@ const isMessageRestricted = (text) => {
   return restrictedWords.some((word) => text.toLowerCase().includes(word));
 };
 
-const Message = ({ ownMessage, message, onDelete }) => {
+const Message = ({ message, onDelete }) => {
   const selectedConversation = useRecoilValue(selectedConversationAtom);
-  const user = useRecoilValue(userAtom);
+  const currentUser = useRecoilValue(userAtom);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiRef = useRef(null);
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -353,15 +350,36 @@ const Message = ({ ownMessage, message, onDelete }) => {
   const [lastTap, setLastTap] = useState(0);
   const [isDeletable, setIsDeletable] = useState(false);
 
+  // Add proper sender ID handling
+  const senderId = message.sender?._id 
+    ? message.sender._id.toString() 
+    : message.sender?.toString();
+  const ownMessage = currentUser._id === senderId;
+
+  // Updated color scheme with enhanced contrast
   const bubbleBg = useColorModeValue(
-    ownMessage ? "blue.500" : "gray.100",
-    ownMessage ? "blue.600" : "gray.700"
+    ownMessage ? "green.400" : "gray.100",
+    ownMessage ? "gray.700" : "gray.800"
   );
   
   const textColor = useColorModeValue(
     ownMessage ? "white" : "gray.800",
-    ownMessage ? "white" : "gray.100"
+    "white"
   );
+
+  // Scrollbar styling
+  const scrollbarStyles = {
+    '&::-webkit-scrollbar': {
+      width: '6px',
+    },
+    '&::-webkit-scrollbar-track': {
+      background: useColorModeValue('gray.100', 'gray.800'),
+    },
+    '&::-webkit-scrollbar-thumb': {
+      background: useColorModeValue('gray.400', 'gray.600'),
+      borderRadius: '3px',
+    },
+  };
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -369,7 +387,6 @@ const Message = ({ ownMessage, message, onDelete }) => {
     };
 
     i18n.on('languageChanged', handleLanguageChange);
-
     return () => {
       i18n.off('languageChanged', handleLanguageChange);
     };
@@ -406,8 +423,8 @@ const Message = ({ ownMessage, message, onDelete }) => {
 
   if (message.text && isMessageRestricted(message.text)) {
     return (
-      <Flex justifyContent={"center"} p={2}>
-        <Text color={"red.500"}>
+      <Flex justifyContent="center" p={2}>
+        <Text color="red.500">
           {t("Message contains inappropriate content and was not sent.")}
         </Text>
       </Flex>
@@ -415,20 +432,25 @@ const Message = ({ ownMessage, message, onDelete }) => {
   }
 
   return (
-    <>
-      <Flex 
-        direction="column" 
-        align={ownMessage ? "flex-end" : "flex-start"}
-        gap={2}
-        my={2}
-        maxW="80%"
-      >
-        {!ownMessage && selectedConversation.isGroup && (
-          <Text fontSize="xs" color="gray.500" pl={1}>
-            {message.sender?.username}
-          </Text>
-        )}
+    <Flex
+      direction="column"
+      align={ownMessage ? "flex-end" : "flex-start"}
+      maxW={{ base: "90%", md: "80%" }}
+      mx={2}
+      my={2}
+      gap={2}
+    >
+      {!ownMessage && selectedConversation.isGroup && (
+        <Text fontSize="xs" color="gray.500" pl={1}>
+          {message.sender?.username}
+        </Text>
+      )}
 
+      <Flex
+        maxH="400px"
+        overflowY="auto"
+        sx={scrollbarStyles}
+      >
         <Flex
           position="relative"
           bg={bubbleBg}
@@ -466,20 +488,22 @@ const Message = ({ ownMessage, message, onDelete }) => {
               <MenuItem icon={<FiCornerUpLeft />}>
                 {t("Reply")}
               </MenuItem>
-              <MenuItem 
-                icon={<FiTrash2 />} 
-                color="red.500"
-                onClick={() => onDelete(message._id)}
-              >
-                {t("Delete")}
-              </MenuItem>
+              {ownMessage && isDeletable && (
+                <MenuItem 
+                  icon={<FiTrash2 />}
+                  color="red.500"
+                  onClick={onOpen}
+                >
+                  {t("Delete")}
+                </MenuItem>
+              )}
             </MenuList>
           </Menu>
 
           {message.text && <Text fontSize="md">{message.text}</Text>}
           
           {message.img && !imgLoaded && (
-            <Flex mt={5} w={"200px"}>
+            <Flex mt={5} w="200px">
               <Image
                 src={message.img}
                 hidden
@@ -487,12 +511,12 @@ const Message = ({ ownMessage, message, onDelete }) => {
                 alt={t("Message image")}
                 borderRadius={4}
               />
-              <Skeleton w={"200px"} h={"200px"} />
+              <Skeleton w="200px" h="200px" />
             </Flex>
           )}
 
           {message.img && imgLoaded && (
-            <Flex mt={5} w={"200px"} position="relative">
+            <Flex mt={5} w="200px" position="relative">
               <Image 
                 src={message.img} 
                 alt={t("Message image")} 
@@ -516,59 +540,59 @@ const Message = ({ ownMessage, message, onDelete }) => {
             )}
           </Flex>
         </Flex>
-
-        {ownMessage && (
-          <Avatar src={user.profilePic} w="7" h={7} />
-        )}
-        {!ownMessage && (
-          <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
-        )}
-
-        {/* Delete Confirmation Modal */}
-        <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
-          <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
-          <Slide in={isOpen} direction="bottom">
-            <ModalContent 
-              bg={useColorModeValue('white', 'gray.800')}
-              mx={4}
-              mb={4}
-              borderRadius="xl"
-              boxShadow="xl"
-            >
-              <ModalBody py={4} textAlign="center">
-                <Text fontSize="lg" fontWeight="semibold">
-                  Delete this message?
-                </Text>
-                <Text fontSize="sm" color="gray.500" mt={1}>
-                  This action cannot be undone
-                </Text>
-              </ModalBody>
-              <ModalFooter borderTopWidth={1} p={0}>
-                <Button 
-                  w="full"
-                  variant="ghost" 
-                  onClick={onClose}
-                  borderRadius="0 0 0 xl"
-                  _hover={{ bg: 'gray.100' }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  w="full"
-                  colorScheme="red"
-                  variant="solid"
-                  borderRadius="0 0 xl 0"
-                  onClick={handleDelete}
-                  _hover={{ bg: 'red.600' }}
-                >
-                  Delete
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Slide>
-        </Modal>
       </Flex>
-    </>
+
+      {ownMessage && (
+        <Avatar src={currentUser.profilePic} w="7" h={7} />
+      )}
+      {!ownMessage && (
+        <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
+        <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
+        <Slide in={isOpen} direction="bottom">
+          <ModalContent 
+            bg={useColorModeValue('white', 'gray.800')}
+            mx={4}
+            mb={4}
+            borderRadius="xl"
+            boxShadow="xl"
+          >
+            <ModalBody py={4} textAlign="center">
+              <Text fontSize="lg" fontWeight="semibold">
+                {t("Delete this message?")}
+              </Text>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                {t("This action cannot be undone")}
+              </Text>
+            </ModalBody>
+            <ModalFooter borderTopWidth={1} p={0}>
+              <Button 
+                w="full"
+                variant="ghost" 
+                onClick={onClose}
+                borderRadius="0 0 0 xl"
+                _hover={{ bg: 'gray.100' }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                w="full"
+                colorScheme="red"
+                variant="solid"
+                borderRadius="0 0 xl 0"
+                onClick={handleDelete}
+                _hover={{ bg: 'red.600' }}
+              >
+                {t("Delete")}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Slide>
+      </Modal>
+    </Flex>
   );
 };
 

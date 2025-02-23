@@ -631,17 +631,17 @@
 // this is the api format issue 
 import { ViewIcon, SearchIcon, AddIcon } from "@chakra-ui/icons";
 import { Box, Button, Flex, IconButton, Input, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
-import Conversation from "../components/Conversation";
-import { GiConversation } from "react-icons/gi";
-import MessageContainer from "../components/MessageContainer";
-import GroupCreationModal from "../components/GroupCreationModal";
 import { useEffect, useState } from "react";
-import useShowToast from "../hooks/useShowToast";
 import { useRecoilState, useRecoilValue } from "recoil";
+import { GiConversation } from "react-icons/gi";
+import { useTranslation } from 'react-i18next';
 import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
-import { useTranslation } from 'react-i18next';
 import { useSocket } from "../context/SocketContext";
+import useShowToast from "../hooks/useShowToast";
+import Conversation from "../components/Conversation";
+import MessageContainer from "../components/MessageContainer";
+import GroupCreationModal from "../components/GroupCreationModal";
 
 const ChatPage = () => {
   const [searchingUser, setSearchingUser] = useState(false);
@@ -650,17 +650,31 @@ const ChatPage = () => {
   const [selectedConversation, setSelectedConversation] = useRecoilState(selectedConversationAtom);
   const [conversations, setConversations] = useRecoilState(conversationsAtom);
   const [isGroupCreationOpen, setIsGroupCreationOpen] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
   const currentUser = useRecoilValue(userAtom);
-  const showToast = useShowToast();
   const { socket, onlineUsers } = useSocket();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
-  const [isMonitoring, setIsMonitoring] = useState(false);
+  const showToast = useShowToast();
 
   // Color mode values
   const cardBg = useColorModeValue("white", "gray.800");
   const subtleBg = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
+
+  // Add localStorage persistence
+  useEffect(() => {
+    const savedConversation = localStorage.getItem('selectedConversation');
+    if (savedConversation) {
+      setSelectedConversation(JSON.parse(savedConversation));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedConversation._id) {
+      localStorage.setItem('selectedConversation', JSON.stringify(selectedConversation));
+    }
+  }, [selectedConversation]);
 
   useEffect(() => {
     if (socket && conversations) {
@@ -776,7 +790,6 @@ const ChatPage = () => {
     if (!searchText.trim()) return;
     setSearchingUser(true);
     try {
-      // Fix: Update endpoint to match backend route
       const res = await fetch(`/api/users/search/${encodeURIComponent(searchText.toLowerCase())}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
@@ -881,151 +894,181 @@ const ChatPage = () => {
 
   return (
     <Box
-      position={"absolute"}
-      left={"50%"}
-      w={{ base: "100%", md: "80%", lg: "750px" }}
-      p={4}
-      transform={"translateX(-50%)"}
+      position={{ base: "static", md: "absolute" }}
+      left={{ md: "50%" }}
+      w={{ base: "100%", md: "90%", lg: "800px" }}
+      p={{ base: 2, md: 4 }}
+      transform={{ md: "translateX(-50%)" }}
+      minH="100vh"
       bg={cardBg}
       borderRadius="lg"
       boxShadow="md"
     >
-      <Flex position="relative" justifyContent="space-between" alignItems="center" mb={4}>
-        <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.100")}>
-          {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
-        </Text>
-        
-        <Flex gap={2}>
-          {currentUser?.role === "admin" && !isMonitoring && (
-            <IconButton
-              icon={<ViewIcon />}
-              aria-label="Monitor conversations"
-              onClick={() => setIsMonitoring(true)}
-              size="sm"
-              variant="ghost"
-            />
-          )}
-          {isMonitoring && (
-            <Button
-              onClick={() => {
-                setIsMonitoring(false);
-                setSelectedConversation({});
-              }}
-              size="sm"
-              variant="outline"
-              colorScheme="red"
-            >
-              {t("Exit Monitoring")}
-            </Button>
-          )}
-          {['admin', 'teacher'].includes(currentUser.role) && !isMonitoring && (
-            <IconButton
-              icon={<AddIcon />}
-              aria-label="Create group"
-              onClick={() => setIsGroupCreationOpen(true)}
-              size="sm"
-              variant="ghost"
-            />
-          )}
-        </Flex>
-      </Flex>
-
-      <Flex
-        gap={4}
-        flexDirection={{ base: "column", md: "row" }}
-        maxW={{
-          sm: "400px",
-          md: "full",
-        }}
-        mx={"auto"}
+      <Flex 
+        direction="column" 
+        h="100vh"
+        py={{ base: 2, md: 4 }}
       >
-        <Flex flex={30} gap={2} flexDirection={"column"} maxW={{ sm: "250px", md: "full" }} mx={"auto"}>
-          {!isMonitoring && (
-            <form onSubmit={handleConversationSearch}>
-              <Flex alignItems={"center"} gap={2}>
-                <Input 
-                  placeholder={t('Search for a user')} 
-                  onChange={(e) => setSearchText(e.target.value)}
-                  value={searchText}
-                  variant="filled"
-                  _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                  _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                />
-                <Button type="submit" size={"sm"} isLoading={searchingUser}>
-                  <SearchIcon />
-                </Button>
-              </Flex>
-            </form>
-          )}
-
-          {loadingConversations &&
-            [0, 1, 2, 3, 4].map((_, i) => (
-              <Flex key={i} gap={4} alignItems={"center"} p={"1"} borderRadius={"md"}>
-                <Box>
-                  <SkeletonCircle size={"10"} />
-                </Box>
-                <Flex w={"full"} flexDirection={"column"} gap={3}>
-                  <Skeleton h={"10px"} w={"80px"} />
-                  <Skeleton h={"8px"} w={"90%"} />
-                </Flex>
-              </Flex>
-            ))}
-
-          {!loadingConversations && Array.isArray(conversations) &&
-            conversations.map((conversation) => (
-              <Conversation
-                key={conversation._id}
-                isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
-                conversation={conversation}
-                onClick={() => handleConversationClick(conversation)}
-                isMonitoring={isMonitoring}
-                bg={subtleBg}
-                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                borderRadius="md"
-                border="1px solid"
-                borderColor={borderColor}
-                mb={2}
+        {/* Header Section */}
+        <Flex 
+          justify="space-between" 
+          align="center" 
+          mb={4}
+          px={{ base: 2, md: 4 }}
+        >
+          <Text fontWeight={700} color={useColorModeValue("gray.600", "gray.100")}>
+            {isMonitoring ? t("Monitoring Conversations") : t("Your Conversations")}
+          </Text>
+          
+          <Flex gap={2}>
+            {currentUser?.role === "admin" && !isMonitoring && (
+              <IconButton
+                icon={<ViewIcon />}
+                aria-label="Monitor conversations"
+                onClick={() => setIsMonitoring(true)}
+                size="sm"
+                variant="ghost"
               />
-            ))
-          }
-
-          {!loadingConversations && (!Array.isArray(conversations) || conversations.length === 0) && (
-            <Text fontSize="sm" color="gray.500" p={2}>
-              {isMonitoring ? t("No conversations to monitor") : t("No conversations found")}
-            </Text>
-          )}
+            )}
+            {isMonitoring && (
+              <Button
+                onClick={() => {
+                  setIsMonitoring(false);
+                  setSelectedConversation({});
+                }}
+                size="sm"
+                variant="outline"
+                colorScheme="red"
+              >
+                {t("Exit Monitoring")}
+              </Button>
+            )}
+            {['admin', 'teacher'].includes(currentUser.role) && !isMonitoring && (
+              <IconButton
+                icon={<AddIcon />}
+                aria-label="Create group"
+                onClick={() => setIsGroupCreationOpen(true)}
+                size="sm"
+                variant="ghost"
+              />
+            )}
+          </Flex>
         </Flex>
 
-        {!selectedConversation._id ? (
+        {/* Main Content Area */}
+        <Flex
+          direction={{ base: "column", md: "row" }}
+          flex={1}
+          overflow="hidden"
+          gap={4}
+          px={{ base: 2, md: 4 }}
+        >
+          {/* Conversations List */}
           <Flex
-            flex={70}
-            borderRadius={"md"}
-            p={2}
-            flexDir={"column"}
-            alignItems={"center"}
-            justifyContent={"center"}
-            height={"400px"}
+            flex={{ base: 1, md: 0.3 }}
+            direction="column"
+            minW={{ md: "300px" }}
+            maxH={{ base: "40vh", md: "100%" }}
+            overflowY="auto"
+            borderRight={{ md: "1px solid" }}
+            borderColor={borderColor}
+            pr={{ md: 4 }}
           >
-            <GiConversation size={100} />
-            <Text fontSize={20}>
-              {isMonitoring 
-                ? t("Select a conversation to monitor") 
-                : t("Select a conversation to start messaging")}
-            </Text>
-          </Flex>
-        ) : (
-          <MessageContainer isMonitoring={isMonitoring} />
-        )}
+            {!isMonitoring && (
+              <form onSubmit={handleConversationSearch}>
+                <Flex alignItems="center" gap={2} mb={4}>
+                  <Input 
+                    placeholder={t('Search for a user')} 
+                    onChange={(e) => setSearchText(e.target.value)}
+                    value={searchText}
+                    variant="filled"
+                  />
+                  <Button type="submit" size="sm" isLoading={searchingUser}>
+                    <SearchIcon />
+                  </Button>
+                </Flex>
+              </form>
+            )}
 
-        <GroupCreationModal 
-          isOpen={isGroupCreationOpen}
-          onClose={() => setIsGroupCreationOpen(false)}
-          onGroupCreated={(newGroup) => {
-            setConversations(prev => [newGroup, ...prev]);
-            setIsGroupCreationOpen(false);
-          }}
-        />
+            {loadingConversations &&
+              [0, 1, 2, 3, 4].map((_, i) => (
+                <Flex key={i} gap={4} alignItems="center" p="1" borderRadius="md">
+                  <Box>
+                    <SkeletonCircle size="10" />
+                  </Box>
+                  <Flex w="full" flexDirection="column" gap={3}>
+                    <Skeleton h="10px" w="80px" />
+                    <Skeleton h="8px" w="90%" />
+                  </Flex>
+                </Flex>
+              ))}
+
+            {!loadingConversations && Array.isArray(conversations) &&
+              conversations.map((conversation) => (
+                <Conversation
+                  key={conversation._id}
+                  isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
+                  conversation={conversation}
+                  onClick={() => handleConversationClick(conversation)}
+                  isMonitoring={isMonitoring}
+                  bg={subtleBg}
+                  _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor={borderColor}
+                  mb={2}
+                />
+              ))}
+
+            {!loadingConversations && (!Array.isArray(conversations) || conversations.length === 0) && (
+              <Text fontSize="sm" color="gray.500" p={2}>
+                {isMonitoring ? t("No conversations to monitor") : t("No conversations found")}
+              </Text>
+            )}
+          </Flex>
+
+          {/* Chat Area */}
+          <Flex
+            flex={{ base: 2, md: 0.7 }}
+            direction="column"
+            minH={{ base: "60vh", md: "auto" }}
+            position="relative"
+          >
+            {!selectedConversation._id ? (
+              <Flex
+                flex={1}
+                borderRadius="md"
+                p={2}
+                flexDir="column"
+                alignItems="center"
+                justifyContent="center"
+                height={{ base: "400px", md: "full" }}
+              >
+                <GiConversation size={100} />
+                <Text fontSize={20}>
+                  {isMonitoring 
+                    ? t("Select a conversation to monitor") 
+                    : t("Select a conversation to start messaging")}
+                </Text>
+              </Flex>
+            ) : (
+              <MessageContainer 
+                isMonitoring={isMonitoring}
+                minH={{ base: "60vh", md: "auto" }}
+              />
+            )}
+          </Flex>
+        </Flex>
       </Flex>
+
+      <GroupCreationModal 
+        isOpen={isGroupCreationOpen}
+        onClose={() => setIsGroupCreationOpen(false)}
+        onGroupCreated={(newGroup) => {
+          setConversations(prev => [newGroup, ...prev]);
+          setIsGroupCreationOpen(false);
+        }}
+      />
     </Box>
   );
 };
