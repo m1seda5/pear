@@ -15,8 +15,7 @@ import {
 	useDisclosure,
 	IconButton,
 	Tooltip,
-	Box,
-	Progress
+	Box
   } from "@chakra-ui/react";
   import { useRef, useState } from "react";
   import { IoSendSharp } from "react-icons/io5";
@@ -24,18 +23,15 @@ import {
   import useShowToast from "../hooks/useShowToast";
   import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
   import { useRecoilValue, useSetRecoilState } from "recoil";
-  import userAtom from "../atoms/userAtom";
   import usePreviewImg from "../hooks/usePreviewImg";
   import EmojiPicker from "emoji-picker-react";
   
   const MessageInput = ({ setMessages }) => {
 	const [messageText, setMessageText] = useState("");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-	const [optimisticId, setOptimisticId] = useState(null);
 	const showToast = useShowToast();
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
 	const setConversations = useSetRecoilState(conversationsAtom);
-	const currentUser = useRecoilValue(userAtom);
 	const imageRef = useRef(null);
 	const emojiRef = useRef(null);
 	const { isOpen, onOpen, onClose } = useDisclosure();
@@ -47,26 +43,6 @@ import {
 	  if (!messageText.trim() && !imgUrl) return;
 	  if (isSending) return;
   
-	  // Generate temporary ID
-	  const tempId = Date.now().toString();
-	  setOptimisticId(tempId);
-  
-	  // Create optimistic message
-	  const optimisticMessage = {
-		_id: tempId,
-		text: messageText,
-		img: imgUrl,
-		sender: currentUser,
-		createdAt: new Date().toISOString(),
-		seen: false,
-		isOptimistic: true,
-	  };
-  
-	  // Optimistic update
-	  setMessages((prev) => [...prev, optimisticMessage]);
-	  setMessageText("");
-	  setImgUrl("");
-	  setShowEmojiPicker(false);
 	  setIsSending(true);
   
 	  try {
@@ -92,15 +68,11 @@ import {
   
 		const data = await res.json();
 		if (data.error) {
-		  throw new Error(data.error);
+		  showToast("Error", data.error, "error");
+		  return;
 		}
   
-		// Replace optimistic message with real data
-		setMessages((prev) =>
-		  prev.map(msg => 
-			msg._id === tempId ? { ...data, isOptimistic: undefined } : msg
-		  )
-		);
+		setMessages((messages) => [...messages, data]);
   
 		setConversations((prevConvs) => {
 		  const updatedConversations = prevConvs.map((conversation) => {
@@ -118,15 +90,13 @@ import {
 		  return updatedConversations;
 		});
   
+		setMessageText("");
+		setImgUrl("");
+		setShowEmojiPicker(false);
 	  } catch (error) {
-		// Rollback on error
-		setMessages((prev) => 
-		  prev.filter(msg => msg._id !== tempId)
-		);
 		showToast("Error", error.message, "error");
 	  } finally {
 		setIsSending(false);
-		setOptimisticId(null);
 	  }
 	};
   
@@ -135,10 +105,7 @@ import {
 	};
   
 	return (
-	  <Flex position="relative" px={4} pb={4} flexDirection="column">
-		{isSending && (
-		  <Progress size="xs" colorScheme="green" isIndeterminate />
-		)}
+	  <Flex position="relative" px={4} pb={4}>
 		<form onSubmit={handleSendMessage} style={{ width: '100%' }}>
 		  <InputGroup size="lg">
 			<InputLeftElement>

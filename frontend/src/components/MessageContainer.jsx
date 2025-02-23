@@ -27,7 +27,6 @@ const MessageContainer = ({ isMonitoring }) => {
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messages, setMessages] = useState([]);
-  const [cachedMessages, setCachedMessages] = useState([]);
   const currentUser = useRecoilValue(userAtom);
   const { socket } = useSocket();
   const setConversations = useSetRecoilState(conversationsAtom);
@@ -52,7 +51,6 @@ const MessageContainer = ({ isMonitoring }) => {
       showToast("Error", error.message, "error");
     }
   };
-
   useEffect(() => {
     if (selectedConversation.isGroup && selectedConversation._id) {
       socket?.emit("joinGroup", selectedConversation._id);
@@ -85,7 +83,7 @@ const MessageContainer = ({ isMonitoring }) => {
     };
     
     socket?.on("newMessage", handleMessage);
-    socket?.on("newGroupMessage", handleMessage);
+    socket?.on("newGroupMessage", handleMessage); // Use the same handler
     
     return () => {
       socket?.off("newMessage", handleMessage);
@@ -130,24 +128,13 @@ const MessageContainer = ({ isMonitoring }) => {
     const getMessages = async () => {
       setLoadingMessages(true);
       setMessages([]);
-      
       try {
         if (selectedConversation.mock) return;
-        
-        // Check sessionStorage for cached messages
-        const cacheKey = `groupMessages:${selectedConversation._id}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        
-        if (cached) {
-          const parsedCache = JSON.parse(cached);
-          setCachedMessages(parsedCache);
-          setMessages(parsedCache);
-          setLoadingMessages(false);
-        }
-
+    
+        // Update the endpoint to match your backend route
         const endpoint = selectedConversation.isGroup 
-          ? `/api/messages/groups/${selectedConversation._id}/messages`
-          : `/api/messages/${selectedConversation.userId}`;
+        ? `/api/messages/groups/${selectedConversation._id}/messages`
+        : `/api/messages/${selectedConversation.userId}`;
     
         const res = await fetch(endpoint, {
           headers: { 
@@ -158,21 +145,16 @@ const MessageContainer = ({ isMonitoring }) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch messages");
     
-        // Cache in sessionStorage for group messages
-        if (selectedConversation.isGroup) {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data));
-        }
-
         setMessages(data);
-        setCachedMessages([]);
       } catch (error) {
         showToast("Error", error.message, "error");
-        console.error("Error fetching messages:", error);
+        console.error("Error fetching messages:", error); // Add error logging
       } finally {
         setLoadingMessages(false);
       }
     };
     
+
     if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
 
@@ -184,6 +166,7 @@ const MessageContainer = ({ isMonitoring }) => {
       p={2}
       flexDirection="column"
     >
+      {/* Monitoring Mode Header */}
       {isMonitoring && (
         <Flex bg="yellow.100" p={2} borderRadius="md" mb={2}>
           <Text fontSize="sm" fontWeight="bold">
@@ -192,6 +175,7 @@ const MessageContainer = ({ isMonitoring }) => {
         </Flex>
       )}
 
+      {/* Message header */}
       {selectedConversation.isGroup ? (
         <GroupMessageHeader conversation={selectedConversation} />
       ) : (
@@ -215,20 +199,8 @@ const MessageContainer = ({ isMonitoring }) => {
         p={2}
         height="400px"
         overflowY="auto"
-        sx={{
-          '&::-webkit-scrollbar': {
-            width: '4px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: useColorModeValue('gray.100', 'gray.800'),
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: useColorModeValue('gray.400', 'gray.600'),
-            borderRadius: '4px',
-          },
-        }}
       >
-        {(loadingMessages || cachedMessages.length > 0) && (
+        {loadingMessages &&
           [...Array(5)].map((_, i) => (
             <Flex
               key={i}
@@ -238,15 +210,15 @@ const MessageContainer = ({ isMonitoring }) => {
               borderRadius="md"
               alignSelf={i % 2 === 0 ? "flex-start" : "flex-end"}
             >
-              {i % 2 === 0 && <SkeletonCircle size={8} />}
-              <Flex flexDir="column" gap={2} width="70%">
-                <Skeleton height="20px" width="80%" />
-                <Skeleton height="16px" width="60%" />
+              {i % 2 === 0 && <SkeletonCircle size={7} />}
+              <Flex flexDir="column" gap={2}>
+                <Skeleton h="8px" w="250px" />
+                <Skeleton h="8px" w="250px" />
+                <Skeleton h="8px" w="250px" />
               </Flex>
-              {i % 2 !== 0 && <SkeletonCircle size={8} />}
+              {i % 2 !== 0 && <SkeletonCircle size={7} />}
             </Flex>
-          ))
-        )}
+          ))}
 
         {!loadingMessages && messages && Array.isArray(messages) && messages.map((message, idx) => (
           <Flex
@@ -256,6 +228,7 @@ const MessageContainer = ({ isMonitoring }) => {
           >
             <Message
               message={message}
+              ownMessage={currentUser._id === message.sender}
               onDelete={isMonitoring ? null : handleDelete}
             />
           </Flex>
