@@ -25,6 +25,7 @@ import {
   import { useRecoilValue, useSetRecoilState } from "recoil";
   import usePreviewImg from "../hooks/usePreviewImg";
   import EmojiPicker from "emoji-picker-react";
+  import { useSocket } from "../context/SocketContext";
   
   const MessageInput = ({ setMessages }) => {
 	const [messageText, setMessageText] = useState("");
@@ -33,17 +34,56 @@ import {
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
 	const setConversations = useSetRecoilState(conversationsAtom);
 	const imageRef = useRef(null);
-	const emojiRef = useRef(null);
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
 	const [isSending, setIsSending] = useState(false);
+	const { socket } = useSocket();
+	const typingTimeoutRef = useRef();
+  
+	const handleInputChange = (e) => {
+	  setMessageText(e.target.value);
+	  
+	  // Emit typing event
+	  socket?.emit("typing", { 
+		conversationId: selectedConversation._id 
+	  });
+  
+	  // Clear existing timeout
+	  if (typingTimeoutRef.current) {
+		clearTimeout(typingTimeoutRef.current);
+	  }
+  
+	  // Set new timeout
+	  typingTimeoutRef.current = setTimeout(() => {
+		socket?.emit("stopTyping", { 
+		  conversationId: selectedConversation._id 
+		});
+	  }, 1000);
+	};
   
 	const handleSendMessage = async (e) => {
 	  if (e) e.preventDefault();
 	  if (!messageText.trim() && !imgUrl) return;
 	  if (isSending) return;
   
-	  setIsSending(true);
+	  // Create optimistic message
+	  const optimisticId = Date.now().toString();
+	  const optimisticMessage = {
+		_id: optimisticId,
+		text: messageText,
+		img: imgUrl,
+		sender: selectedConversation.userId,
+		createdAt: new Date().toISOString(),
+		seen: false
+	  };
+  
+	  // Add optimistic message immediately
+	  setMessages(prev => [...prev, optimisticMessage]);
+	  
+	  // Clear input and image
+	  setMessageText("");
+	  setImgUrl("");
+	  setShowEmojiPicker(false);
   
 	  try {
 		const isGroupChat = selectedConversation.isGroup;
@@ -68,14 +108,19 @@ import {
   
 		const data = await res.json();
 		if (data.error) {
+		  // Remove optimistic message on error
+		  setMessages(prev => prev.filter(msg => msg._id !== optimisticId));
 		  showToast("Error", data.error, "error");
 		  return;
 		}
   
-		setMessages((messages) => [...messages, data]);
+		// Replace optimistic message with real one
+		setMessages(prev => prev.map(msg => 
+		  msg._id === optimisticId ? data : msg
+		));
   
 		setConversations((prevConvs) => {
-		  const updatedConversations = prevConvs.map((conversation) => {
+		  return prevConvs.map((conversation) => {
 			if (conversation._id === selectedConversation._id) {
 			  return {
 				...conversation,
@@ -87,13 +132,11 @@ import {
 			}
 			return conversation;
 		  });
-		  return updatedConversations;
 		});
   
-		setMessageText("");
-		setImgUrl("");
-		setShowEmojiPicker(false);
 	  } catch (error) {
+		// Remove optimistic message on error
+		setMessages(prev => prev.filter(msg => msg._id !== optimisticId));
 		showToast("Error", error.message, "error");
 	  } finally {
 		setIsSending(false);
@@ -105,7 +148,7 @@ import {
 	};
   
 	return (
-	  <Flex position="relative" px={4} pb={4}>
+		<Flex position="relative" px={4} pb={4}>
 		<form onSubmit={handleSendMessage} style={{ width: '100%' }}>
 		  <InputGroup size="lg">
 			<InputLeftElement>
@@ -120,13 +163,13 @@ import {
 			<Input
 			  placeholder="Type a message..."
 			  value={messageText}
-			  onChange={(e) => setMessageText(e.target.value)}
+			  onChange={handleInputChange}
 			  borderRadius="full"
 			  pr="4.5rem"
 			  fontSize="md"
 			  onFocus={() => setShowEmojiPicker(false)}
 			/>
-  
+			
 			<InputRightElement width="6rem">
 			  <Flex gap={2}>
 				<Tooltip label="Add emoji">

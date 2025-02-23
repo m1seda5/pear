@@ -1,5 +1,6 @@
 import {
   Avatar,
+  Box,
   Divider,
   Flex,
   Image,
@@ -31,6 +32,10 @@ const MessageContainer = ({ isMonitoring }) => {
   const { socket } = useSocket();
   const setConversations = useSetRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
+  
+  // Add typing state
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef();
 
   const handleDelete = async (messageId) => {
     try {
@@ -158,8 +163,28 @@ const MessageContainer = ({ isMonitoring }) => {
     if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
 
+  useEffect(() => {
+    // Typing indicator socket listeners
+    socket?.on("typing", ({ conversationId }) => {
+      if (selectedConversation._id === conversationId) {
+        setIsTyping(true);
+      }
+    });
+    
+    socket?.on("stopTyping", ({ conversationId }) => {
+      if (selectedConversation._id === conversationId) {
+        setIsTyping(false);
+      }
+    });
+
+    return () => {
+      socket?.off("typing");
+      socket?.off("stopTyping");
+    };
+  }, [socket, selectedConversation._id]);
+
   return (
-    <Flex
+   <Flex
       flex="70"
       bg={useColorModeValue("gray.200", "gray.dark")}
       borderRadius="md"
@@ -199,6 +224,18 @@ const MessageContainer = ({ isMonitoring }) => {
         p={2}
         height="400px"
         overflowY="auto"
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: useColorModeValue('#f0f0f0', '#2D3748'),
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: useColorModeValue('#888', '#4A5568'),
+            borderRadius: '4px',
+          },
+        }}
       >
         {loadingMessages &&
           [...Array(5)].map((_, i) => (
@@ -233,6 +270,20 @@ const MessageContainer = ({ isMonitoring }) => {
             />
           </Flex>
         ))}
+         {isTyping && (
+          <Flex gap={2} alignSelf="flex-start" alignItems="center" p={2}>
+            <Avatar 
+              src={selectedConversation.userProfilePic} 
+              size="sm"
+            />
+            <Flex gap={1} bg="gray.100" p={2} borderRadius="xl" alignItems="center">
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite"/>
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite 0.2s"/>
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite 0.4s"/>
+            </Flex>
+          </Flex>
+        )}
+        <div ref={messageEndRef} />
       </Flex>
 
       {!isMonitoring && <MessageInput setMessages={setMessages} />}
