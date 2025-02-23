@@ -32,10 +32,20 @@ const MessageContainer = ({ isMonitoring }) => {
   const { socket } = useSocket();
   const setConversations = useSetRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
-  
-  // Add typing state
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef();
+
+  const messageContainerStyles = {
+    '&::-webkit-scrollbar': {
+      width: '6px',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: useColorModeValue('gray.400', 'gray.600'),
+      borderRadius: '3px',
+    },
+    scrollBehavior: 'smooth',
+    overscrollBehavior: 'contain'
+  };
 
   const handleDelete = async (messageId) => {
     try {
@@ -56,6 +66,7 @@ const MessageContainer = ({ isMonitoring }) => {
       showToast("Error", error.message, "error");
     }
   };
+
   useEffect(() => {
     if (selectedConversation.isGroup && selectedConversation._id) {
       socket?.emit("joinGroup", selectedConversation._id);
@@ -88,7 +99,7 @@ const MessageContainer = ({ isMonitoring }) => {
     };
     
     socket?.on("newMessage", handleMessage);
-    socket?.on("newGroupMessage", handleMessage); // Use the same handler
+    socket?.on("newGroupMessage", handleMessage);
     
     return () => {
       socket?.off("newMessage", handleMessage);
@@ -126,7 +137,12 @@ const MessageContainer = ({ isMonitoring }) => {
   }, [socket, currentUser._id, messages, selectedConversation]);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      messageEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -136,10 +152,9 @@ const MessageContainer = ({ isMonitoring }) => {
       try {
         if (selectedConversation.mock) return;
     
-        // Update the endpoint to match your backend route
         const endpoint = selectedConversation.isGroup 
-        ? `/api/messages/groups/${selectedConversation._id}/messages`
-        : `/api/messages/${selectedConversation.userId}`;
+          ? `/api/messages/groups/${selectedConversation._id}/messages`
+          : `/api/messages/${selectedConversation.userId}`;
     
         const res = await fetch(endpoint, {
           headers: { 
@@ -153,18 +168,16 @@ const MessageContainer = ({ isMonitoring }) => {
         setMessages(data);
       } catch (error) {
         showToast("Error", error.message, "error");
-        console.error("Error fetching messages:", error); // Add error logging
+        console.error("Error fetching messages:", error);
       } finally {
         setLoadingMessages(false);
       }
     };
-    
 
     if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
 
   useEffect(() => {
-    // Typing indicator socket listeners
     socket?.on("typing", ({ conversationId }) => {
       if (selectedConversation._id === conversationId) {
         setIsTyping(true);
@@ -184,14 +197,13 @@ const MessageContainer = ({ isMonitoring }) => {
   }, [socket, selectedConversation._id]);
 
   return (
-   <Flex
+    <Flex
       flex="70"
       bg={useColorModeValue("gray.200", "gray.dark")}
       borderRadius="md"
       p={2}
       flexDirection="column"
     >
-      {/* Monitoring Mode Header */}
       {isMonitoring && (
         <Flex bg="yellow.100" p={2} borderRadius="md" mb={2}>
           <Text fontSize="sm" fontWeight="bold">
@@ -200,7 +212,6 @@ const MessageContainer = ({ isMonitoring }) => {
         </Flex>
       )}
 
-      {/* Message header */}
       {selectedConversation.isGroup ? (
         <GroupMessageHeader conversation={selectedConversation} />
       ) : (
@@ -224,18 +235,7 @@ const MessageContainer = ({ isMonitoring }) => {
         p={2}
         height="400px"
         overflowY="auto"
-        css={{
-          '&::-webkit-scrollbar': {
-            width: '4px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: useColorModeValue('#f0f0f0', '#2D3748'),
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: useColorModeValue('#888', '#4A5568'),
-            borderRadius: '4px',
-          },
-        }}
+        sx={messageContainerStyles}
       >
         {loadingMessages &&
           [...Array(5)].map((_, i) => (
@@ -257,20 +257,20 @@ const MessageContainer = ({ isMonitoring }) => {
             </Flex>
           ))}
 
-        {!loadingMessages && messages && Array.isArray(messages) && messages.map((message, idx) => (
+        {!loadingMessages && messages && Array.isArray(messages) && messages.map((message) => (
           <Flex
-            key={message._id || idx}
+            key={message._id}
             direction="column"
-            ref={idx === messages.length - 1 ? messageEndRef : null}
           >
             <Message
               message={message}
-              ownMessage={currentUser._id === message.sender}
+              ownMessage={currentUser._id === message.sender?._id}
               onDelete={isMonitoring ? null : handleDelete}
             />
           </Flex>
         ))}
-         {isTyping && (
+
+        {isTyping && (
           <Flex gap={2} alignSelf="flex-start" alignItems="center" p={2}>
             <Avatar 
               src={selectedConversation.userProfilePic} 

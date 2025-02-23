@@ -275,6 +275,7 @@
  
 
 //  version 2 with translations
+import React from 'react';
 import {
   Avatar,
   Box,
@@ -340,7 +341,7 @@ const isMessageRestricted = (text) => {
   return restrictedWords.some((word) => text.toLowerCase().includes(word));
 };
 
-const Message = ({ ownMessage, message, onDelete }) => {
+const Message = React.memo(({ ownMessage, message, onDelete }) => {
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const user = useRecoilValue(userAtom);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -354,8 +355,8 @@ const Message = ({ ownMessage, message, onDelete }) => {
   const [isDeletable, setIsDeletable] = useState(false);
 
   const bubbleBg = useColorModeValue(
-    ownMessage ? "blue.500" : "gray.100",
-    ownMessage ? "blue.600" : "gray.700"
+    ownMessage ? "blue.400" : "gray.100",  // Light mode - softer blue
+    ownMessage ? "blue.500" : "gray.700"   // Dark mode - richer blue
   );
   
   const textColor = useColorModeValue(
@@ -424,9 +425,17 @@ const Message = ({ ownMessage, message, onDelete }) => {
         maxW="80%"
       >
         {!ownMessage && selectedConversation.isGroup && (
-          <Text fontSize="xs" color="gray.500" pl={1}>
-            {message.sender?.username}
-          </Text>
+          <Flex align="center" gap={2}>
+            <Avatar 
+              src={message.sender?.profilePic} 
+              size="xs" 
+              w={4} 
+              h={4} 
+            />
+            <Text fontSize="xs" color="gray.500">
+              {message.sender?.username}
+            </Text>
+          </Flex>
         )}
 
         <Flex
@@ -517,59 +526,62 @@ const Message = ({ ownMessage, message, onDelete }) => {
           </Flex>
         </Flex>
 
-        {ownMessage && (
-          <Avatar src={user.profilePic} w="7" h={7} />
+        {!ownMessage && selectedConversation.isGroup && (
+          <Avatar 
+            src={message.sender?.profilePic} 
+            size="xs" 
+            w={6} 
+            h={6} 
+            mt={1}
+          />
         )}
-        {!ownMessage && (
-          <Avatar src={selectedConversation.userProfilePic} w="7" h={7} />
-        )}
-
-        {/* Delete Confirmation Modal */}
-        <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
-          <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
-          <Slide in={isOpen} direction="bottom">
-            <ModalContent 
-              bg={useColorModeValue('white', 'gray.800')}
-              mx={4}
-              mb={4}
-              borderRadius="xl"
-              boxShadow="xl"
-            >
-              <ModalBody py={4} textAlign="center">
-                <Text fontSize="lg" fontWeight="semibold">
-                  Delete this message?
-                </Text>
-                <Text fontSize="sm" color="gray.500" mt={1}>
-                  This action cannot be undone
-                </Text>
-              </ModalBody>
-              <ModalFooter borderTopWidth={1} p={0}>
-                <Button 
-                  w="full"
-                  variant="ghost" 
-                  onClick={onClose}
-                  borderRadius="0 0 0 xl"
-                  _hover={{ bg: 'gray.100' }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  w="full"
-                  colorScheme="red"
-                  variant="solid"
-                  borderRadius="0 0 xl 0"
-                  onClick={handleDelete}
-                  _hover={{ bg: 'red.600' }}
-                >
-                  Delete
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Slide>
-        </Modal>
       </Flex>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
+        <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
+        <Slide in={isOpen} direction="bottom">
+          <ModalContent 
+            bg={useColorModeValue('white', 'gray.800')}
+            mx={4}
+            mb={4}
+            borderRadius="xl"
+            boxShadow="xl"
+          >
+            <ModalBody py={4} textAlign="center">
+              <Text fontSize="lg" fontWeight="semibold">
+                Delete this message?
+              </Text>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                This action cannot be undone
+              </Text>
+            </ModalBody>
+            <ModalFooter borderTopWidth={1} p={0}>
+              <Button 
+                w="full"
+                variant="ghost" 
+                onClick={onClose}
+                borderRadius="0 0 0 xl"
+                _hover={{ bg: 'gray.100' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                w="full"
+                colorScheme="red"
+                variant="solid"
+                borderRadius="0 0 xl 0"
+                onClick={handleDelete}
+                _hover={{ bg: 'red.600' }}
+              >
+                Delete
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Slide>
+      </Modal>
     </>
   );
-};
+});
 
 export default Message;

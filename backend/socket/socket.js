@@ -26,6 +26,16 @@ io.on("connection", (socket) => {
     if (userId != "undefined") userSocketMap[userId] = socket.id;
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+    // Typing indicator with throttling
+    let lastEmit = 0;
+    socket.on("typing", ({ conversationId }) => {
+        const now = Date.now();
+        if (now - lastEmit > 200) { // Throttle to 200ms
+            socket.to(conversationId).emit("typing", { conversationId });
+            lastEmit = now;
+        }
+    });
+
     // Existing message seen functionality
     socket.on("markMessagesAsSeen", async ({ conversationId, userId }) => {
         try {

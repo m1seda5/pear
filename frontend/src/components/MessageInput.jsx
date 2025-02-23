@@ -43,17 +43,14 @@ import {
 	const handleInputChange = (e) => {
 	  setMessageText(e.target.value);
 	  
-	  // Emit typing event
 	  socket?.emit("typing", { 
 		conversationId: selectedConversation._id 
 	  });
   
-	  // Clear existing timeout
 	  if (typingTimeoutRef.current) {
 		clearTimeout(typingTimeoutRef.current);
 	  }
   
-	  // Set new timeout
 	  typingTimeoutRef.current = setTimeout(() => {
 		socket?.emit("stopTyping", { 
 		  conversationId: selectedConversation._id 
@@ -66,10 +63,8 @@ import {
 	  if (!messageText.trim() && !imgUrl) return;
 	  if (isSending) return;
   
-	  // Create optimistic message
-	  const optimisticId = Date.now().toString();
 	  const optimisticMessage = {
-		_id: optimisticId,
+		_id: Date.now().toString(),
 		text: messageText,
 		img: imgUrl,
 		sender: selectedConversation.userId,
@@ -77,25 +72,61 @@ import {
 		seen: false
 	  };
   
-	  // Add optimistic message immediately
-	  setMessages(prev => [...prev, optimisticMessage]);
-	  
-	  // Clear input and image
+	  // Clear input state immediately
+	  const messageToSend = messageText;
+	  const imageToSend = imgUrl;
 	  setMessageText("");
 	  setImgUrl("");
 	  setShowEmojiPicker(false);
   
+	  // Add message to UI immediately
+	  setMessages(prev => [...prev, optimisticMessage]);
+  
+	  // Update conversation list immediately
+	  setConversations(prev => {
+		return prev.map(conversation => {
+		  if (conversation._id === selectedConversation._id) {
+			return {
+			  ...conversation,
+			  lastMessage: {
+				text: messageToSend,
+				sender: optimisticMessage.sender,
+			  },
+			};
+		  }
+		  return conversation;
+		});
+	  });
+  
+	  // Emit socket event immediately
+	  if (socket) {
+		const socketPayload = {
+		  conversationId: selectedConversation._id,
+		  message: messageToSend,
+		  img: imageToSend,
+		  messageId: optimisticMessage._id,
+		  sender: optimisticMessage.sender
+		};
+		
+		socket.emit("newMessage", socketPayload);
+		
+		if (selectedConversation.isGroup) {
+		  socket.emit("newGroupMessage", socketPayload);
+		}
+	  }
+  
+	  // Send to API in background
 	  try {
 		const isGroupChat = selectedConversation.isGroup;
 		
 		const requestBody = isGroupChat ? {
 		  conversationId: selectedConversation._id,
-		  message: messageText,
-		  img: imgUrl
+		  message: messageToSend,
+		  img: imageToSend
 		} : {
 		  recipientId: selectedConversation.userId,
-		  message: messageText,
-		  img: imgUrl
+		  message: messageToSend,
+		  img: imageToSend
 		};
   
 		const res = await fetch("/api/messages", {
@@ -108,35 +139,19 @@ import {
   
 		const data = await res.json();
 		if (data.error) {
-		  // Remove optimistic message on error
-		  setMessages(prev => prev.filter(msg => msg._id !== optimisticId));
+		  // Only remove message on error
+		  setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
 		  showToast("Error", data.error, "error");
 		  return;
 		}
   
-		// Replace optimistic message with real one
+		// Update with server data silently
 		setMessages(prev => prev.map(msg => 
-		  msg._id === optimisticId ? data : msg
+		  msg._id === optimisticMessage._id ? { ...data, seen: msg.seen } : msg
 		));
   
-		setConversations((prevConvs) => {
-		  return prevConvs.map((conversation) => {
-			if (conversation._id === selectedConversation._id) {
-			  return {
-				...conversation,
-				lastMessage: {
-				  text: messageText,
-				  sender: data.sender,
-				},
-			  };
-			}
-			return conversation;
-		  });
-		});
-  
 	  } catch (error) {
-		// Remove optimistic message on error
-		setMessages(prev => prev.filter(msg => msg._id !== optimisticId));
+		setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
 		showToast("Error", error.message, "error");
 	  } finally {
 		setIsSending(false);
@@ -148,7 +163,7 @@ import {
 	};
   
 	return (
-		<Flex position="relative" px={4} pb={4}>
+	  <Flex position="relative" px={4} pb={4}>
 		<form onSubmit={handleSendMessage} style={{ width: '100%' }}>
 		  <InputGroup size="lg">
 			<InputLeftElement>
