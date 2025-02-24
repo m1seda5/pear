@@ -202,6 +202,15 @@ const MessageContainer = ({ isMonitoring }) => {
       socket?.off("stopTyping");
     };
   }, [socket, selectedConversation._id]);
+  useEffect(() => {
+    if (selectedConversation._id) {
+      if (selectedConversation.isGroup) {
+        socket?.emit("joinGroup", selectedConversation._id);
+      } else {
+        socket?.emit("joinChat", selectedConversation._id);
+      }
+    }
+  }, [selectedConversation._id, selectedConversation.isGroup, socket]);
 
   return (
     <Flex

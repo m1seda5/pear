@@ -18,67 +18,111 @@ export const getRecipientSocketId = (recipientId) => {
 };
 
 const userSocketMap = {}; // userId: socketId
+const userRooms = new Map(); // Keep track of rooms (conversations) each user is in
 
 io.on("connection", (socket) => {
     console.log("user connected", socket.id);
     const userId = socket.handshake.query.userId;
 
-    if (userId != "undefined") userSocketMap[userId] = socket.id;
+    if (userId != "undefined") {
+        userSocketMap[userId] = socket.id;
+        
+        // Clean up any existing rooms for this user
+        if (userRooms.has(userId)) {
+            userRooms.get(userId).forEach(room => {
+                socket.leave(room);
+            });
+        }
+        userRooms.set(userId, new Set());
+    }
+    
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+    // Join direct message room
+    socket.on("joinChat", (conversationId) => {
+        // Leave previous rooms first
+        if (userRooms.has(userId)) {
+            userRooms.get(userId).forEach(room => {
+                socket.leave(room);
+            });
+            userRooms.get(userId).clear();
+        }
+        
+        const roomId = `chat_${conversationId}`;
+        socket.join(roomId);
+        userRooms.get(userId).add(roomId);
+        console.log(`User ${userId} joined chat: ${roomId}`);
+    });
+
+    // Join group chat room
+    socket.on("joinGroup", (groupId) => {
+        const roomId = `group_${groupId}`;
+        socket.join(roomId);
+        if (userRooms.has(userId)) {
+            userRooms.get(userId).add(roomId);
+        }
+        console.log(`User ${userId} joined group: ${roomId}`);
+    });
 
     // Typing indicator with throttling
     let lastEmit = 0;
-    socket.on("typing", ({ conversationId }) => {
+    socket.on("typing", ({ conversationId, isGroup }) => {
         const now = Date.now();
-        if (now - lastEmit > 200) { // Throttle to 200ms
-            socket.to(conversationId).emit("typing", { conversationId });
+        if (now - lastEmit > 200) {
+            const roomId = isGroup ? `group_${conversationId}` : `chat_${conversationId}`;
+            socket.to(roomId).emit("typing", { conversationId });
             lastEmit = now;
         }
     });
 
-    // Existing message seen functionality
-    socket.on("markMessagesAsSeen", async ({ conversationId, userId }) => {
+    socket.on("stopTyping", ({ conversationId, isGroup }) => {
+        const roomId = isGroup ? `group_${conversationId}` : `chat_${conversationId}`;
+        socket.to(roomId).emit("stopTyping", { conversationId });
+    });
+
+    // Message seen functionality
+    socket.on("markMessagesAsSeen", async ({ conversationId, userId, isGroup }) => {
         try {
             await Message.updateMany(
                 { conversationId: conversationId, seen: false },
                 { $set: { seen: true } }
             );
+            
             await Conversation.updateOne(
                 { _id: conversationId },
                 { $set: { "lastMessage.seen": true } }
             );
-            io.to(userSocketMap[userId]).emit("messagesSeen", { conversationId });
+
+            const roomId = isGroup ? `group_${conversationId}` : `chat_${conversationId}`;
+            io.to(roomId).emit("messagesSeen", { conversationId });
         } catch (error) {
-            console.log(error);
+            console.error("Error marking messages as seen:", error);
         }
     });
 
-    // New group-related socket handlers
-    socket.on("joinGroups", (groupIds) => {
-        groupIds.forEach(groupId => {
-            socket.join(`group_${groupId}`);
-        });
-    });
-
-    // New single group join handler
-    socket.on("joinGroup", (groupId) => {
-        socket.join(`group_${groupId}`);
-        console.log(`User joined group: group_${groupId}`);
-    });
-
+    // Group updates
     socket.on("groupUpdate", async (groupId) => {
         try {
             const updatedGroup = await Conversation.findById(groupId)
                 .populate('participants', 'username profilePic');
             io.to(`group_${groupId}`).emit("groupUpdated", updatedGroup);
         } catch (error) {
-            console.log(error);
+            console.error("Error updating group:", error);
         }
     });
 
     // Disconnect handler
     socket.on("disconnect", () => {
         console.log("user disconnected");
+        
+        // Clean up rooms
+        if (userRooms.has(userId)) {
+            userRooms.get(userId).forEach(room => {
+                socket.leave(room);
+            });
+            userRooms.delete(userId);
+        }
+        
         delete userSocketMap[userId];
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
