@@ -335,23 +335,22 @@
 
 
 // this is with translations added(working)
-import { Box, Flex, Spinner, Text, Link } from "@chakra-ui/react"; // Added Link import
+import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
 import { useRecoilState } from "recoil";
 import postsAtom from "../atoms/postsAtom";
-import { useTranslation } from 'react-i18next';
-import { Link as RouterLink } from 'react-router-dom'; // Added RouterLink import
-import '../index.css';
+import { useTranslation } from 'react-i18next';  // Import useTranslation
+import '../index.css'; // Ensure correct CSS is imported
 
 const HomePage = () => {
 	const [posts, setPosts] = useRecoilState(postsAtom);
 	const [loading, setLoading] = useState(true);
 	const [newPosts, setNewPosts] = useState([]);
 	const showToast = useShowToast();
-	const { t, i18n } = useTranslation();
-	const [language, setLanguage] = useState(i18n.language);
+	const { t, i18n } = useTranslation();  // Initialize the translation hook
+	const [language, setLanguage] = useState(i18n.language);  // Add language state
 
 	// Handle language changes
 	useEffect(() => {
@@ -359,10 +358,10 @@ const HomePage = () => {
 			setLanguage(lng);
 		};
 
-		i18n.on('languageChanged', handleLanguageChange);
+		i18n.on('languageChanged', handleLanguageChange);  // Listen for language changes
 
 		return () => {
-			i18n.off('languageChanged', handleLanguageChange);
+			i18n.off('languageChanged', handleLanguageChange);  // Cleanup on unmount
 		};
 	}, [i18n]);
 
@@ -375,6 +374,7 @@ const HomePage = () => {
 				const data = await res.json();
 	
 				if (data.error) {
+					// Ensure that the toast is only shown if the user retrieval truly fails
 					showToast(t("Error"), data.error, "error");
 					return;
 				}
@@ -392,7 +392,9 @@ const HomePage = () => {
 					setNewPosts([]);
 				}, 30000); // "New to you" message disappears after 30 seconds
 			} catch (error) {
+				// Make sure the error here is valid (e.g., network error or actual server issue)
 				if (error.message.includes('User not found')) {
+					// Suppress "User not found" error on the HomePage
 					console.warn("User retrieval failed but no toast shown");
 				} else {
 					showToast(t("Error"), error.message, "error");
@@ -404,6 +406,7 @@ const HomePage = () => {
 		getFeedPosts();
 	}, [showToast, setPosts, t]);
 	
+
 	const isNewPost = (postTime) => {
 		const now = Date.now();
 		const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
@@ -411,16 +414,14 @@ const HomePage = () => {
 	};
 
 	return (
-		<Box>
-			<Flex direction="column" gap={4} pb={4}>
+		<Flex gap="10" alignItems={"flex-start"}>
+			<Box flex={70}>
 				{!loading && posts.length === 0 && (
-					<Text fontSize="md" textAlign="center" p={4}>
-						{t("Welcome to Pear! You have successfully created an account.")} <Link as={RouterLink} to="/auth" color="blue.500" fontWeight="bold">{t("Click here to log in")}</Link> {t("to see the latest Brookhouse news 🍐.")}
-					</Text>
+					<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>  
 				)}
 
 				{loading && (
-					<Flex justify="center" my={12}>
+					<Flex justifyContent="center">
 						<Spinner size="xl" />
 					</Flex>
 				)}
@@ -429,18 +430,25 @@ const HomePage = () => {
 					const isNew = isNewPost(post.createdAt);
 
 					return (
-						<Box key={post._id} position="relative">
-							<Post post={post} />
+						<Box
+							key={post._id}
+							className="postContainer" // This is where the popout hover effect will happen
+							borderWidth="1px"
+							borderRadius="lg"
+							p={4}
+							mb={6}
+							boxShadow="sm"
+						>
+							<Post post={post} postedBy={post.postedBy} />
+
 							{isNew && newPosts.includes(post) && (
-								<Text position="absolute" top={0} right={0} bg="blue.500" color="white" px={2} py={1} borderRadius="md" fontSize="xs" fontWeight="bold">
-									{t("New to you!")}
-								</Text>
+								<Text className="newToYouText" mt={2}>{t("New to you!")}</Text> 
 							)}
 						</Box>
 					);
 				})}
-			</Flex>
-		</Box>
+			</Box>
+		</Flex>
 	);
 };
 
