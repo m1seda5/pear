@@ -519,6 +519,7 @@ import {
   Image,
   CloseButton,
   keyframes,
+  Tooltip
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
@@ -735,25 +736,31 @@ const CreatePost = () => {
 
   return (
     <>
-      <Button
-        position="fixed"
-        bottom={10}
-        right={5}
-        bg={buttonBg}
-        color="white"
-        onClick={onOpen}
-        size="lg"
-        aria-label={t("Create Post")}
-        zIndex={999}
-        animation={isPulsing ? `${pulseKeyframes} 1s ease-in-out` : undefined}
-        transform="auto"
-        _hover={{
-          bg: buttonHoverBg,
-        }}
+      <Tooltip 
+        label="Create Post" 
+        placement="left" 
+        hasArrow 
+        openDelay={300}
       >
-        <AddIcon />
-      </Button>
-
+        <Button
+          position="fixed"
+          bottom={10}
+          right={5}
+          bg={buttonBg}
+          color="white"
+          onClick={onOpen}
+          size="lg"
+          aria-label={t("Create Post")}
+          zIndex={999}
+          animation={isPulsing ? `${pulseKeyframes} 1s ease-in-out` : undefined}
+          transform="auto"
+          _hover={{
+            bg: buttonHoverBg,
+          }}
+        >
+          <AddIcon />
+        </Button>
+      </Tooltip>
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
@@ -782,12 +789,16 @@ const CreatePost = () => {
                 ref={imageRef}
                 onChange={handleImageChange}
               />
-              <BsFillImageFill
-                style={{ marginLeft: "5px", cursor: "pointer" }}
-                size={16}
-                onClick={() => imageRef.current.click()}
-                aria-label={t("Add Image")}
-              />
+              <Tooltip label="Add Image" placement="top" hasArrow>
+                <Box as="span" display="inline-block">
+                  <BsFillImageFill
+                    style={{ marginLeft: "5px", cursor: "pointer" }}
+                    size={16}
+                    onClick={() => imageRef.current.click()}
+                    aria-label={t("Add Image")}
+                  />
+                </Box>
+              </Tooltip>
 
               {user.role === "teacher" && (
                 <Select

@@ -917,7 +917,15 @@
 
 
 // admin role update
-import { Button, Flex, Image, Link, useColorMode } from "@chakra-ui/react";
+import { 
+  Button, 
+  Flex, 
+  Icon,
+  Link, 
+  useColorMode,
+  Tooltip
+} from "@chakra-ui/react";
+import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { AiFillHome } from "react-icons/ai";
@@ -1001,17 +1009,19 @@ const Header = ({ unreadCount = 0 }) => {
       width="100%"
     >
       {user && (
-        <Link
-          as={RouterLink}
-          to="/"
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
-          }}
-          transition="all 0.3s ease-in-out"
-        >
-          <AiFillHome size={24} />
-        </Link>
+        <Tooltip label="Home" placement="bottom" hasArrow>
+          <Link
+            as={RouterLink}
+            to="/"
+            _hover={{
+              color: "teal.500",
+              transform: "scale(1.2)",
+            }}
+            transition="all 0.3s ease-in-out"
+          >
+            <AiFillHome size={24} />
+          </Link>
+        </Tooltip>
       )}
 
       {!user && (
@@ -1029,17 +1039,23 @@ const Header = ({ unreadCount = 0 }) => {
         </Link>
       )}
 
-      <Image
-        cursor="pointer"
-        alt="logo"
-        w={6}
-        src={colorMode === "dark" ? "/light-logo.svg" : "/dark-logo.svg"}
-        onClick={toggleColorMode}
-        _hover={{
-          transform: "rotate(20deg) scale(1.2)",
-        }}
-        transition="all 0.3s ease-in-out"
-      />
+      <Tooltip 
+        label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} 
+        placement="bottom" 
+        hasArrow
+      >
+        <Icon
+          as={colorMode === 'dark' ? SunIcon : MoonIcon}
+          w={6}
+          h={6}
+          cursor="pointer"
+          onClick={toggleColorMode}
+          _hover={{
+            transform: "rotate(20deg) scale(1.2)"
+          }}
+          transition="all 0.3s ease-in-out"
+        />
+      </Tooltip>
 
       {user && (
         <Flex
@@ -1048,98 +1064,112 @@ const Header = ({ unreadCount = 0 }) => {
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
-          <Link
-            as={RouterLink}
-            to={`/${user.username}`}
-            _hover={{
-              color: "teal.500",
-              transform: "scale(1.2)",
-            }}
-            transition="all 0.3s ease-in-out"
-          >
-            <RxAvatar size={24} />
-          </Link>
+          <Tooltip label="Profile" placement="bottom" hasArrow>
+            <Link
+              as={RouterLink}
+              to={`/${user.username}`}
+              _hover={{
+                color: "teal.500",
+                transform: "scale(1.2)",
+              }}
+              transition="all 0.3s ease-in-out"
+            >
+              <RxAvatar size={24} />
+            </Link>
+          </Tooltip>
 
-          <Link
-            position="relative"
-            onClick={handleChatClick}
-            _hover={{
-              color: user?.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
-              transform: "scale(1.2)",
-              cursor: user?.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
-            }}
-            onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
-            onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
+          <Tooltip 
+            label={user?.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
+            placement="bottom" 
+            hasArrow
           >
-            {user?.isFrozen ? (
-              <FaLock size={20} color="#4299E1" />
-            ) : hoverState.lock ? (
-              <FaLock size={20} color="#F56565" />
-            ) : (
-              <BsFillChatQuoteFill size={20} />
-            )}
-            
-            {unreadCount > 0 && !user?.isFrozen && hasChatAccess && (
-              <Flex
-                position="absolute"
-                top="-2px"
-                right="-2px"
-                bg="red.500"
-                color="white"
-                borderRadius="full"
-                w="18px"
-                h="18px"
-                fontSize="xs"
-                alignItems="center"
-                justifyContent="center"
-                boxShadow="md"
-              >
-                {unreadCount}
-              </Flex>
-            )}
-          </Link>
+            <Link
+              position="relative"
+              onClick={handleChatClick}
+              _hover={{
+                color: user?.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
+                transform: "scale(1.2)",
+                cursor: user?.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
+              }}
+              onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
+              onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
+            >
+              {user?.isFrozen ? (
+                <FaLock size={20} color="#4299E1" />
+              ) : hoverState.lock ? (
+                <FaLock size={20} color="#F56565" />
+              ) : (
+                <BsFillChatQuoteFill size={20} />
+              )}
+              
+              {unreadCount > 0 && !user?.isFrozen && hasChatAccess && (
+                <Flex
+                  position="absolute"
+                  top="-2px"
+                  right="-2px"
+                  bg="red.500"
+                  color="white"
+                  borderRadius="full"
+                  w="18px"
+                  h="18px"
+                  fontSize="xs"
+                  alignItems="center"
+                  justifyContent="center"
+                  boxShadow="md"
+                >
+                  {unreadCount}
+                </Flex>
+              )}
+            </Link>
+          </Tooltip>
 
-          <Link
-            onClick={handleTVClick}
-            _hover={{
-              color: isAdmin ? "teal.500" : "red.500",
-              transform: "scale(1.2)",
-              cursor: isAdmin ? "pointer" : "not-allowed",
-            }}
-            onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
-            onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
-          >
-            {hoverState.tv && !isAdmin ? (
-              <FaLock size={20} color="#F56565" />
-            ) : (
-              <PiTelevisionSimpleBold size={20} />
-            )}
-          </Link>
+          <Tooltip label={isAdmin ? "TV Dashboard" : "Admin Only"} placement="bottom" hasArrow>
+            <Link
+              onClick={handleTVClick}
+              _hover={{
+                color: isAdmin ? "teal.500" : "red.500",
+                transform: "scale(1.2)",
+                cursor: isAdmin ? "pointer" : "not-allowed",
+              }}
+              onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
+              onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
+            >
+              {hoverState.tv && !isAdmin ? (
+                <FaLock size={20} color="#F56565" />
+              ) : (
+                <PiTelevisionSimpleBold size={20} />
+              )}
+            </Link>
+          </Tooltip>
 
-          <Link
-            as={RouterLink}
-            to="/settings"
-            _hover={{
-              color: "teal.500",
-              transform: "scale(1.2)",
-            }}
-            transition="all 0.3s ease-in-out"
-          >
-            <MdOutlineSettings size={20} />
-          </Link>
+          <Tooltip label="Settings" placement="bottom" hasArrow>
+            <Link
+              as={RouterLink}
+              to="/settings"
+              _hover={{
+                color: "teal.500",
+                transform: "scale(1.2)",
+              }}
+              transition="all 0.3s ease-in-out"
+            >
+              <MdOutlineSettings size={20} />
+            </Link>
+          </Tooltip>
 
-          <Button
-            size="xs"
-            onClick={logout}
-            _hover={{
-              bg: "teal.500",
-              color: "white",
-              transform: "scale(1.1)",
-            }}
-            transition="all 0.3s ease-in-out"
-          >
-            <FiLogOut size={20} />
-          </Button>
+          <Tooltip label="Logout" placement="bottom" hasArrow>
+            <Button
+              size="xs"
+              onClick={logout}
+              _hover={{
+                bg: "teal.500",
+                color: "white",
+                transform: "scale(1.1)",
+              }}
+              transition="all 0.3s ease-in-out"
+            >
+              <FiLogOut size={20} />
+            </Button>
+          </Tooltip>
         </Flex>
       )}
 
