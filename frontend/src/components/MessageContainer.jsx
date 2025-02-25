@@ -80,39 +80,66 @@ const MessageContainer = ({ isMonitoring }) => {
     }
   }, [selectedConversation, socket]);
 
-  useEffect(() => {
-    const handleMessage = (message) => {
-      if (selectedConversation._id === message.conversationId) {
-        setMessages((prev) => [...prev, message]);
-        if (!document.hasFocus()) {
-          const sound = new Audio(messageSound);
-          sound.play();
-        }
-        setConversations((prev) => {
-          return prev.map((conversation) => {
-            if (conversation._id === message.conversationId) {
-              return {
-                ...conversation,
-                lastMessage: {
-                  text: message.text,
-                  sender: message.sender,
-                },
-              };
-            }
-            return conversation;
-          });
-        });
+  // Replace the useEffect for handling messages with this:
+useEffect(() => {
+  const handleDirectMessage = (message) => {
+    // Only process direct messages in direct chat views
+    if (!selectedConversation.isGroup && selectedConversation._id === message.conversationId) {
+      setMessages((prev) => [...prev, message]);
+      if (!document.hasFocus()) {
+        const sound = new Audio(messageSound);
+        sound.play();
       }
-    };
-    
-    socket?.on("newMessage", handleMessage);
-    socket?.on("newGroupMessage", handleMessage);
-    
-    return () => {
-      socket?.off("newMessage", handleMessage);
-      socket?.off("newGroupMessage", handleMessage);
-    };
-  }, [socket, selectedConversation._id, setConversations]);
+      setConversations((prev) => {
+        return prev.map((conversation) => {
+          if (conversation._id === message.conversationId) {
+            return {
+              ...conversation,
+              lastMessage: {
+                text: message.text,
+                sender: message.sender,
+              },
+            };
+          }
+          return conversation;
+        });
+      });
+    }
+  };
+  
+  const handleGroupMessage = (data) => {
+    // Only process group messages in group chat views
+    if (selectedConversation.isGroup && selectedConversation._id === data.conversation._id) {
+      setMessages((prev) => [...prev, data.message]);
+      if (!document.hasFocus()) {
+        const sound = new Audio(messageSound);
+        sound.play();
+      }
+      setConversations((prev) => {
+        return prev.map((conversation) => {
+          if (conversation._id === data.conversation._id) {
+            return {
+              ...conversation,
+              lastMessage: {
+                text: data.message.text,
+                sender: data.message.sender,
+              },
+            };
+          }
+          return conversation;
+        });
+      });
+    }
+  };
+  
+  socket?.on("newMessage", handleDirectMessage);
+  socket?.on("newGroupMessage", handleGroupMessage);
+  
+  return () => {
+    socket?.off("newMessage", handleDirectMessage);
+    socket?.off("newGroupMessage", handleGroupMessage);
+  };
+}, [socket, selectedConversation, setConversations]);
 
   useEffect(() => {
     const lastMessageIsFromOtherUser =

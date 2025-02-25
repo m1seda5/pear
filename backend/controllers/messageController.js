@@ -110,6 +110,7 @@ async function sendMessage(req, res) {
         if (participantId !== senderId.toString()) {
           const recipientSocketId = getRecipientSocketId(participantId);
           if (recipientSocketId) {
+            // Use newGroupMessage event only for group chats
             io.to(recipientSocketId).emit("newGroupMessage", {
               message: populatedMessage,
               conversation: {
@@ -128,6 +129,7 @@ async function sendMessage(req, res) {
       );
       const recipientSocketId = getRecipientSocketId(recipient.toString());
       if (recipientSocketId) {
+        // Use newMessage event only for direct messages
         io.to(recipientSocketId).emit("newMessage", populatedMessage);
       }
     }
