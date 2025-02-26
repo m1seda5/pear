@@ -130,29 +130,33 @@ async function sendMessage(req, res) {
   }
 }
 // messageController.js - Update getMessages function
+// In messageController.js - Updated getMessages function
 async function getMessages(req, res) {
   const { otherUserId } = req.params;
   const userId = req.user._id;
+
   try {
-      const conversation = await Conversation.findOne({
-          participants: { $all: [userId, otherUserId] },
-      });
+    const conversation = await Conversation.findOne({
+      participants: { $all: [userId, otherUserId] },
+      isGroup: false, // Exclude group chats
+    });
 
-      if (!conversation) {
-          return res.status(404).json({ error: "Conversation not found" });
-      }
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
 
-      const messages = await Message.find({
-          conversationId: conversation._id,
-      })
-      .populate('sender', 'username profilePic') // Add population
-      .sort({ createdAt: 1 });
+    const messages = await Message.find({
+      conversationId: conversation._id,
+    })
+      .populate('sender', 'username profilePic') // Populate sender details
+      .sort({ createdAt: 1 }); // Sort messages by creation date (ascending)
 
-      res.status(200).json(messages);
+    res.status(200).json(messages);
   } catch (error) {
-      res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 }
+
 
 async function getConversations(req, res) {
   const userId = req.user._id;
