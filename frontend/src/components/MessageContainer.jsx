@@ -82,7 +82,11 @@ const MessageContainer = ({ isMonitoring }) => {
 
 
   useEffect(() => {
+    // In MessageContainer.jsx
+    // Update handleDirectMessage
     const handleDirectMessage = (message) => {
+      if (message.sender._id === currentUser._id) return; // Skip current user's messages
+      
       // Strictly verify this is for the current direct conversation
       if (!selectedConversation.isGroup && 
           message.conversationId === selectedConversation._id) {
@@ -112,7 +116,11 @@ const MessageContainer = ({ isMonitoring }) => {
       }
     };
     
+    // In MessageContainer.jsx
+    // Update handleGroupMessage
     const handleGroupMessage = (data) => {
+      if (data.message.sender._id === currentUser._id) return; // Skip current user's messages
+      
       // Strictly verify this is for the current group conversation
       if (selectedConversation.isGroup && 
           selectedConversation._id === data.conversation._id) {
@@ -149,7 +157,8 @@ const MessageContainer = ({ isMonitoring }) => {
       socket?.off("newMessage", handleDirectMessage);
       socket?.off("newGroupMessage", handleGroupMessage);
     };
-  }, [socket, selectedConversation, setConversations]);
+  }, [socket, selectedConversation, setConversations, currentUser._id]);
+
   useEffect(() => {
     const lastMessageIsFromOtherUser =
       messages.length &&
@@ -238,6 +247,7 @@ const MessageContainer = ({ isMonitoring }) => {
       socket?.off("stopTyping");
     };
   }, [socket, selectedConversation._id]);
+
   useEffect(() => {
     if (selectedConversation._id) {
       if (selectedConversation.isGroup) {

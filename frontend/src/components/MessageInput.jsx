@@ -26,6 +26,7 @@ import {
   import usePreviewImg from "../hooks/usePreviewImg";
   import EmojiPicker from "emoji-picker-react";
   import { useSocket } from "../context/SocketContext";
+  import userAtom from "../atoms/userAtom";
   
   const MessageInput = ({ setMessages }) => {
 	const [messageText, setMessageText] = useState("");
@@ -33,6 +34,7 @@ import {
 	const showToast = useShowToast();
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
 	const setConversations = useSetRecoilState(conversationsAtom);
+	const currentUser = useRecoilValue(userAtom);
 	const imageRef = useRef(null);
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
@@ -67,7 +69,7 @@ import {
 		_id: Date.now().toString(),
 		text: messageText,
 		img: imgUrl,
-		sender: selectedConversation.userId,
+		sender: currentUser._id, // Correct sender ID
 		createdAt: new Date().toISOString(),
 		seen: false
 	  };
@@ -146,7 +148,8 @@ import {
 		  return;
 		}
   
-		// Update with server data silently
+		// In MessageInput.jsx, handleSendMessage function
+		// After the API call
 		setMessages(prev => prev.map(msg => 
 		  msg._id === optimisticMessage._id ? { ...data, seen: msg.seen } : msg
 		));
