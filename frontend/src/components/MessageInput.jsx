@@ -108,10 +108,11 @@ import {
 		  sender: optimisticMessage.sender
 		};
 		
-		socket.emit("newMessage", socketPayload);
-		
+		// Emit the correct event based on conversation type
 		if (selectedConversation.isGroup) {
 		  socket.emit("newGroupMessage", socketPayload);
+		} else {
+		  socket.emit("newMessage", socketPayload);
 		}
 	  }
   

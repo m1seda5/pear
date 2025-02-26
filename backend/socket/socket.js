@@ -75,6 +75,30 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined group: ${roomId}`);
     });
 
+    // Handle new direct message
+    socket.on("newMessage", (socketPayload) => {
+        const { conversationId, receiverId } = socketPayload;
+        const roomId = `chat_${conversationId}`;
+        
+        // Broadcast to the room
+        socket.to(roomId).emit("messageReceived", socketPayload);
+        
+        // Also send to the specific recipient if they're online but not in the room
+        const recipientSocketId = getRecipientSocketId(receiverId);
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit("newMessageNotification", socketPayload);
+        }
+    });
+
+    // Handle new group message
+    socket.on("newGroupMessage", (socketPayload) => {
+        const { conversationId } = socketPayload;
+        const roomId = `group_${conversationId}`;
+        
+        // Broadcast to everyone in the group room except sender
+        socket.to(roomId).emit("messageReceived", socketPayload);
+    });
+
     // Typing indicator with throttling
     let lastEmit = 0;
     socket.on("typing", ({ conversationId, isGroup }) => {
