@@ -80,11 +80,12 @@ const MessageContainer = ({ isMonitoring }) => {
     }
   }, [selectedConversation, socket]);
 
-  // Replace the useEffect for handling messages with this:
+
 useEffect(() => {
   const handleDirectMessage = (message) => {
-    // Only process direct messages in direct chat views
-    if (!selectedConversation.isGroup && selectedConversation._id === message.conversationId) {
+    // Only process direct messages that match the current conversation
+    if (!selectedConversation.isGroup && 
+        message.conversationId === selectedConversation._id) {
       setMessages((prev) => [...prev, message]);
       if (!document.hasFocus()) {
         const sound = new Audio(messageSound);
@@ -108,8 +109,9 @@ useEffect(() => {
   };
   
   const handleGroupMessage = (data) => {
-    // Only process group messages in group chat views
-    if (selectedConversation.isGroup && selectedConversation._id === data.conversation._id) {
+    // Only process group messages that match the current group conversation
+    if (selectedConversation.isGroup && 
+        selectedConversation._id === data.conversation._id) {
       setMessages((prev) => [...prev, data.message]);
       if (!document.hasFocus()) {
         const sound = new Audio(messageSound);
@@ -140,7 +142,6 @@ useEffect(() => {
     socket?.off("newGroupMessage", handleGroupMessage);
   };
 }, [socket, selectedConversation, setConversations]);
-
   useEffect(() => {
     const lastMessageIsFromOtherUser =
       messages.length &&
