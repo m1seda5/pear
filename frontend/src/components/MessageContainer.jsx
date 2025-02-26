@@ -81,67 +81,75 @@ const MessageContainer = ({ isMonitoring }) => {
   }, [selectedConversation, socket]);
 
 
-useEffect(() => {
-  const handleDirectMessage = (message) => {
-    // Only process direct messages that match the current conversation
-    if (!selectedConversation.isGroup && 
-        message.conversationId === selectedConversation._id) {
-      setMessages((prev) => [...prev, message]);
-      if (!document.hasFocus()) {
-        const sound = new Audio(messageSound);
-        sound.play();
-      }
-      setConversations((prev) => {
-        return prev.map((conversation) => {
-          if (conversation._id === message.conversationId) {
-            return {
-              ...conversation,
-              lastMessage: {
-                text: message.text,
-                sender: message.sender,
-              },
-            };
-          }
-          return conversation;
+  useEffect(() => {
+    const handleDirectMessage = (message) => {
+      // Strictly verify this is for the current direct conversation
+      if (!selectedConversation.isGroup && 
+          message.conversationId === selectedConversation._id) {
+        setMessages((prev) => [...prev, message]);
+        
+        // Sound notification if window is not focused
+        if (!document.hasFocus()) {
+          const sound = new Audio(messageSound);
+          sound.play();
+        }
+        
+        // Update conversation list
+        setConversations((prev) => {
+          return prev.map((conversation) => {
+            if (conversation._id === message.conversationId) {
+              return {
+                ...conversation,
+                lastMessage: {
+                  text: message.text,
+                  sender: message.sender,
+                },
+              };
+            }
+            return conversation;
+          });
         });
-      });
-    }
-  };
-  
-  const handleGroupMessage = (data) => {
-    // Only process group messages that match the current group conversation
-    if (selectedConversation.isGroup && 
-        selectedConversation._id === data.conversation._id) {
-      setMessages((prev) => [...prev, data.message]);
-      if (!document.hasFocus()) {
-        const sound = new Audio(messageSound);
-        sound.play();
       }
-      setConversations((prev) => {
-        return prev.map((conversation) => {
-          if (conversation._id === data.conversation._id) {
-            return {
-              ...conversation,
-              lastMessage: {
-                text: data.message.text,
-                sender: data.message.sender,
-              },
-            };
-          }
-          return conversation;
+    };
+    
+    const handleGroupMessage = (data) => {
+      // Strictly verify this is for the current group conversation
+      if (selectedConversation.isGroup && 
+          selectedConversation._id === data.conversation._id) {
+        setMessages((prev) => [...prev, data.message]);
+        
+        // Sound notification if window is not focused
+        if (!document.hasFocus()) {
+          const sound = new Audio(messageSound);
+          sound.play();
+        }
+        
+        // Update conversation list
+        setConversations((prev) => {
+          return prev.map((conversation) => {
+            if (conversation._id === data.conversation._id) {
+              return {
+                ...conversation,
+                lastMessage: {
+                  text: data.message.text,
+                  sender: data.message.sender,
+                },
+              };
+            }
+            return conversation;
+          });
         });
-      });
-    }
-  };
-  
-  socket?.on("newMessage", handleDirectMessage);
-  socket?.on("newGroupMessage", handleGroupMessage);
-  
-  return () => {
-    socket?.off("newMessage", handleDirectMessage);
-    socket?.off("newGroupMessage", handleGroupMessage);
-  };
-}, [socket, selectedConversation, setConversations]);
+      }
+    };
+    
+    socket?.on("newMessage", handleDirectMessage);
+    socket?.on("newGroupMessage", handleGroupMessage);
+    
+    return () => {
+      socket?.off("newMessage", handleDirectMessage);
+      socket?.off("newGroupMessage", handleGroupMessage);
+    };
+  }, [socket, selectedConversation, setConversations]);
   useEffect(() => {
     const lastMessageIsFromOtherUser =
       messages.length &&

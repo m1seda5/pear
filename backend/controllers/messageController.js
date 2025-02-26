@@ -100,38 +100,27 @@ async function sendMessage(req, res) {
 
     // Handle socket notifications
     if (conversation.isGroup) {
-      // Ensure we have populated participants
-      const participants = conversation.participants.map(p => 
-        typeof p === 'object' ? p._id.toString() : p.toString()
-      );
+      // For group messages, use a room-based approach
+      const roomId = `group_${conversation._id}`;
       
-      // Emit to all participants except sender
-      participants.forEach((participantId) => {
-        if (participantId !== senderId.toString()) {
-          const recipientSocketId = getRecipientSocketId(participantId);
-          if (recipientSocketId) {
-            // Use newGroupMessage event only for group chats
-            io.to(recipientSocketId).emit("newGroupMessage", {
-              message: populatedMessage,
-              conversation: {
-                _id: conversation._id,
-                isGroup: true,
-                groupName: conversation.groupName,
-              },
-            });
-          }
-        }
+      // Emit the group message to all participants in the group room
+      io.to(roomId).emit("newGroupMessage", {
+        message: populatedMessage,
+        conversation: {
+          _id: conversation._id,
+          isGroup: true,
+          groupName: conversation.groupName,
+        },
       });
     } else {
-      // Handle direct message socket notification
+      // For direct messages, we need to be very explicit about the recipient
       const recipient = recipientId || conversation.participants.find(
         (p) => p.toString() !== senderId.toString()
       );
-      const recipientSocketId = getRecipientSocketId(recipient.toString());
-      if (recipientSocketId) {
-        // Use newMessage event only for direct messages
-        io.to(recipientSocketId).emit("newMessage", populatedMessage);
-      }
+      
+      // Only emit to the direct message room, not individual sockets
+      const roomId = `chat_${conversation._id}`;
+      io.to(roomId).emit("newMessage", populatedMessage);
     }
 
     res.status(201).json(populatedMessage);

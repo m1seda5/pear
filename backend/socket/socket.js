@@ -40,27 +40,38 @@ io.on("connection", (socket) => {
 
     // Join direct message room
     socket.on("joinChat", (conversationId) => {
-        // Leave previous rooms first
+        // Clear previous rooms first for this socket
         if (userRooms.has(userId)) {
             userRooms.get(userId).forEach(room => {
-                socket.leave(room);
+                if (room.startsWith('chat_')) {  // Only leave direct chat rooms
+                    socket.leave(room);
+                }
             });
-            userRooms.get(userId).clear();
         }
         
         const roomId = `chat_${conversationId}`;
         socket.join(roomId);
+        
+        // Update the user's room set
+        if (!userRooms.has(userId)) {
+            userRooms.set(userId, new Set());
+        }
         userRooms.get(userId).add(roomId);
-        console.log(`User ${userId} joined chat: ${roomId}`);
+        
+        console.log(`User ${userId} joined direct chat: ${roomId}`);
     });
 
-    // Join group chat room
+    // When a user joins a group chat
     socket.on("joinGroup", (groupId) => {
         const roomId = `group_${groupId}`;
         socket.join(roomId);
-        if (userRooms.has(userId)) {
-            userRooms.get(userId).add(roomId);
+        
+        // Update the user's room set
+        if (!userRooms.has(userId)) {
+            userRooms.set(userId, new Set());
         }
+        userRooms.get(userId).add(roomId);
+        
         console.log(`User ${userId} joined group: ${roomId}`);
     });
 
