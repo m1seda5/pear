@@ -68,7 +68,10 @@ import {
     verifyOTP,
     adminFreezeUser,
     adminDeleteUser,
-    searchUsers
+    searchUsers,
+    forgotPassword,
+    resetPassword,
+    resendOTP
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -82,8 +85,10 @@ router.get("/search/:query", protectRoute, searchUsers);
 router.post("/admin/freeze-user", protectRoute, adminMiddleware, adminFreezeUser);
 router.delete("/admin/delete-user", protectRoute, adminMiddleware, adminDeleteUser);
 
-// Password reset route
-router.get("/reset-password/:token", ResetPassword);
+// Password reset routes
+router.post("/forgot-password", forgotPassword);
+router.get("/reset-password/:token", resetPassword);
+router.post("/reset-password/:token", resetPassword);
 
 // Existing routes
 router.get("/profile/:query", getUserProfile);
@@ -95,7 +100,6 @@ router.post("/follow/:id", protectRoute, followUnFollowUser);
 router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
 router.post("/verify-otp", verifyOTP);
+router.post("/resend-otp", resendOTP);
 
 export default router;
-
-
