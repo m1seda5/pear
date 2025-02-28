@@ -291,7 +291,7 @@
 //       },
 //     },
 //     otp: { type: Number, required: false }, // Field for OTP
-//     otpExpiry: { type: Date, required: false }, 
+//     otpExpiry: { type: Date, required: false },
 //     notificationPreferences: {
 //       type: Boolean,
 //       default: true, // Enable notifications by default
@@ -377,8 +377,8 @@ const userSchema = mongoose.Schema(
     },
     campus: {
       type: String,
-      enum: ['karen', 'runda', 'admin'],
-      required: true
+      enum: ["karen", "runda", "admin"],
+      required: true,
     },
     role: {
       type: String,
@@ -415,10 +415,19 @@ const userSchema = mongoose.Schema(
       },
     },
     otp: { type: Number, required: false }, // Field for OTP
-    otpExpiry: { type: Date, required: false }, 
+    otpExpiry: { type: Date, required: false },
     notificationPreferences: {
       type: Boolean,
       default: true, // Enable notifications by default
+    },
+    // Add these to userSchema
+    resetToken: {
+      type: String,
+      required: false,
+    },
+    resetTokenExpiry: {
+      type: Date,
+      required: false,
     }, // Field for OTP expiration// Field for OTP expiration
   },
   { timestamps: true }

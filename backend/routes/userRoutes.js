@@ -68,7 +68,7 @@ import {
     verifyOTP,
     adminFreezeUser,
     adminDeleteUser,
-    searchUsers // Add this new import
+    searchUsers
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -81,6 +81,9 @@ router.get("/search/:query", protectRoute, searchUsers);
 // Admin routes
 router.post("/admin/freeze-user", protectRoute, adminMiddleware, adminFreezeUser);
 router.delete("/admin/delete-user", protectRoute, adminMiddleware, adminDeleteUser);
+
+// Password reset route
+router.get("/reset-password/:token", ResetPassword);
 
 // Existing routes
 router.get("/profile/:query", getUserProfile);

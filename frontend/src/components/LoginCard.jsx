@@ -1,4 +1,3 @@
-// // this is working  version one 
 import {
 	Flex,
 	Box,
@@ -130,6 +129,11 @@ export default function LoginCard() {
 								Don&apos;t have an account?{" "}
 								<Link color={"blue.400"} onClick={() => setAuthScreen("signup")}>
 								Create a Brookhouse Account
+								</Link>
+							</Text>
+							<Text align={"center"}>
+								<Link color={"blue.400"} onClick={() => setAuthScreen("forgot")}>
+									Forgot Password?
 								</Link>
 							</Text>
 						</Stack>

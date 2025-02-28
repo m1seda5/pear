@@ -2062,8 +2062,74 @@ const searchUsers = async (req, res) => {
       res.status(500).json({ error: error.message });
   }
 };
+const sendPasswordResetEmail = async (email, resetToken) => {
+  const resetLink = `https://pear-tsk2.onrender.com/reset-password/${resetToken}`;
+  
+  const mailOptions = {
+    from: "pearnet104@gmail.com",
+    to: email,
+    subject: "Password Reset Request",
+    text: `Click this link to reset your password: ${resetLink}\nThis link expires in 1 hour.`,
+    html: `<p>Click <a href="${resetLink}">here</a> to reset your password. Link expires in 1 hour.</p>`
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if user doesn't exist
+      return res.status(200).json({ message: "If an account exists, a reset email has been sent" });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
+    await user.save();
+
+    await sendPasswordResetEmail(email, resetToken);
+
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) return res.status(400).json({ error: "Invalid or expired token" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   signupUser,
+  forgotPassword,
+  resetPassword,
   validateEmail,
   verifyRoleMatch,
   verifyOTP,
