@@ -5,36 +5,17 @@ import {
 } from '@chakra-ui/react';
 
 export default function ResetPassword() {
-  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isValidToken, setIsValidToken] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { token } = useParams();
-  const toast = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const validateToken = async () => {
-      try {
-        const res = await fetch(`/api/users/reset-password/${token}`);
-        if (!res.ok) throw new Error('Invalid token');
-        setIsValidToken(true);
-      } catch (error) {
-        toast({
-          title: 'Invalid or expired reset link',
-          status: 'error',
-          duration: 5000,
-        });
-        navigate('/login');
-      }
-    };
-    validateToken();
-  }, [token]);
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast({ title: 'Passwords do not match', status: 'error' });
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords don't match", status: 'error', duration: 3000 });
       return;
     }
 
@@ -43,41 +24,38 @@ export default function ResetPassword() {
       const res = await fetch(`/api/users/reset-password/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword: password }),
+        body: JSON.stringify({ newPassword }),
       });
       
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      
-      toast({
-        title: 'Password reset successful!',
-        status: 'success',
-        duration: 5000,
+      if (data.error) {
+        toast({ title: data.error, status: 'error', duration: 3000 });
+        return;
+      }
+
+      toast({ 
+        title: "Password reset successfully!", 
+        status: 'success', 
+        duration: 3000 
       });
-      navigate('/login');
+      navigate('/auth');
     } catch (error) {
-      toast({
-        title: error.message || 'Password reset failed',
-        status: 'error',
-        duration: 5000,
-      });
+      toast({ title: "An error occurred", status: 'error', duration: 3000 });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isValidToken) return null;
-
   return (
     <Box p={8} maxWidth="500px" mx="auto">
-      <Text fontSize="2xl" mb={4}>Set New Password</Text>
+      <Text fontSize="2xl" mb={4}>Reset Your Password</Text>
       <form onSubmit={handleSubmit}>
         <FormControl isRequired mb={4}>
           <FormLabel>New Password</FormLabel>
           <Input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
           />
         </FormControl>
         <FormControl isRequired mb={4}>
