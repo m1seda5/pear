@@ -917,6 +917,7 @@
 
 
 // admin role update
+// Fix for the Header component
 import { 
   Button, 
   Flex, 
@@ -936,7 +937,7 @@ import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaLock } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 
@@ -952,9 +953,10 @@ const Header = ({ unreadCount = 0 }) => {
     tv: false,
   });
 
-  const isStudent = user?.role === "student" || false;
-  const isTeacher = user?.role === "teacher" || false;
-  const isAdmin = user?.role === "admin" || false;
+  // Only evaluate these if user exists
+  const isStudent = user ? user.role === "student" : false;
+  const isTeacher = user ? user.role === "teacher" : false;
+  const isAdmin = user ? user.role === "admin" : false;
 
   const currentDate = new Date();
   const dayOfWeek = currentDate.getDay();
@@ -965,6 +967,7 @@ const Header = ({ unreadCount = 0 }) => {
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
+  // Fix: Add a complete user check before evaluating hasChatAccess
   const hasChatAccess = user && (
     isTeacher ||
     isAdmin ||
@@ -979,7 +982,7 @@ const Header = ({ unreadCount = 0 }) => {
   );
 
   const handleChatClick = (e) => {
-    if (!user || user?.isFrozen || !hasChatAccess) {
+    if (!user || (user && user.isFrozen) || !hasChatAccess) {
       e.preventDefault();
       setHoverState({ ...hoverState, lock: true });
     } else {
@@ -989,12 +992,23 @@ const Header = ({ unreadCount = 0 }) => {
   };
 
   const handleTVClick = (e) => {
-    if (!user || !isAdmin) {
+    if (!user || (user && !isAdmin)) {
       e.preventDefault();
       setHoverState({ ...hoverState, tv: true });
     } else {
       setHoverState({ ...hoverState, tv: false });
       navigate("/tv");
+    }
+  };
+
+  // Safe logout function
+  const handleLogout = async () => {
+    try {
+      // Navigate first, then logout
+      navigate("/auth");
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
@@ -1079,7 +1093,7 @@ const Header = ({ unreadCount = 0 }) => {
           </Tooltip>
 
           <Tooltip 
-            label={user?.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
+            label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
             placement="bottom" 
             hasArrow
           >
@@ -1087,14 +1101,14 @@ const Header = ({ unreadCount = 0 }) => {
               position="relative"
               onClick={handleChatClick}
               _hover={{
-                color: user?.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
+                color: user.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
                 transform: "scale(1.2)",
-                cursor: user?.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
+                cursor: user.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
               }}
               onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
               onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
             >
-              {user?.isFrozen ? (
+              {user.isFrozen ? (
                 <FaLock size={20} color="#4299E1" />
               ) : hoverState.lock ? (
                 <FaLock size={20} color="#F56565" />
@@ -1102,7 +1116,7 @@ const Header = ({ unreadCount = 0 }) => {
                 <BsFillChatQuoteFill size={20} />
               )}
               
-              {unreadCount > 0 && !user?.isFrozen && hasChatAccess && (
+              {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                 <Flex
                   position="absolute"
                   top="-2px"
@@ -1159,7 +1173,7 @@ const Header = ({ unreadCount = 0 }) => {
           <Tooltip label="Logout" placement="bottom" hasArrow>
             <Button
               size="xs"
-              onClick={logout}
+              onClick={handleLogout}  // Use the new safe logout handler
               _hover={{
                 bg: "teal.500",
                 color: "white",
