@@ -186,6 +186,7 @@ import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import VerifyEmail from "./pages/VerifyEmail";
 import TVPage from "./pages/TVPage";
+import ResetPassword from "./pages/ResetPassword";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
@@ -195,10 +196,10 @@ function App() {
   const { pathname } = useLocation();
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
-
+  
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
-
+  
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
@@ -214,6 +215,7 @@ function App() {
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/tv" element={<TVPage />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
