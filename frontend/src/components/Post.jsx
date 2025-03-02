@@ -238,30 +238,18 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
   if (!user) return null;
 
-  const tvStyles = isTV
-    ? {
-        maxWidth: "90vw",
-        margin: "0 auto",
-        padding: "2rem",
-        fontSize: "1.5rem",
-        ".post-text": {
-          fontSize: "2rem",
-          lineHeight: "1.5",
-        },
-        ".post-image": {
-          maxHeight: "80vh",
-          objectFit: "contain",
-        },
-        ".user-avatar": {
-          width: "80px",
-          height: "80px",
-        },
-      }
-    : {};
-
   return (
-    <Link to={`/${user.username}/post/${post._id}`}>
-      <Flex gap={3} mb={4} py={5}>
+    <Link to={`/${user.username}/post/${post._id}`} style={isTV ? { width: "100%" } : {}}>
+      <Flex 
+        gap={3} 
+        mb={4} 
+        py={5} 
+        width="100%"
+        bg={isTV ? "white" : "transparent"}
+        _dark={{ bg: isTV ? "gray.800" : "transparent" }}
+        borderRadius={isTV ? "xl" : "none"}
+        px={isTV ? 6 : 0}
+      >
         <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
             size={isTV ? "xl" : "md"}
@@ -318,7 +306,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
             )}
           </Box>
         </Flex>
-        <Flex flex={1} flexDirection={"column"} gap={2}>
+        <Flex flex={1} flexDirection={"column"} gap={2} width="100%">
           <Flex justifyContent={"space-between"} w={"full"}>
             <Flex w={"full"} alignItems={"center"}>
               <Text
@@ -332,7 +320,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 {user?.username}
               </Text>
               {user?.role === "admin" && (
-                <Image src="/verified.png" w={4} h={4} ml={1} />
+                <Image src="/verified.png" w={isTV ? 6 : 4} h={isTV ? 6 : 4} ml={1} />
               )}
             </Flex>
             <Flex gap={4} alignItems={"center"}>
@@ -353,7 +341,12 @@ const Post = ({ post, postedBy, isTV = false }) => {
             </Flex>
           </Flex>
 
-          <Text fontSize={isTV ? "xl" : "sm"} className="post-text">
+          <Text 
+            fontSize={isTV ? "xl" : "sm"} 
+            className="post-text"
+            color={isTV ? "black" : "inherit"}
+            _dark={{ color: isTV ? "white" : "inherit" }}
+          >
             {post.text}
           </Text>
           {post.img && (
@@ -362,19 +355,17 @@ const Post = ({ post, postedBy, isTV = false }) => {
               overflow={"hidden"}
               border={"1px solid"}
               borderColor={"gray.light"}
+              width="100%"
+              margin="0 auto"
+              maxHeight={isTV ? "70vh" : "auto"}
             >
               <Image
                 src={post.img}
                 w={"full"}
+                h={isTV ? "auto" : "full"}
+                maxHeight={isTV ? "70vh" : "auto"}
+                objectFit={isTV ? "contain" : "cover"}
                 className="post-image"
-                sx={
-                  isTV
-                    ? {
-                        maxHeight: "70vh",
-                        objectFit: "contain",
-                      }
-                    : {}
-                }
               />
             </Box>
           )}
