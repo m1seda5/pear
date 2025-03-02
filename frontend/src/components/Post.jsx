@@ -177,7 +177,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
-  
   useEffect(() => {
     // Update the language state whenever the i18n language changes
     const handleLanguageChange = (lng) => {
@@ -239,67 +238,26 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
   if (!user) return null;
 
-  // Calculate content-based styling - text-only posts will be larger in TV mode
-  const isTextOnlyPost = !post.img;
-  const textFontSize = isTV 
-    ? isTextOnlyPost ? "3xl" : "2xl" 
-    : "sm";
-  
-  const usernameFontSize = isTV 
-    ? isTextOnlyPost ? "3xl" : "2xl" 
-    : "sm";
-
-  const timeFontSize = isTV 
-    ? isTextOnlyPost ? "xl" : "lg" 
-    : "xs";
-
-  // Enhance clickable area by making the whole post area clickable
   return (
-    <Link 
-      to={`/${user.username}/post/${post._id}`} 
-      style={isTV ? { width: "100%", display: "block" } : {}}
-      className="post-link-wrapper"
-    >
+    <Link to={`/${user.username}/post/${post._id}`} style={isTV ? { width: "100%" } : {}}>
       <Flex 
-        gap={4} 
+        gap={3} 
         mb={4} 
-        py={isTV ? 8 : 5} 
+        py={5} 
         width="100%"
         bg={isTV ? "white" : "transparent"}
-        _dark={{ 
-          bg: isTV ? "gray.800" : "transparent",
-          color: "white" 
-        }}
+        _dark={{ bg: isTV ? "gray.800" : "transparent" }}
         borderRadius={isTV ? "xl" : "none"}
-        px={isTV ? 8 : 0}
-        position="relative"
-        cursor="pointer"
-        transition="all 0.2s"
-        _hover={{
-          transform: isTV ? "scale(1.01)" : "none",
-          boxShadow: isTV ? "lg" : "none"
-        }}
-        className="post-container"
+        px={isTV ? 6 : 0}
       >
-        <Flex 
-          flexDirection={"column"} 
-          alignItems={"center"}
-          className="post-avatar-section"
-        >
+        <Flex flexDirection={"column"} alignItems={"center"}>
           <Avatar
-            size={isTV ? "2xl" : "md"}
+            size={isTV ? "xl" : "md"}
             name={user.name}
             src={user?.profilePic}
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               navigate(`/${user.username}`);
-            }}
-            cursor="pointer"
-            className="user-avatar"
-            transition="transform 0.2s"
-            _hover={{
-              transform: "scale(1.1)"
             }}
           />
           <Box
@@ -313,80 +271,64 @@ const Post = ({ post, postedBy, isTV = false }) => {
             {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
             {post.replies[0] && (
               <Avatar
-                size={isTV ? "sm" : "xs"}
+                size="xs"
                 name="John doe"
                 src={post.replies[0].userProfilePic}
                 position={"absolute"}
                 top={"0px"}
-                left={isTV ? "25px" : "15px"}
+                left="15px"
                 padding={"2px"}
               />
             )}
 
             {post.replies[1] && (
               <Avatar
-                size={isTV ? "sm" : "xs"}
+                size="xs"
                 name="John doe"
                 src={post.replies[1].userProfilePic}
                 position={"absolute"}
                 bottom={"0px"}
-                right={isTV ? "0px" : "-5px"}
+                right="-5px"
                 padding={"2px"}
               />
             )}
 
             {post.replies[2] && (
               <Avatar
-                size={isTV ? "sm" : "xs"}
+                size="xs"
                 name="John doe"
                 src={post.replies[2].userProfilePic}
                 position={"absolute"}
                 bottom={"0px"}
-                left={isTV ? "10px" : "4px"}
+                left="4px"
                 padding={"2px"}
               />
             )}
           </Box>
         </Flex>
-        <Flex flex={1} flexDirection={"column"} gap={isTV ? 4 : 2} width="100%">
-          <Flex justifyContent={"space-between"} w={"full"} alignItems="center">
-            <Flex 
-              w={"full"} 
-              alignItems={"center"}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                navigate(`/${user.username}`);
-              }}
-              cursor="pointer"
-              className="username-section"
-              _hover={{
-                textDecoration: "underline"
-              }}
-            >
+        <Flex flex={1} flexDirection={"column"} gap={2} width="100%">
+          <Flex justifyContent={"space-between"} w={"full"}>
+            <Flex w={"full"} alignItems={"center"}>
               <Text
-                fontSize={usernameFontSize}
+                fontSize={isTV ? "2xl" : "sm"}
                 fontWeight={"bold"}
-                color={isTV ? "black" : "inherit"}
-                _dark={{ 
-                  color: isTV ? "white" : "inherit" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/${user.username}`);
                 }}
               >
                 {user?.username}
               </Text>
               {user?.role === "admin" && (
-                <Image src="/verified.png" w={isTV ? 8 : 4} h={isTV ? 8 : 4} ml={1} />
+                <Image src="/verified.png" w={isTV ? 6 : 4} h={isTV ? 6 : 4} ml={1} />
               )}
             </Flex>
             <Flex gap={4} alignItems={"center"}>
               <Text
-                fontSize={timeFontSize}
-                width={isTV ? 44 : 36}
+                fontSize={isTV ? "lg" : "xs"}
+                width={36}
                 textAlign={"right"}
-                color={isTV ? "gray.600" : "gray.light"}
-                _dark={{ 
-                  color: isTV ? "gray.300" : "gray.light" 
-                }}
+                color={"gray.light"}
               >
                 {formatDistanceToNow(new Date(post.createdAt))} {t("ago")}
               </Text>
@@ -394,52 +336,28 @@ const Post = ({ post, postedBy, isTV = false }) => {
               {!isTV &&
                 (currentUser?._id === user._id ||
                   currentUser?.role === "admin") && (
-                  <Box 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeletePost(e);
-                    }}
-                    cursor="pointer"
-                    p={2}
-                    borderRadius="md"
-                    _hover={{
-                      bg: "red.50",
-                      _dark: { bg: "red.900" }
-                    }}
-                  >
-                    <DeleteIcon size={20} />
-                  </Box>
+                  <DeleteIcon size={20} onClick={handleDeletePost} />
                 )}
             </Flex>
           </Flex>
 
           <Text 
-            fontSize={textFontSize}
+            fontSize={isTV ? "xl" : "sm"} 
             className="post-text"
             color={isTV ? "black" : "inherit"}
             _dark={{ color: isTV ? "white" : "inherit" }}
-            lineHeight={isTV && isTextOnlyPost ? "1.6" : "normal"}
-            fontWeight={isTV && isTextOnlyPost ? "medium" : "normal"}
-            maxW={isTV && isTextOnlyPost ? "90%" : "full"}
-            mx={isTV && isTextOnlyPost ? "auto" : "0"}
-            textAlign={isTV && isTextOnlyPost ? "center" : "left"}
-            mt={isTV && isTextOnlyPost ? 8 : 0}
-            mb={isTV && isTextOnlyPost ? 8 : 0}
           >
             {post.text}
           </Text>
           {post.img && (
             <Box
-              borderRadius={isTV ? 12 : 6}
+              borderRadius={6}
               overflow={"hidden"}
               border={"1px solid"}
               borderColor={"gray.light"}
               width="100%"
               margin="0 auto"
               maxHeight={isTV ? "70vh" : "auto"}
-              boxShadow={isTV ? "xl" : "none"}
-              mt={isTV ? 4 : 0}
             >
               <Image
                 src={post.img}
@@ -458,22 +376,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
             </Flex>
           )}
         </Flex>
-
-        {/* Additional clickable overlay to improve UX */}
-        {isTV && (
-          <Box
-            position="absolute"
-            top="0"
-            left="0"
-            right="0"
-            bottom="0"
-            cursor="pointer"
-            zIndex="1"
-            onClick={(e) => {
-              // The Link component will handle navigation
-            }}
-          />
-        )}
       </Flex>
     </Link>
   );

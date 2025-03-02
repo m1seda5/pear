@@ -94,13 +94,3 @@
 	animation: pulseEffect 2s ease-in-out infinite;
 	text-shadow: 0 0 5px rgba(255, 112, 67, 0.2), 0 0 10px rgba(255, 112, 67, 0.1); /* Subtle glow */
   }
-  .post-text {
-	line-height: 1.6;
-	word-spacing: 0.05em;
-	letter-spacing: 0.01em;
-  }
-  
-  /* Text-only posts in TV mode */
-  .tv-page-container .post-container:not(:has(.post-image)) .post-text {
-	font-size: 2rem !important;
-  }
