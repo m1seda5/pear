@@ -1031,14 +1031,16 @@ const Header = ({ unreadCount = 0 }) => {
           as="span"
           position="relative"
           onClick={onClick}
-          p={2}
+          p={1.5}
           borderRadius="md"
           transition="all 0.2s ease"
           color={isDisabled ? disabledColor : (isActive ? activeColor : "inherit")}
           _hover={{
             bg: hoverBgColor,
             transform: "translateY(-2px)",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            boxShadow: colorMode === "dark" 
+              ? "0 4px 6px rgba(0, 0, 0, 0.3)" 
+              : "0 4px 6px rgba(0, 0, 0, 0.1)",
             color: isDisabled ? disabledColor : activeColor,
           }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
@@ -1054,7 +1056,7 @@ const Header = ({ unreadCount = 0 }) => {
       justifyContent="center"
       mt={6}
       mb="12"
-      gap={{ base: 4, md: 10 }}
+      gap={{ base: 3, md: 8 }} // Reduced gap size
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
       width="100%"
@@ -1108,7 +1110,7 @@ const Header = ({ unreadCount = 0 }) => {
       {user && (
         <Flex
           alignItems="center"
-          gap={{ base: 4, md: 10 }}
+          gap={{ base: 3, md: 8 }} // Reduced gap size
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
@@ -1139,9 +1141,9 @@ const Header = ({ unreadCount = 0 }) => {
               alignItems="center"
             >
               {user.isFrozen ? (
-                <FaLock size={20} />
+                <FaLock size={20} color={colorMode === "dark" ? "#4299E1" : "#4299E1"} />
               ) : hoverState.lock ? (
-                <FaLock size={20} />
+                <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
               ) : (
                 <BsFillChatQuoteFill size={20} />
               )}
@@ -1179,7 +1181,7 @@ const Header = ({ unreadCount = 0 }) => {
               alignItems="center"
             >
               {hoverState.tv && !isAdmin ? (
-                <FaLock size={20} />
+                <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
               ) : (
                 <PiTelevisionSimpleBold size={20} />
               )}
