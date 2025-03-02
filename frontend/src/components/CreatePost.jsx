@@ -514,14 +514,23 @@ import {
   useColorModeValue,
   Alert,
   AlertIcon,
-  Select,
   Flex,
   Image,
   CloseButton,
   keyframes,
-  Tooltip
+  Tooltip,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  Wrap,
+  WrapItem,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  IconButton
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
 import usePreviewImg from "../hooks/usePreviewImg";
@@ -531,7 +540,6 @@ import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 
 const MAX_CHAR = 500;
-
 
 // Define the pulse animation
 const pulseKeyframes = keyframes`
@@ -549,6 +557,38 @@ const pulseKeyframes = keyframes`
   }
 `;
 
+const YEAR_GROUPS = [
+  { value: "all", label: "All Year Groups" },
+  { value: "Year 9", label: "Year 9" },
+  { value: "Year 10", label: "Year 10" },
+  { value: "Year 11", label: "Year 11" },
+  { value: "Year 12", label: "Year 12" },
+  { value: "Year 13", label: "Year 13" }
+];
+
+const DEPARTMENTS = [
+  { value: "Math", label: "Math" },
+  { value: "Physics", label: "Physics" },
+  { value: "Chemistry", label: "Chemistry" },
+  { value: "Biology", label: "Biology" },
+  { value: "Geography", label: "Geography" },
+  { value: "Computer Science", label: "Computer Science" },
+  { value: "Arts", label: "Arts" },
+  { value: "History", label: "History" },
+  { value: "Psychology", label: "Psychology" },
+  { value: "Sociology", label: "Sociology" },
+  { value: "Economics", label: "Economics" },
+  { value: "Business", label: "Business" },
+  { value: "BTEC Business", label: "BTEC Business" },
+  { value: "Physical Education", label: "Physical Education" },
+  { value: "BTEC Sport", label: "BTEC Sport" },
+  { value: "Music", label: "Music" },
+  { value: "BTEC Music", label: "BTEC Music" },
+  { value: "BTEC Art", label: "BTEC Art" },
+  { value: "English", label: "English" },
+  { value: "tv", label: "TV" }
+];
+
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [postText, setPostText] = useState("");
@@ -564,10 +604,11 @@ const CreatePost = () => {
   const progressColor = useColorModeValue("gray.200", "gray.600");
   const progressFilledColor = useColorModeValue("gray.500", "gray.300");
   const { t } = useTranslation();
-  const [isHovered, setIsHovered] = useState(false);
   const [isPulsing, setIsPulsing] = useState(false);
   const buttonBg = useColorModeValue("blue.500", "blue.200");
   const buttonHoverBg = useColorModeValue("blue.600", "blue.300");
+  const tagBg = useColorModeValue("blue.100", "blue.700");
+  const menuBg = useColorModeValue("white", "gray.700");
 
   // Add pulsing effect
   useEffect(() => {
@@ -583,6 +624,46 @@ const CreatePost = () => {
     const inputText = e.target.value;
     setPostText(inputText.slice(0, MAX_CHAR));
     setRemainingChar(MAX_CHAR - inputText.length);
+  };
+
+  const handleAddYearGroup = (value) => {
+    // If all is selected, clear other selections
+    if (value === "all") {
+      setTargetYearGroups(["all"]);
+      return;
+    }
+    
+    // If adding a specific year group, remove "all" if present
+    const newGroups = targetYearGroups.filter(group => group !== "all");
+    
+    // Add the new year group if not already selected
+    if (!newGroups.includes(value)) {
+      setTargetYearGroups([...newGroups, value]);
+    }
+  };
+
+  const handleRemoveYearGroup = (value) => {
+    setTargetYearGroups(targetYearGroups.filter(group => group !== value));
+  };
+
+  const handleAddDepartment = (value) => {
+    // If tv is selected, clear other selections
+    if (value === "tv") {
+      setTargetDepartments(["tv"]);
+      return;
+    }
+    
+    // If adding a department, remove "tv" if present
+    const newDepts = targetDepartments.filter(dept => dept !== "tv");
+    
+    // Add the new department if not already selected
+    if (!newDepts.includes(value)) {
+      setTargetDepartments([...newDepts, value]);
+    }
+  };
+
+  const handleRemoveDepartment = (value) => {
+    setTargetDepartments(targetDepartments.filter(dept => dept !== value));
   };
 
   const handleCreatePost = async () => {
@@ -734,6 +815,20 @@ const CreatePost = () => {
     );
   }
 
+  // Get available year groups that aren't already selected
+  const availableYearGroups = YEAR_GROUPS.filter(
+    group => !targetYearGroups.includes(group.value) || 
+    // If all is selected, no other options should be available
+    (targetYearGroups.includes("all") && group.value === "all")
+  );
+
+  // Get available departments that aren't already selected
+  const availableDepartments = DEPARTMENTS.filter(
+    dept => !targetDepartments.includes(dept.value) ||
+    // If TV is selected, no other options should be available
+    (targetDepartments.includes("tv") && dept.value === "tv")
+  );
+
   return (
     <>
       <Tooltip 
@@ -800,81 +895,116 @@ const CreatePost = () => {
                 </Box>
               </Tooltip>
 
-              {user.role === "teacher" && (
-                <Select
-                  mt={4}
-                  placeholder={t("Select Year Group(s)")}
-                  multiple
-                  value={targetYearGroups}
-                  onChange={(e) =>
-                    setTargetYearGroups(
-                      [...e.target.selectedOptions].map((o) => o.value)
-                    )
-                  }
-                >
-                  <option value="all">{t("All Year Groups")}</option>
-                  <option value="Year 9">{t("Year 9")}</option>
-                  <option value="Year 10">{t("Year 10")}</option>
-                  <option value="Year 11">{t("Year 11")}</option>
-                  <option value="Year 12">{t("Year 12")}</option>
-                  <option value="Year 13">{t("Year 13")}</option>
-                </Select>
+              {/* Year Group Selection for Teachers and Admins */}
+              {(user.role === "teacher" || user.role === "admin") && (
+                <Box mt={4}>
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Text fontWeight="medium">{t("Year Groups")}</Text>
+                    <Menu placement="bottom-end">
+                      <MenuButton 
+                        as={IconButton}
+                        size="sm"
+                        colorScheme="blue"
+                        variant="outline"
+                        icon={<AddIcon />}
+                        isDisabled={
+                          availableYearGroups.length === 0 || 
+                          targetYearGroups.includes("all")
+                        }
+                      />
+                      <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                        {availableYearGroups.map((group) => (
+                          <MenuItem 
+                            key={group.value}
+                            onClick={() => handleAddYearGroup(group.value)}
+                          >
+                            {t(group.label)}
+                          </MenuItem>
+                        ))}
+                      </MenuList>
+                    </Menu>
+                  </Flex>
+                  <Wrap spacing={2} mb={3}>
+                    {targetYearGroups.length === 0 ? (
+                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                        {t("No year groups selected")}
+                      </Text>
+                    ) : (
+                      targetYearGroups.map((group) => (
+                        <WrapItem key={group}>
+                          <Tag 
+                            size="md" 
+                            borderRadius="full" 
+                            variant="solid" 
+                            colorScheme="blue"
+                            bg={tagBg}
+                          >
+                            <TagLabel>
+                              {t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}
+                            </TagLabel>
+                            <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
+                          </Tag>
+                        </WrapItem>
+                      ))
+                    )}
+                  </Wrap>
+                </Box>
               )}
 
+              {/* Department Selection for Admins */}
               {user.role === "admin" && (
-                <>
-                  <Select
-                    mt={4}
-                    placeholder={t("Select Year Group(s)")}
-                    multiple
-                    value={targetYearGroups}
-                    onChange={(e) =>
-                      setTargetYearGroups(
-                        [...e.target.selectedOptions].map((o) => o.value)
-                      )
-                    }
-                  >
-                    <option value="all">{t("All Year Groups")}</option>
-                    <option value="Year 9">{t("Year 9")}</option>
-                    <option value="Year 10">{t("Year 10")}</option>
-                    <option value="Year 11">{t("Year 11")}</option>
-                    <option value="Year 12">{t("Year 12")}</option>
-                    <option value="Year 13">{t("Year 13")}</option>
-                  </Select>
-
-                  <Select
-                    mt={4}
-                    placeholder={t("Select Department(s)")}
-                    multiple
-                    value={targetDepartments}
-                    onChange={(e) =>
-                      setTargetDepartments(
-                        [...e.target.selectedOptions].map((o) => o.value)
-                      )
-                    }
-                  >
-                    <option value="Math">{t("Math")}</option>
-                    <option value="Physics">{t("Physics")}</option>
-                    <option value="Chemistry">{t("Chemistry")}</option>
-                    <option value="Biology">{t("Biology")}</option>
-                    <option value="Geography">{t("Geography")}</option>
-                    <option value="Computer Science">{t("Computer Science")}</option>
-                    <option value="Arts">{t("Arts")}</option>
-                    <option value="History">{t("History")}</option>
-                    <option value="Psychology">{t("Psychology")}</option>
-                    <option value="Sociology">{t("Sociology")}</option>
-                    <option value="Economics">{t("Economics")}</option>
-                    <option value="Business">{t("Business")}</option>
-                    <option value="BTEC Business">{t("BTEC Business")}</option>
-                    <option value="Physical Education">{t("Physical Education")}</option>
-                    <option value="BTEC Sport">{t("BTEC Sport")}</option>
-                    <option value="Music">{t("Music")}</option>
-                    <option value="BTEC Music">{t("BTEC Music")}</option>
-                    <option value="BTEC Art">{t("BTEC Art")}</option>
-                    <option value="English">{t("English")}</option>
-                    <option value="tv">{t("tv")}</option>
-                  </Select>
-                </>
+                <Box mt={4}>
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Text fontWeight="medium">{t("Departments")}</Text>
+                    <Menu placement="bottom-end">
+                      <MenuButton 
+                        as={IconButton}
+                        size="sm"
+                        colorScheme="blue"
+                        variant="outline"
+                        icon={<AddIcon />}
+                        isDisabled={
+                          availableDepartments.length === 0 || 
+                          targetDepartments.includes("tv")
+                        }
+                      />
+                      <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                        {availableDepartments.map((dept) => (
+                          <MenuItem 
+                            key={dept.value}
+                            onClick={() => handleAddDepartment(dept.value)}
+                          >
+                            {t(dept.label)}
+                          </MenuItem>
+                        ))}
+                      </MenuList>
+                    </Menu>
+                  </Flex>
+                  <Wrap spacing={2}>
+                    {targetDepartments.length === 0 ? (
+                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                        {t("No departments selected")}
+                      </Text>
+                    ) : (
+                      targetDepartments.map((dept) => (
+                        <WrapItem key={dept}>
+                          <Tag 
+                            size="md" 
+                            borderRadius="full" 
+                            variant="solid" 
+                            colorScheme={dept === "tv" ? "red" : "green"}
+                            bg={tagBg}
+                          >
+                            <TagLabel>
+                              {t(DEPARTMENTS.find(d => d.value === dept)?.label || dept)}
+                            </TagLabel>
+                            <TagCloseButton onClick={() => handleRemoveDepartment(dept)} />
+                          </Tag>
+                        </WrapItem>
+                      ))
+                    )}
+                  </Wrap>
+                </Box>
               )}
 
               {imgUrl && (
