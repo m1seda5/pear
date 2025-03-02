@@ -1018,32 +1018,44 @@ const Header = ({ unreadCount = 0 }) => {
     const disabledColor = "red.500";
     const hoverBgColor = colorMode === "dark" ? "whiteAlpha.200" : "blackAlpha.50";
     
+    // Consistent tooltip styles for both light and dark modes
+    const tooltipBg = colorMode === "dark" ? "gray.700" : "gray.100";
+    const tooltipColor = colorMode === "dark" ? "white" : "gray.800";
+    const tooltipShadow = "md";
+    
     return (
       <Tooltip 
         label={label} 
         placement="bottom" 
         hasArrow
-        openDelay={300}
-        bg={colorMode === "dark" ? "gray.700" : "gray.200"}
-        color={colorMode === "dark" ? "white" : "gray.800"}
+        openDelay={200}
+        bg={tooltipBg}
+        color={tooltipColor}
+        boxShadow={tooltipShadow}
+        borderRadius="md"
+        padding="6px 10px"
+        fontSize="sm"
       >
         <Box
           as="span"
           position="relative"
           onClick={onClick}
-          p={1.5}
+          p={2.5}  // Increased padding for larger click area
           borderRadius="md"
           transition="all 0.2s ease"
           color={isDisabled ? disabledColor : (isActive ? activeColor : "inherit")}
           _hover={{
             bg: hoverBgColor,
             transform: "translateY(-2px)",
-            boxShadow: colorMode === "dark" 
-              ? "0 4px 6px rgba(0, 0, 0, 0.3)" 
-              : "0 4px 6px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.15)",
             color: isDisabled ? disabledColor : activeColor,
           }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          minWidth="40px"  // Ensure consistent width
+          minHeight="40px"  // Ensure consistent height
         >
           {children}
         </Box>
@@ -1056,7 +1068,7 @@ const Header = ({ unreadCount = 0 }) => {
       justifyContent="center"
       mt={6}
       mb="12"
-      gap={{ base: 3, md: 8 }} // Reduced gap size
+      gap={{ base: 3, md: 6 }}  // Slightly reduced gap
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
       width="100%"
@@ -1071,6 +1083,9 @@ const Header = ({ unreadCount = 0 }) => {
             to="/"
             display="flex"
             alignItems="center"
+            width="100%"
+            height="100%"
+            justifyContent="center"
           >
             <AiFillHome size={24} />
           </Link>
@@ -1090,6 +1105,9 @@ const Header = ({ unreadCount = 0 }) => {
             to="/auth"
             display="flex"
             alignItems="center"
+            width="100%"
+            height="100%"
+            justifyContent="center"
           >
             Login
           </Link>
@@ -1110,7 +1128,7 @@ const Header = ({ unreadCount = 0 }) => {
       {user && (
         <Flex
           alignItems="center"
-          gap={{ base: 3, md: 8 }} // Reduced gap size
+          gap={{ base: 3, md: 6 }}
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
@@ -1123,6 +1141,9 @@ const Header = ({ unreadCount = 0 }) => {
               to={`/${user.username}`}
               display="flex"
               alignItems="center"
+              width="100%"
+              height="100%"
+              justifyContent="center"
             >
               <RxAvatar size={24} />
             </Link>
@@ -1139,6 +1160,9 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
+              width="100%"
+              height="100%"
             >
               {user.isFrozen ? (
                 <FaLock size={20} color={colorMode === "dark" ? "#4299E1" : "#4299E1"} />
@@ -1151,8 +1175,8 @@ const Header = ({ unreadCount = 0 }) => {
               {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                 <Flex
                   position="absolute"
-                  top="-2px"
-                  right="-2px"
+                  top="-5px"
+                  right="-5px"
                   bg="red.500"
                   color="white"
                   borderRadius="full"
@@ -1179,6 +1203,9 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
+              width="100%"
+              height="100%"
             >
               {hoverState.tv && !isAdmin ? (
                 <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
@@ -1197,6 +1224,9 @@ const Header = ({ unreadCount = 0 }) => {
               to="/settings"
               display="flex"
               alignItems="center"
+              width="100%"
+              height="100%"
+              justifyContent="center"
             >
               <MdOutlineSettings size={20} />
             </Link>
@@ -1206,7 +1236,13 @@ const Header = ({ unreadCount = 0 }) => {
             label="Logout" 
             onClick={handleLogout}
           >
-            <Box display="flex" alignItems="center">
+            <Box 
+              display="flex" 
+              alignItems="center"
+              justifyContent="center"
+              width="100%"
+              height="100%"
+            >
               <FiLogOut size={20} />
             </Box>
           </NavIcon>
@@ -1226,6 +1262,9 @@ const Header = ({ unreadCount = 0 }) => {
             to="/auth"
             display="flex"
             alignItems="center"
+            width="100%"
+            height="100%"
+            justifyContent="center"
           >
             Sign up
           </Link>

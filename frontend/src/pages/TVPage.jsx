@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Box, Flex, Spinner, Text, useToast, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useToast, IconButton, useColorMode } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
 import { useNavigate } from 'react-router-dom';
 import userAtom from "../atoms/userAtom";
 import Post from "../components/Post";
 import { useTranslation } from 'react-i18next';
-import { SmallCloseIcon } from '@chakra-ui/icons';
+import { SmallCloseIcon, SunIcon, MoonIcon } from '@chakra-ui/icons';
 
 const TVPage = () => {
     const [posts, setPosts] = useState([]);
@@ -20,8 +20,9 @@ const TVPage = () => {
     const { t } = useTranslation();
     const toast = useToast();
     const navigate = useNavigate();
+    const { colorMode, toggleColorMode } = useColorMode();
 
-    const SLIDE_DURATION = 11000;
+    const SLIDE_DURATION = 15000; // Increased from 11000ms to 15000ms for better readability
     const MAX_FEATURED_POSTS = 4;
 
     // Handle fullscreen toggling with better error handling
@@ -41,6 +42,13 @@ const TVPage = () => {
                 } else {
                     // Fallback if fullscreen API is not available
                     console.log("Fullscreen API not available");
+                    toast({
+                        title: t("Info"),
+                        description: t("Fullscreen mode not supported in this browser"),
+                        status: "info",
+                        duration: 3000,
+                        isClosable: true,
+                    });
                 }
             } else {
                 if (document.exitFullscreen) {
@@ -58,7 +66,7 @@ const TVPage = () => {
             console.error("Fullscreen error:", err);
             toast({
                 title: t("Fullscreen Error"),
-                description: "Could not enter fullscreen mode",
+                description: t("Could not enter fullscreen mode"),
                 status: "error",
                 duration: 3000,
                 isClosable: true,
@@ -71,7 +79,26 @@ const TVPage = () => {
         if (e.key === 'Escape' && isFullscreen) {
             setIsFullscreen(false);
         }
-    }, [isFullscreen]);
+        
+        // Pause/resume with spacebar
+        if (e.key === ' ' || e.code === 'Space') {
+            e.preventDefault();
+            setIsPaused(prev => !prev);
+        }
+        
+        // Navigate with arrow keys
+        if (e.key === 'ArrowRight') {
+            setCurrentPostIndex(prevIndex => (prevIndex + 1) % posts.length);
+            setKey(prev => prev + 1);
+        }
+        
+        if (e.key === 'ArrowLeft') {
+            setCurrentPostIndex(prevIndex => 
+                prevIndex === 0 ? posts.length - 1 : prevIndex - 1
+            );
+            setKey(prev => prev + 1);
+        }
+    }, [isFullscreen, posts.length]);
 
     // Exit handler to update state when user exits fullscreen by other means
     const handleFullscreenChange = useCallback(() => {
@@ -205,16 +232,28 @@ const TVPage = () => {
         return () => clearInterval(interval);
     }, [user, t, toast, isPaused, posts.length]);
 
+    const handleManualNavigate = (index) => {
+        setCurrentPostIndex(index);
+        setKey(prev => prev + 1);
+    };
+
     const Progress = ({ index }) => (
         <Box
-            h="5px"
+            h="8px"
             bg="gray.200"
             position="relative"
             overflow="hidden"
             borderRadius="full"
             _dark={{ bg: "gray.600" }}
+            cursor="pointer"
+            onClick={() => handleManualNavigate(index)}
+            _hover={{
+                opacity: 0.8,
+                transform: "scaleY(1.2)"
+            }}
+            transition="all 0.2s"
         >
-            {index === currentPostIndex && (
+            {index === currentPostIndex && !isPaused && (
                 <Box
                     position="absolute"
                     left="0"
@@ -227,6 +266,16 @@ const TVPage = () => {
                         transform: 'translateX(-100%)',
                         animation: `progress ${SLIDE_DURATION}ms linear`
                     }}
+                />
+            )}
+            {index === currentPostIndex && isPaused && (
+                <Box
+                    position="absolute"
+                    left="0"
+                    top="0"
+                    h="100%"
+                    w="50%"
+                    bg="yellow.500"
                 />
             )}
         </Box>
@@ -246,6 +295,10 @@ const TVPage = () => {
         navigate('/');
     };
 
+    const handleTogglePause = () => {
+        setIsPaused(prev => !prev);
+    };
+
     if (!user || user.role !== 'admin') {
         return <Box p={4}>{t("Access Denied")}</Box>;
     }
@@ -260,7 +313,7 @@ const TVPage = () => {
             top="0"
             left="0"
             bg="white"
-            _dark={{ bg: "gray.800" }}
+            _dark={{ bg: "gray.900" }}
             zIndex="9999"
         >
             {loading ? (
@@ -271,13 +324,27 @@ const TVPage = () => {
                 <Text color="red.500">{error}</Text>
             ) : (
                 <Box height="100%" width="100%">
-                    <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
+                    {/* Progress indicators at top */}
+                    <Flex 
+                        mb={4} 
+                        gap={2} 
+                        position="absolute" 
+                        top="0" 
+                        left="0" 
+                        right="0" 
+                        zIndex="10" 
+                        p={6}
+                        bg="blackAlpha.300"
+                        _dark={{ bg: "blackAlpha.500" }}
+                    >
                         {posts.map((_, index) => (
                             <Box key={`progress-${index}-${key}`} flex={1}>
                                 <Progress index={index} />
                             </Box>
                         ))}
                     </Flex>
+                    
+                    {/* Main content area */}
                     <Box
                         height="100%"
                         width="100%"
@@ -297,11 +364,6 @@ const TVPage = () => {
                                 flexDirection="column"
                                 alignItems="center"
                                 justifyContent="center"
-                                bg="white"
-                                _dark={{ bg: "gray.800" }}
-                                borderRadius="xl"
-                                p={4}
-                                boxShadow="xl"
                             >
                                 <Post
                                     post={posts[currentPostIndex]}
@@ -311,47 +373,88 @@ const TVPage = () => {
                             </Box>
                         )}
                     </Box>
-                    <Box
+                    
+                    {/* Control buttons */}
+                    <Flex
                         position="fixed"
-                        bottom="4"
-                        right="4"
+                        bottom="6"
+                        right="6"
                         zIndex="20"
+                        gap={3}
                     >
+                        {/* Toggle play/pause */}
                         <IconButton
-                            icon={<SmallCloseIcon />}
-                            size="sm"
-                            variant="ghost"
-                            bg="blackAlpha.300"
+                            icon={isPaused ? 
+                                <Box as="span" fontSize="xl">▶️</Box> : 
+                                <Box as="span" fontSize="xl">⏸️</Box>
+                            }
+                            size="lg"
+                            variant="solid"
+                            bg="blackAlpha.700"
+                            color="white"
+                            onClick={handleTogglePause}
+                            _hover={{ 
+                                bg: "blackAlpha.800",
+                                transform: "scale(1.05)" 
+                            }}
+                            borderRadius="full"
+                            aria-label={isPaused ? "Play" : "Pause"}
+                            boxShadow="lg"
+                        />
+                        
+                        {/* Toggle dark/light mode */}
+                        <IconButton
+                            icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+                            size="lg"
+                            variant="solid"
+                            bg="blackAlpha.700"
+                            color="white"
+                            onClick={toggleColorMode}
+                            _hover={{ 
+                                bg: "blackAlpha.800",
+                                transform: "scale(1.05)" 
+                            }}
+                            borderRadius="full"
+                            aria-label={colorMode === "light" ? "Dark Mode" : "Light Mode"}
+                            boxShadow="lg"
+                        />
+                        
+                        {/* Close button */}
+                        <IconButton
+                            icon={<SmallCloseIcon boxSize={5} />}
+                            size="lg"
+                            variant="solid"
+                            bg="blackAlpha.700"
                             color="white"
                             onClick={handleClose}
                             _hover={{ 
-                                bg: "blackAlpha.400",
-                                opacity: "1" 
+                                bg: "blackAlpha.800",
+                                transform: "scale(1.05)" 
                             }}
                             borderRadius="full"
-                            opacity="0.4"
                             aria-label="Close fullscreen"
+                            boxShadow="lg"
                         />
-                    </Box>
+                    </Flex>
                 </Box>
             )}
             <style jsx global>{`
                 @keyframes fadeInOut {
                     0% {
                         opacity: 0;
-                        transform: scale(0.98) translateY(10px);
+                        transform: scale(0.98);
                     }
-                    15% {
+                    10% {
                         opacity: 1;
-                        transform: scale(1) translateY(0);
+                        transform: scale(1);
                     }
-                    85% {
+                    90% {
                         opacity: 1;
-                        transform: scale(1) translateY(0);
+                        transform: scale(1);
                     }
                     100% {
                         opacity: 0;
-                        transform: scale(0.98) translateY(-10px);
+                        transform: scale(0.98);
                     }
                 }
                 @keyframes progress {
@@ -362,6 +465,7 @@ const TVPage = () => {
                         transform: translateX(0%);
                     }
                 }
+                
                 .tv-post-container {
                     opacity: 0;
                     animation: fadeInOut ${SLIDE_DURATION}ms ease-in-out forwards;
@@ -373,9 +477,13 @@ const TVPage = () => {
                     display: block;
                 }
                 
-                /* Fullscreen styles */
+                /* Improved fullscreen styles */
                 :fullscreen {
                     background-color: white;
+                }
+                
+                .chakra-ui-dark :fullscreen {
+                    background-color: #1A202C;
                 }
                 
                 :fullscreen .tv-page-container {
@@ -383,35 +491,29 @@ const TVPage = () => {
                     margin: 0;
                 }
                 
-                /* Vendor prefixed fullscreen styles */
+                /* Improved vendor prefixed fullscreen styles */
                 :-webkit-full-screen {
                     background-color: white;
+                }
+                
+                .chakra-ui-dark :-webkit-full-screen {
+                    background-color: #1A202C;
                 }
                 
                 :-moz-full-screen {
                     background-color: white;
                 }
                 
+                .chakra-ui-dark :-moz-full-screen {
+                    background-color: #1A202C;
+                }
+                
                 :-ms-fullscreen {
                     background-color: white;
                 }
                 
-                /* Dark mode support */
-                @media (prefers-color-scheme: dark) {
-                    :fullscreen, :-webkit-full-screen, :-moz-full-screen, :-ms-fullscreen {
-                        background-color: #1A202C;
-                    }
-                }
-                
-                /* Explicit light/dark mode styles for both modes */
-                :fullscreen .tv-post-container {
-                    background-color: white;
-                    color: black;
-                }
-                
-                .chakra-ui-dark :fullscreen .tv-post-container {
+                .chakra-ui-dark :-ms-fullscreen {
                     background-color: #1A202C;
-                    color: white;
                 }
                 
                 /* Make post fill container in TV mode */
@@ -422,6 +524,37 @@ const TVPage = () => {
                 
                 .tv-post-container a > div {
                     width: 100%;
+                    /* Improved hover effects */
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                }
+                
+                /* Improved tap/click targets */
+                .user-avatar, .username-section, .post-link-wrapper {
+                    cursor: pointer;
+                }
+                
+                /* Increase visibility of controls */
+                .chakra-button {
+                    opacity: 0.85;
+                    transition: opacity 0.3s ease, transform 0.3s ease;
+                }
+                
+                .chakra-button:hover {
+                    opacity: 1;
+                }
+                
+                /* Better contrast for dark mode */
+                .chakra-ui-dark .post-text {
+                    color: white !important;
+                }
+                
+                .chakra-ui-dark .username-section {
+                    color: white !important;
+                }
+                
+                /* Special styles for text-only posts in TV mode to ensure they're very visible */
+                .tv-post-container .post-text {
+                    font-weight: 500;
                 }
             `}</style>
         </Box>
