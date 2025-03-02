@@ -924,7 +924,8 @@ import {
   Icon,
   Link, 
   useColorMode,
-  Tooltip
+  Tooltip,
+  Box
 } from "@chakra-ui/react";
 import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -1012,6 +1013,42 @@ const Header = ({ unreadCount = 0 }) => {
     }
   };
 
+  const NavIcon = ({ icon, label, onClick, isActive, isDisabled, children }) => {
+    const activeColor = "teal.500";
+    const disabledColor = "red.500";
+    const hoverBgColor = colorMode === "dark" ? "whiteAlpha.200" : "blackAlpha.50";
+    
+    return (
+      <Tooltip 
+        label={label} 
+        placement="bottom" 
+        hasArrow
+        openDelay={300}
+        bg={colorMode === "dark" ? "gray.700" : "gray.200"}
+        color={colorMode === "dark" ? "white" : "gray.800"}
+      >
+        <Box
+          as="span"
+          position="relative"
+          onClick={onClick}
+          p={2}
+          borderRadius="md"
+          transition="all 0.2s ease"
+          color={isDisabled ? disabledColor : (isActive ? activeColor : "inherit")}
+          _hover={{
+            bg: hoverBgColor,
+            transform: "translateY(-2px)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            color: isDisabled ? disabledColor : activeColor,
+          }}
+          cursor={isDisabled ? "not-allowed" : "pointer"}
+        >
+          {children}
+        </Box>
+      </Tooltip>
+    );
+  };
+
   return (
     <Flex
       justifyContent="center"
@@ -1023,53 +1060,50 @@ const Header = ({ unreadCount = 0 }) => {
       width="100%"
     >
       {user && (
-        <Tooltip label="Home" placement="bottom" hasArrow>
+        <NavIcon 
+          label="Home" 
+          onClick={() => navigate("/")}
+        >
           <Link
             as={RouterLink}
             to="/"
-            _hover={{
-              color: "teal.500",
-              transform: "scale(1.2)",
-            }}
-            transition="all 0.3s ease-in-out"
+            display="flex"
+            alignItems="center"
           >
             <AiFillHome size={24} />
           </Link>
-        </Tooltip>
+        </NavIcon>
       )}
 
       {!user && (
-        <Link
-          as={RouterLink}
-          to="/auth"
-          onClick={() => setAuthScreen("login")}
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
+        <NavIcon 
+          label="Login" 
+          onClick={() => {
+            setAuthScreen("login");
+            navigate("/auth");
           }}
-          transition="all 0.3s ease-in-out"
         >
-          Login
-        </Link>
+          <Link
+            as={RouterLink}
+            to="/auth"
+            display="flex"
+            alignItems="center"
+          >
+            Login
+          </Link>
+        </NavIcon>
       )}
 
-      <Tooltip 
+      <NavIcon 
         label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} 
-        placement="bottom" 
-        hasArrow
+        onClick={toggleColorMode}
       >
         <Icon
           as={colorMode === 'dark' ? SunIcon : MoonIcon}
           w={6}
           h={6}
-          cursor="pointer"
-          onClick={toggleColorMode}
-          _hover={{
-            transform: "rotate(20deg) scale(1.2)"
-          }}
-          transition="all 0.3s ease-in-out"
         />
-      </Tooltip>
+      </NavIcon>
 
       {user && (
         <Flex
@@ -1078,40 +1112,36 @@ const Header = ({ unreadCount = 0 }) => {
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
-          <Tooltip label="Profile" placement="bottom" hasArrow>
+          <NavIcon 
+            label="Profile" 
+            onClick={() => navigate(`/${user.username}`)}
+          >
             <Link
               as={RouterLink}
               to={`/${user.username}`}
-              _hover={{
-                color: "teal.500",
-                transform: "scale(1.2)",
-              }}
-              transition="all 0.3s ease-in-out"
+              display="flex"
+              alignItems="center"
             >
               <RxAvatar size={24} />
             </Link>
-          </Tooltip>
+          </NavIcon>
 
-          <Tooltip 
+          <NavIcon 
             label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
-            placement="bottom" 
-            hasArrow
+            onClick={handleChatClick}
+            isDisabled={user.isFrozen || !hasChatAccess}
           >
-            <Link
+            <Box
               position="relative"
-              onClick={handleChatClick}
-              _hover={{
-                color: user.isFrozen ? "blue.500" : hasChatAccess ? "teal.500" : "red.500",
-                transform: "scale(1.2)",
-                cursor: user.isFrozen || !hasChatAccess ? "not-allowed" : "pointer",
-              }}
               onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
               onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
+              display="flex"
+              alignItems="center"
             >
               {user.isFrozen ? (
-                <FaLock size={20} color="#4299E1" />
+                <FaLock size={20} />
               ) : hoverState.lock ? (
-                <FaLock size={20} color="#F56565" />
+                <FaLock size={20} />
               ) : (
                 <BsFillChatQuoteFill size={20} />
               )}
@@ -1134,72 +1164,70 @@ const Header = ({ unreadCount = 0 }) => {
                   {unreadCount}
                 </Flex>
               )}
-            </Link>
-          </Tooltip>
+            </Box>
+          </NavIcon>
 
-          <Tooltip label={isAdmin ? "TV Dashboard" : "Admin Only"} placement="bottom" hasArrow>
-            <Link
-              onClick={handleTVClick}
-              _hover={{
-                color: isAdmin ? "teal.500" : "red.500",
-                transform: "scale(1.2)",
-                cursor: isAdmin ? "pointer" : "not-allowed",
-              }}
+          <NavIcon 
+            label={isAdmin ? "TV Dashboard" : "Admin Only"} 
+            onClick={handleTVClick}
+            isDisabled={!isAdmin}
+          >
+            <Box
               onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
               onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
+              display="flex"
+              alignItems="center"
             >
               {hoverState.tv && !isAdmin ? (
-                <FaLock size={20} color="#F56565" />
+                <FaLock size={20} />
               ) : (
                 <PiTelevisionSimpleBold size={20} />
               )}
-            </Link>
-          </Tooltip>
+            </Box>
+          </NavIcon>
 
-          <Tooltip label="Settings" placement="bottom" hasArrow>
+          <NavIcon 
+            label="Settings" 
+            onClick={() => navigate("/settings")}
+          >
             <Link
               as={RouterLink}
               to="/settings"
-              _hover={{
-                color: "teal.500",
-                transform: "scale(1.2)",
-              }}
-              transition="all 0.3s ease-in-out"
+              display="flex"
+              alignItems="center"
             >
               <MdOutlineSettings size={20} />
             </Link>
-          </Tooltip>
+          </NavIcon>
 
-          <Tooltip label="Logout" placement="bottom" hasArrow>
-            <Button
-              size="xs"
-              onClick={handleLogout}  // Use the new safe logout handler
-              _hover={{
-                bg: "teal.500",
-                color: "white",
-                transform: "scale(1.1)",
-              }}
-              transition="all 0.3s ease-in-out"
-            >
+          <NavIcon 
+            label="Logout" 
+            onClick={handleLogout}
+          >
+            <Box display="flex" alignItems="center">
               <FiLogOut size={20} />
-            </Button>
-          </Tooltip>
+            </Box>
+          </NavIcon>
         </Flex>
       )}
 
       {!user && (
-        <Link
-          as={RouterLink}
-          to="/auth"
-          onClick={() => setAuthScreen("signup")}
-          _hover={{
-            color: "teal.500",
-            transform: "scale(1.2)",
+        <NavIcon 
+          label="Sign up" 
+          onClick={() => {
+            setAuthScreen("signup");
+            navigate("/auth");
           }}
-          transition="all 0.3s ease-in-out"
         >
-          Sign up
-        </Link>
+          <Link
+            as={RouterLink}
+            to="/auth"
+            display="flex"
+            alignItems="center"
+          >
+            Sign up
+          </Link>
+        </NavIcon>
       )}
     </Flex>
   );
