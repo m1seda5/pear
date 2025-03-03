@@ -26,8 +26,9 @@ import { useTranslation } from 'react-i18next';
 
 const Actions = ({ post }) => {
     const user = useRecoilValue(userAtom);
-    const [liked, setLiked] = useState(post.likes.includes(user?._id));
-    const [isReposted, setIsReposted] = useState(post.reposts.includes(user?._id));
+    // Add null checks for post.likes and post.reposts
+    const [liked, setLiked] = useState(post?.likes?.includes(user?._id) || false);
+    const [isReposted, setIsReposted] = useState(post?.reposts?.includes(user?._id) || false);
     const [posts, setPosts] = useRecoilState(postsAtom);
     const [isLiking, setIsLiking] = useState(false);
     const [isReposting, setIsReposting] = useState(false);
@@ -63,7 +64,7 @@ const Actions = ({ post }) => {
             setLiked(!liked);
             setPosts(posts.map(p => p._id === post._id ? {
                 ...p,
-                likes: !liked ? [...p.likes, user._id] : p.likes.filter(id => id !== user._id),
+                likes: !liked ? [...(p.likes || []), user._id] : (p.likes || []).filter(id => id !== user._id),
             } : p));
 
             setIsLiking(true);
@@ -86,7 +87,7 @@ const Actions = ({ post }) => {
                 setIsLiking(false);
             }
         }, 300),
-        [liked, isLiking, post._id, posts, setPosts, showToast, user?._id, t]
+        [liked, isLiking, post._id, posts, setPosts, showToast, user, t]
     );
 
     const handleRepost = useCallback(
@@ -103,8 +104,8 @@ const Actions = ({ post }) => {
                 p._id === post._id ? {
                     ...p,
                     reposts: !isReposted 
-                        ? [...p.reposts, user._id] 
-                        : p.reposts.filter(id => id !== user._id)
+                        ? [...(p.reposts || []), user._id] 
+                        : (p.reposts || []).filter(id => id !== user._id)
                 } : p
             ));
 
@@ -147,7 +148,10 @@ const Actions = ({ post }) => {
                 return;
             }
 
-            setPosts(posts.map(p => p._id === post._id ? { ...p, replies: [...p.replies, data] } : p));
+            setPosts(posts.map(p => p._id === post._id ? { 
+                ...p, 
+                replies: [...(p.replies || []), data] 
+            } : p));
             showToast(t("Success"), t("Reply posted successfully"), "success");
             onClose();
             setReply("");
@@ -203,15 +207,15 @@ const Actions = ({ post }) => {
 
             <Flex gap={2} alignItems="center">
                 <Text color="gray.light" fontSize="sm">
-                    {post.replies.length} {t("replies")}
+                    {(post?.replies?.length || 0)} {t("replies")}
                 </Text>
                 <Box w={0.5} h={0.5} borderRadius="full" bg="gray.light"></Box>
                 <Text color="gray.light" fontSize="sm">
-                    {post.likes.length} {t("likes")}
+                    {(post?.likes?.length || 0)} {t("likes")}
                 </Text>
                 <Box w={0.5} h={0.5} borderRadius="full" bg="gray.light"></Box>
                 <Text color="gray.light" fontSize="sm">
-                    {post.reposts.length} {t("reposts")}
+                    {(post?.reposts?.length || 0)} {t("reposts")}
                 </Text>
             </Flex>
 
