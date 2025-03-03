@@ -22,30 +22,32 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import postsAtom from "../atoms/postsAtom";
 import { debounce } from "lodash";
-import { useTranslation } from 'react-i18next';  // Import useTranslation
+import { useTranslation } from 'react-i18next';
 
 const Actions = ({ post }) => {
     const user = useRecoilValue(userAtom);
     const [liked, setLiked] = useState(post.likes.includes(user?._id));
+    const [isReposted, setIsReposted] = useState(post.reposts.includes(user?._id));
     const [posts, setPosts] = useRecoilState(postsAtom);
     const [isLiking, setIsLiking] = useState(false);
+    const [isReposting, setIsReposting] = useState(false);
     const [isReplying, setIsReplying] = useState(false);
     const [reply, setReply] = useState("");
     const showToast = useShowToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
-    const { t, i18n } = useTranslation();  // Initialize the translation hook
-    const [language, setLanguage] = useState(i18n.language);  // Add a state for language
+    const { t, i18n } = useTranslation();
+    const [language, setLanguage] = useState(i18n.language);
 
     useEffect(() => {
         const handleLanguageChange = (lng) => {
             setLanguage(lng);
         };
 
-        i18n.on('languageChanged', handleLanguageChange);  // Listen for language change
+        i18n.on('languageChanged', handleLanguageChange);
 
         return () => {
-            i18n.off('languageChanged', handleLanguageChange);  // Cleanup on component unmount
+            i18n.off('languageChanged', handleLanguageChange);
         };
     }, [i18n]);
 
@@ -85,6 +87,46 @@ const Actions = ({ post }) => {
             }
         }, 300),
         [liked, isLiking, post._id, posts, setPosts, showToast, user?._id, t]
+    );
+
+    const handleRepost = useCallback(
+        debounce(async () => {
+            if (!user) return showToast(t("Error"), t("You must be logged in to repost"), "error");
+            if (isReposting) return;
+
+            const originalReposted = isReposted;
+            const originalPosts = [...posts];
+
+            // Optimistic UI update
+            setIsReposted(!isReposted);
+            setPosts(posts.map(p => 
+                p._id === post._id ? {
+                    ...p,
+                    reposts: !isReposted 
+                        ? [...p.reposts, user._id] 
+                        : p.reposts.filter(id => id !== user._id)
+                } : p
+            ));
+
+            setIsReposting(true);
+            try {
+                const res = await fetch(`/api/posts/repost/${post._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                });
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error);
+            } catch (error) {
+                // Rollback on error
+                setIsReposted(originalReposted);
+                setPosts(originalPosts);
+                showToast(t("Error"), error.message, "error");
+            } finally {
+                setIsReposting(false);
+            }
+        }, 300),
+        [isReposted, isReposting, post._id, posts, setPosts, user, t, showToast]
     );
 
     const handleReply = async () => {
@@ -156,8 +198,7 @@ const Actions = ({ post }) => {
                     ></path>
                 </svg>
 
-                <RepostSVG />
-                {/* Removed ShareSVG */}
+                <RepostSVG isReposted={isReposted} onClick={handleRepost} />
             </Flex>
 
             <Flex gap={2} alignItems="center">
@@ -167,6 +208,10 @@ const Actions = ({ post }) => {
                 <Box w={0.5} h={0.5} borderRadius="full" bg="gray.light"></Box>
                 <Text color="gray.light" fontSize="sm">
                     {post.likes.length} {t("likes")}
+                </Text>
+                <Box w={0.5} h={0.5} borderRadius="full" bg="gray.light"></Box>
+                <Text color="gray.light" fontSize="sm">
+                    {post.reposts.length} {t("reposts")}
                 </Text>
             </Flex>
 
@@ -198,26 +243,25 @@ const Actions = ({ post }) => {
 
 export default Actions;
 
-const RepostSVG = () => {
-    const { t } = useTranslation();  // Initialize the translation hook
-
+const RepostSVG = ({ isReposted, onClick }) => {
+    const { t } = useTranslation();
+    
     return (
         <svg
             aria-label={t("Repost")}
-            color="currentColor"
-            fill="currentColor"
+            color={isReposted ? "green" : "currentColor"}
+            fill={isReposted ? "green" : "currentColor"}
             height="20"
             role="img"
             viewBox="0 0 24 24"
             width="20"
+            onClick={onClick}
+            style={{ cursor: "pointer" }}
         >
-            <title>{t("Repost")}</title> {/* Add translation for the title */}
+            <title>{t("Repost")}</title>
             <path
                 d="M19.998 9.497a1 1 0 0 0-1 1v4.228a3.274 3.274 0 0 1-3.27 3.27h-5.313l1.791-1.787a1 1 0 0 0-1.412-1.416L7.29 18.287a1.004 1.004 0 0 0-.294.707v.001c0 .023.012.042.013.065a.923.923 0 0 0 .281.643l3.502 3.504a1 1 0 0 0 1.414-1.414l-1.797-1.798h5.318a5.276 5.276 0 0 0 5.27-5.27v-4.228a1 1 0 0 0-1-1Zm-6.41-3.496-1.795 1.795a1 1 0 1 0 1.414 1.414l3.5-3.5a1.003 1.003 0 0 0 0-1.417l-3.5-3.5a1 1 0 0 0-1.414 1.414l1.794 1.794H8.27A5.277 5.277 0 0 0 3 9.271V13.5a1 1 0 0 0 2 0V9.271a3.275 3.275 0 0 1 3.271-3.27Z"
             ></path>
         </svg>
     );
 };
-
-
-// this is repost function 

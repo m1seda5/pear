@@ -1805,6 +1805,7 @@ export {
   deleteComment,
   getPendingReviews,
   reviewPost,
+  repostPost,
   toggleNotifications,
   getPost,
   deletePost,
