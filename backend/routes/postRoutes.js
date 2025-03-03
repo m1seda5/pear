@@ -72,6 +72,7 @@ import {
   replyToPost,
   getFeedPosts,
   getUserPosts,
+  repostPost,
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
@@ -93,6 +94,7 @@ router.post(
 router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.get("/feed", protectRoute, getFeedPosts);
 router.post("/toggle-notifications", protectRoute, toggleNotifications);
+router.post("/repost/:id", protectRoute, repostPost);
 
 // User-specific posts
 router.get("/user/:username", protectRoute, getUserPosts);
@@ -116,5 +118,6 @@ router.delete(
   validateObjectId("commentId"),
   deleteComment
 );
+
 
 export default router;
