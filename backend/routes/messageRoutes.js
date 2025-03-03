@@ -32,6 +32,7 @@ import {
   updateGroup,
   getGroupMessages,
   checkExistingGroup,
+  repostPost,
 } from "../controllers/messageController.js";
 
 const router = express.Router();
@@ -60,5 +61,8 @@ router.get("/conversations", protectRoute, checkChatAccess, getConversations);
 router.get("/:otherUserId", protectRoute, checkChatAccess, getMessages); // This already matches frontend
 router.post("/", protectRoute, checkChatAccess, sendMessage);
 router.delete("/:messageId", protectRoute, checkChatAccess, deleteMessage);
+
+// Repost route
+router.post("/repost/:id", protectRoute, repostPost);
 
 export default router;
