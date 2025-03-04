@@ -94,7 +94,7 @@ router.post(
 router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.get("/feed", protectRoute, getFeedPosts);
 router.post("/toggle-notifications", protectRoute, toggleNotifications);
-router.post("/repost/:id", protectRoute, repostPost);
+router.put("/repost/:id", protectRoute, repostPost);  // Change from POST to PUT
 
 // User-specific posts
 router.get("/user/:username", protectRoute, getUserPosts);
