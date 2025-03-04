@@ -27,6 +27,12 @@ import { useTranslation } from 'react-i18next';
 const Actions = ({ post }) => {
     const user = useRecoilValue(userAtom);
     // Add null checks for post.likes and post.reposts
+    if (!Array.isArray(post?.likes)) {
+        console.error('post.likes is not an array:', post?.likes);
+      }
+      if (!Array.isArray(post?.reposts)) {
+        console.error('post.reposts is not an array:', post?.reposts);
+      }
     const [liked, setLiked] = useState((post?.likes || []).includes(user?._id));
     const [isReposted, setIsReposted] = useState((post?.reposts || []).includes(user?._id));    
     const [posts, setPosts] = useRecoilState(postsAtom);
