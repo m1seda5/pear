@@ -1549,22 +1549,14 @@ const getPost = async (req, res) => {
     // Convert to plain object and ensure likes and reposts arrays exist
     const postObject = post.toObject();
     
-    // Explicitly initialize likes and reposts as empty arrays if they don't exist
-    postObject.likes = Array.isArray(postObject.likes) ? postObject.likes : [];
-    postObject.reposts = Array.isArray(postObject.reposts) ? postObject.reposts : [];
+    // Initialize arrays if they don't exist
+    postObject.likes = postObject.likes || [];
+    postObject.reposts = postObject.reposts || [];
     
-    // Additional null/undefined checks
-    if (req.user && req.user._id) {
-      const userIdString = req.user._id.toString();
-      postObject.isLiked = postObject.likes.some(
-        (like) => like.toString() === userIdString
-      );
-      postObject.isReposted = postObject.reposts.some(
-        (repost) => repost.toString() === userIdString
-      );
-    } else {
-      postObject.isLiked = false;
-      postObject.isReposted = false;
+    // Only check includes if user exists
+    if (req.user) {
+      postObject.isLiked = postObject.likes.includes(req.user._id.toString());
+      postObject.isReposted = postObject.reposts.includes(req.user._id.toString());
     }
 
     res.status(200).json(postObject);
