@@ -1658,6 +1658,11 @@ const repostPost = async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
+    // Ensure reposts array exists (fix here)
+    if (!post.reposts) {
+      post.reposts = [];
+    }
+
     // Ensure the post is not already reposted by this user
     if (post.reposts.includes(userId)) {
       return res.status(400).json({ error: "Post already reposted" });

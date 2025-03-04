@@ -254,7 +254,14 @@ const postSchema = mongoose.Schema(
         default: 'pending'
       },
       reviewedAt: Date
-    }]
+    }],
+    reposts: {
+      type: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }],
+      default: [] // Add this line
+    },
   },
   {
     timestamps: true,
