@@ -1536,6 +1536,7 @@ const toggleNotifications = async (req, res) => {
 const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
+
     const post = await Post.findById(postId).populate(
       "postedBy",
       "username profilePic"
@@ -1545,10 +1546,14 @@ const getPost = async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
+    // Convert to plain object and ensure likes and reposts arrays exist
     const postObject = post.toObject();
+    
+    // Initialize arrays if they don't exist
     postObject.likes = postObject.likes || [];
     postObject.reposts = postObject.reposts || [];
-
+    
+    // Only check includes if user exists
     if (req.user) {
       postObject.isLiked = postObject.likes.includes(req.user._id.toString());
       postObject.isReposted = postObject.reposts.includes(req.user._id.toString());
@@ -1671,6 +1676,7 @@ const repostPost = async (req, res) => {
 const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user && req.user._id;
+
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
@@ -1680,19 +1686,65 @@ const getFeedPosts = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Base filter conditions that apply to all posts
+    const baseFilter = {
+      $or: [
+        { postedBy: userId }, // User's own posts
+        { postedBy: { $in: user.following || [] } }, // Posts from followed users
+      ]
+    };
+
+    // Audience-specific filter based on user role
+    let audienceFilter = {
+      $or: [
+        { targetAudience: "all" }, // Posts targeted to everyone
+      ]
+    };
+
+    // Add role-specific filters
+    if (user.role === "student" && user.yearGroup) {
+      audienceFilter.$or.push(
+        { targetYearGroups: user.yearGroup },
+        { targetAudience: user.yearGroup }
+      );
+    }
+    else if (user.role === "teacher" && user.department) {
+      audienceFilter.$or.push(
+        { targetDepartments: user.department },
+        { targetAudience: user.department }
+      );
+    }
+    else if (user.role === "admin" || user.role === "tv") {
+      // Admins and TV can see all posts
+      audienceFilter = {}; // No additional filtering needed
+    }
+
+    // Combine with approval status filter
+    const approvalFilter = {
+      $or: [
+        { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } }, // Non-student posts
+        { $and: [ // Student posts must be approved
+          { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
+          { reviewStatus: "approved" }
+        ]}
+      ]
+    };
+
+    // Combine all filters
+    const finalFilter = {
+      $and: [
+        baseFilter,
+        audienceFilter,
+        approvalFilter
+      ]
+    };
+
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
       .limit(50);
 
-    const normalizedPosts = feedPosts.map(post => {
-      const postObj = post.toObject();
-      postObj.likes = postObj.likes || [];
-      postObj.reposts = postObj.reposts || [];
-      return postObj;
-    });
-
-    res.status(200).json(normalizedPosts);
+    res.status(200).json(feedPosts);
   } catch (err) {
     console.error("Error fetching feed posts:", err.message);
     res.status(500).json({ error: "Could not fetch posts" });
@@ -1708,20 +1760,16 @@ const getUserPosts = async (req, res) => {
 
     const posts = await Post.find({ postedBy: user._id })
       .populate("postedBy", "username profilePic")
-      .sort({ createdAt: -1 });
+      .sort({
+        createdAt: -1,
+      });
 
-    const normalizedPosts = posts.map(post => {
-      const postObj = post.toObject();
-      postObj.likes = postObj.likes || [];
-      postObj.reposts = postObj.reposts || [];
-      return postObj;
-    });
-
-    res.status(200).json(normalizedPosts);
+    res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 const deleteComment = async (req, res) => {
   try {
       const { commentId } = req.params;
