@@ -1681,7 +1681,6 @@ const repostPost = async (req, res) => {
 const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user && req.user._id;
-
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
@@ -1696,6 +1695,7 @@ const getFeedPosts = async (req, res) => {
       $or: [
         { postedBy: userId }, // User's own posts
         { postedBy: { $in: user.following || [] } }, // Posts from followed users
+        { reposts: userId } // Include posts the user has reposted
       ]
     };
 
@@ -1755,6 +1755,9 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
+
+export default getFeedPosts;
+
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
