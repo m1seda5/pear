@@ -1756,8 +1756,6 @@ const getFeedPosts = async (req, res) => {
   }
 };
 
-export default getFeedPosts;
-
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
@@ -1766,11 +1764,16 @@ const getUserPosts = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const posts = await Post.find({ postedBy: user._id })
-      .populate("postedBy", "username profilePic")
-      .sort({
-        createdAt: -1,
-      });
+    const posts = await Post.find({
+      $or: [
+        { postedBy: user._id }, // User's own posts
+        { reposts: user._id } // Posts reposted by the user
+      ]
+    })
+    .populate("postedBy", "username profilePic")
+    .sort({
+      createdAt: -1,
+    });
 
     res.status(200).json(posts);
   } catch (error) {
