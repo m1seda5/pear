@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Spinner, Text, Center, Alert, AlertIcon } from '@chakra-ui/react';
 import { useSetRecoilState } from 'recoil';
 import userAtom from '../atoms/userAtom';
@@ -12,7 +12,7 @@ const MagicLogin = () => {
   const [error, setError] = useState(null);
   const setUser = useSetRecoilState(userAtom);
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     const performMagicLogin = async () => {
       try {
@@ -21,49 +21,56 @@ const MagicLogin = () => {
           setLoading(false);
           return;
         }
-
-        // Make API call to verify token and get user data
-        const response = await fetch(`/api/auth/magic-login?token=${token}`);
+        
+        // Make API call to verify token
+        const response = await fetch(`/api/users/magic-login?token=${token}&redirect=${redirect || '/'}`);
         
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Login failed');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Login failed');
         }
         
-        const userData = await response.json();
+        // Parse the response JSON
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Authentication failed');
+        }
         
         // Set user in Recoil state
-        setUser(userData.user);
+        setUser(data.user);
         
         // Store user in localStorage
-        localStorage.setItem('user-pear', JSON.stringify(userData.user));
+        localStorage.setItem('user-pear', JSON.stringify(data.user));
         
-        // Navigate to the redirect path or homepage
-        navigate(redirect || '/');
+        // Navigate to the redirect path from the response or the URL parameter
+        navigate(data.redirectUrl || redirect || '/');
       } catch (err) {
         console.error('Magic login error:', err);
         setError(err.message || 'Login failed. Please try again.');
         setLoading(false);
       }
     };
-
+    
     performMagicLogin();
   }, [token, redirect, setUser, navigate]);
-
+  
   if (loading) {
     return (
       <Center h="100vh">
         <Box textAlign="center">
+          <img src="/pear.png" alt="Pear Logo" width={60} height={60} style={{ margin: '0 auto 20px' }} />
           <Spinner size="xl" color="green.500" mb={4} />
           <Text fontSize="lg">Logging you in securely...</Text>
         </Box>
       </Center>
     );
   }
-
+  
   if (error) {
     return (
       <Box p={4}>
+        <img src="/pear.png" alt="Pear Logo" width={60} height={60} style={{ margin: '0 auto 20px', display: 'block' }} />
         <Alert status="error" borderRadius="md">
           <AlertIcon />
           {error}
@@ -74,7 +81,7 @@ const MagicLogin = () => {
       </Box>
     );
   }
-
+  
   return null;
 };
 

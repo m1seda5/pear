@@ -1842,6 +1842,7 @@ const deleteComment = async (req, res) => {
 };
 
 // Add a new function to handle magic login from email links
+// In postController.js - Update the existing handleMagicLogin function
 const handleMagicLogin = async (req, res) => {
   try {
     const { token, redirect } = req.query;
@@ -1876,15 +1877,26 @@ const handleMagicLogin = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
     
-    // Redirect to the specified page or homepage
-    res.redirect(redirect || '/');
+    // Instead of redirecting, return the user data as JSON with a success message
+    // This fixes the "is not valid JSON" error because we ensure the response is actually JSON
+    const userToReturn = { ...user.toObject() };
+    delete userToReturn.password; // Don't send password back
+    
+    return res.status(200).json({
+      success: true,
+      message: "Successfully authenticated",
+      user: userToReturn,
+      redirectUrl: redirect || '/'
+    });
     
   } catch (err) {
     console.error("Magic login error:", err);
-    res.status(401).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ 
+      success: false,
+      error: "Invalid or expired token" 
+    });
   }
 };
-
 export {
   createPost,
   deleteComment,

@@ -71,15 +71,15 @@ import {
     searchUsers,
     forgotPassword,
     resetPassword,
-    resendOTP,   
+    resendOTP,
 } from "../controllers/userController.js";
-import { handleMagicLogin } from "../controllers/postController.js"; // Import the new function
+import { handleMagicLogin } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
-// Add the magic login route
+// Add the magic login route - ensure this comes before other routes with parameters
 router.get("/magic-login", handleMagicLogin);
 
 // Add the search route
