@@ -982,9 +982,8 @@ const Header = ({ unreadCount = 0 }) => {
         dayOfWeek === 6))
   );
 
-  const handleChatClick = (e) => {
+  const handleChatClick = () => {
     if (!user || (user && user.isFrozen) || !hasChatAccess) {
-      e.preventDefault();
       setHoverState({ ...hoverState, lock: true });
     } else {
       setHoverState({ ...hoverState, chat: false, lock: false });
@@ -992,9 +991,8 @@ const Header = ({ unreadCount = 0 }) => {
     }
   };
 
-  const handleTVClick = (e) => {
+  const handleTVClick = () => {
     if (!user || (user && !isAdmin)) {
-      e.preventDefault();
       setHoverState({ ...hoverState, tv: true });
     } else {
       setHoverState({ ...hoverState, tv: false });
@@ -1024,26 +1022,29 @@ const Header = ({ unreadCount = 0 }) => {
         placement="bottom" 
         hasArrow
         openDelay={300}
-        bg={colorMode === "dark" ? "gray.700" : "gray.200"}
-        color={colorMode === "dark" ? "white" : "gray.800"}
+        bg={colorMode === "dark" ? "gray.700" : "gray.700"}
+        color="white"
       >
         <Box
-          as="span"
-          position="relative"
+          as="button"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
           onClick={onClick}
-          p={1.5}
+          p={3}
+          minW="40px"
+          minH="40px"
           borderRadius="md"
           transition="all 0.2s ease"
           color={isDisabled ? disabledColor : (isActive ? activeColor : "inherit")}
           _hover={{
             bg: hoverBgColor,
             transform: "translateY(-2px)",
-            boxShadow: colorMode === "dark" 
-              ? "0 4px 6px rgba(0, 0, 0, 0.3)" 
-              : "0 4px 6px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
             color: isDisabled ? disabledColor : activeColor,
           }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
+          aria-label={label}
         >
           {children}
         </Box>
@@ -1056,7 +1057,7 @@ const Header = ({ unreadCount = 0 }) => {
       justifyContent="center"
       mt={6}
       mb="12"
-      gap={{ base: 3, md: 8 }} // Reduced gap size
+      gap={{ base: 4, md: 6 }}
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
       width="100%"
@@ -1066,14 +1067,7 @@ const Header = ({ unreadCount = 0 }) => {
           label="Home" 
           onClick={() => navigate("/")}
         >
-          <Link
-            as={RouterLink}
-            to="/"
-            display="flex"
-            alignItems="center"
-          >
-            <AiFillHome size={24} />
-          </Link>
+          <AiFillHome size={24} />
         </NavIcon>
       )}
 
@@ -1085,14 +1079,7 @@ const Header = ({ unreadCount = 0 }) => {
             navigate("/auth");
           }}
         >
-          <Link
-            as={RouterLink}
-            to="/auth"
-            display="flex"
-            alignItems="center"
-          >
-            Login
-          </Link>
+          Login
         </NavIcon>
       )}
 
@@ -1110,7 +1097,7 @@ const Header = ({ unreadCount = 0 }) => {
       {user && (
         <Flex
           alignItems="center"
-          gap={{ base: 3, md: 8 }} // Reduced gap size
+          gap={{ base: 4, md: 6 }}
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
@@ -1118,14 +1105,7 @@ const Header = ({ unreadCount = 0 }) => {
             label="Profile" 
             onClick={() => navigate(`/${user.username}`)}
           >
-            <Link
-              as={RouterLink}
-              to={`/${user.username}`}
-              display="flex"
-              alignItems="center"
-            >
-              <RxAvatar size={24} />
-            </Link>
+            <RxAvatar size={24} />
           </NavIcon>
 
           <NavIcon 
@@ -1139,6 +1119,7 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
             >
               {user.isFrozen ? (
                 <FaLock size={20} color={colorMode === "dark" ? "#4299E1" : "#4299E1"} />
@@ -1151,8 +1132,8 @@ const Header = ({ unreadCount = 0 }) => {
               {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                 <Flex
                   position="absolute"
-                  top="-2px"
-                  right="-2px"
+                  top="-5px"
+                  right="-5px"
                   bg="red.500"
                   color="white"
                   borderRadius="full"
@@ -1179,6 +1160,7 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
             >
               {hoverState.tv && !isAdmin ? (
                 <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
@@ -1192,23 +1174,14 @@ const Header = ({ unreadCount = 0 }) => {
             label="Settings" 
             onClick={() => navigate("/settings")}
           >
-            <Link
-              as={RouterLink}
-              to="/settings"
-              display="flex"
-              alignItems="center"
-            >
-              <MdOutlineSettings size={20} />
-            </Link>
+            <MdOutlineSettings size={20} />
           </NavIcon>
 
           <NavIcon 
             label="Logout" 
             onClick={handleLogout}
           >
-            <Box display="flex" alignItems="center">
-              <FiLogOut size={20} />
-            </Box>
+            <FiLogOut size={20} />
           </NavIcon>
         </Flex>
       )}
@@ -1221,14 +1194,7 @@ const Header = ({ unreadCount = 0 }) => {
             navigate("/auth");
           }}
         >
-          <Link
-            as={RouterLink}
-            to="/auth"
-            display="flex"
-            alignItems="center"
-          >
-            Sign up
-          </Link>
+          Sign up
         </NavIcon>
       )}
     </Flex>

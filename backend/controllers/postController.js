@@ -1221,6 +1221,8 @@ import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
+import crypto from 'crypto'; // Add this for generating secure tokens
+import jwt from 'jsonwebtoken'; // Assuming you're using JWT for authentication
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -1232,25 +1234,48 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Helper function to send notification email
-const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
+// Helper function to generate a secure token
+const generateSecureToken = (userId) => {
+  // Create a token that expires in 7 days
+  const token = jwt.sign(
+    { id: userId }, 
+    process.env.JWT_SECRET || 'fallback_jwt_secret', 
+    { expiresIn: '7d' }
+  );
+  return token;
+};
+
+// Helper function to send notification email with auto-login token
+const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername, recipientId) => {
+  // Generate a secure token for this specific recipient
+  const autoLoginToken = generateSecureToken(recipientId);
+  
   const mailOptions = {
     from: "pearnet104@gmail.com",
     to: recipientEmail,
-    subject: "New Post on Pear! 🍐",
+    subject: "🍐 New Post on Pear!",
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
-        <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
-        <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
-           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-          View Post
-        </a>
-        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://pear-tsk2.onrender.com/pear-logo.png" alt="Pear Logo" style="width: 60px; height: 60px;">
+        </div>
+        <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+          <h2 style="color: #4CAF50; margin-top: 0;">New Post on Pear</h2>
+          <p style="font-size: 16px; color: #333;">Hey there! 👋</p>
+          <p style="font-size: 16px; color: #333;"><strong>${posterUsername}</strong> just shared something new.</p>
+          <p style="font-size: 16px; color: #333;">Don't miss out on the conversation!</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://pear-tsk2.onrender.com/auth/magic-login?token=${autoLoginToken}&redirect=/posts/${postId}" 
+               style="display: inline-block; padding: 12px 28px; background-color: #4CAF50; 
+                      color: white; text-decoration: none; border-radius: 5px; font-weight: bold; 
+                      box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.3s ease;">
+              View Post
+            </a>
+          </div>
+        </div>
+        <p style="color: #666; font-size: 12px; margin-top: 20px; text-align: center;">
           You received this email because you have notifications enabled. 
-          You can disable these in your Pear account settings.
+          You can disable these in your <a href="https://pear-tsk2.onrender.com/settings" style="color: #4CAF50;">Pear account settings</a>.
         </p>
       </div>
     `
@@ -1364,7 +1389,8 @@ const createPost = async (req, res) => {
             recipient.email,
             postedBy,
             newPost._id,
-            user.username
+            user.username,
+            recipient._id // Pass the recipient's ID for secure token generation
           )
         );
 
@@ -1380,7 +1406,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to create post' });
   }
 };
-
 
 const getPendingReviews = async (req, res) => {
   try {
@@ -1404,6 +1429,7 @@ const getPendingReviews = async (req, res) => {
     });
   }
 };
+
 // New function to handle post reviews
 const reviewPost = async (req, res) => {
   try {
@@ -1481,7 +1507,8 @@ const reviewPost = async (req, res) => {
               recipient.email,
               post.postedBy,
               post._id,
-              poster.username
+              poster.username,
+              recipient._id // Pass the recipient's ID for secure token generation
             )
           );
 
@@ -1564,6 +1591,7 @@ const getPost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 const deletePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -1591,6 +1619,7 @@ const deletePost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 const likeUnlikePost = async (req, res) => {
   try {
     const { id: postId } = req.params;
@@ -1677,7 +1706,7 @@ const repostPost = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-// new code
+
 const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user && req.user._id;
@@ -1811,6 +1840,51 @@ const deleteComment = async (req, res) => {
       res.status(500).json({ error: err.message });
   }
 };
+
+// Add a new function to handle magic login from email links
+const handleMagicLogin = async (req, res) => {
+  try {
+    const { token, redirect } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: "Invalid or missing token" });
+    }
+    
+    // Verify the token
+    const decoded = jwt.verify(
+      token, 
+      process.env.JWT_SECRET || 'fallback_jwt_secret'
+    );
+    
+    // Find the user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Generate a regular auth token
+    const authToken = jwt.sign(
+      { id: user._id }, 
+      process.env.JWT_SECRET || 'fallback_jwt_secret', 
+      { expiresIn: '30d' }
+    );
+    
+    // Set the token as a cookie
+    res.cookie('jwt', authToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+    
+    // Redirect to the specified page or homepage
+    res.redirect(redirect || '/');
+    
+  } catch (err) {
+    console.error("Magic login error:", err);
+    res.status(401).json({ error: "Invalid or expired token" });
+  }
+};
+
 export {
   createPost,
   deleteComment,
@@ -1824,4 +1898,5 @@ export {
   replyToPost,
   getFeedPosts,
   getUserPosts,
+  handleMagicLogin, // Export the new function
 };
