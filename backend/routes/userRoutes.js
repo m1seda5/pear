@@ -73,14 +73,10 @@ import {
     resetPassword,
     resendOTP,   
 } from "../controllers/userController.js";
-import { handleMagicLogin } from "../controllers/postController.js"; // Import the new function
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
-
-// Add the magic login route
-router.get("/magic-login", handleMagicLogin);
 
 // Add the search route
 router.get("/search/:query", protectRoute, searchUsers);
@@ -105,5 +101,6 @@ router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
+
 
 export default router;
