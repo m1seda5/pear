@@ -32,7 +32,7 @@ import {
   updateGroup,
   getGroupMessages,
   checkExistingGroup,
- 
+  getUnreadCount,
 } from "../controllers/messageController.js";
 
 const router = express.Router();
