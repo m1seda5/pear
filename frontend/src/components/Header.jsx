@@ -1153,7 +1153,7 @@ const Header = ({ unreadCount = 0 }) => {
                   position="absolute"
                   top="-2px"
                   right="-2px"
-                  bg="red.500"
+                  bg="purple.500"
                   color="white"
                   borderRadius="full"
                   w="18px"
@@ -1162,8 +1162,9 @@ const Header = ({ unreadCount = 0 }) => {
                   alignItems="center"
                   justifyContent="center"
                   boxShadow="md"
+                  zIndex="1"
                 >
-                  {unreadCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </Flex>
               )}
             </Box>

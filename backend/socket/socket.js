@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
 
     // Handle new direct message
     socket.on("newMessage", (socketPayload) => {
-        const { conversationId, receiverId } = socketPayload;
+        const { conversationId, receiverId, conversation, senderId } = socketPayload;
         const roomId = `chat_${conversationId}`;
         
         // Broadcast to the room
@@ -87,6 +87,21 @@ io.on("connection", (socket) => {
         const recipientSocketId = getRecipientSocketId(receiverId);
         if (recipientSocketId) {
             io.to(recipientSocketId).emit("newMessageNotification", socketPayload);
+        }
+        
+        // When sending messages - Added code
+        if (conversation && !conversation.isGroup) {
+            const recipient = conversation.participants.find(
+                p => p.toString() !== senderId.toString()
+            );
+            
+            if (recipient) {
+                const recipientId = recipient.toString();
+                const recipientSocket = getRecipientSocketId(recipientId);
+                if (recipientSocket) {
+                    io.to(recipientSocket).emit("newUnreadMessage");
+                }
+            }
         }
     });
 

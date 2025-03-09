@@ -526,6 +526,28 @@ async function checkExistingGroup(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+// Add to existing exports
+async function getUnreadCount(req, res) {
+  try {
+    const userId = req.user._id;
+    
+    const conversations = await Conversation.find({
+      participants: userId,
+    });
+
+    const conversationIds = conversations.map(c => c._id);
+
+    const unreadCount = await Message.countDocuments({
+      conversationId: { $in: conversationIds },
+      sender: { $ne: userId },
+      seen: false
+    });
+
+    res.status(200).json({ count: unreadCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 
 
@@ -542,4 +564,5 @@ export {
   removeFromGroup,
   getGroupMessages,
   checkExistingGroup,
+  getUnreadCount
 };

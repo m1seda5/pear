@@ -41,7 +41,9 @@ const router = express.Router();
 router.get("/config/group-limits", protectRoute, (req, res) => {
   res.json({ maxMembers: parseInt(process.env.MAX_GROUP_MEMBERS) || 30 });
 });
-
+//unread count
+// Add to existing routes
+router.get("/unread-count", protectRoute, getUnreadCount);
 // Group Chat Routes
 router.get("/groups/check", protectRoute, checkExistingGroup);
 router.post("/groups/create", protectRoute, createGroupChat);
