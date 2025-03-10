@@ -281,7 +281,7 @@ const MessageContainer = ({ isMonitoring }) => {
           <Avatar src={selectedConversation.userProfilePic} size="sm" />
           <Text display="flex" alignItems="center">
             {selectedConversation.username}
-            {currentUser?.role === "admin" && (
+            {user?.role === "admin" && (
               <Image src="/verified.png" w={4} h={4} ml={1} />
             )}
           </Text>
