@@ -190,6 +190,8 @@ import ResetPassword from "./pages/ResetPassword";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
+import { useState, useEffect } from "react"; // Add these imports
+import axios from "axios"; // Make sure axios is imported
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -197,13 +199,53 @@ function App() {
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
   
+  // Add state for unread messages count
+  const [unreadCount, setUnreadCount] = useState(0);
+  
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
+  
+  // Function to fetch unread count
+  const fetchUnreadCount = async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    
+    try {
+      const { data } = await axios.get("/api/messages/unread-count");
+      setUnreadCount(data.count);
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  };
+  
+  // Fetch unread count on component mount and when user changes
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    // Set up polling to check for new messages every 30 seconds
+    const intervalId = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(intervalId); // Clean up on unmount
+  }, [user]);
+  
+  // Reset unread count when navigating to chat page
+  useEffect(() => {
+    if (pathname === '/chat' && user) {
+      // Optionally reset the count when the user visits the chat page
+      // This depends on your app's UX design
+      // setUnreadCount(0);
+      
+      // Alternative: You might want to keep showing notifications until 
+      // the specific conversation is opened, which would be handled in ChatPage component
+    }
+  }, [pathname, user]);
   
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
-        {!isTVPage && <Header />}
+        {!isTVPage && <Header unreadCount={unreadCount} />}
         <Box mx="auto" px={4} maxW={isTVPage ? "100vw" : "600px"}>
           <Routes>
             <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
@@ -211,7 +253,7 @@ function App() {
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
             <Route path="/:username" element={<UserPage />} />
             <Route path="/:username/post/:pid" element={<PostPage />} />
-            <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
+            <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/tv" element={<TVPage />} />
