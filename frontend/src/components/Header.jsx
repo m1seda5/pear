@@ -1013,9 +1013,13 @@ const Header = ({ unreadCount = 0 }) => {
     }
   };
 
+  // Enhanced NavIcon with improved hover effects
   const NavIcon = ({ icon, label, onClick, isActive, isDisabled, children }) => {
-    const activeColor = "teal.500";
-    const disabledColor = "red.500";
+    const [isHovered, setIsHovered] = useState(false);
+    
+    const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
+    const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+    const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
     const hoverBgColor = colorMode === "dark" ? "whiteAlpha.200" : "blackAlpha.50";
     
     return (
@@ -1031,21 +1035,44 @@ const Header = ({ unreadCount = 0 }) => {
           as="span"
           position="relative"
           onClick={onClick}
-          p={1.5}
+          p={2}
           borderRadius="md"
-          transition="all 0.2s ease"
-          color={isDisabled ? disabledColor : (isActive ? activeColor : "inherit")}
+          transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+          color={isDisabled ? disabledColor : (isActive ? activeColor : normalColor)}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           _hover={{
             bg: hoverBgColor,
-            transform: "translateY(-2px)",
+            transform: "translateY(-3px)",
             boxShadow: colorMode === "dark" 
-              ? "0 4px 6px rgba(0, 0, 0, 0.3)" 
-              : "0 4px 6px rgba(0, 0, 0, 0.1)",
-            color: isDisabled ? disabledColor : activeColor,
+              ? "0 6px 10px rgba(0, 0, 0, 0.4)" 
+              : "0 6px 10px rgba(0, 0, 0, 0.1)",
           }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
+          className="nav-icon-container"
+          sx={{
+            "&:active": {
+              transform: "translateY(1px)",
+              boxShadow: "none",
+              transition: "all 0.1s ease-out"
+            },
+          }}
         >
           {children}
+          
+          {/* Animated underline indicator */}
+          <Box
+            position="absolute"
+            bottom="0"
+            left="50%"
+            width={isHovered ? "80%" : "0%"}
+            height="2px"
+            bg={isDisabled ? disabledColor : activeColor}
+            transition="all 0.2s ease-out"
+            transform="translateX(-50%)"
+            borderRadius="full"
+            opacity={isHovered ? 1 : 0}
+          />
         </Box>
       </Tooltip>
     );
@@ -1056,10 +1083,18 @@ const Header = ({ unreadCount = 0 }) => {
       justifyContent="center"
       mt={6}
       mb="12"
-      gap={{ base: 3, md: 8 }} // Reduced gap size
+      gap={{ base: 4, md: 8 }}
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
       width="100%"
+      sx={{
+        ".nav-icon-container": {
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }
+      }}
     >
       {user && (
         <NavIcon 
@@ -1071,8 +1106,9 @@ const Header = ({ unreadCount = 0 }) => {
             to="/"
             display="flex"
             alignItems="center"
+            _hover={{ textDecoration: "none" }}
           >
-            <AiFillHome size={24} />
+            <AiFillHome size={22} />
           </Link>
         </NavIcon>
       )}
@@ -1090,6 +1126,8 @@ const Header = ({ unreadCount = 0 }) => {
             to="/auth"
             display="flex"
             alignItems="center"
+            fontWeight="medium"
+            _hover={{ textDecoration: "none" }}
           >
             Login
           </Link>
@@ -1100,17 +1138,21 @@ const Header = ({ unreadCount = 0 }) => {
         label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} 
         onClick={toggleColorMode}
       >
-        <Icon
-          as={colorMode === 'dark' ? SunIcon : MoonIcon}
-          w={6}
-          h={6}
-        />
+        <Box className="theme-toggle-icon" position="relative">
+          <Icon
+            as={colorMode === 'dark' ? SunIcon : MoonIcon}
+            w={5}
+            h={5}
+            transition="all 0.3s ease"
+            transform={colorMode === 'dark' ? "rotate(0deg)" : "rotate(-180deg)"}
+          />
+        </Box>
       </NavIcon>
 
       {user && (
         <Flex
           alignItems="center"
-          gap={{ base: 3, md: 8 }} // Reduced gap size
+          gap={{ base: 4, md: 8 }}
           flexWrap={{ base: "wrap", md: "nowrap" }}
           justifyContent={{ base: "center", md: "flex-start" }}
         >
@@ -1123,8 +1165,9 @@ const Header = ({ unreadCount = 0 }) => {
               to={`/${user.username}`}
               display="flex"
               alignItems="center"
+              _hover={{ textDecoration: "none" }}
             >
-              <RxAvatar size={24} />
+              <RxAvatar size={22} />
             </Link>
           </NavIcon>
 
@@ -1139,20 +1182,33 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
+              transition="all 0.3s ease"
             >
               {user.isFrozen ? (
-                <FaLock size={20} color={colorMode === "dark" ? "#4299E1" : "#4299E1"} />
+                <FaLock size={18} color={colorMode === "dark" ? "#4299E1" : "#3182CE"} />
               ) : hoverState.lock ? (
-                <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
+                <FaLock 
+                  size={18} 
+                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
+                  style={{ 
+                    animation: "pulse 1s infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 0.7 },
+                      "50%": { opacity: 1 },
+                      "100%": { opacity: 0.7 }
+                    }
+                  }}
+                />
               ) : (
-                <BsFillChatQuoteFill size={20} />
+                <BsFillChatQuoteFill size={18} />
               )}
               
               {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                 <Flex
                   position="absolute"
-                  top="-2px"
-                  right="-2px"
+                  top="-5px"
+                  right="-5px"
                   bg="purple.500"
                   color="white"
                   borderRadius="full"
@@ -1161,8 +1217,10 @@ const Header = ({ unreadCount = 0 }) => {
                   fontSize="xs"
                   alignItems="center"
                   justifyContent="center"
-                  boxShadow="md"
+                  fontWeight="bold"
+                  boxShadow={colorMode === "dark" ? "0 0 0 2px #1A202C" : "0 0 0 2px white"}
                   zIndex="1"
+                  animation="bounceIn 0.5s"
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </Flex>
@@ -1180,9 +1238,24 @@ const Header = ({ unreadCount = 0 }) => {
               onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
               display="flex"
               alignItems="center"
+              justifyContent="center"
+              transition="all 0.3s ease"
             >
               {hoverState.tv && !isAdmin ? (
-                <FaLock size={20} color={colorMode === "dark" ? "#F56565" : "#F56565"} />
+                <FaLock 
+                  size={18} 
+                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
+                  style={{ 
+                    animation: "shake 0.5s",
+                    "@keyframes shake": {
+                      "0%": { transform: "translateX(0)" },
+                      "25%": { transform: "translateX(-3px)" },
+                      "50%": { transform: "translateX(3px)" },
+                      "75%": { transform: "translateX(-3px)" },
+                      "100%": { transform: "translateX(0)" }
+                    }
+                  }}
+                />
               ) : (
                 <PiTelevisionSimpleBold size={20} />
               )}
@@ -1198,8 +1271,18 @@ const Header = ({ unreadCount = 0 }) => {
               to="/settings"
               display="flex"
               alignItems="center"
+              _hover={{ textDecoration: "none" }}
             >
-              <MdOutlineSettings size={20} />
+              <MdOutlineSettings 
+                size={20} 
+                style={{ 
+                  transition: "transform 0.3s ease",
+                  transformOrigin: "center",
+                  "&:hover": { 
+                    transform: "rotate(90deg)"
+                  }
+                }}
+              />
             </Link>
           </NavIcon>
 
@@ -1207,7 +1290,11 @@ const Header = ({ unreadCount = 0 }) => {
             label="Logout" 
             onClick={handleLogout}
           >
-            <Box display="flex" alignItems="center">
+            <Box 
+              display="flex" 
+              alignItems="center"
+              transition="all 0.3s ease"
+            >
               <FiLogOut size={20} />
             </Box>
           </NavIcon>
@@ -1227,6 +1314,8 @@ const Header = ({ unreadCount = 0 }) => {
             to="/auth"
             display="flex"
             alignItems="center"
+            fontWeight="medium"
+            _hover={{ textDecoration: "none" }}
           >
             Sign up
           </Link>
