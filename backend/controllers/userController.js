@@ -2035,31 +2035,25 @@ const deleteUserData = async (userId) => {
 };
 const searchUsers = async (req, res) => {
   try {
-      const { query } = req.params;
-      
-      // Find user by username or email
-      const user = await User.findOne({
-          $or: [
-              { username: { $regex: query, $options: "i" } },
-              { email: { $regex: query, $options: "i" } }
-          ]
-      });
+    const { query } = req.params;
+    
+    // Search for partial matches in username or email
+    const users = await User.find({
+      $or: [
+        { username: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } }
+      ]
+    })
+    .limit(5) // Limit results
+    .select("-password"); // Exclude sensitive fields
 
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
-      }
+    if (!users.length) {
+      return res.status(404).json({ error: "No users found" });
+    }
 
-      // Return user without sensitive information
-      const userToReturn = {
-          _id: user._id,
-          username: user.username,
-          profilePic: user.profilePic,
-          // Add any other fields you need
-      };
-
-      res.status(200).json(userToReturn);
+    res.status(200).json(users);
   } catch (error) {
-      res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 const sendPasswordResetEmail = async (email, resetToken) => {

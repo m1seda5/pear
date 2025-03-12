@@ -6,7 +6,6 @@ import {
   Badge,
   Box,
   Flex,
-  Icon,
   Image,
   Stack,
   Text,
@@ -17,7 +16,6 @@ import {
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { BsCheck2All, BsFillImageFill } from "react-icons/bs";
-import { FaUsers } from "react-icons/fa";
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp);
@@ -27,7 +25,15 @@ const formatTime = (timestamp) => {
   });
 };
 
-const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
+const Conversation = ({ 
+  conversation, 
+  isOnline, 
+  onClick, 
+  isMonitoring, 
+  isSuggestion,
+  bg,
+  _hover
+}) => {
   // Early return if conversation is invalid
   if (!conversation || typeof conversation !== 'object') {
     return null;
@@ -49,11 +55,16 @@ const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
     }
   };
 
+  // Use provided bg color or default hover bg color
+  const hoverBg = _hover?.bg || useColorModeValue("gray.100", "gray.700");
+  const bgColor = bg || 'transparent';
+
   return (
     <Flex
       p={2}
       align="center"
-      _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+      bg={bgColor}
+      _hover={{ bg: hoverBg }}
       cursor="pointer"
       borderRadius="md"
       onClick={handleClick}

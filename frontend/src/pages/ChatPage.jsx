@@ -776,59 +776,46 @@ const ChatPage = () => {
     if (!searchText.trim()) return;
     setSearchingUser(true);
     try {
-      // Fix: Update endpoint to match backend route
       const res = await fetch(`/api/users/search/${encodeURIComponent(searchText.toLowerCase())}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
-      const searchedUser = await res.json();
+      const users = await res.json();
       
       if (!res.ok) {
-        showToast(t("Error"), searchedUser.error || t("User not found"), "error");
+        showToast(t("Error"), users.error || t("No users found"), "error");
         return;
       }
   
-      if (searchedUser._id === currentUser._id) {
-        showToast(t("Error"), t("You cannot message yourself"), "error");
+      // Filter out current user and already existing conversations
+      const filteredUsers = users.filter(user => 
+        user._id !== currentUser._id &&
+        !conversations.some(conv => 
+          !conv.isGroup && conv.participants[0]._id === user._id
+        )
+      );
+  
+      if (filteredUsers.length === 0) {
+        showToast(t("Info"), t("No new users found"), "info");
         return;
       }
   
-      const conversationAlreadyExists = conversations.find((conversation) => {
-        if (conversation.isGroup) {
-          return conversation.groupName === searchedUser.username;
-        }
-        return conversation.participants[0]._id === searchedUser._id;
-      });
-  
-      if (conversationAlreadyExists) {
-        setSelectedConversation({
-          _id: conversationAlreadyExists._id,
-          userId: searchedUser._id,
-          username: searchedUser.username,
-          userProfilePic: searchedUser.profilePic,
-          isGroup: false,
-        });
-        return;
-      }
-  
-      const mockConversation = {
+      // Create mock conversations for suggestions
+      const suggestedConversations = filteredUsers.map(user => ({
         mock: true,
-        lastMessage: {
-          text: "",
-          sender: "",
-        },
-        _id: Date.now(),
+        isSuggestion: true, // New flag for suggestion type
+        lastMessage: { text: "", sender: "" },
+        _id: `suggest-${user._id}`,
         isGroup: false,
-        participants: [
-          {
-            _id: searchedUser._id,
-            username: searchedUser.username,
-            profilePic: searchedUser.profilePic,
-          },
-        ],
-      };
-      setConversations((prevConvs) => [...prevConvs, mockConversation]);
+        participants: [{
+          _id: user._id,
+          username: user.username,
+          profilePic: user.profilePic
+        }]
+      }));
+  
+      setConversations(prev => [...prev, ...suggestedConversations]);
     } catch (error) {
       showToast(t("Error"), error.message, "error");
     } finally {
@@ -945,7 +932,11 @@ const ChatPage = () => {
               <Flex alignItems={"center"} gap={2}>
                 <Input 
                   placeholder={t('Search for a user')} 
-                  onChange={(e) => setSearchText(e.target.value)}
+                  onChange={(e) => {
+                    setSearchText(e.target.value);
+                    // Remove suggestions when search text changes
+                    setConversations(prev => prev.filter(conv => !conv.isSuggestion));
+                  }}
                   value={searchText}
                   variant="filled"
                   _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
@@ -973,19 +964,21 @@ const ChatPage = () => {
 
           {!loadingConversations && Array.isArray(conversations) &&
             conversations.map((conversation) => (
-              <Conversation
-                key={conversation._id}
-                isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
-                conversation={conversation}
-                onClick={() => handleConversationClick(conversation)}
-                isMonitoring={isMonitoring}
-                bg={subtleBg}
-                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                borderRadius="md"
-                border="1px solid"
-                borderColor={borderColor}
-                mb={2}
-              />
+              <Box key={conversation._id} position="relative">
+                <Conversation
+                  isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
+                  conversation={conversation}
+                  onClick={() => handleConversationClick(conversation)}
+                  isSuggestion={conversation.isSuggestion}
+                  bg={conversation.isSuggestion ? useColorModeValue("blue.50", "blue.900") : subtleBg}
+                  _hover={{ bg: conversation.isSuggestion ? useColorModeValue("blue.100", "blue.800") : useColorModeValue("gray.100", "gray.600")}}
+                />
+                {conversation.isSuggestion && (
+                  <Text fontSize="xs" color="gray.500" mt={1} px={2}>
+                    {t("Click to start conversation")}
+                  </Text>
+                )}
+              </Box>
             ))
           }
 
