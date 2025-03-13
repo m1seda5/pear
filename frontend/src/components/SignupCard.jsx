@@ -779,6 +779,7 @@
 // export default SignupCard;
 
 // this is the brookhouse update and stuff
+
 import React, { useState, useEffect } from "react";
 import {
   Flex,
@@ -831,6 +832,7 @@ const SignupCard = () => {
   const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [campus, setCampus] = useState("");
+  const [response, setResponse] = useState(null);
 
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const showToast = useShowToast();
@@ -929,6 +931,16 @@ const SignupCard = () => {
     }
     return () => clearInterval(interval);
   }, [isOtpSent, timer]);
+
+  // Replace the entire handleSignup function with:
+  useEffect(() => {
+    if (isOtpVerified && response) {
+      // Automatically log user in after successful verification
+      localStorage.setItem("user-threads", JSON.stringify(response.data));
+      setUser(response.data);
+      window.location.href = "/"; // Force refresh to trigger feed load
+    }
+  }, [isOtpVerified, response, setUser]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -1060,19 +1072,12 @@ const SignupCard = () => {
       });
 
       if (response.data._id) {
-        // Store user data in localStorage
-        localStorage.setItem("user-threads", JSON.stringify(response.data));
-
-        // Set user in Recoil state
-        setUser(response.data);
+        // Store the response for the useEffect to handle
+        setResponse(response);
+        setIsOtpVerified(true);
 
         // Show success message
         showToast("Success", "Account created successfully!", "success");
-
-        // Redirect to home page - the user is already authenticated
-        // No need for an additional login step - user is already authenticated
-        // The auth token is already set in the cookie from the verify-otp endpoint
-        window.location.href = "/";
       } else {
         setIsOtpVerified(true);
         setErrorMessage("");
@@ -1093,38 +1098,8 @@ const SignupCard = () => {
     }
   };
 
-  const handleSignup = async () => {
-    if (!isOtpVerified) {
-      setErrorMessage("Please verify your OTP before signing up");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: inputs.username,
-          password: inputs.password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.error) {
-        showToast("Error", data.error, "error");
-        return;
-      }
-
-      localStorage.setItem("user-threads", JSON.stringify(data));
-      setUser(data);
-      showToast("Success", "Signup successful!", "success");
-    } catch (error) {
-      showToast("Error", error.message, "error");
-    }
-  };
-
-  // Keep all other existing functions (validateForm, sendOtp, verifyOtp, handleSignup)
+  // Remove the entire handleSignup function and any related login calls
+  // The OTP verification should handle complete login
 
   return (
     <Flex align={"center"} justify={"center"}>

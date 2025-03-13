@@ -1684,12 +1684,15 @@ const getFeedPosts = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
-
+    
     const user = await User.findById(userId).select("role following yearGroup department");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
+    
+    // Get all user IDs for new user experience
+    const allUserIds = await User.find().distinct('_id');
+    
     // Base filter conditions that apply to all posts
     const baseFilter = {
       $or: [
@@ -1698,14 +1701,19 @@ const getFeedPosts = async (req, res) => {
         { reposts: userId } // Include posts the user has reposted
       ]
     };
-
+    
+    // For users with no following (likely new users), show posts from all users
+    if (!user.following || user.following.length === 0) {
+      baseFilter.$or.push({ postedBy: { $in: allUserIds } });
+    }
+    
     // Audience-specific filter based on user role
     let audienceFilter = {
       $or: [
         { targetAudience: "all" }, // Posts targeted to everyone
       ]
     };
-
+    
     // Add role-specific filters
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
@@ -1723,7 +1731,7 @@ const getFeedPosts = async (req, res) => {
       // Admins and TV can see all posts
       audienceFilter = {}; // No additional filtering needed
     }
-
+    
     // Combine with approval status filter
     const approvalFilter = {
       $or: [
@@ -1734,7 +1742,7 @@ const getFeedPosts = async (req, res) => {
         ]}
       ]
     };
-
+    
     // Combine all filters
     const finalFilter = {
       $and: [
@@ -1743,19 +1751,18 @@ const getFeedPosts = async (req, res) => {
         approvalFilter
       ]
     };
-
+    
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .sort({ createdAt: -1 })
       .limit(50);
-
+    
     res.status(200).json(feedPosts);
   } catch (err) {
     console.error("Error fetching feed posts:", err.message);
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {

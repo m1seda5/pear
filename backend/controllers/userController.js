@@ -1515,24 +1515,24 @@ const signupUser = async (req, res) => {
 // In verifyOTP endpoint (userController.js)
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
-
+  
   try {
     // Input validation
     if (!email || !otp) {
-      return res.status(400).json({ 
-        error: "Email and OTP are required" 
+      return res.status(400).json({
+        error: "Email and OTP are required"
       });
     }
-
+    
     // Find temporary user record
     const tempUser = await TempUser.findOne({ email: email.toLowerCase() });
     if (!tempUser) {
       console.log(`No temporary user found for email: ${email}`);
-      return res.status(404).json({ 
-        error: "No pending verification found. Please restart the signup process." 
+      return res.status(404).json({
+        error: "No pending verification found. Please restart the signup process."
       });
     }
-
+    
     // Log verification attempt
     console.log(`OTP Verification attempt for ${email}:`, {
       receivedOTP: otp,
@@ -1541,26 +1541,26 @@ const verifyOTP = async (req, res) => {
       expiry: tempUser.otpExpiry,
       currentTime: new Date()
     });
-
+    
     // Check attempts
     if (tempUser.otpAttempts >= 3) {
       console.log(`Max attempts exceeded for ${email}`);
       await TempUser.deleteOne({ email: email.toLowerCase() });
-      return res.status(429).json({ 
-        error: "Maximum attempts exceeded. Please restart the signup process." 
+      return res.status(429).json({
+        error: "Maximum attempts exceeded. Please restart the signup process."
       });
     }
-
+    
     // Validate OTP
     if (!tempUser.isValidOtp(otp)) {
       const remainingAttempts = 3 - (await tempUser.incrementAttempts());
       console.log(`Invalid OTP for ${email}. ${remainingAttempts} attempts remaining`);
       
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: `Invalid OTP. ${remainingAttempts} attempts remaining.`
       });
     }
-
+    
     // Prepare user data for creation
     const userData = {
       name: tempUser.name,
@@ -1571,29 +1571,35 @@ const verifyOTP = async (req, res) => {
       campus: tempUser.campus, // Ensure campus is included
       isVerified: true
     };
-
+    
     // Add conditional fields based on role
     if (tempUser.role === 'student') {
       userData.yearGroup = tempUser.yearGroup;
     } else if (tempUser.role === 'teacher') {
       userData.department = tempUser.department;
     }
-
+    
     try {
       // Create new verified user
       const newUser = new User(userData);
       await newUser.save();
       
+      // Add this after creating newUser - MODIFICATION 1
+      const allUsers = await User.find({ _id: { $ne: newUser._id } });
+      const allUserIds = allUsers.map(u => u._id.toString());
+      newUser.following = allUserIds;
+      await newUser.save();
+      
       // Clean up temporary user data
       await TempUser.deleteOne({ email: email.toLowerCase() });
-
-      // Generate authentication token
-      generateTokenAndSetCookie(newUser._id, res);
-
+      
+      // Generate authentication token - MODIFICATION 2
+      const token = generateTokenAndSetCookie(newUser._id, res);
+      
       // Log successful verification
       console.log(`Successfully verified and created user: ${email}`);
-
-      // Return success response
+      
+      // Return success response with token
       return res.status(200).json({
         _id: newUser._id,
         name: newUser.name,
@@ -1603,9 +1609,10 @@ const verifyOTP = async (req, res) => {
         yearGroup: newUser.yearGroup,
         department: newUser.department,
         campus: newUser.campus,
-        isVerified: true
+        isVerified: true,
+        token // Added token to response
       });
-
+      
     } catch (error) {
       // Handle user creation errors
       console.error(`Error creating verified user for ${email}:`, error);
@@ -1615,14 +1622,13 @@ const verifyOTP = async (req, res) => {
       
       // Check for duplicate key errors
       if (error.code === 11000) {
-        return res.status(400).json({ 
-          error: "Username or email already exists. Please try again with different credentials." 
+        return res.status(400).json({
+          error: "Username or email already exists. Please try again with different credentials."
         });
       }
-
+      
       throw error;
     }
-
   } catch (error) {
     // Log the full error for debugging
     console.error('OTP Verification Error:', {
@@ -1630,9 +1636,9 @@ const verifyOTP = async (req, res) => {
       error: error.message,
       stack: error.stack
     });
-
+    
     // Return appropriate error response
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Internal server error during verification. Please try again.",
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
