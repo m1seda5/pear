@@ -914,7 +914,6 @@ const SignupCard = () => {
     }
   }, [inputs.username, inputs.email]);
 
-
   useEffect(() => {
     let interval;
     if (isOtpSent && timer > 0) {
@@ -934,7 +933,7 @@ const SignupCard = () => {
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleResendOTP = async () => {
@@ -943,19 +942,19 @@ const SignupCard = () => {
       setErrorMessage("");
 
       const response = await axios.post("/api/users/resend-otp", {
-        email: inputs.email
+        email: inputs.email,
       });
 
       if (response.data.message) {
         setTimer(600); // Reset timer to 3 minutes
-        setResendAttempts(prev => prev + 1);
+        setResendAttempts((prev) => prev + 1);
         showToast("Success", "New OTP sent successfully", "success");
       }
     } catch (error) {
       const errorMsg = error.response?.data?.error || "Failed to resend OTP";
       setErrorMessage(errorMsg);
       showToast("Error", errorMsg, "error");
-      
+
       // If we got a 429 (too many attempts), keep the resend button disabled
       if (error.response?.status !== 429) {
         setIsResendDisabled(false);
@@ -1024,11 +1023,13 @@ const SignupCard = () => {
       }
 
       setIsOtpSent(true);
-      setTimer(120);
+      setTimer(600); // Changed from 120 to 600 seconds (10 minutes)
       setIsResendDisabled(true);
       showToast(
         "Success",
-        `OTP ${isResend ? "re-" : ""}sent to your email. Please verify within 10 minutes.`,
+        `OTP ${
+          isResend ? "re-" : ""
+        }sent to your email. Please verify within 10 minutes.`,
         "success"
       );
     } catch (error) {
@@ -1061,14 +1062,24 @@ const SignupCard = () => {
       if (response.data._id) {
         // Store user data in localStorage
         localStorage.setItem("user-threads", JSON.stringify(response.data));
+
+        // Set user in Recoil state
         setUser(response.data);
+
+        // Show success message
         showToast("Success", "Account created successfully!", "success");
+
+        // Redirect to home page - the user is already authenticated
+        // No need for an additional login step - user is already authenticated
+        // The auth token is already set in the cookie from the verify-otp endpoint
+        window.location.href = "/";
       } else {
         setIsOtpVerified(true);
         setErrorMessage("");
         showToast("Success", "OTP verified successfully", "success");
       }
     } catch (error) {
+      // Error handling
       console.error(
         "Verify OTP error:",
         error.response?.data?.error || error.message
@@ -1299,14 +1310,14 @@ const SignupCard = () => {
                 <Stack direction="row" spacing={4} mt={2}>
                   <Button
                     onClick={verifyOtp}
-                    disabled={!formData.otp || isOtpVerified}
+                    disabled={!formData.otp}
                     colorScheme="green"
                   >
-                    Verify OTP
+                    Verify OTP & Create Account
                   </Button>
                   <Button
                     onClick={handleResendOTP}
-                    isDisabled={isResendDisabled || isOtpVerified}
+                    isDisabled={isResendDisabled}
                     colorScheme="blue"
                   >
                     Resend OTP {timer > 0 && `(${formatTime(timer)})`}
@@ -1319,22 +1330,6 @@ const SignupCard = () => {
                 )}
               </FormControl>
             )}
-
-            {/* Sign up button */}
-            <Stack spacing={10} pt={2}>
-              <Button
-                size="lg"
-                bg={useColorModeValue("gray.600", "gray.700")}
-                color={"white"}
-                _hover={{
-                  bg: useColorModeValue("gray.700", "gray.800"),
-                }}
-                onClick={handleSignup}
-                disabled={!isOtpVerified}
-              >
-                Sign up
-              </Button>
-            </Stack>
 
             {/* Login link */}
             <Stack pt={6}>
