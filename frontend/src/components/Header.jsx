@@ -917,7 +917,6 @@
 
 
 // admin role update
-// Fix for the Header component
 import { 
   Button, 
   Flex, 
@@ -925,7 +924,8 @@ import {
   Link, 
   useColorMode,
   Tooltip,
-  Box
+  Box,
+  keyframes
 } from "@chakra-ui/react";
 import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -942,16 +942,44 @@ import { useState, useEffect } from "react";
 import { FaLock } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 
+// Define keyframes properly outside components
+const pulseKeyframes = keyframes`
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+`;
+
+const shakeKeyframes = keyframes`
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+`;
+
+const rotateKeyframes = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
+`;
+
+const bounceInKeyframes = keyframes`
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
 const Header = ({ unreadCount = 0 }) => {
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useRecoilValue(userAtom);
   const logout = useLogout();
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const navigate = useNavigate();
-  const [hoverState, setHoverState] = useState({
+  
+  // Consolidated state - only track locks when needed
+  const [showLockIcon, setShowLockIcon] = useState({
     chat: false,
-    lock: false,
-    tv: false,
+    tv: false
   });
 
   // Only evaluate these if user exists
@@ -968,7 +996,7 @@ const Header = ({ unreadCount = 0 }) => {
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
-  // Fix: Add a complete user check before evaluating hasChatAccess
+  // Complete user check before evaluating hasChatAccess
   const hasChatAccess = user && (
     isTeacher ||
     isAdmin ||
@@ -985,9 +1013,7 @@ const Header = ({ unreadCount = 0 }) => {
   const handleChatClick = (e) => {
     if (!user || (user && user.isFrozen) || !hasChatAccess) {
       e.preventDefault();
-      setHoverState({ ...hoverState, lock: true });
     } else {
-      setHoverState({ ...hoverState, chat: false, lock: false });
       navigate("/chat");
     }
   };
@@ -995,9 +1021,7 @@ const Header = ({ unreadCount = 0 }) => {
   const handleTVClick = (e) => {
     if (!user || (user && !isAdmin)) {
       e.preventDefault();
-      setHoverState({ ...hoverState, tv: true });
     } else {
-      setHoverState({ ...hoverState, tv: false });
       navigate("/tv");
     }
   };
@@ -1013,10 +1037,8 @@ const Header = ({ unreadCount = 0 }) => {
     }
   };
 
-  // Enhanced NavIcon with improved hover effects
+  // Enhanced NavIcon with simpler hover effects
   const NavIcon = ({ icon, label, onClick, isActive, isDisabled, children }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    
     const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
     const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
     const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
@@ -1039,14 +1061,19 @@ const Header = ({ unreadCount = 0 }) => {
           borderRadius="md"
           transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
           color={isDisabled ? disabledColor : (isActive ? activeColor : normalColor)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
           _hover={{
             bg: hoverBgColor,
             transform: "translateY(-3px)",
             boxShadow: colorMode === "dark" 
               ? "0 6px 10px rgba(0, 0, 0, 0.4)" 
               : "0 6px 10px rgba(0, 0, 0, 0.1)",
+            "& .nav-icon-underline": {
+              width: "80%",
+              opacity: 1
+            },
+            "& .settings-icon": {
+              transform: "rotate(90deg)"
+            }
           }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
           className="nav-icon-container"
@@ -1062,21 +1089,28 @@ const Header = ({ unreadCount = 0 }) => {
           
           {/* Animated underline indicator */}
           <Box
+            className="nav-icon-underline"
             position="absolute"
             bottom="0"
             left="50%"
-            width={isHovered ? "80%" : "0%"}
+            width="0%"
             height="2px"
             bg={isDisabled ? disabledColor : activeColor}
             transition="all 0.2s ease-out"
             transform="translateX(-50%)"
             borderRadius="full"
-            opacity={isHovered ? 1 : 0}
+            opacity={0}
           />
         </Box>
       </Tooltip>
     );
   };
+
+  // Define animations
+  const pulseAnimation = `${pulseKeyframes} 1s infinite`;
+  const shakeAnimation = `${shakeKeyframes} 0.5s`;
+  const rotateAnimation = `${rotateKeyframes} 0.3s forwards`;
+  const bounceInAnimation = `${bounceInKeyframes} 0.5s`;
 
   return (
     <Flex
@@ -1178,27 +1212,19 @@ const Header = ({ unreadCount = 0 }) => {
           >
             <Box
               position="relative"
-              onMouseEnter={() => setHoverState({ ...hoverState, chat: true })}
-              onMouseLeave={() => setHoverState({ ...hoverState, chat: false, lock: false })}
+              onMouseEnter={() => setShowLockIcon({...showLockIcon, chat: !hasChatAccess || user.isFrozen})}
+              onMouseLeave={() => setShowLockIcon({...showLockIcon, chat: false})}
               display="flex"
               alignItems="center"
               justifyContent="center"
-              transition="all 0.3s ease"
             >
               {user.isFrozen ? (
                 <FaLock size={18} color={colorMode === "dark" ? "#4299E1" : "#3182CE"} />
-              ) : hoverState.lock ? (
+              ) : showLockIcon.chat ? (
                 <FaLock 
                   size={18} 
                   color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
-                  style={{ 
-                    animation: "pulse 1s infinite",
-                    "@keyframes pulse": {
-                      "0%": { opacity: 0.7 },
-                      "50%": { opacity: 1 },
-                      "100%": { opacity: 0.7 }
-                    }
-                  }}
+                  style={{ animation: pulseAnimation }}
                 />
               ) : (
                 <BsFillChatQuoteFill size={18} />
@@ -1220,7 +1246,7 @@ const Header = ({ unreadCount = 0 }) => {
                   fontWeight="bold"
                   boxShadow={colorMode === "dark" ? "0 0 0 2px #1A202C" : "0 0 0 2px white"}
                   zIndex="1"
-                  animation="bounceIn 0.5s"
+                  animation={bounceInAnimation}
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </Flex>
@@ -1234,27 +1260,17 @@ const Header = ({ unreadCount = 0 }) => {
             isDisabled={!isAdmin}
           >
             <Box
-              onMouseEnter={() => setHoverState({ ...hoverState, tv: true })}
-              onMouseLeave={() => setHoverState({ ...hoverState, tv: false })}
+              onMouseEnter={() => setShowLockIcon({...showLockIcon, tv: !isAdmin})}
+              onMouseLeave={() => setShowLockIcon({...showLockIcon, tv: false})}
               display="flex"
               alignItems="center"
               justifyContent="center"
-              transition="all 0.3s ease"
             >
-              {hoverState.tv && !isAdmin ? (
+              {showLockIcon.tv ? (
                 <FaLock 
                   size={18} 
                   color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
-                  style={{ 
-                    animation: "shake 0.5s",
-                    "@keyframes shake": {
-                      "0%": { transform: "translateX(0)" },
-                      "25%": { transform: "translateX(-3px)" },
-                      "50%": { transform: "translateX(3px)" },
-                      "75%": { transform: "translateX(-3px)" },
-                      "100%": { transform: "translateX(0)" }
-                    }
-                  }}
+                  style={{ animation: shakeAnimation }}
                 />
               ) : (
                 <PiTelevisionSimpleBold size={20} />
@@ -1275,12 +1291,10 @@ const Header = ({ unreadCount = 0 }) => {
             >
               <MdOutlineSettings 
                 size={20} 
+                className="settings-icon"
                 style={{ 
                   transition: "transform 0.3s ease",
-                  transformOrigin: "center",
-                  "&:hover": { 
-                    transform: "rotate(90deg)"
-                  }
+                  transformOrigin: "center"
                 }}
               />
             </Link>
@@ -1293,7 +1307,6 @@ const Header = ({ unreadCount = 0 }) => {
             <Box 
               display="flex" 
               alignItems="center"
-              transition="all 0.3s ease"
             >
               <FiLogOut size={20} />
             </Box>
