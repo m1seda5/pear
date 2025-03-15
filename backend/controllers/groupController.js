@@ -1,6 +1,6 @@
 // controllers/groupController.js
 import { Group } from "../models/groupModel.js";
-import { User } from "../models/userModel.js";
+import  User  from "../models/userModel.js";
 
 const createGroup = async (req, res) => {
   try {
