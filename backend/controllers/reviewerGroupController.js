@@ -1,7 +1,16 @@
 // controllers/reviewerGroupController.js
 import ReviewerGroup from "../models/reviewerGroupModel.js";
 import User from "../models/userModel.js";
-import { transporter } from "./userController.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  auth: {
+    user: "81d810001@smtp-brevo.com",
+    pass: "6IBdE9hsKrHUxD4G",
+  },
+});
 
 const createReviewerGroup = async (req, res) => {
   try {
