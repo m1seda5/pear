@@ -1717,87 +1717,76 @@ const getFeedPosts = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
     
-    // Get all user IDs for new user experience
+    // Get all user IDs
     const allUserIds = await User.find().distinct('_id');
     
     // Get user's groups
     const userGroups = user.groups || [];
     
-    // Base filter conditions that apply to all posts
+    // Base filter conditions
     const baseFilter = {
       $or: [
-        { postedBy: userId }, // User's own posts
-        { postedBy: { $in: user.following || [] } }, // Posts from followed users
-        { reposts: userId }, // Include posts the user has reposted
-        { isGeneral: true }, // General posts visible to all
-        { targetGroups: { $in: userGroups } }, // Posts targeted to the user's groups
-        // Posts with no group specified (visible to everyone)
+        { postedBy: userId },
+        { postedBy: { $in: user.following || [] } },
+        { reposts: userId },
+        { isGeneral: true },
+        { targetGroups: { $in: userGroups } },
         { groups: { $size: 0 } },
-        // Posts where user is a member of at least one of the post's groups
         { groups: { $in: userGroups } }
       ]
     };
     
-    // For users with no following (likely new users), show posts from all users
     if (!user.following || user.following.length === 0) {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
     
-    // Audience-specific filter based on user role
-    let audienceFilter = {
-      $or: [
-        { targetAudience: "all" }, // Posts targeted to everyone
-      ]
-    };
+    // Get user IDs for approval filter first
+    const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct('_id');
+    const studentUserIds = await User.find({ role: "student" }).distinct('_id');
     
-    // Add role-specific filters
+    // Audience-specific filter
+    let audienceFilter = { $or: [{ targetAudience: "all" }] };
+    
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
         { targetYearGroups: user.yearGroup },
         { targetAudience: user.yearGroup }
       );
-    }
-    else if (user.role === "teacher" && user.department) {
+    } else if (user.role === "teacher" && user.department) {
       audienceFilter.$or.push(
         { targetDepartments: user.department },
         { targetAudience: user.department }
       );
     }
-    else if (user.role === "admin" || user.role === "tv") {
-      // Admins and TV can see all posts
-      audienceFilter = {}; // No additional filtering needed
-    }
     
-    // Combine with approval status filter
+    // Approval filter
     const approvalFilter = {
       $or: [
-        { postedBy: { $in: await User.find({ role: { $ne: "student" } }).distinct('_id') } }, // Non-student posts
-        { $and: [ // Student posts must be approved
-          { postedBy: { $in: await User.find({ role: "student" }).distinct('_id') } },
-          { reviewStatus: "approved" }
-        ]}
+        { postedBy: { $in: nonStudentUserIds } },
+        { 
+          $and: [
+            { postedBy: { $in: studentUserIds } },
+            { reviewStatus: "approved" }
+          ]
+        }
       ]
     };
     
-    // Combine all filters
+    // Combine filters
     const finalFilter = {
-      $and: [
-        baseFilter,
-        audienceFilter,
-        approvalFilter
-      ]
+      $and: [baseFilter, audienceFilter, approvalFilter]
     };
     
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
-      .populate("targetGroups", "name color") // Populate group details
-      .populate("groups", "name color") // Populate the post's groups
+      .populate("targetGroups", "name color")
+      .populate("groups", "name color")
       .sort({ createdAt: -1 })
       .limit(50);
     
     res.status(200).json(feedPosts);
   } catch (err) {
-    console.error("Error fetching feed posts:", err.message);
+    console.error("Error fetching feed posts:", err);
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
