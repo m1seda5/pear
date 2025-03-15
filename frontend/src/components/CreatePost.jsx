@@ -528,7 +528,8 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  IconButton
+  IconButton,
+  Stack
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
@@ -538,10 +539,10 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
+import CreateGroup from "./CreateGroup"; // Import the CreateGroup component
 
 const MAX_CHAR = 500;
 
-// Define the pulse animation
 const pulseKeyframes = keyframes`
   0% {
     transform: scale(1);
@@ -615,9 +616,15 @@ const CreatePost = () => {
   // Fetch user's groups
   useEffect(() => {
     const fetchGroups = async () => {
-      const res = await fetch("/api/groups");
-      const data = await res.json();
-      setAvailableGroups(data);
+      try {
+        const res = await fetch("/api/groups");  // Correct: 'await'
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAvailableGroups(data);
+        }
+      } catch (error) {
+        showToast("Error", "Failed to fetch groups", "error");
+      }
     };
     fetchGroups();
   }, []);
@@ -628,7 +635,6 @@ const CreatePost = () => {
       setIsPulsing(true);
       setTimeout(() => setIsPulsing(false), 1000);
     }, 5000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -651,7 +657,6 @@ const CreatePost = () => {
       setTargetYearGroups(["all"]);
       return;
     }
-    
     const newGroups = targetYearGroups.filter(group => group !== "all");
     if (!newGroups.includes(value)) {
       setTargetYearGroups([...newGroups, value]);
@@ -667,7 +672,6 @@ const CreatePost = () => {
       setTargetDepartments(["tv"]);
       return;
     }
-    
     const newDepts = targetDepartments.filter(dept => dept !== "tv");
     if (!newDepts.includes(value)) {
       setTargetDepartments([...newDepts, value]);
@@ -678,6 +682,12 @@ const CreatePost = () => {
     setTargetDepartments(targetDepartments.filter(dept => dept !== value));
   };
 
+  const handleGroupCreated = (newGroup) => {
+    setAvailableGroups(prev => [...prev, newGroup]);
+    // Optionally auto-select the newly created group
+    setSelectedGroups(prev => [...prev, newGroup._id]);
+  };
+
   const handleCreatePost = async () => {
     setIsLoading(true);
     try {
@@ -686,28 +696,27 @@ const CreatePost = () => {
         setIsLoading(false);
         return;
       }
-  
+
       const payload = {
         postedBy: user._id,
         text: postText,
         img: imgUrl || undefined,
-        groups: selectedGroups // Add selected groups to payload
+        groups: selectedGroups
       };
-  
+
       switch (user.role) {
         case "student":
           payload.targetAudience = "all";
           payload.targetYearGroups = [];
           payload.targetDepartments = [];
           break;
-  
+
         case "teacher":
-          if (!targetYearGroups.length) {
-            showToast("Error", "Please select at least one year group", "error");
+          if (!targetYearGroups.length && !selectedGroups.length) {
+            showToast("Error", "Please select at least one year group or posting group", "error");
             setIsLoading(false);
             return;
           }
-  
           if (targetYearGroups.includes("all")) {
             payload.targetAudience = "all";
             payload.targetYearGroups = [];
@@ -717,18 +726,13 @@ const CreatePost = () => {
           }
           payload.targetDepartments = [];
           break;
-  
+
         case "admin":
-          if (!targetYearGroups.length && !targetDepartments.length) {
-            showToast(
-              "Error", 
-              "Please select either year groups or departments to target", 
-              "error"
-            );
+          if (!targetYearGroups.length && !targetDepartments.length && !selectedGroups.length) {
+            showToast("Error", "Please select at least one target audience", "error");
             setIsLoading(false);
             return;
           }
-  
           if (targetYearGroups.includes("all")) {
             payload.targetAudience = "all";
             payload.targetYearGroups = [];
@@ -736,25 +740,23 @@ const CreatePost = () => {
             payload.targetYearGroups = targetYearGroups;
             payload.targetAudience = targetYearGroups[0];
           }
-  
           if (targetDepartments.length) {
             payload.targetDepartments = targetDepartments;
             payload.targetAudience = targetDepartments[0];
           }
-  
           if (targetDepartments.includes("tv")) {
             payload.targetAudience = "tv";
             payload.targetDepartments = ["tv"];
             payload.targetYearGroups = [];
           }
           break;
-  
+
         default:
           showToast("Error", "Invalid user role", "error");
           setIsLoading(false);
           return;
       }
-  
+
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: {
@@ -762,38 +764,33 @@ const CreatePost = () => {
         },
         body: JSON.stringify(payload)
       });
-  
+
       const data = await res.json();
-  
+
       if (data.error) {
         showToast("Error", data.error, "error");
         return;
       }
-  
+
       showToast("Success", "Post created successfully", "success");
-      setPostText("");
-      setImgUrl("");
-      setTargetYearGroups([]);
-      setTargetDepartments([]);
-      setSelectedGroups([]); // Reset groups
-      onClose();
-  
+      resetForm();
+
     } catch (error) {
       showToast("Error", error.message, "error");
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const resetForm = () => {
     setPostText("");
     setImgUrl("");
     setTargetYearGroups([]);
     setTargetDepartments([]);
-    setSelectedGroups([]); // Reset groups
+    setSelectedGroups([]);
     onClose();
   };
-  
+
   if (user?.isFrozen) {
     return (
       <Button
@@ -843,10 +840,7 @@ const CreatePost = () => {
           aria-label={t("Create Post")}
           zIndex={999}
           animation={isPulsing ? `${pulseKeyframes} 1s ease-in-out` : undefined}
-          transform="auto"
-          _hover={{
-            bg: buttonHoverBg,
-          }}
+          _hover={{ bg: buttonHoverBg }}
         >
           <AddIcon />
         </Button>
@@ -859,202 +853,222 @@ const CreatePost = () => {
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
-              <Textarea
-                placeholder={t("Write your post...")}
-                value={postText}
-                onChange={handleTextChange}
-              />
-              <Text
-                fontSize="xs"
-                fontWeight="bold"
-                textAlign="right"
-                m="1"
-              >
-                {remainingChar}/{MAX_CHAR}
-              </Text>
-
-              <Input
-                type="file"
-                hidden
-                ref={imageRef}
-                onChange={handleImageChange}
-              />
-              <Tooltip label="Add Image" placement="top" hasArrow>
-                <Box as="span" display="inline-block">
-                  <BsFillImageFill
-                    style={{ marginLeft: "5px", cursor: "pointer" }}
-                    size={16}
-                    onClick={() => imageRef.current.click()}
-                    aria-label={t("Add Image")}
+              <Stack spacing={4}>
+                <Box>
+                  <Textarea
+                    placeholder={t("Write your post...")}
+                    value={postText}
+                    onChange={handleTextChange}
+                    resize="vertical"
+                    minH="100px"
                   />
-                </Box>
-              </Tooltip>
-
-              {(user.role === "teacher" || user.role === "admin") && (
-                <Box mt={4}>
-                  <Flex justify="space-between" align="center" mb={2}>
-                    <Text fontWeight="medium">{t("Year Groups")}</Text>
-                    <Menu placement="bottom-end">
-                      <MenuButton 
-                        as={IconButton}
-                        size="sm"
-                        colorScheme="blue"
-                        variant="outline"
-                        icon={<AddIcon />}
-                        isDisabled={
-                          availableYearGroupsList.length === 0 || 
-                          targetYearGroups.includes("all")
-                        }
-                      />
-                      <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                        {availableYearGroupsList.map((group) => (
-                          <MenuItem 
-                            key={group.value}
-                            onClick={() => handleAddYearGroup(group.value)}
-                          >
-                            {t(group.label)}
-                          </MenuItem>
-                        ))}
-                      </MenuList>
-                    </Menu>
+                  <Flex justify="space-between" align="center" mt={1}>
+                    <Text fontSize="xs" fontWeight="bold" color={remainingChar < 0 ? "red.500" : "gray.500"}>
+                      {remainingChar}/{MAX_CHAR}
+                    </Text>
+                    <Tooltip label="Add Image" placement="top" hasArrow>
+                      <Box as="span">
+                        <BsFillImageFill
+                          style={{ cursor: "pointer" }}
+                          size={16}
+                          onClick={() => imageRef.current.click()}
+                          aria-label={t("Add Image")}
+                        />
+                      </Box>
+                    </Tooltip>
+                    <Input
+                      type="file"
+                      hidden
+                      ref={imageRef}
+                      onChange={handleImageChange}
+                    />
                   </Flex>
-                  <Wrap spacing={2} mb={3}>
-                    {targetYearGroups.length === 0 ? (
-                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                        {t("No year groups selected")}
-                      </Text>
-                    ) : (
-                      targetYearGroups.map((group) => (
-                        <WrapItem key={group}>
-                          <Tag 
-                            size="md" 
-                            borderRadius="full" 
-                            variant="solid" 
+                </Box>
+
+                {(user.role === "teacher" || user.role === "admin") && (
+                  <>
+                    {/* Year Groups */}
+                    <Box>
+                      <Flex justify="space-between" align="center" mb={2}>
+                        <Text fontWeight="medium">{t("Year Groups")}</Text>
+                        <Menu placement="bottom-end">
+                          <MenuButton 
+                            as={IconButton}
+                            size="sm"
                             colorScheme="blue"
-                            bg={tagBg}
-                          >
-                            <TagLabel>
-                              {t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}
-                            </TagLabel>
-                            <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
-                          </Tag>
-                        </WrapItem>
-                      ))
-                    )}
-                  </Wrap>
-                </Box>
-              )}
+                            variant="outline"
+                            icon={<AddIcon />}
+                            isDisabled={availableYearGroupsList.length === 0 || targetYearGroups.includes("all")}
+                          />
+                          <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                            {availableYearGroupsList.map((group) => (
+                              <MenuItem 
+                                key={group.value}
+                                onClick={() => handleAddYearGroup(group.value)}
+                              >
+                                {t(group.label)}
+                              </MenuItem>
+                            ))}
+                          </MenuList>
+                        </Menu>
+                      </Flex>
+                      <Wrap spacing={2}>
+                        {targetYearGroups.length === 0 ? (
+                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                            {t("No year groups selected")}
+                          </Text>
+                        ) : (
+                          targetYearGroups.map((group) => (
+                            <WrapItem key={group}>
+                              <Tag 
+                                size="md" 
+                                borderRadius="full" 
+                                variant="solid" 
+                                colorScheme="blue"
+                                bg={tagBg}
+                              >
+                                <TagLabel>
+                                  {t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}
+                                </TagLabel>
+                                <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
+                              </Tag>
+                            </WrapItem>
+                          ))
+                        )}
+                      </Wrap>
+                    </Box>
 
-              {user.role === "admin" && (
-                <Box mt={4}>
-                  <Flex justify="space-between" align="center" mb={2}>
-                    <Text fontWeight="medium">{t("Departments")}</Text>
-                    <Menu placement="bottom-end">
-                      <MenuButton 
-                        as={IconButton}
-                        size="sm"
-                        colorScheme="blue"
-                        variant="outline"
-                        icon={<AddIcon />}
-                        isDisabled={
-                          availableDepartmentsList.length === 0 || 
-                          targetDepartments.includes("tv")
-                        }
-                      />
-                      <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                        {availableDepartmentsList.map((dept) => (
-                          <MenuItem 
-                            key={dept.value}
-                            onClick={() => handleAddDepartment(dept.value)}
-                          >
-                            {t(dept.label)}
-                          </MenuItem>
-                        ))}
-                      </MenuList>
-                    </Menu>
+                    {/* Posting Groups */}
+                    <Box>
+                      <Flex justify="space-between" align="center" mb={2}>
+                        <Text fontWeight="medium">{t("Posting Groups")}</Text>
+                        <CreateGroup onGroupCreated={handleGroupCreated} />
+                      </Flex>
+                      <Wrap spacing={2}>
+                        {availableGroups.length === 0 ? (
+                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                            {t("No groups available")}
+                          </Text>
+                        ) : (
+                          availableGroups.map(group => (
+                            <WrapItem key={group._id}>
+                              <Tag
+                                size="md"
+                                variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
+                                colorScheme="blue"
+                                cursor="pointer"
+                                onClick={() => handleGroupToggle(group._id)}
+                                bg={selectedGroups.includes(group._id) ? group.color : undefined}
+                                _hover={{ opacity: 0.8 }}
+                              >
+                                <TagLabel>{group.name}</TagLabel>
+                                {selectedGroups.includes(group._id) && (
+                                  <TagCloseButton onClick={() => handleGroupToggle(group._id)} />
+                                )}
+                              </Tag>
+                            </WrapItem>
+                          ))
+                        )}
+                      </Wrap>
+                    </Box>
+                  </>
+                )}
+
+                {user.role === "admin" && (
+                  <Box>
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text fontWeight="medium">{t("Departments")}</Text>
+                      <Menu placement="bottom-end">
+                        <MenuButton 
+                          as={IconButton}
+                          size="sm"
+                          colorScheme="blue"
+                          variant="outline"
+                          icon={<AddIcon />}
+                          isDisabled={availableDepartmentsList.length === 0 || targetDepartments.includes("tv")}
+                        />
+                        <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                          {availableDepartmentsList.map((dept) => (
+                            <MenuItem 
+                              key={dept.value}
+                              onClick={() => handleAddDepartment(dept.value)}
+                            >
+                              {t(dept.label)}
+                            </MenuItem>
+                          ))}
+                        </MenuList>
+                      </Menu>
+                    </Flex>
+                    <Wrap spacing={2}>
+                      {targetDepartments.length === 0 ? (
+                        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                          {t("No departments selected")}
+                        </Text>
+                      ) : (
+                        targetDepartments.map((dept) => (
+                          <WrapItem key={dept}>
+                            <Tag 
+                              size="md" 
+                              borderRadius="full" 
+                              variant="solid" 
+                              colorScheme={dept === "tv" ? "red" : "green"}
+                              bg={tagBg}
+                            >
+                              <TagLabel>
+                                {t(DEPARTMENTS.find(d => d.value === dept)?.label || dept)}
+                              </TagLabel>
+                              <TagCloseButton onClick={() => handleRemoveDepartment(dept)} />
+                            </Tag>
+                          </WrapItem>
+                        ))
+                      )}
+                    </Wrap>
+                  </Box>
+                )}
+
+                {imgUrl && (
+                  <Flex mt={5} w="full" position="relative">
+                    <Image src={imgUrl} alt={t("Uploaded Image")} borderRadius="md" />
+                    <CloseButton
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      onClick={() => setImgUrl("")}
+                    />
                   </Flex>
-                  <Wrap spacing={2}>
-                    {targetDepartments.length === 0 ? (
-                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                        {t("No departments selected")}
-                      </Text>
-                    ) : (
-                      targetDepartments.map((dept) => (
-                        <WrapItem key={dept}>
-                          <Tag 
-                            size="md" 
-                            borderRadius="full" 
-                            variant="solid" 
-                            colorScheme={dept === "tv" ? "red" : "green"}
-                            bg={tagBg}
-                          >
-                            <TagLabel>
-                              {t(DEPARTMENTS.find(d => d.value === dept)?.label || dept)}
-                            </TagLabel>
-                            <TagCloseButton onClick={() => handleRemoveDepartment(dept)} />
-                          </Tag>
-                        </WrapItem>
-                      ))
-                    )}
-                  </Wrap>
-                </Box>
-              )}
+                )}
 
-              {/* Group Selection UI */}
-              <Box mt={4}>
-                <Text mb={2}>{t("Post to Groups:")}</Text>
-                <Wrap spacing={2}>
-                  {availableGroups.map(group => (
-                    <Tag
-                      key={group._id}
-                      size="md"
-                      variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
-                      colorScheme="blue"
-                      cursor="pointer"
-                      onClick={() => handleGroupToggle(group._id)}
-                    >
-                      <TagLabel>{group.name}</TagLabel>
-                      {selectedGroups.includes(group._id) && <TagCloseButton />}
-                    </Tag>
-                  ))}
-                </Wrap>
-              </Box>
-
-              {imgUrl && (
-                <Flex mt={5} w="full" position="relative">
-                  <Image src={imgUrl} alt={t("Uploaded Image")} />
-                  <CloseButton
-                    position="absolute"
-                    top={2}
-                    right={2}
-                    onClick={() => setImgUrl("")}
-                  />
-                </Flex>
-              )}
-
-              {postStatus === 'pending' && (
-                <Box mt={4}>
-                  <Alert status="info" borderRadius="md">
-                    <AlertIcon />
-                    {t("Your post is being reviewed")}
-                  </Alert>
-                  <Progress
-                    mt={2}
-                    size="xs"
-                    isIndeterminate
-                    bg={progressColor}
-                    color={progressFilledColor}
-                    borderRadius="full"
-                  />
-                </Box>
-              )}
+                {postStatus === 'pending' && (
+                  <Box mt={4}>
+                    <Alert status="info" borderRadius="md">
+                      <AlertIcon />
+                      {t("Your post is being reviewed")}
+                    </Alert>
+                    <Progress
+                      mt={2}
+                      size="xs"
+                      isIndeterminate
+                      bg={progressColor}
+                      color={progressFilledColor}
+                      borderRadius="full"
+                    />
+                  </Box>
+                )}
+              </Stack>
             </FormControl>
           </ModalBody>
 
           <ModalFooter>
             <Button
-              colorScheme="blue"
+              variant="ghost"
               mr={3}
+              onClick={resetForm}
+              isDisabled={isLoading}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              colorScheme="blue"
               isLoading={isLoading}
               onClick={handleCreatePost}
               isDisabled={postStatus === 'pending'}

@@ -1712,16 +1712,16 @@ const getFeedPosts = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
     
-    const user = await User.findById(userId).select("role following yearGroup department");
+    const user = await User.findById(userId).select("role following yearGroup department groups");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     
     // Get all user IDs for new user experience
     const allUserIds = await User.find().distinct('_id');
-
-    // Fetch groups the user is a member of
-    const userGroups = await Group.find({ members: userId }).distinct('_id');
+    
+    // Get user's groups
+    const userGroups = user.groups || [];
     
     // Base filter conditions that apply to all posts
     const baseFilter = {
@@ -1730,7 +1730,11 @@ const getFeedPosts = async (req, res) => {
         { postedBy: { $in: user.following || [] } }, // Posts from followed users
         { reposts: userId }, // Include posts the user has reposted
         { isGeneral: true }, // General posts visible to all
-        { targetGroups: { $in: userGroups } } // Posts targeted to the user's groups
+        { targetGroups: { $in: userGroups } }, // Posts targeted to the user's groups
+        // Posts with no group specified (visible to everyone)
+        { groups: { $size: 0 } },
+        // Posts where user is a member of at least one of the post's groups
+        { groups: { $in: userGroups } }
       ]
     };
     
@@ -1787,6 +1791,7 @@ const getFeedPosts = async (req, res) => {
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color") // Populate group details
+      .populate("groups", "name color") // Populate the post's groups
       .sort({ createdAt: -1 })
       .limit(50);
     
@@ -1796,7 +1801,6 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {
