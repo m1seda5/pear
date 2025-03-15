@@ -617,7 +617,7 @@ const CreatePost = () => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const res = await fetch("/api/groups");  // Correct: 'await'
+        const res = await fetch("/api/groups/my-groups");  // Correct: 'await'
         const data = await res.json();
         if (Array.isArray(data)) {
           setAvailableGroups(data);

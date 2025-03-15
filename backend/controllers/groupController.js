@@ -47,15 +47,21 @@ const createGroup = async (req, res) => {
   }
 };
 
+// groupController.js
 const getGroups = async (req, res) => {
   try {
     const groups = await Group.find({
       members: req.user._id,
     }).populate("creator", "username profilePic");
 
+    if (!groups || groups.length === 0) {
+      return res.status(404).json({ error: "No groups found" });
+    }
+
     res.status(200).json(groups);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Groups fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch groups" });
   }
 };
 
