@@ -177,16 +177,15 @@ const Post = ({ post, postedBy, isTV = false }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
+
   useEffect(() => {
-    // Update the language state whenever the i18n language changes
     const handleLanguageChange = (lng) => {
       setLanguage(lng);
     };
 
-    i18n.on("languageChanged", handleLanguageChange); // Listen for language change
-
+    i18n.on("languageChanged", handleLanguageChange);
     return () => {
-      i18n.off("languageChanged", handleLanguageChange); // Cleanup on component unmount
+      i18n.off("languageChanged", handleLanguageChange);
     };
   }, [i18n]);
 
@@ -195,8 +194,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
       console.log("postedBy:", postedBy);
 
       try {
-        const userId = typeof postedBy === "object" ? postedBy._id : postedBy; // Extract ID if postedBy is an object
-        const res = await fetch("/api/users/profile/" + userId); // Use userId directly in the URL
+        const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
+        const res = await fetch("/api/users/profile/" + userId);
         const data = await res.json();
         if (data.error) {
           showToast(t("Error"), data.error, "error");
@@ -221,7 +220,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${currentUser.token}`, // Add authorization header
+          Authorization: `Bearer ${currentUser.token}`,
         },
       });
       const data = await res.json();
@@ -349,6 +348,36 @@ const Post = ({ post, postedBy, isTV = false }) => {
           >
             {post.text}
           </Text>
+
+          {/* Target Groups and General Post Indicators */}
+          <Flex gap={2} wrap="wrap" my={2}>
+            {post.targetGroups && post.targetGroups.map(group => (
+              <Flex key={group._id} align="center" mr={2}>
+                <Box
+                  w="10px"
+                  h="10px"
+                  borderRadius="full"
+                  bg={group.color}
+                  mr={1}
+                />
+                <Text fontSize="sm">{group.name}</Text>
+              </Flex>
+            ))}
+
+            {post.isGeneral && (
+              <Flex align="center">
+                <Box
+                  w="10px"
+                  h="10px"
+                  borderRadius="full"
+                  bg="gray.500"
+                  mr={1}
+                />
+                <Text fontSize="sm">{t("General Post")}</Text>
+              </Flex>
+            )}
+          </Flex>
+
           {post.img && (
             <Box
               borderRadius={6}

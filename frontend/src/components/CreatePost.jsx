@@ -594,6 +594,8 @@ const CreatePost = () => {
   const [postText, setPostText] = useState("");
   const [targetYearGroups, setTargetYearGroups] = useState([]);
   const [targetDepartments, setTargetDepartments] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [availableGroups, setAvailableGroups] = useState([]);
   const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
   const imageRef = useRef(null);
   const [remainingChar, setRemainingChar] = useState(MAX_CHAR);
@@ -609,6 +611,16 @@ const CreatePost = () => {
   const buttonHoverBg = useColorModeValue("blue.600", "blue.300");
   const tagBg = useColorModeValue("blue.100", "blue.700");
   const menuBg = useColorModeValue("white", "gray.700");
+
+  // Fetch user's groups
+  useEffect(() => {
+    const fetchGroups = async () => {
+      const res = await fetch("/api/groups");
+      const data = await res.json();
+      setAvailableGroups(data);
+    };
+    fetchGroups();
+  }, []);
 
   // Add pulsing effect
   useEffect(() => {
@@ -626,17 +638,21 @@ const CreatePost = () => {
     setRemainingChar(MAX_CHAR - inputText.length);
   };
 
+  const handleGroupToggle = (groupId) => {
+    if (selectedGroups.includes(groupId)) {
+      setSelectedGroups(selectedGroups.filter(id => id !== groupId));
+    } else {
+      setSelectedGroups([...selectedGroups, groupId]);
+    }
+  };
+
   const handleAddYearGroup = (value) => {
-    // If all is selected, clear other selections
     if (value === "all") {
       setTargetYearGroups(["all"]);
       return;
     }
     
-    // If adding a specific year group, remove "all" if present
     const newGroups = targetYearGroups.filter(group => group !== "all");
-    
-    // Add the new year group if not already selected
     if (!newGroups.includes(value)) {
       setTargetYearGroups([...newGroups, value]);
     }
@@ -647,16 +663,12 @@ const CreatePost = () => {
   };
 
   const handleAddDepartment = (value) => {
-    // If tv is selected, clear other selections
     if (value === "tv") {
       setTargetDepartments(["tv"]);
       return;
     }
     
-    // If adding a department, remove "tv" if present
     const newDepts = targetDepartments.filter(dept => dept !== "tv");
-    
-    // Add the new department if not already selected
     if (!newDepts.includes(value)) {
       setTargetDepartments([...newDepts, value]);
     }
@@ -675,44 +687,38 @@ const CreatePost = () => {
         return;
       }
   
-      // Base payload structure
       const payload = {
         postedBy: user._id,
         text: postText,
-        img: imgUrl || undefined
+        img: imgUrl || undefined,
+        groups: selectedGroups // Add selected groups to payload
       };
   
-      // Role-specific payload modifications
       switch (user.role) {
         case "student":
-          // Students can only post to everyone
           payload.targetAudience = "all";
           payload.targetYearGroups = [];
           payload.targetDepartments = [];
           break;
   
         case "teacher":
-          // Teachers must specify year groups
           if (!targetYearGroups.length) {
             showToast("Error", "Please select at least one year group", "error");
             setIsLoading(false);
             return;
           }
   
-          // If "all" is selected, that's the only target
           if (targetYearGroups.includes("all")) {
             payload.targetAudience = "all";
             payload.targetYearGroups = [];
           } else {
-            // Otherwise use specific year groups
-            payload.targetAudience = targetYearGroups[0]; // Primary target
-            payload.targetYearGroups = targetYearGroups; // All selected groups
+            payload.targetAudience = targetYearGroups[0];
+            payload.targetYearGroups = targetYearGroups;
           }
-          payload.targetDepartments = []; // Teachers can't target departments
+          payload.targetDepartments = [];
           break;
   
         case "admin":
-          // Admins must specify either year groups or departments
           if (!targetYearGroups.length && !targetDepartments.length) {
             showToast(
               "Error", 
@@ -723,7 +729,6 @@ const CreatePost = () => {
             return;
           }
   
-          // Handle year group targeting
           if (targetYearGroups.includes("all")) {
             payload.targetAudience = "all";
             payload.targetYearGroups = [];
@@ -732,15 +737,11 @@ const CreatePost = () => {
             payload.targetAudience = targetYearGroups[0];
           }
   
-          // Handle department targeting
           if (targetDepartments.length) {
-            // If both year groups and departments are selected, 
-            // departments take precedence
             payload.targetDepartments = targetDepartments;
             payload.targetAudience = targetDepartments[0];
           }
   
-          // Handle TV targeting
           if (targetDepartments.includes("tv")) {
             payload.targetAudience = "tv";
             payload.targetDepartments = ["tv"];
@@ -769,14 +770,12 @@ const CreatePost = () => {
         return;
       }
   
-      // Success handling
       showToast("Success", "Post created successfully", "success");
-      
-      // Reset form
       setPostText("");
       setImgUrl("");
       setTargetYearGroups([]);
       setTargetDepartments([]);
+      setSelectedGroups([]); // Reset groups
       onClose();
   
     } catch (error) {
@@ -791,10 +790,10 @@ const CreatePost = () => {
     setImgUrl("");
     setTargetYearGroups([]);
     setTargetDepartments([]);
+    setSelectedGroups([]); // Reset groups
     onClose();
   };
   
-  // Return frozen account button if account is frozen
   if (user?.isFrozen) {
     return (
       <Button
@@ -815,17 +814,13 @@ const CreatePost = () => {
     );
   }
 
-  // Get available year groups that aren't already selected
-  const availableYearGroups = YEAR_GROUPS.filter(
+  const availableYearGroupsList = YEAR_GROUPS.filter(
     group => !targetYearGroups.includes(group.value) || 
-    // If all is selected, no other options should be available
     (targetYearGroups.includes("all") && group.value === "all")
   );
 
-  // Get available departments that aren't already selected
-  const availableDepartments = DEPARTMENTS.filter(
+  const availableDepartmentsList = DEPARTMENTS.filter(
     dept => !targetDepartments.includes(dept.value) ||
-    // If TV is selected, no other options should be available
     (targetDepartments.includes("tv") && dept.value === "tv")
   );
 
@@ -895,7 +890,6 @@ const CreatePost = () => {
                 </Box>
               </Tooltip>
 
-              {/* Year Group Selection for Teachers and Admins */}
               {(user.role === "teacher" || user.role === "admin") && (
                 <Box mt={4}>
                   <Flex justify="space-between" align="center" mb={2}>
@@ -908,12 +902,12 @@ const CreatePost = () => {
                         variant="outline"
                         icon={<AddIcon />}
                         isDisabled={
-                          availableYearGroups.length === 0 || 
+                          availableYearGroupsList.length === 0 || 
                           targetYearGroups.includes("all")
                         }
                       />
                       <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                        {availableYearGroups.map((group) => (
+                        {availableYearGroupsList.map((group) => (
                           <MenuItem 
                             key={group.value}
                             onClick={() => handleAddYearGroup(group.value)}
@@ -951,7 +945,6 @@ const CreatePost = () => {
                 </Box>
               )}
 
-              {/* Department Selection for Admins */}
               {user.role === "admin" && (
                 <Box mt={4}>
                   <Flex justify="space-between" align="center" mb={2}>
@@ -964,12 +957,12 @@ const CreatePost = () => {
                         variant="outline"
                         icon={<AddIcon />}
                         isDisabled={
-                          availableDepartments.length === 0 || 
+                          availableDepartmentsList.length === 0 || 
                           targetDepartments.includes("tv")
                         }
                       />
                       <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                        {availableDepartments.map((dept) => (
+                        {availableDepartmentsList.map((dept) => (
                           <MenuItem 
                             key={dept.value}
                             onClick={() => handleAddDepartment(dept.value)}
@@ -1006,6 +999,26 @@ const CreatePost = () => {
                   </Wrap>
                 </Box>
               )}
+
+              {/* Group Selection UI */}
+              <Box mt={4}>
+                <Text mb={2}>{t("Post to Groups:")}</Text>
+                <Wrap spacing={2}>
+                  {availableGroups.map(group => (
+                    <Tag
+                      key={group._id}
+                      size="md"
+                      variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
+                      colorScheme="blue"
+                      cursor="pointer"
+                      onClick={() => handleGroupToggle(group._id)}
+                    >
+                      <TagLabel>{group.name}</TagLabel>
+                      {selectedGroups.includes(group._id) && <TagCloseButton />}
+                    </Tag>
+                  ))}
+                </Wrap>
+              </Box>
 
               {imgUrl && (
                 <Flex mt={5} w="full" position="relative">

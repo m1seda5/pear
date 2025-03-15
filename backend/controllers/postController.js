@@ -1272,90 +1272,62 @@ const createPost = async (req, res) => {
       targetYearGroups,
       targetDepartments,
       targetAudience,
+      targetGroups,
+      isGeneral
     } = req.body;
 
     let { img } = req.body;
 
-    // Validate required fields
     if (!postedBy || !text) {
-      return res
-        .status(400)
-        .json({ error: "PostedBy and text fields are required" });
+      return res.status(400).json({ error: "PostedBy and text fields are required" });
     }
 
-    // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Authorization check
     if (user._id.toString() !== req.user._id.toString()) {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    // Role-specific post creation rules
+    if (!isGeneral && (!targetGroups || targetGroups.length === 0)) {
+      return res.status(400).json({ error: "Must select at least one group" });
+    }
+
     switch (user.role) {
       case "student":
         req.body.targetAudience = "all";
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
         break;
-
       case "teacher":
         if (!targetYearGroups || targetYearGroups.length === 0) {
-          return res.status(400).json({
-            error: "Teachers must specify at least one year group to target",
-          });
+          return res.status(400).json({ error: "Teachers must specify at least one year group to target" });
         }
         req.body.targetDepartments = [];
         req.body.targetAudience = targetYearGroups[0];
         break;
-
       case "admin":
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
-          return res.status(400).json({
-            error:
-              "Admin must specify a target audience, year groups, or departments",
-          });
+          return res.status(400).json({ error: "Admin must specify a target audience, year groups, or departments" });
         }
         break;
-
       default:
         return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
-    // Handle image upload if provided
     if (img) {
       const uploadedResponse = await cloudinary.uploader.upload(img);
       img = uploadedResponse.secure_url;
     }
 
-    // Fetch admins and create post with reviewers if it's a student post
-    const adminUsers = await User.find({ role: "admin" }); // Fetch admins first
-    let reviewers =
-      user.role === "student"
-        ? adminUsers.map((admin) => ({
-            userId: admin._id,
-            role: "admin",
-            decision: "pending",
-          }))
-        : [];
+    const adminUsers = await User.find({ role: "admin" });
+    let reviewers = user.role === "student" ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) : [];
 
-    // Find all reviewer groups with post review permission
     if (user.role === "student") {
-      const reviewerGroups = await ReviewerGroup.find({
-        "permissions.postReview": true,
-      }).populate("members");
-
-      const groupReviewers = reviewerGroups.flatMap((group) =>
-        group.members.map((member) => ({
-          userId: member._id,
-          role: member.role,
-          decision: "pending",
-        }))
-      );
-
+      const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members"); // Changed to Group model
+      const groupReviewers = reviewerGroups.flatMap(group => group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" })));
       reviewers = [...reviewers, ...groupReviewers];
     }
 
@@ -1368,44 +1340,39 @@ const createPost = async (req, res) => {
       reviewStatus: user.role === "student" ? "pending" : "approved",
       targetAudience: req.body.targetAudience || "all",
       reviewers,
+      targetGroups,
+      isGeneral
     });
 
     await newPost.save();
-
-    // Notify reviewers
     if (user.role === "student") {
       await notifyReviewers(newPost);
     }
 
-    // Send notifications for non-student posts or approved student posts
+    // Populate targetGroups with name and color before returning
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("postedBy", "username profilePic")
+      .populate("targetGroups", "name color");
+
     if (user.role !== "student" || newPost.reviewStatus === "approved") {
       try {
-        const usersToNotify = await User.find({
-          notificationPreferences: true,
-          _id: { $ne: postedBy },
-        });
-
-        const notificationPromises = usersToNotify.map((recipient) =>
-          sendNotificationEmail(
-            recipient.email,
-            postedBy,
-            newPost._id,
-            user.username
-          )
+        const usersToNotify = await User.find({ notificationPreferences: true, _id: { $ne: postedBy } });
+        const notificationPromises = usersToNotify.map(recipient => 
+          sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
-
         await Promise.allSettled(notificationPromises);
       } catch (notificationError) {
         console.error("Error sending notifications:", notificationError);
       }
     }
 
-    res.status(201).json(newPost);
+    res.status(201).json(populatedPost);
   } catch (err) {
     console.error("Error in createPost:", err);
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
+
 
 // Notify reviewers function
 const notifyReviewers = async (post) => {
@@ -1596,10 +1563,9 @@ const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
 
-    const post = await Post.findById(postId).populate(
-      "postedBy",
-      "username profilePic"
-    );
+    const post = await Post.findById(postId)
+      .populate("postedBy", "username profilePic")
+      .populate("targetGroups", "name color"); // Populate targetGroups with name and color
 
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
@@ -1620,9 +1586,11 @@ const getPost = async (req, res) => {
 
     res.status(200).json(postObject);
   } catch (err) {
+    console.error("Error in getPost:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 const deletePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -1751,13 +1719,18 @@ const getFeedPosts = async (req, res) => {
     
     // Get all user IDs for new user experience
     const allUserIds = await User.find().distinct('_id');
+
+    // Fetch groups the user is a member of
+    const userGroups = await Group.find({ members: userId }).distinct('_id');
     
     // Base filter conditions that apply to all posts
     const baseFilter = {
       $or: [
         { postedBy: userId }, // User's own posts
         { postedBy: { $in: user.following || [] } }, // Posts from followed users
-        { reposts: userId } // Include posts the user has reposted
+        { reposts: userId }, // Include posts the user has reposted
+        { isGeneral: true }, // General posts visible to all
+        { targetGroups: { $in: userGroups } } // Posts targeted to the user's groups
       ]
     };
     
@@ -1813,6 +1786,7 @@ const getFeedPosts = async (req, res) => {
     
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
+      .populate("targetGroups", "name color") // Populate group details
       .sort({ createdAt: -1 })
       .limit(50);
     
@@ -1822,6 +1796,7 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
+
 const getUserPosts = async (req, res) => {
   const { username } = req.params;
   try {

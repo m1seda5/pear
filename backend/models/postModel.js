@@ -262,6 +262,14 @@ const postSchema = mongoose.Schema(
       }],
       default: [] // Add this line
     },
+    targetGroups: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group"
+    }],
+    isGeneral: {
+      type: Boolean,
+      default: false
+    },
   },
   {
     timestamps: true,
