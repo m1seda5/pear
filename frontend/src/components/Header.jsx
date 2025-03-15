@@ -939,7 +939,7 @@ import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
 import { useState, useEffect } from "react";
-import { FaLock } from "react-icons/fa";
+import { FaLock, FaUserShield } from "react-icons/fa"; // Added FaUserShield
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 
 // Define keyframes properly outside components
@@ -979,7 +979,8 @@ const Header = ({ unreadCount = 0 }) => {
   // Consolidated state - only track locks when needed
   const [showLockIcon, setShowLockIcon] = useState({
     chat: false,
-    tv: false
+    tv: false,
+    admin: false
   });
 
   // Only evaluate these if user exists
@@ -1023,6 +1024,15 @@ const Header = ({ unreadCount = 0 }) => {
       e.preventDefault();
     } else {
       navigate("/tv");
+    }
+  };
+
+  // Handle admin dashboard click
+  const handleAdminClick = (e) => {
+    if (!user || (user && !isAdmin)) {
+      e.preventDefault();
+    } else {
+      navigate("/admin");
     }
   };
 
@@ -1253,6 +1263,23 @@ const Header = ({ unreadCount = 0 }) => {
               )}
             </Box>
           </NavIcon>
+
+          {/* Admin Dashboard Icon - Only visible to admins */}
+          {isAdmin && (
+            <NavIcon 
+              label="Admin Dashboard" 
+              onClick={handleAdminClick}
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="teal.500"
+              >
+                <FaUserShield size={20} />
+              </Box>
+            </NavIcon>
+          )}
 
           <NavIcon 
             label={isAdmin ? "TV Dashboard" : "Admin Only"} 

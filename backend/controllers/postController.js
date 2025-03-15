@@ -1273,55 +1273,56 @@ const createPost = async (req, res) => {
       targetDepartments,
       targetAudience,
     } = req.body;
-    
+
     let { img } = req.body;
 
     // Validate required fields
     if (!postedBy || !text) {
       return res
         .status(400)
-        .json({ error: 'PostedBy and text fields are required' });
+        .json({ error: "PostedBy and text fields are required" });
     }
 
     // Find the user who is posting
     const user = await User.findById(postedBy);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Authorization check
     if (user._id.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ error: 'Unauthorized to create post' });
+      return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
     // Role-specific post creation rules
     switch (user.role) {
-      case 'student':
-        req.body.targetAudience = 'all';
+      case "student":
+        req.body.targetAudience = "all";
         req.body.targetYearGroups = [];
         req.body.targetDepartments = [];
         break;
 
-      case 'teacher':
+      case "teacher":
         if (!targetYearGroups || targetYearGroups.length === 0) {
           return res.status(400).json({
-            error: 'Teachers must specify at least one year group to target',
+            error: "Teachers must specify at least one year group to target",
           });
         }
         req.body.targetDepartments = [];
         req.body.targetAudience = targetYearGroups[0];
         break;
 
-      case 'admin':
+      case "admin":
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
           return res.status(400).json({
-            error: 'Admin must specify a target audience, year groups, or departments',
+            error:
+              "Admin must specify a target audience, year groups, or departments",
           });
         }
         break;
 
       default:
-        return res.status(403).json({ error: 'Unauthorized to create posts' });
+        return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
     // Handle image upload if provided
@@ -1331,12 +1332,32 @@ const createPost = async (req, res) => {
     }
 
     // Fetch admins and create post with reviewers if it's a student post
-    const adminUsers = await User.find({ role: 'admin' }); // Fetch admins first
-    const reviewers = user.role === 'student' ? adminUsers.map(admin => ({
-      userId: admin._id,
-      role: 'admin',
-      decision: 'pending'
-    })) : [];
+    const adminUsers = await User.find({ role: "admin" }); // Fetch admins first
+    let reviewers =
+      user.role === "student"
+        ? adminUsers.map((admin) => ({
+            userId: admin._id,
+            role: "admin",
+            decision: "pending",
+          }))
+        : [];
+
+    // Find all reviewer groups with post review permission
+    if (user.role === "student") {
+      const reviewerGroups = await ReviewerGroup.find({
+        "permissions.postReview": true,
+      }).populate("members");
+
+      const groupReviewers = reviewerGroups.flatMap((group) =>
+        group.members.map((member) => ({
+          userId: member._id,
+          role: member.role,
+          decision: "pending",
+        }))
+      );
+
+      reviewers = [...reviewers, ...groupReviewers];
+    }
 
     const newPost = new Post({
       postedBy,
@@ -1344,15 +1365,20 @@ const createPost = async (req, res) => {
       img,
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
-      reviewStatus: user.role === 'student' ? 'pending' : 'approved',
-      targetAudience: req.body.targetAudience || 'all',
-      reviewers
+      reviewStatus: user.role === "student" ? "pending" : "approved",
+      targetAudience: req.body.targetAudience || "all",
+      reviewers,
     });
 
     await newPost.save();
 
+    // Notify reviewers
+    if (user.role === "student") {
+      await notifyReviewers(newPost);
+    }
+
     // Send notifications for non-student posts or approved student posts
-    if (user.role !== 'student' || newPost.reviewStatus === 'approved') {
+    if (user.role !== "student" || newPost.reviewStatus === "approved") {
       try {
         const usersToNotify = await User.find({
           notificationPreferences: true,
@@ -1370,16 +1396,40 @@ const createPost = async (req, res) => {
 
         await Promise.allSettled(notificationPromises);
       } catch (notificationError) {
-        console.error('Error sending notifications:', notificationError);
+        console.error("Error sending notifications:", notificationError);
       }
     }
 
     res.status(201).json(newPost);
   } catch (err) {
-    console.error('Error in createPost:', err);
-    res.status(500).json({ error: err.message || 'Failed to create post' });
+    console.error("Error in createPost:", err);
+    res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
+
+// Notify reviewers function
+const notifyReviewers = async (post) => {
+  const reviewerIds = post.reviewers.map((r) => r.userId);
+  const reviewers = await User.find({ _id: { $in: reviewerIds } });
+
+  const onlineReviewers = reviewers.filter(
+    (r) => Date.now() - new Date(r.lastActive).getTime() < 300000 // 5 minutes
+  );
+
+  if (onlineReviewers.length === 0) {
+    // Send email notifications
+    reviewers.forEach(async (reviewer) => {
+      const mailOptions = {
+        from: "pearnet104@gmail.com",
+        to: reviewer.email,
+        subject: "New Post Needs Review",
+        html: `<p>A new post requires your review. <a href="https://pear-tsk2.onrender.com/review/${post._id}">Review now</a></p>`,
+      };
+      await transporter.sendMail(mailOptions);
+    });
+  }
+};
+
 
 
 const getPendingReviews = async (req, res) => {

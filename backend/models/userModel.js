@@ -327,8 +327,14 @@ const userSchema = mongoose.Schema(
       minLength: 6,
       required: true,
     },
-    isVerified: { type: Boolean, default: false },
-    verificationToken: { type: String, required: false },
+    isVerified: { 
+      type: Boolean, 
+      default: false 
+    },
+    verificationToken: { 
+      type: String, 
+      required: false 
+    },
     profilePic: {
       type: String,
       default: "",
@@ -344,10 +350,6 @@ const userSchema = mongoose.Schema(
     bio: {
       type: String,
       default: "",
-    },
-    isFrozen: {
-      type: Boolean,
-      default: false,
     },
     isFrozen: {
       type: Boolean,
@@ -414,13 +416,18 @@ const userSchema = mongoose.Schema(
         return this.role === "teacher";
       },
     },
-    otp: { type: Number, required: false }, // Field for OTP
-    otpExpiry: { type: Date, required: false },
+    otp: { 
+      type: Number, 
+      required: false 
+    },
+    otpExpiry: { 
+      type: Date, 
+      required: false 
+    },
     notificationPreferences: {
       type: Boolean,
       default: true, // Enable notifications by default
     },
-    // Add these to userSchema
     resetToken: {
       type: String,
       required: false,
@@ -428,10 +435,20 @@ const userSchema = mongoose.Schema(
     resetTokenExpiry: {
       type: Date,
       required: false,
-    }, // Field for OTP expiration// Field for OTP expiration
+    },
+    lastActive: {
+      type: Date, 
+    }, // For online status tracking
+    reviewerGroups: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ReviewerGroup",
+      }
+    ], // New field added for reviewer groups
   },
   { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);
 export default User;
+

@@ -190,8 +190,9 @@ import ResetPassword from "./pages/ResetPassword";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
-import { useState, useEffect } from "react"; // Add these imports
-import axios from "axios"; // Make sure axios is imported
+import AdminDashboard from "./pages/AdminDashboard"; // Add this import
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -204,6 +205,7 @@ function App() {
   
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
+  const isAdminDashboard = pathname === '/admin'; // New variable to check if on admin page
   
   // Function to fetch unread count
   const fetchUnreadCount = async () => {
@@ -242,11 +244,14 @@ function App() {
     }
   }, [pathname, user]);
   
+  // Determine if custom width should be applied (for TV and Admin pages)
+  const shouldUseFullWidth = isTVPage || isAdminDashboard;
+  
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
         {!isTVPage && <Header unreadCount={unreadCount} />}
-        <Box mx="auto" px={4} maxW={isTVPage ? "100vw" : "600px"}>
+        <Box mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
           <Routes>
             <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
@@ -258,6 +263,8 @@ function App() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            {/* Add Admin Dashboard route */}
+            <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
