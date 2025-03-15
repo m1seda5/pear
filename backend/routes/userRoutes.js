@@ -69,6 +69,7 @@ import {
     adminFreezeUser,
     adminDeleteUser,
     searchUsers,
+    searchReviewers,
     forgotPassword,
     resetPassword,
     resendOTP,   
@@ -78,8 +79,9 @@ import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
-// Add the search route
+// Add the search routes
 router.get("/search/:query", protectRoute, searchUsers);
+router.get("/search-reviewers/:query", protectRoute, searchReviewers);
 
 // Admin routes
 router.post("/admin/freeze-user", protectRoute, adminMiddleware, adminFreezeUser);

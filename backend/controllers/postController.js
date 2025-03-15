@@ -1432,24 +1432,33 @@ const notifyReviewers = async (post) => {
 
 
 
+// controllers/postController.js
 const getPendingReviews = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // Simplified query to just look for pending posts
+    const user = await User.findById(req.user._id).populate("reviewerGroups");
+    
+    const reviewerGroupIds = user.reviewerGroups
+      .filter(g => g.permissions && g.permissions.postReview)
+      .map(g => g._id);
+
     const pendingReviews = await Post.find({
-      reviewStatus: 'pending'
+      reviewStatus: 'pending',
+      $or: [
+        { "reviewers.userId": req.user._id },
+        { "reviewerGroups": { $in: reviewerGroupIds } }
+      ]
     }).populate('postedBy', 'username profilePic email');
 
     console.log("Found pending reviews:", pendingReviews);
-
     res.status(200).json(pendingReviews);
   } catch (err) {
     console.error("Error in getPendingReviews:", err);
     res.status(500).json({ 
-      error: "Error fetching pending reviews",
+      error: "Error fetching pending reviews", 
       details: err.message 
     });
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -15,7 +15,7 @@ import {
   Divider,
   Badge,
   useToast,
-  Spinner
+  Spinner,
 } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -29,7 +29,7 @@ const ReviewModal = () => {
   const toast = useToast();
   const bgColor = useColorModeValue("white", "gray.800");
 
-  // Add function to check auth status
+  // Check if user is authenticated
   const checkAuthStatus = () => {
     if (!user || !user._id) {
       console.error("User not authenticated");
@@ -40,17 +40,15 @@ const ReviewModal = () => {
 
   const checkForPendingReviews = async () => {
     if (isFetching || !checkAuthStatus()) return;
-    
+
     setIsFetching(true);
     try {
       const res = await fetch("/api/posts/pending-reviews", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          // Add Authorization header if you're using JWT
-          // "Authorization": `Bearer ${localStorage.getItem('token')}`,
         },
-        credentials: 'include'
+        credentials: "include",
       });
 
       if (res.status === 401) {
@@ -99,14 +97,12 @@ const ReviewModal = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Add Authorization header if you're using JWT
-          // "Authorization": `Bearer ${localStorage.getItem('token')}`,
         },
-        credentials: 'include',
-        body: JSON.stringify({ 
+        credentials: "include",
+        body: JSON.stringify({
           decision,
-          reviewerId: user._id  // Add reviewer ID explicitly
-        })
+          reviewerId: user._id,
+        }),
       });
 
       if (res.status === 401) {
@@ -122,7 +118,7 @@ const ReviewModal = () => {
 
       toast({
         title: "Success",
-        description: `Post ${decision === 'approved' ? 'approved' : 'rejected'} successfully`,
+        description: `Post ${decision === "approved" ? "approved" : "rejected"} successfully`,
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -130,7 +126,7 @@ const ReviewModal = () => {
 
       setIsOpen(false);
       setCurrentReview(null);
-      
+
       // Check for more pending reviews
       setTimeout(checkForPendingReviews, 1000);
     } catch (error) {
@@ -142,22 +138,28 @@ const ReviewModal = () => {
         duration: 5000,
         isClosable: true,
       });
-
-      // If authentication error, you might want to trigger a re-login
-      if (error.message.includes("Authentication error")) {
-        // Implement your logout/redirect logic here
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Prioritize reviewer groups, then admins, then teachers
   useEffect(() => {
-    if (user && (user.role === "admin" || user.role === "teacher")) {
-      checkForPendingReviews();
-      const interval = setInterval(checkForPendingReviews, 30000);
-      return () => clearInterval(interval);
-    }
+    const checkReviewerAccess = () => {
+      if (!user) return;
+
+      const hasReviewPermission = user.reviewerGroups?.some(
+        (group) => group.permissions?.postReview
+      );
+      
+      if (hasReviewPermission || user.role === "admin" || user.role === "teacher") {
+        checkForPendingReviews();
+        const interval = setInterval(checkForPendingReviews, 30000);
+        return () => clearInterval(interval);
+      }
+    };
+
+    checkReviewerAccess();
   }, [user]);
 
   if (!currentReview) return null;
@@ -177,40 +179,31 @@ const ReviewModal = () => {
             <VStack spacing={4} align="stretch">
               <Box>
                 <Text fontSize="sm" color="gray.500">
-                  Posted by: {currentReview.postedBy?.username || 'Unknown'}
+                  Posted by: {currentReview.postedBy?.username || "Unknown"}
                 </Text>
                 <Badge colorScheme="blue">Student Post</Badge>
               </Box>
-              
+
               <Text>{currentReview.text}</Text>
-              
+
               {currentReview.img && (
                 <Image src={currentReview.img} alt="Post content" borderRadius="md" />
               )}
-              
+
               <Divider />
-              
+
               <Text fontSize="sm" color="gray.500">
-                As a {user.role}, your review decision will help determine if this post should be published.
+                As a reviewer, your decision will determine if this post should be published.
               </Text>
             </VStack>
           )}
         </ModalBody>
 
         <ModalFooter>
-          <Button
-            colorScheme="red"
-            mr={3}
-            isLoading={isLoading}
-            onClick={() => handleReview('rejected')}
-          >
+          <Button colorScheme="red" mr={3} isLoading={isLoading} onClick={() => handleReview("rejected")}>
             Reject
           </Button>
-          <Button
-            colorScheme="green"
-            isLoading={isLoading}
-            onClick={() => handleReview('approved')}
-          >
+          <Button colorScheme="green" isLoading={isLoading} onClick={() => handleReview("approved")}>
             Approve
           </Button>
         </ModalFooter>

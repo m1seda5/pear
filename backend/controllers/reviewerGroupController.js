@@ -11,17 +11,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// controllers/reviewerGroupController.js
 const createReviewerGroup = async (req, res) => {
   try {
-    const { name, permissions } = req.body;
+    const { name, permissions, members } = req.body;
     const newGroup = new ReviewerGroup({
       name,
       permissions,
-      createdBy: req.user._id,
-      members: [req.user._id], // Add admin as initial member
+      members: members ? [...members, req.user._id] : [req.user._id], // Add admin as initial member
+      createdBy: req.user._id
     });
+    
     await newGroup.save();
-    res.status(201).json(newGroup);
+    
+    // Add group reference to users
+    if (members && members.length > 0) {
+      await User.updateMany(
+        { _id: { $in: members } },
+        { $addToSet: { reviewerGroups: newGroup._id } }
+      );
+    }
+
+    res.status(201).json(await newGroup.populate('members'));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

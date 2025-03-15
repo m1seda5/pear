@@ -2131,6 +2131,22 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// Add this to controllers/userController.js
+const searchReviewers = async (req, res) => {
+  try {
+    const { query } = req.params;
+    const users = await User.find({
+      $or: [
+        { username: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } }
+      ],
+      role: { $in: ["admin", "teacher"] } // Only search staff who can be reviewers
+    }).select("username profilePic role");
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export {
   signupUser,
@@ -2150,5 +2166,6 @@ export {
   adminFreezeUser,
   adminDeleteUser,
   deleteUserData,
-  searchUsers, // Exporting the new function
+  searchUsers,
+  searchReviewers, // Exporting the new function
 };
