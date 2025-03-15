@@ -47,6 +47,7 @@ const createGroup = async (req, res) => {
   }
 };
 
+
 // groupController.js
 const getGroups = async (req, res) => {
   try {
@@ -54,10 +55,7 @@ const getGroups = async (req, res) => {
       members: req.user._id,
     }).populate("creator", "username profilePic");
 
-    if (!groups || groups.length === 0) {
-      return res.status(404).json({ error: "No groups found" });
-    }
-
+    // Return empty array instead of 404 if no groups
     res.status(200).json(groups);
   } catch (err) {
     console.error("Groups fetch error:", err);

@@ -539,7 +539,7 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
-import CreateGroup from "./CreateGroup"; // Import the CreateGroup component
+import CreateGroup from "./CreateGroup";
 
 const MAX_CHAR = 500;
 
@@ -613,19 +613,20 @@ const CreatePost = () => {
   const tagBg = useColorModeValue("blue.100", "blue.700");
   const menuBg = useColorModeValue("white", "gray.700");
 
+  const fetchGroups = async () => {
+    try {
+      const res = await fetch("/api/groups/my-groups");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setAvailableGroups(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showToast("Error", error.message, "error");
+      setAvailableGroups([]);
+    }
+  };
+
   // Fetch user's groups
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const res = await fetch("/api/groups/my-groups");  // Correct: 'await'
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setAvailableGroups(data);
-        }
-      } catch (error) {
-        showToast("Error", "Failed to fetch groups", "error");
-      }
-    };
     fetchGroups();
   }, []);
 
@@ -684,7 +685,6 @@ const CreatePost = () => {
 
   const handleGroupCreated = (newGroup) => {
     setAvailableGroups(prev => [...prev, newGroup]);
-    // Optionally auto-select the newly created group
     setSelectedGroups(prev => [...prev, newGroup._id]);
   };
 
@@ -887,7 +887,6 @@ const CreatePost = () => {
 
                 {(user.role === "teacher" || user.role === "admin") && (
                   <>
-                    {/* Year Groups */}
                     <Box>
                       <Flex justify="space-between" align="center" mb={2}>
                         <Text fontWeight="medium">{t("Year Groups")}</Text>
@@ -938,7 +937,6 @@ const CreatePost = () => {
                       </Wrap>
                     </Box>
 
-                    {/* Posting Groups */}
                     <Box>
                       <Flex justify="space-between" align="center" mb={2}>
                         <Text fontWeight="medium">{t("Posting Groups")}</Text>
