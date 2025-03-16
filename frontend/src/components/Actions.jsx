@@ -15,6 +15,8 @@ import {
     ModalOverlay,
     Text,
     useDisclosure,
+    IconButton,
+    Tooltip
 } from "@chakra-ui/react";
 import { useState, useCallback, useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
@@ -23,6 +25,43 @@ import useShowToast from "../hooks/useShowToast";
 import postsAtom from "../atoms/postsAtom";
 import { debounce } from "lodash";
 import { useTranslation } from 'react-i18next';
+
+const Reactions = ({ handleReply }) => (
+    <Flex gap={2} mt={2}>
+        <Tooltip label="Smile">
+            <IconButton
+                icon="😊"
+                aria-label="Smile"
+                onClick={() => handleReply("😊")}
+                fontSize="20px"
+            />
+        </Tooltip>
+        <Tooltip label="Thumbs Up">
+            <IconButton
+                icon="👍"
+                aria-label="Thumbs Up"
+                onClick={() => handleReply("👍")}
+                fontSize="20px"
+            />
+        </Tooltip>
+        <Tooltip label="Fire">
+            <IconButton
+                icon="🔥"
+                aria-label="Fire"
+                onClick={() => handleReply("🔥")}
+                fontSize="20px"
+            />
+        </Tooltip>
+        <Tooltip label="Clap">
+            <IconButton
+                icon="👏"
+                aria-label="Clap"
+                onClick={() => handleReply("👏")}
+                fontSize="20px"
+            />
+        </Tooltip>
+    </Flex>
+);
 
 const Actions = ({ post }) => {
     const user = useRecoilValue(userAtom);
@@ -130,7 +169,7 @@ const Actions = ({ post }) => {
         [isReposted, isReposting, post._id, posts, setPosts, user, t, showToast]
     );
 
-    const handleReply = async () => {
+    const handleReply = async (emoji = reply) => {
         if (!user) return showToast(t("Error"), t("You must be logged in to reply to a post"), "error");
         if (isReplying) return;
 
@@ -139,7 +178,7 @@ const Actions = ({ post }) => {
             const res = await fetch(`/api/posts/reply/${post._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: reply }),
+                body: JSON.stringify({ text: emoji }),
             });
             const data = await res.json();
 
@@ -232,10 +271,11 @@ const Actions = ({ post }) => {
                                 onChange={(e) => setReply(e.target.value)}
                             />
                         </FormControl>
+                        <Reactions handleReply={handleReply} />
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button colorScheme="blue" size="sm" mr={3} isLoading={isReplying} onClick={handleReply}>
+                        <Button colorScheme="blue" size="sm" mr={3} isLoading={isReplying} onClick={() => handleReply()}>
                             {t("Reply")}
                         </Button>
                     </ModalFooter>

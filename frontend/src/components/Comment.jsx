@@ -80,7 +80,8 @@ const Comment = ({ reply, lastReply, onDelete }) => {
                             </Tooltip>
                         )}
                     </Flex>
-                    <Text>{reply.text}</Text>
+                    {/* Update the text display to show larger emojis */}
+                    <Text fontSize="2xl">{reply.text}</Text>
                 </Flex>
             </Flex>
             {!lastReply && <Divider />}

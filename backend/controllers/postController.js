@@ -1654,8 +1654,10 @@ const replyToPost = async (req, res) => {
     const userProfilePic = req.user.profilePic;
     const username = req.user.username;
 
-    if (!text) {
-      return res.status(400).json({ error: "Text field is required" });
+    // Define allowed emoji reactions
+    const allowedEmojis = ["😊", "👍", "🔥", "👏"];
+    if (!allowedEmojis.includes(text)) {
+      return res.status(400).json({ error: "Please choose a valid reaction" });
     }
 
     const post = await Post.findById(postId);
@@ -1664,7 +1666,6 @@ const replyToPost = async (req, res) => {
     }
 
     const reply = { userId, text, userProfilePic, username };
-
     post.replies.push(reply);
     await post.save();
 
@@ -1711,7 +1712,6 @@ const getFeedPosts = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
-    
     const user = await User.findById(userId).select("role following yearGroup department groups");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
