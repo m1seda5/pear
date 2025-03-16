@@ -1791,30 +1791,33 @@ const getFeedPosts = async (req, res) => {
   }
 };
 const getUserPosts = async (req, res) => {
-  const { username } = req.params;
   try {
+    const { username } = req.params;
+    
+    // Find the user by username
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Find posts where the user is either the poster or has reposted
     const posts = await Post.find({
       $or: [
         { postedBy: user._id }, // User's own posts
-        { reposts: user._id } // Posts reposted by the user
+        { reposts: user._id }   // Posts reposted by the user
       ]
     })
     .populate("postedBy", "username profilePic")
-    .sort({
-      createdAt: -1,
-    });
+    .populate("targetGroups", "name color") // Add this to populate group data
+    .sort({ createdAt: -1 });
 
+    // Return the posts as JSON
     res.status(200).json(posts);
   } catch (error) {
+    console.error("Error in getUserPosts:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
 const deleteComment = async (req, res) => {
   try {
       const { commentId } = req.params;

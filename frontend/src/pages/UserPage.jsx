@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
 import { useParams } from "react-router-dom";
 import useShowToast from "../hooks/useShowToast";
-import { Flex, Spinner } from "@chakra-ui/react";
+import { Flex, Spinner, Text, Box } from "@chakra-ui/react";
 import Post from "../components/Post";
 import useGetUserProfile from "../hooks/useGetUserProfile";
 import { useRecoilState } from "recoil";
@@ -10,56 +10,86 @@ import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
 
 const UserPage = () => {
-	const { user, loading } = useGetUserProfile();
-	const { username } = useParams();
-	const showToast = useShowToast();
-	const [posts, setPosts] = useRecoilState(postsAtom);
-	const [fetchingPosts, setFetchingPosts] = useState(true);
+  const { user, loading } = useGetUserProfile();
+  const { username } = useParams();
+  const showToast = useShowToast();
+  const [posts, setPosts] = useRecoilState(postsAtom);
+  const [fetchingPosts, setFetchingPosts] = useState(true);
+  const [error, setError] = useState(null);
 
-	useEffect(() => {
-		const getPosts = async () => {
-			if (!user) return;
-			setFetchingPosts(true);
-			try {
-				const res = await fetch(`/api/posts/user/${username}`);
-				const data = await res.json();
-				console.log("Fetched posts:", data);
-				setPosts(data);
-			} catch (error) {
-				showToast("Error", error.message, "error");
-				setPosts([]);
-			} finally {
-				setFetchingPosts(false);
-			}
-		};
-		getPosts();
-	}, [username, showToast, setPosts, user]);
+  useEffect(() => {
+    const getPosts = async () => {
+      if (!user) return;
+      setFetchingPosts(true);
+      setError(null);
+      
+      try {
+        const res = await fetch(`/api/posts/user/${username}`);
+        
+        // Check if response is ok before parsing JSON
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("API Error Response:", errorText);
+          throw new Error(`Failed to fetch posts: ${res.status} ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log("Fetched posts:", data);
+        setPosts(data);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setError(error.message);
+        showToast("Error", error.message, "error");
+        setPosts([]);
+      } finally {
+        setFetchingPosts(false);
+      }
+    };
+    
+    if (user) {
+      getPosts();
+    }
+  }, [username, showToast, setPosts, user]);
 
-	if (!user && loading) {
-		return (
-			<Flex justifyContent={"center"}>
-				<Spinner size={"xl"} />
-			</Flex>
-		);
-	}
+  if (!user && loading) {
+    return (
+      <Flex justifyContent={"center"}>
+        <Spinner size={"xl"} />
+      </Flex>
+    );
+  }
 
-	if (!user && !loading) return <h1>User not found</h1>;
+  if (!user && !loading) return <h1>User not found</h1>;
 
-	return (
-		<>
-			<UserHeader user={user} />
-			{!fetchingPosts && posts.length === 0 && <h1>User has no posts.</h1>}
-			{fetchingPosts && (
-				<Flex justifyContent={"center"} my={12}>
-					<Spinner size={"xl"} />
-				</Flex>
-			)}
-			{posts.map((post) => (
-				<Post key={post._id} post={post} postedBy={post.postedBy} />
-			))}
-			<CreatePost /> {/* CreatePost component positioned at bottom */}
-		</>
-	);
+  return (
+    <>
+      <UserHeader user={user} />
+      
+      {error && (
+        <Box p={4} bg="red.50" color="red.700" borderRadius="md" my={4}>
+          <Text fontWeight="medium">Error loading posts: {error}</Text>
+        </Box>
+      )}
+      
+      {!fetchingPosts && posts.length === 0 && !error && (
+        <Text fontSize="lg" textAlign="center" my={8}>
+          User has no posts.
+        </Text>
+      )}
+      
+      {fetchingPosts && (
+        <Flex justifyContent={"center"} my={12}>
+          <Spinner size={"xl"} />
+        </Flex>
+      )}
+      
+      {posts.map((post) => (
+        <Post key={post._id} post={post} postedBy={post.postedBy} />
+      ))}
+      
+      <CreatePost />
+    </>
+  );
 };
 
 export default UserPage;
