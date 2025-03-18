@@ -1291,7 +1291,23 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    if (!isGeneral && (!targetGroups || targetGroups.length === 0)) {
+    // Check if user has any groups
+    const userGroups = await User.findById(user._id).populate('groups');
+    const hasGroups = userGroups && userGroups.groups && userGroups.groups.length > 0;
+
+    // For students: if isGeneral is not set and they don't select any groups but have access to groups,
+    // require group selection. Otherwise default to general post.
+    let postIsGeneral = isGeneral;
+    let postTargetGroups = targetGroups || [];
+    
+    if (user.role === "student") {
+      // If student has no groups or doesn't select any, make it a general post
+      if (!hasGroups || postTargetGroups.length === 0) {
+        postIsGeneral = true;
+        postTargetGroups = [];
+      }
+    } else if (!isGeneral && (!targetGroups || targetGroups.length === 0)) {
+      // For non-students: still enforce group selection if not a general post
       return res.status(400).json({ error: "Must select at least one group" });
     }
 
@@ -1326,9 +1342,16 @@ const createPost = async (req, res) => {
     let reviewers = user.role === "student" ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) : [];
 
     if (user.role === "student") {
-      const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members"); // Changed to Group model
-      const groupReviewers = reviewerGroups.flatMap(group => group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" })));
-      reviewers = [...reviewers, ...groupReviewers];
+      try {
+        const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members");
+        const groupReviewers = reviewerGroups.flatMap(group => 
+          group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" }))
+        );
+        reviewers = [...reviewers, ...groupReviewers];
+      } catch (err) {
+        console.error("Error finding reviewer groups:", err);
+        // Continue even if this fails - we'll still have admin reviewers
+      }
     }
 
     const newPost = new Post({
@@ -1340,8 +1363,8 @@ const createPost = async (req, res) => {
       reviewStatus: user.role === "student" ? "pending" : "approved",
       targetAudience: req.body.targetAudience || "all",
       reviewers,
-      targetGroups,
-      isGeneral
+      targetGroups: postTargetGroups,
+      isGeneral: postIsGeneral
     });
 
     await newPost.save();
@@ -1372,32 +1395,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
-
-
-// Notify reviewers function
-const notifyReviewers = async (post) => {
-  const reviewerIds = post.reviewers.map((r) => r.userId);
-  const reviewers = await User.find({ _id: { $in: reviewerIds } });
-
-  const onlineReviewers = reviewers.filter(
-    (r) => Date.now() - new Date(r.lastActive).getTime() < 300000 // 5 minutes
-  );
-
-  if (onlineReviewers.length === 0) {
-    // Send email notifications
-    reviewers.forEach(async (reviewer) => {
-      const mailOptions = {
-        from: "pearnet104@gmail.com",
-        to: reviewer.email,
-        subject: "New Post Needs Review",
-        html: `<p>A new post requires your review. <a href="https://pear-tsk2.onrender.com/review/${post._id}">Review now</a></p>`,
-      };
-      await transporter.sendMail(mailOptions);
-    });
-  }
-};
-
-
 
 // controllers/postController.js
 const getPendingReviews = async (req, res) => {
