@@ -701,7 +701,7 @@ const CreatePost = () => {
         postedBy: user._id,
         text: postText,
         img: imgUrl || undefined,
-        groups: selectedGroups
+        targetGroups: selectedGroups //
       };
 
       switch (user.role) {
