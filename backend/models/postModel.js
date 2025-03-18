@@ -267,10 +267,6 @@ const postSchema = mongoose.Schema(
       ref: "Group"
     }],
     // Add the groups field that was missing
-    groups: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group"
-    }],
     isGeneral: {
       type: Boolean,
       default: false
