@@ -1291,15 +1291,16 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    // Check if user has any groups
-    const userGroups = await User.findById(user._id).populate('groups');
-    const hasGroups = userGroups && userGroups.groups && userGroups.groups.length > 0;
+    // Get user's groups correctly
+    const userWithGroups = await User.findById(user._id).populate("groups");
+    const hasGroups = userWithGroups.groups && userWithGroups.groups.length > 0;
 
-    // Handle group selection and general posting logic
+    // Handle group selection logic
     let postIsGeneral = isGeneral;
     let postTargetGroups = targetGroups || [];
-    
+
     if (user.role === "student") {
+      // If no groups, force general post
       if (!hasGroups || postTargetGroups.length === 0) {
         postIsGeneral = true;
         postTargetGroups = [];
@@ -1341,7 +1342,7 @@ const createPost = async (req, res) => {
     if (user.role === "student") {
       try {
         const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members");
-        const groupReviewers = reviewerGroups.flatMap(group => 
+        const groupReviewers = reviewerGroups.flatMap(group =>
           group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" }))
         );
         reviewers = [...reviewers, ...groupReviewers];
@@ -1375,7 +1376,7 @@ const createPost = async (req, res) => {
     if (user.role !== "student" || newPost.reviewStatus === "approved") {
       try {
         const usersToNotify = await User.find({ notificationPreferences: true, _id: { $ne: postedBy } });
-        const notificationPromises = usersToNotify.map(recipient => 
+        const notificationPromises = usersToNotify.map(recipient =>
           sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
         await Promise.allSettled(notificationPromises);
@@ -1706,16 +1707,16 @@ const getFeedPosts = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
 
-    const user = await User.findById(userId).select("role following yearGroup department groups");
+    const user = await User.findById(userId)
+      .populate("groups")
+      .select("role following yearGroup department groups");
+    
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Get all user IDs
-    const allUserIds = await User.find().distinct('_id');
-
-    // Get user's groups
-    const userGroups = user.groups || [];
+    const userGroupIds = user.groups.map(g => g._id);
+    const allUserIds = await User.find().distinct("_id");
 
     // Base filter conditions
     const baseFilter = {
@@ -1724,9 +1725,15 @@ const getFeedPosts = async (req, res) => {
         { postedBy: { $in: user.following || [] } },
         { reposts: userId },
         { isGeneral: true },
-        { targetGroups: { $in: userGroups } },
+        { 
+          targetGroups: { 
+            $in: userGroupIds,
+            $exists: true,
+            $not: { $size: 0 }
+          }
+        },
         { groups: { $size: 0 } },
-        { groups: { $in: userGroups } }
+        { groups: { $in: userGroupIds } }
       ]
     };
 
@@ -1734,9 +1741,9 @@ const getFeedPosts = async (req, res) => {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
 
-    // Get user IDs for approval filter first
-    const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct('_id');
-    const studentUserIds = await User.find({ role: "student" }).distinct('_id');
+    // Get user IDs for approval filter
+    const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct("_id");
+    const studentUserIds = await User.find({ role: "student" }).distinct("_id");
 
     // Audience-specific filter
     let audienceFilter = { $or: [{ targetAudience: "all" }] };

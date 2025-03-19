@@ -439,12 +439,18 @@ const userSchema = mongoose.Schema(
     lastActive: {
       type: Date, 
     }, // For online status tracking
+    groups: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Group",
+      },
+    ], // New field for user groups
     reviewerGroups: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ReviewerGroup",
-      }
-    ], // New field added for reviewer groups
+      },
+    ], // Field for reviewer groups
   },
   { timestamps: true }
 );

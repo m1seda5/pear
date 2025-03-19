@@ -624,8 +624,8 @@ const CreatePost = () => {
       setAvailableGroups([]);
     }
   };
-
-  // Fetch user's groups
+  
+  // In the useEffect for fetching groups
   useEffect(() => {
     const fetchGroups = async () => {
       if (!user) return;
@@ -634,8 +634,8 @@ const CreatePost = () => {
         if (!res.ok) throw new Error("Failed to fetch groups");
         const data = await res.json();
         setAvailableGroups(data.filter(g => 
-          g.members.includes(user._id) || 
-          g.creator.toString() === user._id
+          g.members.some(m => m._id === user._id) || 
+          g.creator._id === user._id
         ));
       } catch (error) {
         showToast("Error", "Failed to load groups", "error");
@@ -644,6 +644,7 @@ const CreatePost = () => {
   
     fetchGroups();
   }, [user]);
+  
   
 
   // Add pulsing effect

@@ -6,6 +6,6 @@ import protectRoute from "../middlewares/protectRoute.js";
 const router = express.Router();
 
 router.post("/create", protectRoute, createGroup);
-router.get("/my-groups", protectRoute, getGroups); // Protected route
+router.get("/my-groups", protectRoute, getGroups);
 
 export default router;
