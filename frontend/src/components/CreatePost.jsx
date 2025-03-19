@@ -627,8 +627,24 @@ const CreatePost = () => {
 
   // Fetch user's groups
   useEffect(() => {
+    const fetchGroups = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch("/api/groups/my-groups");
+        if (!res.ok) throw new Error("Failed to fetch groups");
+        const data = await res.json();
+        setAvailableGroups(data.filter(g => 
+          g.members.includes(user._id) || 
+          g.creator.toString() === user._id
+        ));
+      } catch (error) {
+        showToast("Error", "Failed to load groups", "error");
+      }
+    };
+  
     fetchGroups();
-  }, []);
+  }, [user]);
+  
 
   // Add pulsing effect
   useEffect(() => {
@@ -701,7 +717,7 @@ const CreatePost = () => {
         postedBy: user._id,
         text: postText,
         img: imgUrl || undefined,
-        groups: selectedGroups
+        targetGroups: selectedGroups // Changed from groups to targetGroups
       };
 
       switch (user.role) {
@@ -781,6 +797,7 @@ const CreatePost = () => {
       setIsLoading(false);
     }
   };
+
 
   const resetForm = () => {
     setPostText("");

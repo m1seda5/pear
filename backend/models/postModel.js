@@ -194,50 +194,28 @@ const postSchema = mongoose.Schema(
     targetAudience: {
       type: String,
       enum: [
-        "all",
-        "Year 9",
-        "Year 10",
-        "Year 11",
-        "Year 12",
-        "Year 13",
-        "Mathematics",
-        "Physics",
-        "Chemistry",
-        "Biology",
-        "Geography",
-        "Computer Science",
-        "Arts",
-        "History",
-        "Psychology",
-        "Sociology",
-        "Economics",
-        "Business",
-        "BTEC Business",
-        "Physical Education",
-        "BTEC Sport",
-        "Music",
-        "BTEC Music",
-        "BTEC Art",
-        "Englich",
-        "tv",
-       
+        "all", "Year 9", "Year 10", "Year 11", "Year 12", "Year 13", 
+        "Mathematics", "Physics", "Chemistry", "Biology", "Geography", 
+        "Computer Science", "Arts", "History", "Psychology", "Sociology", 
+        "Economics", "Business", "BTEC Business", "Physical Education", 
+        "BTEC Sport", "Music", "BTEC Music", "BTEC Art", "Englich", "tv"
       ],
       default: "all",
     },
     // Specific year groups for targeting
     targetYearGroups: {
-      type: [String], // Array to support multiple year groups
-      default: [], // Default is an empty array
+      type: [String],
+      default: [],
     },
     // Specific departments for targeting
     targetDepartments: {
-      type: [String], // Array to support multiple departments
-      default: [], // Default is an empty array
+      type: [String],
+      default: [],
     },
     reviewStatus: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
-      default: 'approved' // Default approved for non-student posts
+      default: 'approved',
     },
     reviewers: [{
       userId: {
@@ -260,14 +238,9 @@ const postSchema = mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       }],
-      default: [] // Add this line
+      default: []
     },
     targetGroups: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group"
-    }],
-    // Add the groups field that was missing
-    groups: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group"
     }],
@@ -280,6 +253,7 @@ const postSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
 const Post = mongoose.model("Post", postSchema);
 
 export default Post;

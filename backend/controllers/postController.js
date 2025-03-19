@@ -1295,19 +1295,16 @@ const createPost = async (req, res) => {
     const userGroups = await User.findById(user._id).populate('groups');
     const hasGroups = userGroups && userGroups.groups && userGroups.groups.length > 0;
 
-    // For students: if isGeneral is not set and they don't select any groups but have access to groups,
-    // require group selection. Otherwise default to general post.
+    // Handle group selection and general posting logic
     let postIsGeneral = isGeneral;
     let postTargetGroups = targetGroups || [];
     
     if (user.role === "student") {
-      // If student has no groups or doesn't select any, make it a general post
       if (!hasGroups || postTargetGroups.length === 0) {
         postIsGeneral = true;
         postTargetGroups = [];
       }
     } else if (!isGeneral && (!targetGroups || targetGroups.length === 0)) {
-      // For non-students: still enforce group selection if not a general post
       return res.status(400).json({ error: "Must select at least one group" });
     }
 
@@ -1350,7 +1347,6 @@ const createPost = async (req, res) => {
         reviewers = [...reviewers, ...groupReviewers];
       } catch (err) {
         console.error("Error finding reviewer groups:", err);
-        // Continue even if this fails - we'll still have admin reviewers
       }
     }
 
@@ -1372,7 +1368,6 @@ const createPost = async (req, res) => {
       await notifyReviewers(newPost);
     }
 
-    // Populate targetGroups with name and color before returning
     const populatedPost = await Post.findById(newPost._id)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");
@@ -1395,6 +1390,7 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
+
 
 // controllers/postController.js
 const getPendingReviews = async (req, res) => {
@@ -1709,17 +1705,18 @@ const getFeedPosts = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
+
     const user = await User.findById(userId).select("role following yearGroup department groups");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    
+
     // Get all user IDs
     const allUserIds = await User.find().distinct('_id');
-    
+
     // Get user's groups
     const userGroups = user.groups || [];
-    
+
     // Base filter conditions
     const baseFilter = {
       $or: [
@@ -1732,18 +1729,18 @@ const getFeedPosts = async (req, res) => {
         { groups: { $in: userGroups } }
       ]
     };
-    
+
     if (!user.following || user.following.length === 0) {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
-    
+
     // Get user IDs for approval filter first
     const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct('_id');
     const studentUserIds = await User.find({ role: "student" }).distinct('_id');
-    
+
     // Audience-specific filter
     let audienceFilter = { $or: [{ targetAudience: "all" }] };
-    
+
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
         { targetYearGroups: user.yearGroup },
@@ -1755,12 +1752,12 @@ const getFeedPosts = async (req, res) => {
         { targetAudience: user.department }
       );
     }
-    
+
     // Approval filter
     const approvalFilter = {
       $or: [
         { postedBy: { $in: nonStudentUserIds } },
-        { 
+        {
           $and: [
             { postedBy: { $in: studentUserIds } },
             { reviewStatus: "approved" }
@@ -1768,25 +1765,25 @@ const getFeedPosts = async (req, res) => {
         }
       ]
     };
-    
+
     // Combine filters
     const finalFilter = {
       $and: [baseFilter, audienceFilter, approvalFilter]
     };
-    
+
     const feedPosts = await Post.find(finalFilter)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color")
-      .populate("groups", "name color")
       .sort({ createdAt: -1 })
       .limit(50);
-    
+
     res.status(200).json(feedPosts);
   } catch (err) {
     console.error("Error fetching feed posts:", err);
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
+
 const getUserPosts = async (req, res) => {
   try {
     const { username } = req.params;
