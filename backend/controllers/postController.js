@@ -1264,6 +1264,58 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
   }
 };
 
+
+// New notifyReviewers function
+const notifyReviewers = async (post) => {
+  try {
+    const populatedPost = await Post.findById(post._id)
+      .populate("postedBy", "username email")
+      .populate("reviewers.userId", "email username role");
+
+    if (!populatedPost) {
+      console.error("Post not found for notification:", post._id);
+      return;
+    }
+
+    const posterUsername = populatedPost.postedBy.username;
+    const reviewers = populatedPost.reviewers;
+
+    const getReviewerEmailTemplate = (reviewerUsername, postId, posterUsername) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4CAF50;">New Post Pending Review on Pear! 🍐</h2>
+        <p style="font-size: 16px;">Hello ${reviewerUsername},</p>
+        <p style="font-size: 16px;">${posterUsername} has submitted a new post that requires your review.</p>
+        <p style="font-size: 16px;">Please review the content and approve or reject it.</p>
+        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+          Review Post
+        </a>
+        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+          You received this email because you have review permissions on Pear.
+        </p>
+      </div>
+    `;
+
+    const notificationPromises = reviewers
+      .filter(reviewer => reviewer.userId && reviewer.userId.email)
+      .map(reviewer => {
+        const mailOptions = {
+          from: "pearnet104@gmail.com",
+          to: reviewer.userId.email,
+          subject: "New Post Pending Review on Pear! 🍐",
+          html: getReviewerEmailTemplate(reviewer.userId.username, post._id, posterUsername)
+        };
+        return transporter.sendMail(mailOptions)
+          .then(() => console.log(`Review notification sent to ${reviewer.userId.email}`))
+          .catch(error => console.error(`Error sending to ${reviewer.userId.email}:`, error));
+      });
+
+    await Promise.allSettled(notificationPromises);
+  } catch (error) {
+    console.error("Error in notifyReviewers:", error);
+  }
+};
 const createPost = async (req, res) => {
   try {
     const {
@@ -1366,7 +1418,7 @@ const createPost = async (req, res) => {
 
     await newPost.save();
     if (user.role === "student") {
-      await notifyReviewers(newPost);
+      await notifyReviewers(newPost); // Now defined above
     }
 
     const populatedPost = await Post.findById(newPost._id)
@@ -1848,6 +1900,7 @@ const deleteComment = async (req, res) => {
   } catch (err) {
       res.status(500).json({ error: err.message });
   }
+  // Add this function alongside your other controller functions
 };
 export {
   createPost,
@@ -1862,4 +1915,5 @@ export {
   replyToPost,
   getFeedPosts,
   getUserPosts,
+  notifyReviewers,
 };

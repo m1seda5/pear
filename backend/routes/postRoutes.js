@@ -73,6 +73,7 @@ import {
   getFeedPosts,
   getUserPosts,
   repostPost,
+  notifyReviewers // Import it here
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
@@ -90,11 +91,33 @@ router.post(
   reviewPost
 );
 
+// Optional: Add a route to manually trigger notifyReviewers
+router.post(
+  "/notify-reviewers/:postId",
+  protectRoute,
+  validateObjectId("postId"),
+  async (req, res) => {
+    try {
+      const post = await Post.findById(req.params.postId);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      if (req.user.role !== "admin" && req.user.role !== "teacher") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      await notifyReviewers(post);
+      res.status(200).json({ message: "Reviewers notified successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to notify reviewers" });
+    }
+  }
+);
+
 // Post creation and feed
 router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.get("/feed", protectRoute, getFeedPosts);
 router.post("/toggle-notifications", protectRoute, toggleNotifications);
-router.put("/repost/:id", protectRoute, repostPost);  // Change from POST to PUT
+router.put("/repost/:id", protectRoute, repostPost);
 
 // User-specific posts
 router.get("/user/:username", protectRoute, getUserPosts);
@@ -118,6 +141,5 @@ router.delete(
   validateObjectId("commentId"),
   deleteComment
 );
-
 
 export default router;
