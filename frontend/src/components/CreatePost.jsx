@@ -540,6 +540,7 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 import CreateGroup from "./CreateGroup";
+import GroupSelector from "./GroupSelector";
 
 const MAX_CHAR = 500;
 
@@ -593,6 +594,7 @@ const DEPARTMENTS = [
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [postText, setPostText] = useState("");
+  const [targetGroup, setTargetGroup] = useState("all"); // Added targetGroup state
   const [targetYearGroups, setTargetYearGroups] = useState([]);
   const [targetDepartments, setTargetDepartments] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState([]);
@@ -624,8 +626,7 @@ const CreatePost = () => {
       setAvailableGroups([]);
     }
   };
-  
-  // In the useEffect for fetching groups
+
   useEffect(() => {
     const fetchGroups = async () => {
       if (!user) return;
@@ -644,10 +645,7 @@ const CreatePost = () => {
   
     fetchGroups();
   }, [user]);
-  
-  
 
-  // Add pulsing effect
   useEffect(() => {
     const interval = setInterval(() => {
       setIsPulsing(true);
@@ -714,57 +712,58 @@ const CreatePost = () => {
         return;
       }
 
-      const payload = {
+      const postData = {
         postedBy: user._id,
         text: postText,
         img: imgUrl || undefined,
-        targetGroups: selectedGroups // Changed from groups to targetGroups
+        targetGroups: targetGroup === "all" ? [] : [targetGroup], // Updated with targetGroup
+        isGeneral: targetGroup === "all" // Added isGeneral flag
       };
 
       switch (user.role) {
         case "student":
-          payload.targetAudience = "all";
-          payload.targetYearGroups = [];
-          payload.targetDepartments = [];
+          postData.targetAudience = "all";
+          postData.targetYearGroups = [];
+          postData.targetDepartments = [];
           break;
 
         case "teacher":
-          if (!targetYearGroups.length && !selectedGroups.length) {
+          if (!targetYearGroups.length && !selectedGroups.length && targetGroup === "all") {
             showToast("Error", "Please select at least one year group or posting group", "error");
             setIsLoading(false);
             return;
           }
-          if (targetYearGroups.includes("all")) {
-            payload.targetAudience = "all";
-            payload.targetYearGroups = [];
+          if (targetYearGroups.includes("all") || targetGroup === "all") {
+            postData.targetAudience = "all";
+            postData.targetYearGroups = [];
           } else {
-            payload.targetAudience = targetYearGroups[0];
-            payload.targetYearGroups = targetYearGroups;
+            postData.targetAudience = targetYearGroups[0];
+            postData.targetYearGroups = targetYearGroups;
           }
-          payload.targetDepartments = [];
+          postData.targetDepartments = [];
           break;
 
         case "admin":
-          if (!targetYearGroups.length && !targetDepartments.length && !selectedGroups.length) {
+          if (!targetYearGroups.length && !targetDepartments.length && !selectedGroups.length && targetGroup === "all") {
             showToast("Error", "Please select at least one target audience", "error");
             setIsLoading(false);
             return;
           }
-          if (targetYearGroups.includes("all")) {
-            payload.targetAudience = "all";
-            payload.targetYearGroups = [];
+          if (targetYearGroups.includes("all") || targetGroup === "all") {
+            postData.targetAudience = "all";
+            postData.targetYearGroups = [];
           } else if (targetYearGroups.length) {
-            payload.targetYearGroups = targetYearGroups;
-            payload.targetAudience = targetYearGroups[0];
+            postData.targetYearGroups = targetYearGroups;
+            postData.targetAudience = targetYearGroups[0];
           }
           if (targetDepartments.length) {
-            payload.targetDepartments = targetDepartments;
-            payload.targetAudience = targetDepartments[0];
+            postData.targetDepartments = targetDepartments;
+            postData.targetAudience = targetDepartments[0];
           }
           if (targetDepartments.includes("tv")) {
-            payload.targetAudience = "tv";
-            payload.targetDepartments = ["tv"];
-            payload.targetYearGroups = [];
+            postData.targetAudience = "tv";
+            postData.targetDepartments = ["tv"];
+            postData.targetYearGroups = [];
           }
           break;
 
@@ -779,7 +778,7 @@ const CreatePost = () => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(postData)
       });
 
       const data = await res.json();
@@ -799,10 +798,10 @@ const CreatePost = () => {
     }
   };
 
-
   const resetForm = () => {
     setPostText("");
     setImgUrl("");
+    setTargetGroup("all"); // Reset targetGroup
     setTargetYearGroups([]);
     setTargetDepartments([]);
     setSelectedGroups([]);
@@ -905,6 +904,11 @@ const CreatePost = () => {
 
                 {(user.role === "teacher" || user.role === "admin") && (
                   <>
+                    <GroupSelector 
+                      onGroupSelect={(groupId) => setTargetGroup(groupId)}
+                      userRole={user.role}
+                    />
+
                     <Box>
                       <Flex justify="space-between" align="center" mb={2}>
                         <Text fontWeight="medium">{t("Year Groups")}</Text>
@@ -947,7 +951,7 @@ const CreatePost = () => {
                                 <TagLabel>
                                   {t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}
                                 </TagLabel>
-                                <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
+                                <TagCloseButton onClick={() => handleResetYearGroup(group)} />
                               </Tag>
                             </WrapItem>
                           ))
