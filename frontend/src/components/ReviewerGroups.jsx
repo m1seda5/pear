@@ -45,6 +45,7 @@ const ReviewerGroups = () => {
   });
   const [searchResults, setSearchResults] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [selectedReviewer, setSelectedReviewer] = useState(null); // Added new state
   const bgColor = useColorModeValue("white", "gray.800");
   const { get, post } = useFetch();
 
@@ -117,7 +118,16 @@ const ReviewerGroups = () => {
             <CardBody>
               <Text fontWeight="bold" mb={2}>Members:</Text>
               {group.members.map((member) => (
-                <Flex key={member._id} align="center" mb={2}>
+                <Flex 
+                  key={member._id} 
+                  align="center" 
+                  mb={2}
+                  cursor="pointer"
+                  onClick={() => setSelectedReviewer(member._id)}
+                  _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                  p={2}
+                  borderRadius="md"
+                >
                   <Avatar size="sm" name={member.username} src={member.profilePic} mr={2} />
                   <Text>{member.username}</Text>
                 </Flex>
@@ -169,6 +179,13 @@ const ReviewerGroups = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {selectedReviewer && (
+        <AuditDetails 
+          userId={selectedReviewer}
+          onClose={() => setSelectedReviewer(null)}
+        />
+      )}
     </Box>
   );
 };

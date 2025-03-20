@@ -233,6 +233,16 @@ const postSchema = mongoose.Schema(
       },
       reviewedAt: Date
     }],
+    reviewStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending"
+    },
+    reviewedBy: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      decision: String,
+      decisionDate: Date
+    }],
     reposts: {
       type: [{
         type: mongoose.Schema.Types.ObjectId,

@@ -93,6 +93,21 @@ const ReviewModal = () => {
 
     setIsLoading(true);
     try {
+      const updatedPost = await Post.findByIdAndUpdate(
+        currentReview._id,
+        { 
+          reviewStatus: decision,
+          $push: {
+            reviewedBy: {
+              user: user._id,
+              decision,
+              decisionDate: new Date()
+            }
+          }
+        },
+        { new: true }
+      );
+
       const res = await fetch(`/api/posts/review/${currentReview._id}`, {
         method: "POST",
         headers: {

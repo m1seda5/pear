@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -10,18 +10,114 @@ import {
   Tabs,
   useColorModeValue,
   Text,
-  Icon
+  Icon,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Avatar
 } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
 import { Navigate } from "react-router-dom";
 import { BsShieldLockFill } from "react-icons/bs";
 import userAtom from "../atoms/userAtom";
-import ReviewerGroups from "../components/ReviewerGroups";
-import ReviewQueue from "../components/ReviewQueue";
+import useFetch from "../hooks/useFetch";
+
+// Modified ReviewerGroups to accept onGroupSelect prop
+const ReviewerGroups = ({ onGroupSelect }) => {
+  const { get } = useFetch();
+  const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    const loadGroups = async () => {
+      const data = await get("/api/reviewer-groups");
+      if (data) setGroups(data);
+    };
+    loadGroups();
+  }, [get]);
+
+  return (
+    <Box>
+      {groups.map((group) => (
+        <Box 
+          key={group._id} 
+          p={2} 
+          cursor="pointer" 
+          onClick={() => onGroupSelect(group._id)}
+          _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+        >
+          <Text>{group.name}</Text>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+const GroupStatistics = ({ groupId }) => {
+  const { get } = useFetch();
+  const [stats, setStats] = useState([]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!groupId) {
+        setStats([]);
+        return;
+      }
+      const data = await get(`/api/reviewer-groups/${groupId}/stats`);
+      setStats(data || []);
+    };
+    loadStats();
+  }, [groupId, get]);
+
+  return (
+    <Table variant="simple">
+      <Thead>
+        <Tr>
+          <Th>Reviewer</Th>
+          <Th>Total</Th>
+          <Th>Approved</Th>
+          <Th>Rejected</Th>
+          <Th>Last Activity</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {stats.length > 0 ? (
+          stats.map(reviewer => (
+            <Tr key={reviewer._id}>
+              <Td>
+                <Flex align="center">
+                  <Avatar size="sm" name={reviewer.username} src={reviewer.profilePic} mr={2} />
+                  {reviewer.username}
+                </Flex>
+              </Td>
+              <Td>{reviewer.totalDecisions || 0}</Td>
+              <Td>{reviewer.approvals || 0}</Td>
+              <Td>{reviewer.rejections || 0}</Td>
+              <Td>
+                {reviewer.lastDecision ? 
+                  new Date(reviewer.lastDecision).toLocaleDateString() : 
+                  'N/A'}
+              </Td>
+            </Tr>
+          ))
+        ) : (
+          <Tr>
+            <Td colSpan={5} textAlign="center">
+              {groupId ? "No statistics available" : "Select a group to view statistics"}
+            </Td>
+          </Tr>
+        )}
+      </Tbody>
+    </Table>
+  );
+};
 
 const AdminDashboard = () => {
   const user = useRecoilValue(userAtom);
   const [activeTab, setActiveTab] = useState(0);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
   const bgColor = useColorModeValue("white", "gray.800");
   const tabBgColor = useColorModeValue("gray.100", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -73,6 +169,14 @@ const AdminDashboard = () => {
           >
             Review Queue
           </Tab>
+          <Tab 
+            bg={activeTab === 2 ? bgColor : tabBgColor}
+            borderTopRadius="md"
+            borderColor={borderColor}
+            _selected={{ borderColor: borderColor, borderBottomColor: bgColor }}
+          >
+            Group Statistics
+          </Tab>
         </TabList>
 
         <TabPanels 
@@ -82,10 +186,13 @@ const AdminDashboard = () => {
           borderBottomRadius="md"
         >
           <TabPanel p={0}>
-            <ReviewerGroups />
+            <ReviewerGroups onGroupSelect={setSelectedGroupId} />
           </TabPanel>
           <TabPanel p={0}>
             <ReviewQueue />
+          </TabPanel>
+          <TabPanel p={0}>
+            <GroupStatistics groupId={selectedGroupId} />
           </TabPanel>
         </TabPanels>
       </Tabs>
