@@ -1502,6 +1502,11 @@ const reviewPost = async (req, res) => {
     const { decision } = req.body;
     const reviewerId = req.user._id;
 
+    // Add this check at the beginning of reviewPost
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+
     console.log("Looking for post:", postId);
     const post = await Post.findById(postId);
     
@@ -1528,6 +1533,13 @@ const reviewPost = async (req, res) => {
     // Update reviewer's decision
     post.reviewers[reviewerIndex].decision = decision;
     post.reviewers[reviewerIndex].reviewedAt = new Date();
+
+    // In the reviewPost function, add this before saving
+    post.reviewedBy.push({
+      user: reviewerId,
+      decision,
+      decisionDate: new Date()
+    });
 
     // Check review status
     if (decision === 'approved') {
