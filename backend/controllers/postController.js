@@ -1235,7 +1235,6 @@ const transporter = nodemailer.createTransport({
 
 // Brevo Web Push API configuration
 
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_URL = "https://api.brevo.com/v3";
 
 // Helper function to send notification email
@@ -1272,30 +1271,25 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
 
 // Helper function to send web push notification
 const sendWebPushNotification = async (userIds, postId, posterUsername) => {
-  try {
-    const response = await axios.post(
-      `${BREVO_API_URL}/webPush/notifications`,
-      {
-        title: "New Post on Pear! 🍐",
-        body: `${posterUsername} just posted something new!`,
-        url: `https://pear-tsk2.onrender.com/posts/${postId}`,
-        target: {
-          type: "users",
-          ids: userIds, // Array of user IDs subscribed to web push
-        },
+  await axios.post(
+    `${BREVO_API_URL}/webPush/notifications`,
+    {
+      title: "New Post on Pear! 🍐",
+      body: `${posterUsername} just posted something new!`,
+      url: `${process.env.FRONTEND_URL}/posts/${postId}`,
+      target: {
+        type: "users",
+        ids: userIds,
       },
-      {
-        headers: {
-          "accept": "application/json",
-          "api-key": BREVO_API_KEY,
-          "content-type": "application/json",
-        },
-      }
-    );
-    console.log("Web push sent successfully:", response.data);
-  } catch (error) {
-    console.error("Error sending web push:", error.response?.data || error.message);
-  }
+    },
+    {
+      headers: {
+        "accept": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+    }
+  );
 };
 
 // ... (keep notifyReviewers and other existing helper functions as they are)
@@ -1321,7 +1315,7 @@ const notifyReviewers = async (post) => {
         <p style="font-size: 16px;">Hello ${reviewerUsername},</p>
         <p style="font-size: 16px;">${posterUsername} has submitted a new post that requires your review.</p>
         <p style="font-size: 16px;">Please review the content and approve or reject it.</p>
-        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
+        <a href="${process.env.FRONTEND_URL}/posts/${postId}" 
            style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
                   color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
           Review Post
@@ -1334,16 +1328,19 @@ const notifyReviewers = async (post) => {
 
     const notificationPromises = reviewers
       .filter(reviewer => reviewer.userId && reviewer.userId.email)
-      .map(reviewer => {
+      .map(async reviewer => {
         const mailOptions = {
-          from: "pearnet104@gmail.com",
+          from: process.env.SENDER_EMAIL,
           to: reviewer.userId.email,
           subject: "New Post Pending Review on Pear! 🍐",
-          html: getReviewerEmailTemplate(reviewer.userId.username, post._id, posterUsername)
+          html: getReviewerEmailTemplate(reviewer.userId.username, post._id, posterUsername),
         };
-        return transporter.sendMail(mailOptions)
-          .then(() => console.log(`Review notification sent to ${reviewer.userId.email}`))
-          .catch(error => console.error(`Error sending to ${reviewer.userId.email}:`, error));
+        try {
+          await transporter.sendMail(mailOptions);
+          return console.log(`Review notification sent to ${reviewer.userId.email}`);
+        } catch (error) {
+          return console.error(`Error sending to ${reviewer.userId.email}:`, error);
+        }
       });
 
     await Promise.allSettled(notificationPromises);
@@ -1377,11 +1374,9 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    // Get user's groups correctly
     const userWithGroups = await User.findById(user._id).populate("groups");
     const hasGroups = userWithGroups.groups && userWithGroups.groups.length > 0;
 
-    // Handle group selection logic
     let postIsGeneral = isGeneral;
     let postTargetGroups = targetGroups || [];
 
@@ -1422,18 +1417,16 @@ const createPost = async (req, res) => {
     }
 
     const adminUsers = await User.find({ role: "admin" });
-    let reviewers = user.role === "student" ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) : [];
+    let reviewers = user.role === "student" 
+      ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) 
+      : [];
 
     if (user.role === "student") {
-      try {
-        const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members");
-        const groupReviewers = reviewerGroups.flatMap(group =>
-          group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" }))
-        );
-        reviewers = [...reviewers, ...groupReviewers];
-      } catch (err) {
-        console.error("Error finding reviewer groups:", err);
-      }
+      const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members");
+      const groupReviewers = reviewerGroups.flatMap(group =>
+        group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" }))
+      );
+      reviewers = [...reviewers, ...groupReviewers];
     }
 
     const newPost = new Post({
@@ -1459,33 +1452,42 @@ const createPost = async (req, res) => {
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");
 
-    if (user.role !== "student" || newPost.reviewStatus === "approved") {
-      try {
-        const usersToNotify = await User.find({ 
-          notificationPreferences: true, 
-          _id: { $ne: postedBy } 
-        });
-        
-        const emailPromises = usersToNotify
-          .filter(u => u.emailNotifications)
-          .map(recipient => sendNotificationEmail(
-            recipient.email,
-            postedBy,
-            newPost._id,
-            user.username
-          ));
+    if (newPost.reviewStatus === "approved") {
+      const usersToNotify = await User.find({ 
+        $or: [
+          { emailNotifications: true },
+          { webPushNotifications: true }
+        ],
+        _id: { $ne: postedBy }
+      });
 
-        const pushUserIds = usersToNotify
-          .filter(u => u.webPushNotifications)
-          .map(u => u._id.toString());
+      const emailUsers = usersToNotify.filter(u => u.emailNotifications);
+      const pushUsers = usersToNotify.filter(u => u.webPushNotifications);
 
-        await Promise.allSettled([
-          ...emailPromises,
-          ...(pushUserIds.length > 0 ? [sendWebPushNotification(pushUserIds, newPost._id, user.username)] : [])
-        ]);
-      } catch (notificationError) {
-        console.error("Error sending notifications:", notificationError);
+      const notificationPromises = [];
+
+      if (emailUsers.length > 0) {
+        notificationPromises.push(
+          ...emailUsers.map(recipient => 
+            sendNotificationEmail(
+              recipient.email,
+              postedBy,
+              newPost._id,
+              user.username
+            ).catch(error => console.error(`Email notification failed for ${recipient.email}:`, error))
+          )
+        );
       }
+
+      if (pushUsers.length > 0) {
+        const pushUserIds = pushUsers.map(u => u._id.toString());
+        notificationPromises.push(
+          sendWebPushNotification(pushUserIds, newPost._id, user.username)
+            .catch(error => console.error("Web push notification failed:", error))
+        );
+      }
+
+      await Promise.allSettled(notificationPromises);
     }
 
     res.status(201).json(populatedPost);
@@ -1494,8 +1496,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
-
-
 
 // controllers/postController.js
 const getPendingReviews = async (req, res) => {
@@ -1881,7 +1881,7 @@ const getFeedPosts = async (req, res) => {
 
     const user = await User.findById(userId)
       .populate("groups")
-      .select("role following yearGroup department groups");
+      .select("role following yearGroup department groups emailNotifications webPushNotifications");
     
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -1890,10 +1890,9 @@ const getFeedPosts = async (req, res) => {
     const userGroupIds = user.groups.map(g => g._id);
     const allUserIds = await User.find().distinct("_id");
 
-    // Base filter ensures the user always sees their own posts
     const baseFilter = {
       $or: [
-        { postedBy: userId }, // User always sees their own posts
+        { postedBy: userId },
         { postedBy: { $in: user.following || [] } },
         { reposts: userId },
         { isGeneral: true },
@@ -1916,7 +1915,6 @@ const getFeedPosts = async (req, res) => {
     const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct("_id");
     const studentUserIds = await User.find({ role: "student" }).distinct("_id");
 
-    // Audience filter applies to posts not created by the user
     let audienceFilter = { $or: [{ targetAudience: "all" }] };
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
@@ -1942,10 +1940,9 @@ const getFeedPosts = async (req, res) => {
       ]
     };
 
-    // Combine filters: user's own posts bypass audience filter
     const finalFilter = {
       $or: [
-        { postedBy: userId }, // User's own posts always visible
+        { postedBy: userId },
         {
           $and: [
             baseFilter,
@@ -1957,12 +1954,47 @@ const getFeedPosts = async (req, res) => {
     };
 
     const feedPosts = await Post.find(finalFilter)
-      .populate("postedBy", "username profilePic")
+      .populate("postedBy", "username profilePic email")
       .populate("targetGroups", "name color")
       .sort({ createdAt: -1 })
       .limit(50);
 
-    // Return posts with viewCount and view status
+    const notificationPromises = [];
+    for (const post of feedPosts) {
+      if (post.postedBy._id.toString() !== userId.toString() && 
+          !post.views.includes(userId) && 
+          post.reviewStatus === "approved") {
+        
+        if (user.emailNotifications) {
+          notificationPromises.push(
+            sendNotificationEmail(
+              user.email,
+              post.postedBy._id,
+              post._id,
+              post.postedBy.username
+            ).catch(error => console.error(`Email notification failed for ${user.email}:`, error))
+          );
+        }
+
+        if (user.webPushNotifications) {
+          notificationPromises.push(
+            sendWebPushNotification(
+              [userId.toString()],
+              post._id,
+              post.postedBy.username
+            ).catch(error => console.error("Web push notification failed for user:", error))
+          );
+        }
+
+        if (!post.views.includes(userId)) {
+          post.views.push(userId);
+          await post.save();
+        }
+      }
+    }
+
+    await Promise.allSettled(notificationPromises);
+
     const postsWithViewStatus = feedPosts.map(post => {
       const postObject = post.toObject();
       postObject.viewCount = post.views.length;
@@ -1976,7 +2008,6 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 // Ensure this is exported if part of a larger module
 
 const getUserPosts = async (req, res) => {
