@@ -119,7 +119,7 @@ router.post("/create", protectRoute, checkTeacherAccess, createPost);
 router.get("/feed", protectRoute, getFeedPosts);
 router.post("/toggle-notifications", protectRoute, toggleNotifications);
 router.put("/repost/:id", protectRoute, repostPost);
-router.put("/view/:id", protectRoute, validateObjectId("id"), addViewToPost); // Fixed typo from "vies" to "view"
+router.put("/view/:id", protectRoute, validateObjectId("id"), addViewToPost);
 
 // User-specific posts
 router.get("/user/:username", protectRoute, getUserPosts);
