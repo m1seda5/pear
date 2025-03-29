@@ -1,0 +1,249 @@
+/* Navigation and header styling */
+:root {
+	/* Light mode variables */
+	--light-bg: #ffffff;
+	--light-text: #1A202C;
+	--light-hover: rgba(0, 0, 0, 0.05);
+	--light-active: rgba(0, 0, 0, 0.1);
+	--light-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+	--light-hover-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+	
+	/* Dark mode variables */
+	--dark-bg: #1A202C;
+	--dark-text: #E2E8F0;
+	--dark-hover: rgba(255, 255, 255, 0.08);
+	--dark-active: rgba(255, 255, 255, 0.15);
+	--dark-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+	--dark-hover-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Navigation Icon Container */
+  .nav-icon-container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Mode-dependent styling applied via JS */
+  .light-mode .nav-icon-container {
+	background: var(--light-bg);
+	color: var(--light-text);
+  }
+  
+  .dark-mode .nav-icon-container {
+	background: var(--dark-bg);
+	color: var(--dark-text);
+  }
+  
+  /* Hover animations */
+  .nav-icon-container:hover {
+	transform: translateY(-3px);
+  }
+  
+  .nav-icon-container:active {
+	transform: translateY(1px) !important;
+	transition: all 0.1s ease-out !important;
+  }
+  
+  /* Theme toggle animation */
+  .theme-toggle-icon {
+	transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .theme-toggle-icon:hover {
+	transform: rotate(180deg);
+  }
+  
+  /* Notification badge animation */
+  @keyframes bounceIn {
+	0% {
+	  transform: scale(0);
+	  opacity: 0;
+	}
+	50% {
+	  transform: scale(1.2);
+	}
+	70% {
+	  transform: scale(0.9);
+	}
+	100% {
+	  transform: scale(1);
+	  opacity: 1;
+	}
+  }
+  
+  /* Lock icon animations */
+  @keyframes pulse {
+	0% {
+	  opacity: 0.7;
+	}
+	50% {
+	  opacity: 1;
+	}
+	100% {
+	  opacity: 0.7;
+	}
+  }
+  
+  @keyframes shake {
+	0% {
+	  transform: translateX(0);
+	}
+	25% {
+	  transform: translateX(-3px);
+	}
+	50% {
+	  transform: translateX(3px);
+	}
+	75% {
+	  transform: translateX(-3px);
+	}
+	100% {
+	  transform: translateX(0);
+	}
+  }
+  
+  /* Settings icon rotation */
+  .settings-icon {
+	transition: transform 0.3s ease;
+	transform-origin: center;
+  }
+  
+  .settings-icon:hover {
+	transform: rotate(90deg);
+  }
+  
+  /* Chat container variables and styles (from your original) */
+  .chat-container {
+	--chat-spacing: 8px;
+	--bubble-radius: 12px;
+	--avatar-size: 28px;
+  }
+  
+  /* Message bubble hover effect */
+  .message-bubble {
+	transition: transform 0.1s ease-in-out;
+  }
+  
+  .message-bubble:hover {
+	transform: translateY(-1px);
+  }
+  
+  /* Icon container hover effect */
+  .icon-container {
+	border-radius: 50%;
+	padding: 8px;
+	width: 40px;
+	height: 40px;
+	transition: background-color 0.3s ease-in-out;
+  }
+  
+  .icon-container:hover {
+	background-color: var(--dark-hover);
+  }
+  
+  /* Mode-specific scrollbar styling */
+  .light-mode ::-webkit-scrollbar {
+	width: 7px;
+  }
+  
+  .light-mode ::-webkit-scrollbar-track {
+	background-color: #f5f5f5;
+  }
+  
+  .light-mode ::-webkit-scrollbar-thumb {
+	background-color: #c1c1c1;
+	border-radius: 10px;
+  }
+  
+  .light-mode ::-webkit-scrollbar-thumb:hover {
+	background-color: #a0a0a0;
+  }
+  
+  .dark-mode ::-webkit-scrollbar {
+	width: 7px;
+  }
+  
+  .dark-mode ::-webkit-scrollbar-track {
+	background-color: #1e1e1e;
+  }
+  
+  .dark-mode ::-webkit-scrollbar-thumb {
+	background-color: #555;
+	border-radius: 10px;
+  }
+  
+  .dark-mode ::-webkit-scrollbar-thumb:hover {
+	background-color: #777;
+  }
+  
+  /* Post container animations and effects */
+  @keyframes subtleColorChange {
+	0% {
+	  background-color: var(--light-bg);
+	}
+	100% {
+	  background-color: #E6F7EB;
+	}
+  }
+  
+  @keyframes subtleDarkColorChange {
+	0% {
+	  background-color: var(--dark-bg);
+	}
+	100% {
+	  background-color: #1a332d;
+	}
+  }
+  
+  /* Hover effect for the post container */
+  .postContainer {
+	transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+	transform: rotate(0deg);
+  }
+  
+  .light-mode .postContainer:hover {
+	transform: scale(1.02) rotate(1deg);
+	box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+	animation: subtleColorChange 0.5s ease-in-out forwards;
+  }
+  
+  .dark-mode .postContainer:hover {
+	transform: scale(1.02) rotate(1deg);
+	box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+	animation: subtleDarkColorChange 0.5s ease-in-out forwards;
+  }
+  
+  /* New to You text animation */
+  @keyframes pulseEffect {
+	0% {
+	  color: #FF6F61;
+	}
+	20% {
+	  color: #FF7043;
+	}
+	40% {
+	  color: #FF8A65;
+	}
+	60% {
+	  color: #FFAB91;
+	}
+	80% {
+	  color: #FF7043;
+	}
+	100% {
+	  color: #FF6F61;
+	}
+  }
+  
+  .newToYouText {
+	display: inline-block;
+	animation: pulseEffect 2s ease-in-out infinite;
+	text-shadow: 0 0 5px rgba(255, 112, 67, 0.2), 0 0 10px rgba(255, 112, 67, 0.1);
+  }

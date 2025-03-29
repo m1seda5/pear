@@ -1,0 +1,63 @@
+<mxfile host="65bd71144e">
+    <diagram id="whYVLQVjk4mtuCjjnOGT" name="Page-1">
+        <mxGraphModel dx="2445" dy="1730" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="11" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="4" target="5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" style="edgeStyle=none;html=1;" edge="1" parent="1" source="4" target="13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="addbanner" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="85" width="120" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" style="edgeStyle=none;html=1;" edge="1" parent="1" source="5" target="10">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="370" y="290" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="12" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="5" target="6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="authetnication from" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="310" y="90" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="6" target="8">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="640" y="270" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="670" y="180"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="6" value="addcontent storage" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="530" y="95" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" style="edgeStyle=none;html=1;" edge="1" parent="1" source="8" target="13">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="685" y="410" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="700" y="450"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="8" value="add contonet will be stored in the monog db data base where i can upload the add files directly to mongo db and categories them where the is teacher ads student adds and all that and this is determined through the form filled&amp;nbsp;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="580" y="210" width="210" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=none;html=1;" edge="1" parent="1" source="10">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="420" y="510" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" value="auth form has all the role and categories forthe app to know who sees what adds and to filter the adds based on roles and categories picked in this form&amp;nbsp;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="210" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="prompt hery put yourself in the shoes of a developer i want you to build out this feature for adds now here hw it will woro/the flow is when a user created an accoun t ehy have a small form to fill other than the buttons and check boxes which are already for are you astudent slect your year group and are you a teacher select your department or are youa. tv and all that there is a small form to fill where you clikc if your a student or a teacher for the filtered posts then set up and mongo db colection to upload these adds to be roles out but seti up wher ei can upload the add pictures directly to mongo db but with categhories the two or three categoris then when a suer is loged in and using the&amp;nbsp; when the adds are fetched from that collection of uploaded files the posts are filtdred&amp;nbsp; depdning on who you are we could also use the exsiting cehck boxes where if you clikc are you are teacher and what depratment or are you a student those check boxes can do two things they add the roles for targeted posting and restritred accest o some thing and they can also id that student for the adds filtering and that whole process&amp;nbsp;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="520" width="550" height="220" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -1,0 +1,115 @@
+<mxfile host="65bd71144e">
+    <diagram id="BBRL5MxEEFZnz3CE1UrV" name="Page-1">
+        <mxGraphModel dx="2794" dy="1343" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="1">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="13" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="10" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="80" y="160" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="27" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="10" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="370" y="65" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" value="AUTHENTICATION" style="whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="30" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" style="edgeStyle=none;html=1;entryX=0.429;entryY=0.003;entryDx=0;entryDy=0;entryPerimeter=0;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="11" target="21" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="400" y="120"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="28" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="11" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="620" y="60" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="11" value="ACCOUNTS/ROLES" style="whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="294" y="30" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.608;entryY=0.009;entryDx=0;entryDy=0;entryPerimeter=0;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="12" target="24" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="830" y="50"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="12" value="CONTENT&amp;nbsp;" style="whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="20" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=none;html=1;fontFamily=Comic Sans MS;startArrow=none;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="16" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="85" y="260" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="14" value="three different accounts&lt;br&gt;.admin&lt;br&gt;.teacher&lt;br&gt;.student&lt;br&gt;" style="whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="15" y="135" width="130" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" style="edgeStyle=none;html=1;fontFamily=Comic Sans MS;entryX=0;entryY=0.75;entryDx=0;entryDy=0;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="16" target="19" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="170" y="300" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="140" y="249"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="20" style="edgeStyle=none;html=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="19" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="360" y="300" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="320" y="310"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="19" value="able to sned story like contonetnet to the tv account" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="170" y="205" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="21" target="25" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="21" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="710" y="230" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="21" value="admin can also target groups to specific year groups and and different field&amp;nbsp;&lt;br&gt;note(you will have to add more roles and also remove students as a maker or trigger are ereplace with check box so add all the other year groups plus depertments so that teachers and even even the admina re allowed to target posts now teachers will also have there own roles and also for the admin a slot to send posts to tv so in summary a new role caled amin that has its own rules and gyuuidlins" style="whiteSpace=wrap;html=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="140" width="226" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="24" target="25" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="810" y="480"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="24" value="now the style of contont is very special for the tv role now beause the website will be opened on the tv side we have to have some good error handling fro the tv incase of poor wifi connections so when the wifi is down the tv can just rpelay certian contont so bacially it will be stuck on one page and one feature of the page whic is the story like feature now the story feature can be built out but the only account that has access to it would be the tv role (so middlewates will have to be set ot whatever it is either middelware or ids but yeh midelware cn work&amp;nbsp;" style="whiteSpace=wrap;html=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="110" width="280" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="okay the prompt ( explain the strucutre of your appliactions) put yourself in the shoes of a devloper and bhuil dthis out for me i want you to build out this new features for me where an admin has a kind admin version ofthe web app and the tv has a tv version fo the web app here how it should work nowthe admin is able to post contone but can target much more posts conmpaered to the other users (so essiontally add an admin role and a tv role now a tv role will be slected on account creation and some security paremnters and all to ensure its just the tvs and then we will add error network nadling like play back stoires and that so basically its just the kinda ccount strucutre but now the tv only shows one thing wwhich is the posts and storoes sent by the admina ccount basically like media and i wasnt it to like like ig stories exactly so in summary there are more roles not just year 12 and year 13 and also we are removing the students as a trigger for roles and adding a check box for either student or teacher we romivn gh estring detection and mabe even add department options and groups then add more and mor roles not justyear 12 and 13 all the year groups from year 9 and then update the teachers side of the appliactions to not just year&amp;nbsp; 12 and 13 but all&amp;nbsp; the other year groups and then for the admin they have the sam etargeted post fu nctionlity but they have the options to post to teacher departments and also to student year groups or to all accounts and also send posts to the tv screen but we will have to format it the conton that is for the tv role so that it fits and wide screen format like for instance it should look smoooth for videos and even just words&amp;nbsp;" style="whiteSpace=wrap;html=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="620" width="750" height="215" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="" style="edgeStyle=none;html=1;fontFamily=Comic Sans MS;endArrow=none;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="14" target="16" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="85" y="260" as="targetPoint"/>
+                        <mxPoint x="81.94444444444457" y="205" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="36" style="edgeStyle=none;html=1;sketch=1;curveFitting=1;jiggle=2;" parent="1" source="16" target="25" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="120" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="16" value="admin" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Comic Sans MS;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="230" width="80" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
