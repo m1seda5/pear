@@ -1266,36 +1266,29 @@ import Message from "../models/messageModel.js";
 import mongoose from "mongoose";
 import TempUser from "../models/tempUserModel.js";
 
-
-const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select(
-      "username email notificationPreferences emailNotifications webPushNotifications role yearGroup department campus profilePic bio followers following"
-    );
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.status(200).json(user);
-  } catch (error) {
-    console.error("Error in getMe:", error.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
 const getUserProfile = async (req, res) => {
+  // We will fetch user profile either with username or userId
+  // query is either username or userId
   const { query } = req.params;
 
   try {
     let user;
+
+    // query is userId
     if (mongoose.Types.ObjectId.isValid(query)) {
       user = await User.findOne({ _id: query })
-        .select("-password -updatedAt");
+        .select("-password")
+        .select("-updatedAt");
     } else {
+      // query is username
       user = await User.findOne({ username: query })
-        .select("-password -updatedAt");
+        .select("-password")
+        .select("-updatedAt");
     }
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    res.status(200).json(user); // Includes emailNotifications and webPushNotifications
+    res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
     console.log("Error in getUserProfile: ", err.message);
@@ -1704,22 +1697,32 @@ const resendOTP = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
+    
+    // First find the user by username
     const user = await User.findOne({ username });
-    const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");
+    
+    // Check credentials before checking ban status
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user?.password || ""
+    );
 
     if (!user || !isPasswordCorrect) {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
+    // Now check if the user is banned
     if (user.isBanned) {
       return res.status(403).json({ error: "Account permanently banned" });
     }
 
+    // Rest of the login logic remains the same
     if (user.isFrozen) {
       user.isFrozen = false;
       await user.save();
     }
 
+    // Auto-follow logic
     const allUsers = await User.find({});
     const allUserIds = allUsers.map((u) => u._id.toString());
     user.following = allUserIds;
@@ -1735,8 +1738,6 @@ const loginUser = async (req, res) => {
       bio: user.bio,
       profilePic: user.profilePic,
       role: user.role,
-      emailNotifications: user.emailNotifications,
-      webPushNotifications: user.webPushNotifications,
       message: "Login successful, now following all users including yourself.",
     });
   } catch (error) {
@@ -2149,7 +2150,6 @@ const searchReviewers = async (req, res) => {
 
 export {
   signupUser,
-  getMe,
   forgotPassword,
   resetPassword,
   validateEmail,

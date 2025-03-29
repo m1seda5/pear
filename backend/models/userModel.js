@@ -424,19 +424,10 @@ const userSchema = mongoose.Schema(
       type: Date, 
       required: false 
     },
-// ... (all existing fields unchanged) ...
-notificationPreferences: {
-  type: Boolean,
-  default: true, // Legacy field for backward compatibility
-},
-emailNotifications: {
-  type: Boolean,
-  default: true, // Enable email notifications by default
-},
-webPushNotifications: {
-  type: Boolean,
-  default: true, // Enable web push notifications by default
-},
+    notificationPreferences: {
+      type: Boolean,
+      default: true, // Enable notifications by default
+    },
     resetToken: {
       type: String,
       required: false,
@@ -466,4 +457,3 @@ webPushNotifications: {
 
 const User = mongoose.model("User", userSchema);
 export default User;
-
