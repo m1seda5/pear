@@ -1855,36 +1855,24 @@ const getFeedPosts = async (req, res) => {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
 
-    const nonStudentUserIds = await User.find({ role: { $ne: "student" } }).distinct("_id");
-    const studentUserIds = await User.find({ role: "student" }).distinct("_id");
-
     // Audience filter applies to posts not created by the user
     let audienceFilter = { $or: [{ targetAudience: "all" }] };
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
-        { targetYearGroups: user.yearGroup },
+        { targetYearGroups: { $in: [user.yearGroup] } },
         { targetAudience: user.yearGroup }
       );
     } else if (user.role === "teacher" && user.department) {
       audienceFilter.$or.push(
-        { targetDepartments: user.department },
+        { targetDepartments: { $in: [user.department] } },
         { targetAudience: user.department }
       );
     }
 
-    const approvalFilter = {
-      $or: [
-        { postedBy: { $in: nonStudentUserIds } },
-        {
-          $and: [
-            { postedBy: { $in: studentUserIds } },
-            { reviewStatus: "approved" }
-          ]
-        }
-      ]
-    };
+    // Critical Fix: Simplified approval filter
+    const approvalFilter = { reviewStatus: "approved" };
 
-    // Combine filters: user's own posts bypass audience filter
+    // Combine filters: user's own posts bypass audience and approval filters
     const finalFilter = {
       $or: [
         { postedBy: userId }, // User's own posts always visible
@@ -1892,7 +1880,7 @@ const getFeedPosts = async (req, res) => {
           $and: [
             baseFilter,
             audienceFilter,
-            approvalFilter
+            approvalFilter // Must be approved for others' posts
           ]
         }
       ]
@@ -1918,7 +1906,6 @@ const getFeedPosts = async (req, res) => {
     res.status(500).json({ error: "Could not fetch posts" });
   }
 };
-
 // Ensure this is exported if part of a larger module
 
 const getUserPosts = async (req, res) => {
