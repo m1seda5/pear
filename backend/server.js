@@ -1,4 +1,3 @@
-// server.js
 import path from "path";
 import express from "express";
 import dotenv from "dotenv";
@@ -9,13 +8,16 @@ import postRoutes from "./routes/postRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import reviewerGroupRoutes from "./routes/reviewerGroupRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { app, server } from "./socket/socket.js";
-import job from "./cron/cron.js";
+import cronJobs from "./cron/cron.js";
 
 dotenv.config();
 connectDB();
-job.start();
+
+// Start all cron jobs after DB connection
+cronJobs.start();
 
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
@@ -35,6 +37,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/reviewer-groups", reviewerGroupRoutes);
 app.use("/api/groups", groupRoutes); // Changed from "/groups" to "/api/groups" for consistency
+app.use("/api/notifications", notificationRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
@@ -53,7 +56,6 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));
-
 
 // email verficiation update 
 // import path from "path";

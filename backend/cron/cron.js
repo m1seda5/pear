@@ -1,23 +1,50 @@
 import cron from "cron";
 import https from "https";
+import { sendIdleNotifications } from "../controllers/notificationController.js";
 
-const URL = "https://threads-clone-1-a9z0.onrender.com";
+const URL = "https://pear-tsk2.onrender.com";
 
-const job = new cron.CronJob("*/14 * * * *", function () {
-	https
-		.get(URL, (res) => {
-			if (res.statusCode === 200) {
-				console.log("GET request sent successfully");
-			} else {
-				console.log("GET request failed", res.statusCode);
-			}
-		})
-		.on("error", (e) => {
-			console.error("Error while sending request", e);
-		});
+// Existing keep-alive job
+const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
+  https
+    .get(URL, (res) => {
+      if (res.statusCode === 200) {
+        console.log("GET request sent successfully");
+      } else {
+        console.log("GET request failed", res.statusCode);
+      }
+    })
+    .on("error", (e) => {
+      console.error("Error while sending request", e);
+    });
 });
 
-export default job;
+// Idle notification schedule
+const notificationJob = new cron.CronJob(
+  '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
+  sendIdleNotifications,
+  null,
+  true,
+  'Africa/Nairobi'
+);
+
+// Saturday special notification
+const saturdayJob = new cron.CronJob(
+  '30 12 * * 6', // Saturday at 12:30 PM
+  () => sendIdleNotifications(),
+  null,
+  true,
+  'Africa/Nairobi'
+);
+
+export default {
+  start: () => {
+    keepAliveJob.start();
+    notificationJob.start();
+    saturdayJob.start();
+    console.log("All cron jobs started");
+  }
+};
 
 // CRON JOB EXPLANATION:
 // Cron jobs are scheduled tasks that run periodically at fixed intervals or specific times
