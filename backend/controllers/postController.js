@@ -1344,44 +1344,38 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    // Get user's groups correctly
     const userWithGroups = await User.findById(user._id).populate("groups");
     const hasGroups = userWithGroups.groups && userWithGroups.groups.length > 0;
 
-    // Handle group selection logic
     let postIsGeneral = isGeneral;
     let postTargetGroups = targetGroups || [];
 
     if (user.role === "student") {
-      // If no groups, force general post
       if (!hasGroups || postTargetGroups.length === 0) {
         postIsGeneral = true;
         postTargetGroups = [];
       }
+      req.body.targetAudience = "all";
+      req.body.targetYearGroups = [];
+      req.body.targetDepartments = [];
     } else if (!isGeneral && (!targetGroups || targetGroups.length === 0)) {
       return res.status(400).json({ error: "Must select at least one group" });
     }
 
+    // Role-specific validation (only for non-students)
     switch (user.role) {
-      case "student":
-        req.body.targetAudience = "all";
-        req.body.targetYearGroups = [];
-        req.body.targetDepartments = [];
-        break;
       case "teacher":
         if (!targetYearGroups || targetYearGroups.length === 0) {
-          return res.status(400).json({ error: "Teachers must specify at least one year group to target" });
+          return res.status(400).json({ error: "Teachers must specify at least one year group" });
         }
         req.body.targetDepartments = [];
         req.body.targetAudience = targetYearGroups[0];
         break;
       case "admin":
         if (!targetAudience && !targetYearGroups && !targetDepartments) {
-          return res.status(400).json({ error: "Admin must specify a target audience, year groups, or departments" });
+          return res.status(400).json({ error: "Admin must specify a target" });
         }
         break;
-      default:
-        return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
     if (img) {
@@ -1389,18 +1383,27 @@ const createPost = async (req, res) => {
       img = uploadedResponse.secure_url;
     }
 
-    const adminUsers = await User.find({ role: "admin" });
-    let reviewers = user.role === "student" ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) : [];
-
+    // Reviewer setup only for student posts
+    let reviewers = [];
     if (user.role === "student") {
-      try {
-        const reviewerGroups = await Group.find({ "permissions.postReview": true }).populate("members");
-        const groupReviewers = reviewerGroups.flatMap(group =>
-          group.members.map(member => ({ userId: member._id, role: member.role, decision: "pending" }))
+      const reviewerGroups = await ReviewerGroup.find({ "permissions.postReview": true })
+        .populate("members");
+      
+      if (reviewerGroups.length > 0) {
+        reviewers = reviewerGroups.flatMap(group => 
+          group.members.map(member => ({
+            userId: member._id,
+            role: member.role,
+            decision: "pending"
+          }))
         );
-        reviewers = [...reviewers, ...groupReviewers];
-      } catch (err) {
-        console.error("Error finding reviewer groups:", err);
+      } else {
+        const adminUsers = await User.find({ role: "admin" });
+        reviewers = adminUsers.map(admin => ({
+          userId: admin._id,
+          role: "admin",
+          decision: "pending"
+        }));
       }
     }
 
@@ -1412,23 +1415,28 @@ const createPost = async (req, res) => {
       targetDepartments: targetDepartments || [],
       reviewStatus: user.role === "student" ? "pending" : "approved",
       targetAudience: req.body.targetAudience || "all",
-      reviewers,
+      reviewers: user.role === "student" ? reviewers : [], // Empty for non-students
       targetGroups: postTargetGroups,
       isGeneral: postIsGeneral
     });
 
     await newPost.save();
-    if (user.role === "student") {
-      await notifyReviewers(newPost); // Now defined above
-    }
 
     const populatedPost = await Post.findById(newPost._id)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");
 
-    if (user.role !== "student" || newPost.reviewStatus === "approved") {
+    // Handle notifications based on role
+    if (user.role === "student" && reviewers.length > 0) {
+      // Only notify reviewers for student posts
+      await notifyReviewers(newPost);
+    } else {
+      // Immediate notifications for non-student posts
       try {
-        const usersToNotify = await User.find({ notificationPreferences: true, _id: { $ne: postedBy } });
+        const usersToNotify = await User.find({ 
+          notificationPreferences: true, 
+          _id: { $ne: postedBy } 
+        });
         const notificationPromises = usersToNotify.map(recipient =>
           sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
         );
@@ -1444,7 +1452,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
-
 
 // controllers/postController.js
 const getPendingReviews = async (req, res) => {
@@ -1480,26 +1487,15 @@ const getPendingReviews = async (req, res) => {
 // New function to handle post reviews
 const reviewPost = async (req, res) => {
   try {
-        // Add this check at the beginning
-        if (!mongoose.Types.ObjectId.isValid(req.params.postId)) {
-          return res.status(400).json({ error: "Invalid post ID" });
-        }
-    // Add debugging logs
-    console.log("Review request received:", {
-      user: req.user,
-      params: req.params,
-      body: req.body
-    });
+    if (!mongoose.Types.ObjectId.isValid(req.params.postId)) {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
 
-    // Check if user is authenticated
     if (!req.user) {
-      console.log("Authentication failed: No user in request");
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // Check if user is authorized to review (admin or teacher)
     if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
-      console.log("Authorization failed: User role is", req.user.role);
       return res.status(401).json({ error: "Not authorized to review posts" });
     }
 
@@ -1507,57 +1503,37 @@ const reviewPost = async (req, res) => {
     const { decision } = req.body;
     const reviewerId = req.user._id;
 
-    // Add this check at the beginning of reviewPost
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ error: "Invalid post ID" });
-    }
-
-    console.log("Looking for post:", postId);
     const post = await Post.findById(postId);
-    
     if (!post) {
-      console.log("Post not found:", postId);
       return res.status(404).json({ error: "Post not found" });
     }
 
-    console.log("Found post:", post);
-    console.log("Looking for reviewer:", reviewerId);
-
-    // Find the reviewer's entry
     const reviewerIndex = post.reviewers.findIndex(
       r => r.userId.toString() === reviewerId.toString()
     );
 
-    console.log("Reviewer index:", reviewerIndex);
-
     if (reviewerIndex === -1) {
-      console.log("Reviewer not found in post.reviewers");
       return res.status(401).json({ error: "Not authorized to review this post" });
     }
 
-    // Update reviewer's decision
     post.reviewers[reviewerIndex].decision = decision;
     post.reviewers[reviewerIndex].reviewedAt = new Date();
 
-    // In the reviewPost function, add this before saving
     post.reviewedBy.push({
       user: reviewerId,
       decision,
       decisionDate: new Date()
     });
 
-    // Check review status
     if (decision === 'approved') {
-      // Check if any admin or teacher has approved
       const hasApproval = post.reviewers.some(
         r => (r.role === 'admin' || r.role === 'teacher') && r.decision === 'approved'
       );
 
       if (hasApproval) {
         post.reviewStatus = 'approved';
-        console.log("Post approved");
         
-        // Send notifications now that post is approved
+        // Send notifications when student post is approved
         try {
           const poster = await User.findById(post.postedBy);
           const usersToNotify = await User.find({
@@ -1580,19 +1556,16 @@ const reviewPost = async (req, res) => {
         }
       }
     } else if (decision === 'rejected') {
-      // If any admin or teacher rejects, post is rejected
       const hasRejection = post.reviewers.some(
         r => (r.role === 'admin' || r.role === 'teacher') && r.decision === 'rejected'
       );
       
       if (hasRejection) {
         post.reviewStatus = 'rejected';
-        console.log("Post rejected");
       }
     }
 
     await post.save();
-    console.log("Post saved successfully");
     res.status(200).json(post);
   } catch (err) {
     console.error("Error in reviewPost:", err);
@@ -1832,10 +1805,9 @@ const getFeedPosts = async (req, res) => {
     const userGroupIds = user.groups.map(g => g._id);
     const allUserIds = await User.find().distinct("_id");
 
-    // Base filter ensures the user always sees their own posts
+    // Base filter for posts visibility
     const baseFilter = {
       $or: [
-        { postedBy: userId }, // User always sees their own posts
         { postedBy: { $in: user.following || [] } },
         { reposts: userId },
         { isGeneral: true },
@@ -1855,7 +1827,7 @@ const getFeedPosts = async (req, res) => {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
 
-    // Audience filter applies to posts not created by the user
+    // Audience filter
     let audienceFilter = { $or: [{ targetAudience: "all" }] };
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
@@ -1869,20 +1841,20 @@ const getFeedPosts = async (req, res) => {
       );
     }
 
-    // Critical Fix: Simplified approval filter
-    const approvalFilter = { reviewStatus: "approved" };
-
-    // Combine filters: user's own posts bypass audience and approval filters
-    const finalFilter = {
+    // Approval filter - only applies to student-created posts
+    const approvalFilter = {
       $or: [
-        { postedBy: userId }, // User's own posts always visible
-        {
-          $and: [
-            baseFilter,
-            audienceFilter,
-            approvalFilter // Must be approved for others' posts
-          ]
-        }
+        { "postedBy.role": { $ne: "student" } }, // Non-student posts don't need approval
+        { reviewStatus: "approved" } // Student posts must be approved
+      ]
+    };
+
+    // Combine all filters
+    const finalFilter = {
+      $and: [
+        baseFilter,
+        audienceFilter,
+        approvalFilter
       ]
     };
 
@@ -1892,11 +1864,13 @@ const getFeedPosts = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    // Return posts with viewCount and view status
+    // Add view status to response
     const postsWithViewStatus = feedPosts.map(post => {
       const postObject = post.toObject();
       postObject.viewCount = post.views.length;
       postObject.isViewed = post.views.includes(userId);
+      postObject.isLiked = post.likes.includes(userId);
+      postObject.isReposted = post.reposts.includes(userId);
       return postObject;
     });
 
