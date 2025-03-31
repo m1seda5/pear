@@ -1426,6 +1426,7 @@ const createPost = async (req, res) => {
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");
 
+    // Added notification code here as requested
     if (user.role !== "student" || newPost.reviewStatus === "approved") {
       try {
         const usersToNotify = await User.find({ notificationPreferences: true, _id: { $ne: postedBy } });
@@ -1444,7 +1445,6 @@ const createPost = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create post" });
   }
 };
-
 
 // controllers/postController.js
 const getPendingReviews = async (req, res) => {
@@ -1820,27 +1820,26 @@ const getFeedPosts = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized, user not authenticated" });
     }
-
+    
     const user = await User.findById(userId)
       .populate("groups")
       .select("role following yearGroup department groups");
-    
+      
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
+    
     const userGroupIds = user.groups.map(g => g._id);
     const allUserIds = await User.find().distinct("_id");
-
-    // Base filter ensures the user always sees their own posts
+    
+    // Base filter for following, groups, etc.
     const baseFilter = {
       $or: [
-        { postedBy: userId }, // User always sees their own posts
         { postedBy: { $in: user.following || [] } },
         { reposts: userId },
         { isGeneral: true },
-        { 
-          targetGroups: { 
+        {
+          targetGroups: {
             $in: userGroupIds,
             $exists: true,
             $not: { $size: 0 }
@@ -1850,12 +1849,12 @@ const getFeedPosts = async (req, res) => {
         { groups: { $in: userGroupIds } }
       ]
     };
-
+    
     if (!user.following || user.following.length === 0) {
       baseFilter.$or.push({ postedBy: { $in: allUserIds } });
     }
-
-    // Audience filter applies to posts not created by the user
+    
+    // Audience filter
     let audienceFilter = { $or: [{ targetAudience: "all" }] };
     if (user.role === "student" && user.yearGroup) {
       audienceFilter.$or.push(
@@ -1868,30 +1867,86 @@ const getFeedPosts = async (req, res) => {
         { targetAudience: user.department }
       );
     }
-
-    // Critical Fix: Simplified approval filter
-    const approvalFilter = { reviewStatus: "approved" };
-
-    // Combine filters: user's own posts bypass audience and approval filters
+    
+    // SIMPLIFIED FILTER LOGIC:
+    // 1. For posts created by students: must be approved
+    // 2. For posts created by teachers/admins: automatically visible
+    
     const finalFilter = {
-      $or: [
-        { postedBy: userId }, // User's own posts always visible
+      $and: [
+        // Posts must either be:
         {
-          $and: [
-            baseFilter,
-            audienceFilter,
-            approvalFilter // Must be approved for others' posts
+          $or: [
+            // 1. Created by non-students (teachers/admins)
+            {
+              $and: [
+                { postedBy: { $nin: [] } }, // Placeholder to keep structure
+                {
+                  $or: [
+                    { "postedBy.role": "admin" },
+                    { "postedBy.role": "teacher" }
+                  ]
+                }
+              ]
+            },
+            // 2. OR be approved (for student posts)
+            { reviewStatus: "approved" }
           ]
-        }
+        },
+        // AND must match base filters (following, audience, etc)
+        {
+          $or: [
+            { postedBy: userId },
+            { ...baseFilter.$or },
+          ]
+        },
+        audienceFilter
       ]
     };
-
-    const feedPosts = await Post.find(finalFilter)
-      .populate("postedBy", "username profilePic")
+    
+    // Since we need to know the poster's role, we must include it in the lookup
+    const feedPosts = await Post.find({})
+      .populate({
+        path: "postedBy",
+        select: "username profilePic role" // Include role for filtering
+      })
       .populate("targetGroups", "name color")
       .sort({ createdAt: -1 })
-      .limit(50);
-
+      .limit(100)
+      // Apply the complex filter in-memory after population
+      .then(posts => posts.filter(post => {
+        // If post is by a student, it must be approved
+        if (post.postedBy && post.postedBy.role === "student") {
+          if (post.reviewStatus !== "approved") {
+            return false;
+          }
+        }
+        
+        // Apply the rest of the filters
+        // Check if it matches audience
+        const matchesAudience = 
+          post.targetAudience === "all" ||
+          (user.role === "student" && user.yearGroup && 
+            (post.targetYearGroups.includes(user.yearGroup) || 
+             post.targetAudience === user.yearGroup)) ||
+          (user.role === "teacher" && user.department && 
+            (post.targetDepartments.includes(user.department) || 
+             post.targetAudience === user.department));
+        
+        // Check if it matches following, groups, etc.
+        const matchesBase = 
+          post.postedBy._id.toString() === userId.toString() ||
+          (user.following && user.following.includes(post.postedBy._id)) ||
+          post.reposts.includes(userId) ||
+          post.isGeneral ||
+          (post.targetGroups && post.targetGroups.some(g => userGroupIds.includes(g._id.toString()))) ||
+          (!post.groups || post.groups.length === 0) ||
+          (post.groups && post.groups.some(g => userGroupIds.includes(g)));
+        
+        return matchesAudience && matchesBase;
+      }))
+      .then(posts => posts.slice(0, 50)); // Limit to 50 posts
+    
     // Return posts with viewCount and view status
     const postsWithViewStatus = feedPosts.map(post => {
       const postObject = post.toObject();
@@ -1899,7 +1954,7 @@ const getFeedPosts = async (req, res) => {
       postObject.isViewed = post.views.includes(userId);
       return postObject;
     });
-
+    
     res.status(200).json(postsWithViewStatus);
   } catch (err) {
     console.error("Error fetching feed posts:", err);
