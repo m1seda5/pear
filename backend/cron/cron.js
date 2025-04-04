@@ -42,14 +42,14 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
 //   'Africa/Nairobi'
 // );
 
-// export default {
-//   start: () => {
-//     keepAliveJob.start();
-//     notificationJob.start();
-//     saturdayJob.start();
-//     console.log("All cron jobs started");
-//   }
-// };
+export default {
+  start: () => {
+    keepAliveJob.start();
+    // notificationJob.start();
+    // saturdayJob.start();
+    console.log("All cron jobs started");
+  }
+};
 
 // CRON JOB EXPLANATION:
 // Cron jobs are scheduled tasks that run periodically at fixed intervals or specific times
