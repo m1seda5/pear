@@ -19,32 +19,37 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
     });
 });
 
-// Idle notification schedule
-const notificationJob = new cron.CronJob(
-  '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
-  sendIdleNotifications,
-  null,
-  true,
-  'Africa/Nairobi'
-);
 
-// Saturday special notification
-const saturdayJob = new cron.CronJob(
-  '30 12 * * 6', // Saturday at 12:30 PM
-  () => sendIdleNotifications(),
-  null,
-  true,
-  'Africa/Nairobi'
-);
+// thisis disabled temporarily for the holidays
 
-export default {
-  start: () => {
-    keepAliveJob.start();
-    notificationJob.start();
-    saturdayJob.start();
-    console.log("All cron jobs started");
-  }
-};
+
+
+// // Idle notification schedule
+// const notificationJob = new cron.CronJob(
+//   '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
+//   sendIdleNotifications,
+//   null,
+//   true,
+//   'Africa/Nairobi'
+// );
+
+// // Saturday special notification
+// const saturdayJob = new cron.CronJob(
+//   '30 12 * * 6', // Saturday at 12:30 PM
+//   () => sendIdleNotifications(),
+//   null,
+//   true,
+//   'Africa/Nairobi'
+// );
+
+// export default {
+//   start: () => {
+//     keepAliveJob.start();
+//     notificationJob.start();
+//     saturdayJob.start();
+//     console.log("All cron jobs started");
+//   }
+// };
 
 // CRON JOB EXPLANATION:
 // Cron jobs are scheduled tasks that run periodically at fixed intervals or specific times
