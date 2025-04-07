@@ -13,106 +13,109 @@ import {
   TagCloseButton,
   Box,
   Text,
-  List,
-  ListItem,
-  useColorModeValue
+  Avatar,
+  Stack,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  useColorModeValue,
+  Divider
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
+import { useTranslation } from 'react-i18next';
+import UserSearch from "./UserSearch"; // Import our new component
 
 const MAX_GROUP_MEMBERS = 50;
 
 const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [searchInput, setSearchInput] = useState("");
+  const [groupName, setGroupName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState("");
   const showToast = useShowToast();
   const currentUser = useRecoilValue(userAtom);
+  const { t } = useTranslation();
+  
+  // Color mode values
+  const tagBg = useColorModeValue("blue.50", "blue.800");
+  const tagColor = useColorModeValue("blue.800", "blue.100");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
 
   const checkExistingGroup = async (name) => {
-    const res = await fetch(
-      `/api/messages/groups/check?name=${encodeURIComponent(name)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-      }
-    );
-    return res.json();
-  };
-
-  const handleSearchUser = async () => {
-    if (!searchInput.trim()) return;
-    setSearching(true);
-    setSearchResults([]);
-
+    if (!name.trim()) return null;
+    
     try {
-      // Fix: Update to match the route in your backend
-      const res = await fetch(`/api/users/search/${encodeURIComponent(searchInput.toLowerCase())}`, {
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Failed to search user");
-
-      // Don't show current user or already selected users in results
-      if (
-        data._id !== currentUser._id &&
-        !selectedUsers.some((user) => user._id === data._id)
-      ) {
-        setSearchResults([data]);
-      }
+      const res = await fetch(
+        `/api/messages/groups/check?name=${encodeURIComponent(name.trim())}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      if (!res.ok) return null;
+      return res.json();
     } catch (error) {
-      showToast("Error", error.message, "error");
-    } finally {
-      setSearching(false);
+      console.error("Error checking group name:", error);
+      return null;
     }
   };
 
-  const handleSelectUser = (user) => {
+  const handleUserSelect = (user) => {
     if (selectedUsers.length >= MAX_GROUP_MEMBERS - 1) {
       showToast(
         "Error",
-        `Maximum ${MAX_GROUP_MEMBERS} members allowed`,
+        t(`Maximum ${MAX_GROUP_MEMBERS} members allowed`),
         "error"
       );
       return;
     }
 
-    setSelectedUsers((prev) => [...prev, user]);
-    setSearchResults([]);
-    setSearchInput("");
+    setSelectedUsers(prev => [...prev, user]);
+  };
+  
+  const handleRemoveUser = (userId) => {
+    setSelectedUsers(prev => prev.filter(user => user._id !== userId));
+  };
+
+  const handleGroupNameChange = async (e) => {
+    const value = e.target.value;
+    setGroupName(value);
+    setError("");
+    
+    // Check for duplicate group name when user has typed at least 3 characters
+    if (value.trim().length >= 3) {
+      const existingGroup = await checkExistingGroup(value);
+      if (existingGroup) {
+        setError(t("A group with this name already exists"));
+      }
+    }
   };
 
   const handleCreateGroup = async () => {
-    if (selectedUsers.length < 1) {
-      showToast("Error", "Please add at least one member", "error");
+    // Validation
+    if (!groupName.trim()) {
+      setError(t("Please enter a group name"));
       return;
     }
-  
-    const groupName = document.getElementById("groupName").value;
-    if (!groupName.trim()) {
-      showToast("Error", "Please enter a group name", "error");
+    
+    if (selectedUsers.length < 1) {
+      showToast("Error", t("Please add at least one member"), "error");
+      return;
+    }
+    
+    // Final check for duplicate group name
+    const existingGroup = await checkExistingGroup(groupName);
+    if (existingGroup) {
+      setError(t("A group with this name already exists"));
       return;
     }
   
     setLoading(true);
     try {
-      // Check if group already exists
-      const existingGroup = await checkExistingGroup(groupName);
-      if (existingGroup) {
-        showToast("Error", "Group with this name already exists", "error");
-        setLoading(false);
-        return;
-      }
-  
-      // Fix: Update API endpoint to match backend routes
       const res = await fetch("/api/messages/groups/create", {
         method: "POST",
         headers: {
@@ -121,111 +124,125 @@ const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
         },
         body: JSON.stringify({
           participants: selectedUsers.map((u) => u._id),
-          groupName: groupName,
+          groupName: groupName.trim(),
         }),
       });
-  
-      // Safely handle response parsing
-      const text = await res.text();
+      
+      // Handle JSON parsing safely
       let data;
       try {
+        const text = await res.text();
         data = JSON.parse(text);
       } catch (e) {
-        console.error("Failed to parse response:", text.substring(0, 100));
-        throw new Error("Server returned invalid JSON response");
+        throw new Error(t("Server returned invalid response"));
       }
   
-      if (!res.ok) throw new Error(data.error || "Failed to create group");
+      if (!res.ok) throw new Error(data.error || t("Failed to create group"));
   
       onGroupCreated(data);
+      resetForm();
       onClose();
+      
+      showToast("Success", t("Group created successfully"), "success");
     } catch (error) {
       showToast("Error", error.message, "error");
     } finally {
       setLoading(false);
     }
   };
+  
+  const resetForm = () => {
+    setGroupName("");
+    setSelectedUsers([]);
+    setError("");
+  };
+  
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+  
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent bg={useColorModeValue("white", "gray.800")}>
-        <ModalHeader borderBottom="1px solid" borderColor={useColorModeValue("gray.200", "gray.600")}>Create New Group</ModalHeader>
+        <ModalHeader borderBottom="1px solid" borderColor={borderColor}>
+          {t("Create New Group")}
+        </ModalHeader>
         <ModalCloseButton />
+        
         <ModalBody pb={6} bg={useColorModeValue("gray.50", "gray.700")}>
-          <Input placeholder="Group Name" id="groupName" mb={4} required />
-
-          <Flex gap={2} mb={4} wrap="wrap">
-            {selectedUsers.map((user) => (
-              <Tag key={user._id} size="md" borderRadius="full">
-                <TagLabel>{user.username}</TagLabel>
-                <TagCloseButton
-                  onClick={() =>
-                    setSelectedUsers((prev) =>
-                      prev.filter((u) => u._id !== user._id)
-                    )
-                  }
-                />
-              </Tag>
-            ))}
-          </Flex>
-
-          <Box position="relative">
-            <Flex gap={2}>
-              <Input
-                placeholder="Search users..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearchUser()}
-                variant="filled"
-                _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
+          <Stack spacing={4} my={2}>
+            {/* Group Name Input */}
+            <FormControl isRequired isInvalid={!!error}>
+              <FormLabel>{t("Group Name")}</FormLabel>
+              <Input 
+                placeholder={t("Enter group name")}
+                value={groupName}
+                onChange={handleGroupNameChange}
+                bg={useColorModeValue("white", "gray.800")}
               />
-              <Button
-                onClick={handleSearchUser}
-                isLoading={searching}
-                isDisabled={selectedUsers.length >= MAX_GROUP_MEMBERS - 1}
-              >
-                Search
-              </Button>
-            </Flex>
-
-            {searchResults.length > 0 && (
-              <List
-                position="absolute"
-                top="100%"
-                left={0}
-                right={0}
-                bg={useColorModeValue("white", "gray.700")}
-                boxShadow="md"
-                borderRadius="md"
-                mt={2}
-                maxH="200px"
-                overflowY="auto"
-                zIndex={1}
-              >
-                {searchResults.map((user) => (
-                  <ListItem
-                    key={user._id}
-                    p={2}
-                    cursor="pointer"
-                    _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                    onClick={() => handleSelectUser(user)}
-                  >
-                    <Text>{user.username}</Text>
-                  </ListItem>
-                ))}
-              </List>
+              {error && <FormHelperText color="red.500">{error}</FormHelperText>}
+            </FormControl>
+            
+            {/* User Search */}
+            <FormControl>
+              <FormLabel>{t("Search and Add Members")}</FormLabel>
+              <UserSearch
+                placeholder={t("Type username or email...")}
+                onUserSelect={handleUserSelect}
+                selectedUsers={selectedUsers}
+              />
+              <FormHelperText>
+                {t("{{current}}/{{max}} members selected", { 
+                  current: selectedUsers.length + 1, // +1 for current user
+                  max: MAX_GROUP_MEMBERS 
+                })}
+              </FormHelperText>
+            </FormControl>
+            
+            {/* Selected Members */}
+            {selectedUsers.length > 0 && (
+              <Box mt={4}>
+                <Text fontWeight="medium" mb={2}>{t("Selected Members")}</Text>
+                <Flex flexWrap="wrap" gap={2}>
+                  {selectedUsers.map((user) => (
+                    <Tag
+                      key={user._id}
+                      size="md"
+                      borderRadius="full"
+                      variant="subtle"
+                      bg={tagBg}
+                      color={tagColor}
+                    >
+                      <Avatar
+                        src={user.profilePic}
+                        size="xs"
+                        name={user.username}
+                        ml={-1}
+                        mr={2}
+                      />
+                      <TagLabel>{user.username}</TagLabel>
+                      <TagCloseButton
+                        onClick={() => handleRemoveUser(user._id)}
+                      />
+                    </Tag>
+                  ))}
+                </Flex>
+              </Box>
             )}
-          </Box>
+          </Stack>
 
+          <Divider my={4} borderColor={borderColor} />
+          
           <Button
-            colorScheme="green"
-            mt={4}
-            w="full"
+            colorScheme="blue"
+            width="full"
             onClick={handleCreateGroup}
             isLoading={loading}
+            isDisabled={!groupName.trim() || selectedUsers.length < 1 || !!error}
           >
-            Create Group ({selectedUsers.length + 1} members)
+            {t("Create Group")}
           </Button>
         </ModalBody>
       </ModalContent>

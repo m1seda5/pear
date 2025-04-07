@@ -2041,31 +2041,72 @@ const deleteUserData = async (userId) => {
 };
 const searchUsers = async (req, res) => {
   try {
-      const { query } = req.params;
+    const { query } = req.params;
+    const searchTerm = query.trim().toLowerCase();
+    
+    if (!searchTerm) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+    
+    // First try exact match
+    let user = await User.findOne({
+      $or: [
+        { username: { $regex: new RegExp(`^${searchTerm}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${searchTerm}$`, 'i') } }
+      ]
+    }).select("_id username email profilePic role");
+    
+    // If no exact match, try partial matches with additional sorting strategy
+    if (!user) {
+      // Find multiple users that partially match
+      const users = await User.find({
+        $or: [
+          { username: { $regex: searchTerm, $options: "i" } },
+          { email: { $regex: searchTerm, $options: "i" } },
+          // For handling typos and misspellings, create array of similar patterns
+          { username: { $regex: createFuzzyPattern(searchTerm), $options: "i" } },
+          { email: { $regex: createFuzzyPattern(searchTerm), $options: "i" } }
+        ]
+      })
+      .select("_id username email profilePic role lastActive")
+      .limit(10); // Limit results for performance
       
-      // Find user by username or email
-      const user = await User.findOne({
-          $or: [
-              { username: { $regex: query, $options: "i" } },
-              { email: { $regex: query, $options: "i" } }
-          ]
-      });
-
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
+      if (users.length === 0) {
+        return res.status(404).json({ error: "No users found" });
       }
-
-      // Return user without sensitive information
-      const userToReturn = {
-          _id: user._id,
-          username: user.username,
-          profilePic: user.profilePic,
-          // Add any other fields you need
-      };
-
-      res.status(200).json(userToReturn);
+      
+      // Sort results by relevance
+      const sortedUsers = users.map(user => {
+        const usernameScore = calculateRelevanceScore(user.username.toLowerCase(), searchTerm);
+        const emailScore = calculateRelevanceScore(user.email.toLowerCase(), searchTerm);
+        return {
+          ...user._doc,
+          relevanceScore: Math.max(usernameScore, emailScore)
+        };
+      }).sort((a, b) => b.relevanceScore - a.relevanceScore);
+      
+      // Return sorted results
+      return res.status(200).json(sortedUsers.map(u => ({
+        _id: u._id,
+        username: u.username,
+        profilePic: u.profilePic,
+        role: u.role,
+        // Include online status indicator based on lastActive
+        isActive: u.lastActive ? Date.now() - new Date(u.lastActive) < 5 * 60 * 1000 : false,
+      })));
+    }
+    
+    // Single user found, return it
+    res.status(200).json({
+      _id: user._id,
+      username: user.username,
+      profilePic: user.profilePic,
+      role: user.role,
+      isActive: user.lastActive ? Date.now() - new Date(user.lastActive) < 5 * 60 * 1000 : false,
+    });
   } catch (error) {
-      res.status(500).json({ error: error.message });
+    console.error("Search error:", error);
+    res.status(500).json({ error: "An error occurred while searching for users" });
   }
 };
 const sendPasswordResetEmail = async (email, resetToken) => {
@@ -2135,17 +2176,132 @@ const resetPassword = async (req, res) => {
 const searchReviewers = async (req, res) => {
   try {
     const { query } = req.params;
-    const users = await User.find({
-      $or: [
-        { username: { $regex: query, $options: "i" } },
-        { email: { $regex: query, $options: "i" } }
-      ],
-      role: { $in: ["admin", "teacher"] } // Only search staff who can be reviewers
-    }).select("username profilePic role");
-    res.status(200).json(users);
+    const searchTerm = query.trim().toLowerCase();
+    
+    if (!searchTerm) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+    
+    // Find reviewers (admin/teacher roles) with fuzzy matching
+    const reviewers = await User.find({
+      $and: [
+        {
+          $or: [
+            { username: { $regex: searchTerm, $options: "i" } },
+            { email: { $regex: searchTerm, $options: "i" } },
+            { name: { $regex: searchTerm, $options: "i" } },
+            // Add fuzzy matching
+            { username: { $regex: createFuzzyPattern(searchTerm), $options: "i" } },
+            { email: { $regex: createFuzzyPattern(searchTerm), $options: "i" } },
+            { name: { $regex: createFuzzyPattern(searchTerm), $options: "i" } }
+          ]
+        },
+        { role: { $in: ["admin", "teacher"] } }
+      ]
+    })
+    .select("_id username name profilePic role department")
+    .limit(15);
+    
+    if (reviewers.length === 0) {
+      return res.status(404).json({ error: "No reviewers found" });
+    }
+    
+    // Sort by relevance
+    const sortedReviewers = reviewers.map(reviewer => {
+      const nameScore = reviewer.name ? calculateRelevanceScore(reviewer.name.toLowerCase(), searchTerm) : 0;
+      const usernameScore = calculateRelevanceScore(reviewer.username.toLowerCase(), searchTerm);
+      return {
+        ...reviewer._doc,
+        relevanceScore: Math.max(nameScore, usernameScore)
+      };
+    }).sort((a, b) => b.relevanceScore - a.relevanceScore);
+    
+    res.status(200).json(sortedReviewers.map(r => ({
+      _id: r._id,
+      username: r.username,
+      name: r.name,
+      profilePic: r.profilePic,
+      role: r.role,
+      department: r.department
+    })));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Reviewer search error:", error);
+    res.status(500).json({ error: "An error occurred while searching for reviewers" });
   }
+};
+const createFuzzyPattern = (term) => {
+  // This creates a pattern that allows for:
+  // - Character transpositions (e.g., "jahn" instead of "john")
+  // - Missing characters (e.g., "joh" instead of "john")
+  // - Extra characters (e.g., "johnn" instead of "john")
+  
+  // For simplicity, we'll create a pattern that matches:
+  // - Words that contain the search term with one character different
+  // - Words that start with the first character and contain most of the term
+  
+  if (term.length <= 2) {
+    // For very short terms, just use the term itself
+    return term;
+  }
+  
+  // Build a pattern that's more forgiving for longer terms
+  const firstChar = term.charAt(0);
+  const middleChars = term.substring(1, term.length - 1).split('');
+  
+  // At least the first character must match, and most other characters
+  let pattern = firstChar;
+  
+  // For each middle character, make it optional
+  middleChars.forEach(char => {
+    pattern += `[^${char}]?${char}?`;
+  });
+  
+  // Last character is optional
+  pattern += `.*`;
+  
+  return pattern;
+};
+
+// Helper function to calculate relevance score between two strings
+const calculateRelevanceScore = (str, query) => {
+  if (str === query) return 100; // Exact match
+  if (str.startsWith(query)) return 90; // Starts with query
+  if (str.includes(query)) return 80; // Contains query
+  
+  // Calculate Levenshtein distance (edit distance)
+  const distance = levenshteinDistance(str, query);
+  // Convert distance to a score (lower distance = higher score)
+  return Math.max(0, 70 - (distance * 10));
+};
+
+// Implementation of Levenshtein distance for fuzzy matching
+const levenshteinDistance = (str1, str2) => {
+  const m = str1.length;
+  const n = str2.length;
+  
+  // Create a matrix of size (m+1) x (n+1)
+  const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+  
+  // Initialize first row and column
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  
+  // Fill the matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1]; // No operation needed
+      } else {
+        dp[i][j] = 1 + Math.min(
+          dp[i - 1][j],     // deletion
+          dp[i][j - 1],     // insertion
+          dp[i - 1][j - 1]  // substitution
+        );
+      }
+    }
+  }
+  
+  return dp[m][n];
 };
 
 export {
