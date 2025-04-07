@@ -629,8 +629,8 @@
 // export default ChatPage;
 
 // this is the api format issue 
-import { ViewIcon, SearchIcon, AddIcon } from "@chakra-ui/icons";
-import { Box, Button, Flex, IconButton, Input, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
+import { ViewIcon, AddIcon } from "@chakra-ui/icons";
+import { Box, Button, Flex, IconButton, Skeleton, SkeletonCircle, Text, useColorModeValue } from "@chakra-ui/react";
 import Conversation from "../components/Conversation";
 import { GiConversation } from "react-icons/gi";
 import MessageContainer from "../components/MessageContainer";
@@ -642,11 +642,10 @@ import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAt
 import userAtom from "../atoms/userAtom";
 import { useTranslation } from 'react-i18next';
 import { useSocket } from "../context/SocketContext";
+import UserSearch from "../components/UserSearch";
 
 const ChatPage = () => {
-  const [searchingUser, setSearchingUser] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(true);
-  const [searchText, setSearchText] = useState("");
   const [selectedConversation, setSelectedConversation] = useRecoilState(selectedConversationAtom);
   const [conversations, setConversations] = useRecoilState(conversationsAtom);
   const [isGroupCreationOpen, setIsGroupCreationOpen] = useState(false);
@@ -771,69 +770,59 @@ const ChatPage = () => {
     getConversations();
   }, [showToast, setConversations, t, currentUser.token, isMonitoring]);
 
-  const handleConversationSearch = async (e) => {
-    e.preventDefault();
-    if (!searchText.trim()) return;
-    setSearchingUser(true);
-    try {
-      // Fix: Update endpoint to match backend route
-      const res = await fetch(`/api/users/search/${encodeURIComponent(searchText.toLowerCase())}`, {
-        headers: {
-          'Authorization': `Bearer ${currentUser.token}`,
-        },
-      });
-      const searchedUser = await res.json();
-      
-      if (!res.ok) {
-        showToast(t("Error"), searchedUser.error || t("User not found"), "error");
-        return;
-      }
-  
-      if (searchedUser._id === currentUser._id) {
-        showToast(t("Error"), t("You cannot message yourself"), "error");
-        return;
-      }
-  
-      const conversationAlreadyExists = conversations.find((conversation) => {
-        if (conversation.isGroup) {
-          return conversation.groupName === searchedUser.username;
-        }
-        return conversation.participants[0]._id === searchedUser._id;
-      });
-  
-      if (conversationAlreadyExists) {
-        setSelectedConversation({
-          _id: conversationAlreadyExists._id,
-          userId: searchedUser._id,
-          username: searchedUser.username,
-          userProfilePic: searchedUser.profilePic,
-          isGroup: false,
-        });
-        return;
-      }
-  
-      const mockConversation = {
-        mock: true,
-        lastMessage: {
-          text: "",
-          sender: "",
-        },
-        _id: Date.now(),
-        isGroup: false,
-        participants: [
-          {
-            _id: searchedUser._id,
-            username: searchedUser.username,
-            profilePic: searchedUser.profilePic,
-          },
-        ],
-      };
-      setConversations((prevConvs) => [...prevConvs, mockConversation]);
-    } catch (error) {
-      showToast(t("Error"), error.message, "error");
-    } finally {
-      setSearchingUser(false);
+  // Handle selecting a user from search results
+  const handleUserSelect = async (selectedUser) => {
+    if (selectedUser._id === currentUser._id) {
+      showToast(t("Error"), t("You cannot message yourself"), "error");
+      return;
     }
+
+    // Check if conversation already exists
+    const conversationAlreadyExists = conversations.find((conversation) => {
+      if (conversation.isGroup) {
+        return false;
+      }
+      return conversation.participants[0]._id === selectedUser._id;
+    });
+
+    if (conversationAlreadyExists) {
+      setSelectedConversation({
+        _id: conversationAlreadyExists._id,
+        userId: selectedUser._id,
+        username: selectedUser.username,
+        userProfilePic: selectedUser.profilePic,
+        isGroup: false,
+      });
+      return;
+    }
+
+    // Create a mock conversation for immediate UI feedback
+    const mockConversation = {
+      mock: true,
+      lastMessage: {
+        text: "",
+        sender: "",
+      },
+      _id: Date.now(),
+      isGroup: false,
+      participants: [
+        {
+          _id: selectedUser._id,
+          username: selectedUser.username,
+          profilePic: selectedUser.profilePic,
+        },
+      ],
+    };
+    setConversations((prevConvs) => [...prevConvs, mockConversation]);
+    
+    // Auto-select the new conversation
+    setSelectedConversation({
+      _id: mockConversation._id,
+      userId: selectedUser._id,
+      username: selectedUser.username,
+      userProfilePic: selectedUser.profilePic,
+      isGroup: false,
+    });
   };
 
   const handleConversationClick = async (conversation) => {
@@ -941,21 +930,13 @@ const ChatPage = () => {
       >
         <Flex flex={30} gap={2} flexDirection={"column"} maxW={{ sm: "250px", md: "full" }} mx={"auto"}>
           {!isMonitoring && (
-            <form onSubmit={handleConversationSearch}>
-              <Flex alignItems={"center"} gap={2}>
-                <Input 
-                  placeholder={t('Search for a user')} 
-                  onChange={(e) => setSearchText(e.target.value)}
-                  value={searchText}
-                  variant="filled"
-                  _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                  _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-                />
-                <Button type="submit" size={"sm"} isLoading={searchingUser}>
-                  <SearchIcon />
-                </Button>
-              </Flex>
-            </form>
+            <Box mb={2}>
+              <UserSearch 
+                onUserSelect={handleUserSelect}
+                placeholder={t('Search for a user')}
+                excludeIds={[currentUser._id]}
+              />
+            </Box>
           )}
 
           {loadingConversations &&
