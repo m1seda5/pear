@@ -40,31 +40,28 @@ const TutorialSlider = ({ onComplete }) => {
   });
   const autoSlideIntervalRef = useRef(null);
   
-  // Tutorial content with updated image paths
-  // Now using root-level paths like verified.png
   const slides = [
     {
       title: "Events",
-      image: "/concert.jpg",
+      image: "/dist/concert.png", // Changed from /concert.jpg to match your file structure
       description: "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah."
     },
     {
       title: "Sports",
-      image: "/sports.jpg",
+      image: "/dist/sports.png", // Changed from /sports.jpg to match your file structure
       description: "Keep track of scores, catch a glimpse, and don't miss out on the school action."
     },
     {
       title: "Notices",
-      image: "/notices.jpg",
+      image: "/dist/notices.png", // Changed from /notices.jpg to match your file structure
       description: "Transform boring and mundane to quick-fire updates that keep you informed."
     },
     {
       title: "Clubs and Communities",
-      image: "/environmentclub.jpg",
+      image: "/dist/environmentclub.png", // Changed from /environmentclub.jpg to match your file structure
       description: "All Brookhouse stories documented in one place."
     }
   ];
-
   // Determine text color based on the current slide's image
   useEffect(() => {
     getTextColorBasedOnImage(slides[currentIndex].image, (color) => {
