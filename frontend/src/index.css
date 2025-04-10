@@ -247,3 +247,236 @@
 	animation: pulseEffect 2s ease-in-out infinite;
 	text-shadow: 0 0 5px rgba(255, 112, 67, 0.2), 0 0 10px rgba(255, 112, 67, 0.1);
   }
+
+  /* Tutorial Slider Styles - Add these to your index.css file */
+
+/* Slider container styling */
+.slider-container {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1002;
+	perspective: 1000px; /* Adds 3D perspective for the deck effect */
+  }
+  
+  /* Blur background when slider is active */
+  .blur-background {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	backdrop-filter: blur(8px);
+	background: rgba(0, 0, 0, 0.4);
+	z-index: 1001;
+	animation: blurIn 0.5s forwards;
+  }
+  
+  /* Dark mode blur background */
+  .dark-mode .blur-background {
+	background: rgba(0, 0, 0, 0.6);
+  }
+  
+  /* Individual slide styling */
+  .slide {
+	position: absolute;
+	width: 350px;
+	height: 500px;
+	border-radius: 20px;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	transition: transform 0.5s ease, opacity 0.5s ease;
+	cursor: pointer;
+  }
+  
+  /* Light mode slide */
+  .light-mode .slide {
+	background: var(--light-bg, white);
+	color: var(--light-text, #1A202C);
+  }
+  
+  /* Dark mode slide */
+  .dark-mode .slide {
+	background: var(--dark-bg, #2D3748);
+	color: var(--dark-text, #E2E8F0);
+  }
+  
+  /* Positions for the deck effect */
+  .slide.left {
+	transform: translateX(-50%) rotateY(30deg) scale(0.9);
+	opacity: 0.7;
+	z-index: 1;
+  }
+  
+  .slide.center {
+	transform: translateX(0) rotateY(0deg) scale(1);
+	opacity: 1;
+	z-index: 2;
+  }
+  
+  .slide.right {
+	transform: translateX(50%) rotateY(-30deg) scale(0.9);
+	opacity: 0.7;
+	z-index: 1;
+  }
+  
+  .slide.hidden {
+	transform: translateX(100%) rotateY(-30deg) scale(0.9);
+	opacity: 0;
+	z-index: 0;
+  }
+  
+  /* Hover effect for centered slide */
+  .slide.center:hover {
+	transform: translateX(0) rotateY(0deg) scale(1.03);
+  }
+  
+  /* Image container */
+  .image-container {
+	width: 100%;
+	height: 60%;
+	position: relative;
+	overflow: hidden;
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+  }
+  
+  .slide-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+  }
+  
+  /* Gradient overlay for the image - light mode */
+  .light-mode .image-container::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 50%;
+	background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+  }
+  
+  /* Gradient overlay for the image - dark mode */
+  .dark-mode .image-container::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 50%;
+	background: linear-gradient(to bottom, rgba(45, 55, 72, 0), rgba(45, 55, 72, 1));
+  }
+  
+  /* Text container */
+  .text-container {
+	flex: 1;
+	padding: 20px;
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+  }
+  
+  .text-container h2 {
+	font-size: 24px;
+	margin: 0;
+  }
+  
+  .light-mode .text-container h2 {
+	color: #333;
+  }
+  
+  .dark-mode .text-container h2 {
+	color: #E2E8F0;
+  }
+  
+  .text-container p {
+	font-size: 16px;
+	margin: 10px 0 0;
+  }
+  
+  .light-mode .text-container p {
+	color: #666;
+  }
+  
+  .dark-mode .text-container p {
+	color: #CBD5E0;
+  }
+  
+  /* Done button styling */
+  .done-button {
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	padding: 10px 20px;
+	background: #38A169;
+	color: white;
+	border: none;
+	border-radius: 20px;
+	cursor: pointer;
+	z-index: 1003;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .done-button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Close button styling */
+  .close-button {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	width: 30px;
+	height: 30px;
+	background: rgba(0, 0, 0, 0.5);
+	color: white;
+	border: none;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	z-index: 1003;
+	transition: transform 0.2s ease;
+  }
+  
+  .close-button:hover {
+	transform: rotate(90deg);
+  }
+  
+  /* Animation for blur effect */
+  @keyframes blurIn {
+	from {
+	  backdrop-filter: blur(0);
+	  background-color: rgba(0, 0, 0, 0);
+	}
+	to {
+	  backdrop-filter: blur(8px);
+	  background-color: rgba(0, 0, 0, 0.4);
+	}
+  }
+  
+  /* Animation for slide-in effect */
+  @keyframes slideIn {
+	from {
+	  opacity: 0;
+	  transform: translateY(20px);
+	}
+	to {
+	  opacity: 1;
+	  transform: translateY(0);
+	}
+  }

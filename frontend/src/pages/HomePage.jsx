@@ -337,10 +337,12 @@
 // this is with translations added(working)
 import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
-import { useRecoilState } from "recoil";
 import postsAtom from "../atoms/postsAtom";
+import userAtom from "../atoms/userAtom";
+import TutorialSlider from "../components/TutorialSlider";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
 
@@ -351,6 +353,8 @@ const HomePage = () => {
     const showToast = useShowToast();
     const { t, i18n } = useTranslation();
     const [language, setLanguage] = useState(i18n.language);
+    const [showTutorial, setShowTutorial] = useState(false);
+    const user = useRecoilValue(userAtom);
 
     useEffect(() => {
         const handleLanguageChange = (lng) => {
@@ -363,6 +367,17 @@ const HomePage = () => {
             i18n.off('languageChanged', handleLanguageChange);
         };
     }, [i18n]);
+
+    useEffect(() => {
+        if (user) {
+            const tutorialShown = localStorage.getItem('tutorialShown');
+            if (!tutorialShown) {
+                setTimeout(() => {
+                    setShowTutorial(true);
+                }, 500);
+            }
+        }
+    }, [user]);
 
     useEffect(() => {
         const getFeedPosts = async () => {
@@ -405,6 +420,11 @@ const HomePage = () => {
         getFeedPosts();
     }, [showToast, setPosts, t]);
 
+    const handleTutorialComplete = () => {
+        setShowTutorial(false);
+        localStorage.setItem('tutorialShown', 'true');
+    };
+
     const isNewPost = (postTime) => {
         const now = Date.now();
         const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
@@ -412,41 +432,43 @@ const HomePage = () => {
     };
 
     return (
-        <Flex gap="10" alignItems={"flex-start"}>
-            <Box flex={70}>
-                {!loading && posts.length === 0 && (
-                    <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-                )}
+        <>
+            {showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
+            <Flex gap="10" alignItems={"flex-start"}>
+                <Box flex={70}>
+                    {!loading && posts.length === 0 && (
+                        <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+                    )}
 
-                {loading && (
-                    <Flex justifyContent="center">
-                        <Spinner size="xl" />
-                    </Flex>
-                )}
+                    {loading && (
+                        <Flex justifyContent="center">
+                            <Spinner size="xl" />
+                        </Flex>
+                    )}
 
-                {posts.map((post) => {
-                    const isNew = isNewPost(post.createdAt);
+                    {posts.map((post) => {
+                        const isNew = isNewPost(post.createdAt);
 
-                    return (
-                        <Box
-                            key={post._id}
-                            className="postContainer"
-                            borderWidth="1px"
-                            borderRadius="lg"
-                            p={4}
-                            mb={6}
-                            boxShadow="sm"
-                        >
-                            <Post post={post} postedBy={post.postedBy} />
-
-                            {isNew && newPosts.includes(post) && (
-                                <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-                            )}
-                        </Box>
-                    );
-                })}
-            </Box>
-        </Flex>
+                        return (
+                            <Box
+                                key={post._id}
+                                className="postContainer"
+                                borderWidth="1px"
+                                borderRadius="lg"
+                                p={4}
+                                mb={6}
+                                boxShadow="sm"
+                            >
+                                <Post post={post} postedBy={post.postedBy} />
+                                {isNew && newPosts.includes(post) && (
+                                    <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+                                )}
+                            </Box>
+                        );
+                    })}
+                </Box>
+            </Flex>
+        </>
     );
 };
 
