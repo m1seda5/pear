@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Icon } from "@chakra-ui/react";
+import { Box, Button, Flex, Icon, Image } from "@chakra-ui/react"; // Import Image from Chakra UI
 import { CloseIcon } from '@chakra-ui/icons';
 
 // Utility function to determine if the image is light or dark
@@ -40,28 +40,30 @@ const TutorialSlider = ({ onComplete }) => {
   });
   const autoSlideIntervalRef = useRef(null);
   
+  // Tutorial content with images
   const slides = [
     {
       title: "Events",
-      image: "/frontend/dist/assets/concert.png", // Changed from /concert.jpg to match your file structure
+      image: "/concert.png", // Changed to .png extension
       description: "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah."
     },
     {
       title: "Sports",
-      image: "/frontend/dist/assets/sports.png", // Changed from /sports.jpg to match your file structure
+      image: "/sports.png",
       description: "Keep track of scores, catch a glimpse, and don't miss out on the school action."
     },
     {
       title: "Notices",
-      image: "/frontend/dist/assets/notices.png", // Changed from /notices.jpg to match your file structure
+      image: "/notices.png",
       description: "Transform boring and mundane to quick-fire updates that keep you informed."
     },
     {
       title: "Clubs and Communities",
-      image: "/frontend/dist/assets/environmentclub.png", // Changed from /environmentclub.jpg to match your file structure
+      image: "/environmentclub.png",
       description: "All Brookhouse stories documented in one place."
     }
   ];
+
   // Determine text color based on the current slide's image
   useEffect(() => {
     getTextColorBasedOnImage(slides[currentIndex].image, (color) => {
@@ -228,13 +230,6 @@ const TutorialSlider = ({ onComplete }) => {
             border-radius: 20px;
           }
           
-          .slide-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-          }
-          
           /* Gradient blur effect with smoother transition similar to reference images */
           .text-overlay {
             position: absolute;
@@ -374,14 +369,16 @@ const TutorialSlider = ({ onComplete }) => {
           >
             {/* Full image container */}
             <div className="image-container">
-              <img
+              {/* Replace the HTML img with Chakra UI Image component */}
+              <Image
                 className="slide-image"
                 src={slide.image}
                 alt={slide.title}
-                onError={(e) => {
-                  console.error(`Failed to load image: ${slide.image}`);
-                  e.target.src = "/pear.png"; // Optional fallback
-                }}
+                w="100%"
+                h="100%"
+                objectFit="cover"
+                objectPosition="center"
+                fallbackSrc="/pear.png" // Built-in fallback in Chakra UI
               />
               
               {/* Status indicator pill (similar to "Going" or "Hosting" in reference) */}
