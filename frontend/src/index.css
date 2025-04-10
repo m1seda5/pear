@@ -286,32 +286,20 @@
   /* Individual slide styling */
   .slide {
 	position: absolute;
-	width: 350px;
-	height: 500px;
+	width: 380px; /* Slightly wider than the original */
+	height: 550px; /* Slightly taller than the original */
 	border-radius: 20px;
-	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
-	align-items: center;
+	overflow: hidden;
 	transition: transform 0.5s ease, opacity 0.5s ease;
 	cursor: pointer;
   }
   
-  /* Light mode slide */
-  .light-mode .slide {
-	background: var(--light-bg, white);
-	color: var(--light-text, #1A202C);
-  }
-  
-  /* Dark mode slide */
-  .dark-mode .slide {
-	background: var(--dark-bg, #2D3748);
-	color: var(--dark-text, #E2E8F0);
-  }
-  
   /* Positions for the deck effect */
   .slide.left {
-	transform: translateX(-50%) rotateY(30deg) scale(0.9);
+	transform: translateX(-55%) rotateY(30deg) scale(0.9);
 	opacity: 0.7;
 	z-index: 1;
   }
@@ -323,13 +311,13 @@
   }
   
   .slide.right {
-	transform: translateX(50%) rotateY(-30deg) scale(0.9);
+	transform: translateX(55%) rotateY(-30deg) scale(0.9);
 	opacity: 0.7;
 	z-index: 1;
   }
   
   .slide.hidden {
-	transform: translateX(100%) rotateY(-30deg) scale(0.9);
+	transform: translateX(110%) rotateY(-30deg) scale(0.9);
 	opacity: 0;
 	z-index: 0;
   }
@@ -339,14 +327,13 @@
 	transform: translateX(0) rotateY(0deg) scale(1.03);
   }
   
-  /* Image container */
+  /* Full image card style */
   .image-container {
-	width: 100%;
-	height: 60%;
 	position: relative;
+	width: 100%;
+	height: 100%; /* Full height of the card */
 	overflow: hidden;
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
+	border-radius: 20px;
   }
   
   .slide-image {
@@ -356,62 +343,56 @@
 	object-position: center;
   }
   
-  /* Gradient overlay for the image - light mode */
-  .light-mode .image-container::after {
-	content: '';
+  /* Gradient blur effect similar to reference images */
+  .text-overlay {
 	position: absolute;
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	height: 50%;
-	background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
-  }
-  
-  /* Gradient overlay for the image - dark mode */
-  .dark-mode .image-container::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	height: 50%;
-	background: linear-gradient(to bottom, rgba(45, 55, 72, 0), rgba(45, 55, 72, 1));
-  }
-  
-  /* Text container */
-  .text-container {
-	flex: 1;
-	padding: 20px;
-	text-align: center;
+	height: 55%; /* Covers bottom half of card */
+	background: linear-gradient(
+	  to bottom,
+	  rgba(0, 0, 0, 0) 0%,
+	  rgba(0, 0, 0, 0.2) 20%,
+	  rgba(0, 0, 0, 0.5) 50%,
+	  rgba(0, 0, 0, 0.7) 100%
+	);
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
+	justify-content: flex-end;
+	padding: 30px 20px;
+	z-index: 2;
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
   }
   
-  .text-container h2 {
-	font-size: 24px;
-	margin: 0;
+  /* Text styling */
+  .text-overlay h2 {
+	font-size: 32px;
+	margin: 0 0 10px 0;
+	font-weight: 600;
   }
   
-  .light-mode .text-container h2 {
-	color: #333;
-  }
-  
-  .dark-mode .text-container h2 {
-	color: #E2E8F0;
-  }
-  
-  .text-container p {
+  .text-overlay p {
 	font-size: 16px;
-	margin: 10px 0 0;
+	margin: 0;
+	opacity: 0.9;
   }
   
-  .light-mode .text-container p {
-	color: #666;
-  }
-  
-  .dark-mode .text-container p {
-	color: #CBD5E0;
+  /* Status pill at top (like "Going" or "Hosting" in reference) */
+  .status-pill {
+	position: absolute;
+	top: 20px;
+	left: 20px;
+	background-color: rgba(0, 0, 0, 0.5);
+	color: white;
+	padding: 8px 16px;
+	border-radius: 20px;
+	font-size: 14px;
+	z-index: 3;
+	display: flex;
+	align-items: center;
+	gap: 5px;
   }
   
   /* Done button styling */
@@ -419,7 +400,7 @@
 	position: absolute;
 	bottom: 20px;
 	right: 20px;
-	padding: 10px 20px;
+	padding: 12px 24px;
 	background: #38A169;
 	color: white;
 	border: none;
@@ -427,6 +408,8 @@
 	cursor: pointer;
 	z-index: 1003;
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	font-weight: 600;
+	font-size: 16px;
   }
   
   .done-button:hover {
@@ -439,8 +422,8 @@
 	position: absolute;
 	top: 20px;
 	right: 20px;
-	width: 30px;
-	height: 30px;
+	width: 36px;
+	height: 36px;
 	background: rgba(0, 0, 0, 0.5);
 	color: white;
 	border: none;

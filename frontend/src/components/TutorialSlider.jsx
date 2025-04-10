@@ -124,40 +124,193 @@ const TutorialSlider = ({ onComplete }) => {
 
   return (
     <>
-      {/* Add CSS for the frosted glass effect */}
+      {/* Add CSS for the card style matching the reference images */}
       <style>
         {`
-          .image-container {
-            position: relative; /* Ensure the frosted glass overlay can be positioned */
-          }
-
-          .slide-image {
+          /* Slider container styling - slightly increased card spacing */
+          .slider-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+            perspective: 1000px;
           }
-
-          .frosted-glass {
-            position: absolute;
+          
+          /* Blur background when slider is active */
+          .blur-background {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1001;
+            animation: blurIn 0.5s forwards;
+          }
+          
+          /* Individual slide styling - slightly wider and taller */
+          .slide {
+            position: absolute;
+            width: 380px; /* Slightly wider than the original 350px */
+            height: 550px; /* Slightly taller than the original 500px */
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            cursor: pointer;
+          }
+          
+          /* Positions for the deck effect - adjusted for new card dimensions */
+          .slide.left {
+            transform: translateX(-55%) rotateY(30deg) scale(0.9);
+            opacity: 0.7;
             z-index: 1;
+          }
+          
+          .slide.center {
+            transform: translateX(0) rotateY(0deg) scale(1);
+            opacity: 1;
+            z-index: 2;
+          }
+          
+          .slide.right {
+            transform: translateX(55%) rotateY(-30deg) scale(0.9);
+            opacity: 0.7;
+            z-index: 1;
+          }
+          
+          .slide.hidden {
+            transform: translateX(110%) rotateY(-30deg) scale(0.9);
+            opacity: 0;
+            z-index: 0;
+          }
+          
+          /* Hover effect for centered slide */
+          .slide.center:hover {
+            transform: translateX(0) rotateY(0deg) scale(1.03);
+          }
+          
+          /* Full image card style */
+          .image-container {
+            position: relative;
+            width: 100%;
+            height: 100%; /* Full height of the card */
+            overflow: hidden;
+            border-radius: 20px;
+          }
+          
+          .slide-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+          }
+          
+          /* Gradient blur effect similar to reference images */
+          .text-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 55%; /* Covers bottom half of card */
             background: linear-gradient(
               to bottom,
-              transparent 30%, /* Clear at the top */
-              rgba(255, 255, 255, 0.1) 50%, /* Start of misty transition */
-              rgba(255, 255, 255, 0.3) 70%, /* More frosted */
-              rgba(255, 255, 255, 0.5) 100% /* Fully frosted at the bottom */
+              rgba(0, 0, 0, 0) 0%,
+              rgba(0, 0, 0, 0.2) 20%,
+              rgba(0, 0, 0, 0.5) 50%,
+              rgba(0, 0, 0, 0.7) 100%
             );
-            backdrop-filter: blur(12px); /* Slightly more frosted to match the reference */
-            -webkit-backdrop-filter: blur(12px);
-          }
-
-          .text-container {
-            z-index: 2; /* Ensure text is above the frosted glass */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 30px 20px;
             color: ${textColor}; /* Dynamic text color */
+            z-index: 2;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+          }
+          
+          /* Text styling */
+          .text-overlay h2 {
+            font-size: 32px;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+          }
+          
+          .text-overlay p {
+            font-size: 16px;
+            margin: 0;
+            opacity: 0.9;
+          }
+          
+          /* Status pill at top (like "Going" or "Hosting" in reference) */
+          .status-pill {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          
+          /* Done button styling */
+          .done-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #38A169;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 1003;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            font-size: 16px;
+          }
+          
+          .done-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          }
+          
+          /* Close button styling */
+          .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1003;
+            transition: transform 0.2s ease;
+          }
+          
+          .close-button:hover {
+            transform: rotate(90deg);
           }
         `}
       </style>
@@ -183,7 +336,7 @@ const TutorialSlider = ({ onComplete }) => {
               else if (position === "left") goToPreviousSlide();
             }}
           >
-            {/* Image container */}
+            {/* Full image container */}
             <div className="image-container">
               <img
                 className="slide-image"
@@ -194,14 +347,19 @@ const TutorialSlider = ({ onComplete }) => {
                   e.target.src = "/pear.png"; // Optional fallback
                 }}
               />
-              {/* Frosted glass overlay */}
-              <div className="frosted-glass" />
-            </div>
-            
-            {/* Text container */}
-            <div className="text-container">
-              <h2>{slide.title}</h2>
-              <p>{slide.description}</p>
+              
+              {/* Status indicator pill (similar to "Going" or "Hosting" in reference) */}
+              {index === currentIndex && (
+                <div className="status-pill">
+                  <span>New</span>
+                </div>
+              )}
+              
+              {/* Text overlay with gradient blur effect */}
+              <div className="text-overlay">
+                <h2>{slide.title}</h2>
+                <p>{slide.description}</p>
+              </div>
             </div>
           </div>
         ))}
