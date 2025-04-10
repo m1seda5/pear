@@ -1,5 +1,3 @@
-
-// TutorialSlider.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Icon } from "@chakra-ui/react";
 import { CloseIcon } from '@chakra-ui/icons';
@@ -9,26 +7,27 @@ const TutorialSlider = ({ onComplete }) => {
   const [isVisible, setIsVisible] = useState(true);
   const autoSlideIntervalRef = useRef(null);
   
-  // Tutorial content
+  // Tutorial content with updated image paths
+  // Now using root-level paths like verified.png
   const slides = [
     {
       title: "Events",
-      image: "/assets/concert.jpg",
+      image: "/concert.jpg",
       description: "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah."
     },
     {
       title: "Sports",
-      image: "/assets/sports.jpg",
+      image: "/sports.jpg",
       description: "Keep track of scores, catch a glimpse, and don't miss out on the school action."
     },
     {
       title: "Notices",
-      image: "/assets/notices.jpg",
+      image: "/notices.jpg",
       description: "Transform boring and mundane to quick-fire updates that keep you informed."
     },
     {
       title: "Clubs and Communities",
-      image: "/assets/environment club.jpg",
+      image: "/environmentclub.jpg",
       description: "All Brookhouse stories documented in one place."
     }
   ];
@@ -116,6 +115,10 @@ const TutorialSlider = ({ onComplete }) => {
                 className="slide-image"
                 src={slide.image}
                 alt={slide.title}
+                onError={(e) => {
+                  console.error(`Failed to load image: ${slide.image}`);
+                  e.target.src = "/pear.png"; // Optional fallback
+                }}
               />
             </div>
             
