@@ -356,29 +356,28 @@ const HomePage = () => {
     const [showTutorial, setShowTutorial] = useState(false);
     const user = useRecoilValue(userAtom);
 
+    // Handle language change
     useEffect(() => {
         const handleLanguageChange = (lng) => {
             setLanguage(lng);
         };
-
         i18n.on('languageChanged', handleLanguageChange);
-
         return () => {
             i18n.off('languageChanged', handleLanguageChange);
         };
     }, [i18n]);
 
+    // Show tutorial on every page load when user is present
     useEffect(() => {
         if (user) {
-            const tutorialShown = localStorage.getItem('tutorialShown');
-            if (!tutorialShown) {
-                setTimeout(() => {
-                    setShowTutorial(true);
-                }, 500);
-            }
+            // Trigger tutorial on initial load or significant navigation
+            setTimeout(() => {
+                setShowTutorial(true);
+            }, 500);
         }
-    }, [user]);
+    }, []); // Empty dependency array: runs once per page load/component mount
 
+    // Fetch feed posts
     useEffect(() => {
         const getFeedPosts = async () => {
             setLoading(true);
@@ -389,23 +388,19 @@ const HomePage = () => {
                     throw new Error(t("Failed to fetch posts"));
                 }
                 const data = await res.json();
-
                 if (data.error) {
                     if (!data.error.includes("User not found")) {
                         showToast(t("Error"), data.error, "error");
                     }
                     return;
                 }
-
                 setPosts(data);
-
                 const now = Date.now();
                 const recentPosts = data.filter(post => {
                     const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
                     return postAgeInHours <= 3;
                 });
                 setNewPosts(recentPosts);
-
                 setTimeout(() => {
                     setNewPosts([]);
                 }, 30000);
@@ -422,7 +417,7 @@ const HomePage = () => {
 
     const handleTutorialComplete = () => {
         setShowTutorial(false);
-        localStorage.setItem('tutorialShown', 'true');
+        // No persistent flag set here; tutorial can show again on next load
     };
 
     const isNewPost = (postTime) => {
@@ -439,16 +434,13 @@ const HomePage = () => {
                     {!loading && posts.length === 0 && (
                         <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
                     )}
-
                     {loading && (
                         <Flex justifyContent="center">
                             <Spinner size="xl" />
                         </Flex>
                     )}
-
                     {posts.map((post) => {
                         const isNew = isNewPost(post.createdAt);
-
                         return (
                             <Box
                                 key={post._id}
