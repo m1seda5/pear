@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Icon, Image, useColorModeValue } from "@chakra-ui/react";
 import { CloseIcon } from '@chakra-ui/icons';
 
+// Import images
+import concertImg from '../assets/images/concert.png';
+import sportsImg from '../assets/images/sports.png';
+import noticesImg from '../assets/images/notices.png';
+import environmentclubImg from '../assets/images/environmentclub.png';
+import pearImg from '../assets/images/pear.png';
+
 const TutorialSlider = ({ onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -16,22 +23,22 @@ const TutorialSlider = ({ onComplete }) => {
   const slides = [
     {
       title: "Events",
-      image: "/concert.png",
+      image: concertImg,
       description: "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah."
     },
     {
       title: "Sports",
-      image: "/sports.png",
+      image: sportsImg,
       description: "Keep track of scores, catch a glimpse, and don't miss out on the school action."
     },
     {
       title: "Notices",
-      image: "/notices.png",
+      image: noticesImg,
       description: "Transform boring and mundane to quick-fire updates that keep you informed."
     },
     {
       title: "Clubs and Communities",
-      image: "/environmentclub.png",
+      image: environmentclubImg,
       description: "All Brookhouse stories documented in one place."
     }
   ];
@@ -250,7 +257,11 @@ const TutorialSlider = ({ onComplete }) => {
                   h="100%"
                   objectFit="cover"
                   objectPosition="center"
-                  fallbackSrc="/pear.png"
+                  fallbackSrc={pearImg}
+                  onError={(e) => {
+                    console.error(`Failed to load image: ${slide.image}`);
+                    e.target.src = pearImg;
+                  }}
                 />
                 
                 {/* Status indicator pill */}
