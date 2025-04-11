@@ -3,10 +3,10 @@ import { Box, Button, Flex, Icon, Image, useColorModeValue } from "@chakra-ui/re
 import { CloseIcon } from '@chakra-ui/icons';
 
 // Import images
-import concertImg from '../assets/images/concert.png';
-import sportsImg from '../assets/images/sports.png';
-import noticesImg from '../assets/images/notices.png';
-import environmentclubImg from '../assets/images/environmentclub.png';
+import concertImg from '../assets/images/concert.jpg';
+import sportsImg from '../assets/images/sports.jpg';
+import noticesImg from '../assets/images/notices.jpg';
+import environmentclubImg from '../assets/images/environmentclub.jpg';
 import pearImg from '../assets/images/pear.png';
 
 const TutorialSlider = ({ onComplete }) => {
