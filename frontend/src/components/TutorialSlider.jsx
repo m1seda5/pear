@@ -1,13 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Icon, Image, useColorModeValue } from "@chakra-ui/react";
-import { CloseIcon } from '@chakra-ui/icons';
+import { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Button,
+  Flex,
+  Icon,
+  Image,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 
 // Import images
-import concertImg from '../assets/images/concert.jpg';
-import sportsImg from '../assets/images/sports.jpg';
-import noticesImg from '../assets/images/notices.jpg';
-import environmentclubImg from '../assets/images/environmentclub.jpg';
-import pearImg from '../assets/images/pear.png';
+import concertImg from "../assets/images/concert.jpg";
+import sportsImg from "../assets/images/sports.jpg";
+import noticesImg from "../assets/images/notices.jpg";
+import environmentclubImg from "../assets/images/environmentclub.jpg";
+import pearImg from "../assets/images/pear.png";
 
 const TutorialSlider = ({ onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -15,52 +22,55 @@ const TutorialSlider = ({ onComplete }) => {
   const [textColor, setTextColor] = useState("white"); // Default to white
   const [screenSize, setScreenSize] = useState({
     width: 0,
-    height: 0
+    height: 0,
   });
   const autoSlideIntervalRef = useRef(null);
-  
+
   // Tutorial content with images
   const slides = [
     {
       title: "Events",
       image: concertImg,
-      description: "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah."
+      description:
+        "Get to know when that next lunchtime concert is, when the next big tournament is, and then yeah.",
     },
     {
       title: "Sports",
       image: sportsImg,
-      description: "Keep track of scores, catch a glimpse, and don't miss out on the school action."
+      description:
+        "Keep track of scores, catch a glimpse, and don't miss out on the school action.",
     },
     {
       title: "Notices",
       image: noticesImg,
-      description: "Transform boring and mundane to quick-fire updates that keep you informed."
+      description:
+        "Transform boring and mundane to quick-fire updates that keep you informed.",
     },
     {
       title: "Clubs and Communities",
       image: environmentclubImg,
-      description: "All Brookhouse stories documented in one place."
-    }
+      description: "All Brookhouse stories documented in one place.",
+    },
   ];
 
   // Set up screen size on client side only
   useEffect(() => {
     // Only run this effect on the client side
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       setScreenSize({
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       });
-      
+
       const handleResize = () => {
         setScreenSize({
           width: window.innerWidth,
-          height: window.innerHeight
+          height: window.innerHeight,
         });
       };
-      
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
 
@@ -69,12 +79,12 @@ const TutorialSlider = ({ onComplete }) => {
     if (autoSlideIntervalRef.current) {
       clearInterval(autoSlideIntervalRef.current);
     }
-    
+
     // Auto-slide after 3 seconds
     autoSlideIntervalRef.current = setInterval(() => {
       goToNextSlide();
     }, 3000);
-    
+
     return () => {
       if (autoSlideIntervalRef.current) {
         clearInterval(autoSlideIntervalRef.current);
@@ -121,8 +131,12 @@ const TutorialSlider = ({ onComplete }) => {
 
   // Calculate size based on screen dimensions
   const isMobile = screenSize.width < 768;
-  const cardWidth = isMobile ? Math.min(320, screenSize.width * 0.85) : Math.min(380, screenSize.width * 0.8);
-  const cardHeight = isMobile ? Math.min(480, screenSize.height * 0.7) : Math.min(550, screenSize.height * 0.7);
+  const cardWidth = isMobile
+    ? Math.min(320, screenSize.width * 0.85)
+    : Math.min(380, screenSize.width * 0.8);
+  const cardHeight = isMobile
+    ? Math.min(480, screenSize.height * 0.7)
+    : Math.min(550, screenSize.height * 0.7);
   const offsetMultiplier = isMobile ? 0.4 : 0.55; // Less offset on mobile
 
   return (
@@ -142,16 +156,16 @@ const TutorialSlider = ({ onComplete }) => {
           "@keyframes blurIn": {
             from: {
               backdropFilter: "blur(0)",
-              backgroundColor: "rgba(0, 0, 0, 0)"
+              backgroundColor: "rgba(0, 0, 0, 0)",
             },
             to: {
               backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.4)"
-            }
-          }
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+            },
+          },
         }}
       />
-      
+
       {/* Slider container */}
       <Flex
         position="fixed"
@@ -187,17 +201,19 @@ const TutorialSlider = ({ onComplete }) => {
         >
           <Icon as={CloseIcon} />
         </Button>
-        
+
         {/* Slides */}
         {slides.map((slide, index) => {
           const position = getSlidePosition(index);
           let transform;
           let opacity;
           let zIndex;
-          
-          switch(position) {
+
+          switch (position) {
             case "left":
-              transform = `translateX(-${cardWidth * offsetMultiplier}px) rotateY(30deg) scale(0.9)`;
+              transform = `translateX(-${
+                cardWidth * offsetMultiplier
+              }px) rotateY(30deg) scale(0.9)`;
               opacity = 0.7;
               zIndex = 1;
               break;
@@ -207,17 +223,21 @@ const TutorialSlider = ({ onComplete }) => {
               zIndex = 2;
               break;
             case "right":
-              transform = `translateX(${cardWidth * offsetMultiplier}px) rotateY(-30deg) scale(0.9)`;
+              transform = `translateX(${
+                cardWidth * offsetMultiplier
+              }px) rotateY(-30deg) scale(0.9)`;
               opacity = 0.7;
               zIndex = 1;
               break;
             default:
-              transform = `translateX(${cardWidth * 1.1}px) rotateY(-30deg) scale(0.9)`;
+              transform = `translateX(${
+                cardWidth * 1.1
+              }px) rotateY(-30deg) scale(0.9)`;
               opacity = 0;
               zIndex = 0;
               break;
           }
-          
+
           return (
             <Box
               key={index}
@@ -238,9 +258,13 @@ const TutorialSlider = ({ onComplete }) => {
                 if (position === "center") goToNextSlide();
                 else if (position === "left") goToPreviousSlide();
               }}
-              _hover={position === "center" ? { 
-                transform: "translateX(0) rotateY(0deg) scale(1.03)"
-              } : {}}
+              _hover={
+                position === "center"
+                  ? {
+                      transform: "translateX(0) rotateY(0deg) scale(1.03)",
+                    }
+                  : {}
+              }
             >
               {/* Full image container */}
               <Box
@@ -263,7 +287,7 @@ const TutorialSlider = ({ onComplete }) => {
                     e.target.src = pearImg;
                   }}
                 />
-                
+
                 {/* Status indicator pill */}
                 {index === currentIndex && (
                   <Box
@@ -283,7 +307,7 @@ const TutorialSlider = ({ onComplete }) => {
                     <span>New</span>
                   </Box>
                 )}
-                
+
                 {/* Text overlay with gradient */}
                 <Box
                   position="absolute"
@@ -291,7 +315,14 @@ const TutorialSlider = ({ onComplete }) => {
                   left="0"
                   width="100%"
                   height="65%"
-                  background="linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.1) 15%, rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0.4) 45%, rgba(0, 0, 0, 0.6) 70%, rgba(0, 0, 0, 0.7) 90%)"
+                  background="linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0) 55%, 
+    rgba(0, 0, 0, 0.1) 65%, 
+    rgba(0, 0, 0, 0.2) 72%, 
+    rgba(0, 0, 0, 0.35) 80%, 
+    rgba(0, 0, 0, 0.5) 88%, 
+    rgba(0, 0, 0, 0.65) 95%, 
+    rgba(0, 0, 0, 0.7) 100%)"
                   display="flex"
                   flexDirection="column"
                   justifyContent="flex-end"
@@ -304,7 +335,7 @@ const TutorialSlider = ({ onComplete }) => {
                   <Box
                     as="h2"
                     fontSize={isMobile ? "26px" : "32px"}
-                    margin={`0 0 ${isMobile ? '6px' : '10px'} 0`}
+                    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
                     fontWeight="600"
                     textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
                   >
@@ -324,7 +355,7 @@ const TutorialSlider = ({ onComplete }) => {
             </Box>
           );
         })}
-        
+
         {/* Done button */}
         <Button
           position="absolute"
@@ -342,7 +373,7 @@ const TutorialSlider = ({ onComplete }) => {
           fontSize={isMobile ? "14px" : "16px"}
           _hover={{
             transform: "translateY(-2px)",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)"
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
           }}
           onClick={handleComplete}
         >
