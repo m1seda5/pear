@@ -310,28 +310,32 @@ const TutorialSlider = ({ onComplete }) => {
 
                 {/* Text overlay with gradient */}
                 <Box
-                  position="absolute"
-                  bottom="0"
-                  left="0"
-                  width="100%"
-                  height="65%"
-                  background="linear-gradient(to bottom, 
-    rgba(0, 0, 0, 0) 55%, 
-    rgba(0, 0, 0, 0.1) 65%, 
-    rgba(0, 0, 0, 0.2) 72%, 
-    rgba(0, 0, 0, 0.35) 80%, 
-    rgba(0, 0, 0, 0.5) 88%, 
-    rgba(0, 0, 0, 0.65) 95%, 
-    rgba(0, 0, 0, 0.7) 100%)"
-                  display="flex"
-                  flexDirection="column"
-                  justifyContent="flex-end"
-                  padding={isMobile ? "20px 16px" : "30px 20px"}
-                  color={textColor}
-                  zIndex="2"
-                  backdropFilter="blur(10px)"
-                  sx={{ WebkitBackdropFilter: "blur(10px)" }}
-                >
+  position="absolute"
+  bottom="0"
+  left="0"
+  width="100%"
+  height="40%" // Increased height to start lower
+  background="linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.01) 30%,
+    rgba(0, 0, 0, 0.05) 40%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.2) 60%,
+    rgba(0, 0, 0, 0.4) 70%,
+    rgba(0, 0, 0, 0.6) 85%,
+    rgba(0, 0, 0, 0.7) 100%
+  )"
+  display="flex"
+  flexDirection="column"
+  justifyContent="flex-end"
+  padding={isMobile ? "20px 16px" : "30px 20px"}
+  color={textColor}
+  zIndex="2"
+  backdropFilter="blur(15px)" // Increased blur amount
+  sx={{ WebkitBackdropFilter: "blur(15px)" }}
+>
+
                   <Box
                     as="h2"
                     fontSize={isMobile ? "26px" : "32px"}
