@@ -340,26 +340,25 @@ const TutorialSlider = ({ onComplete }) => {
   backdropFilter="blur(28px)" // Increased blur amount
   sx={{ WebkitBackdropFilter: "blur(28px)" }}
 >
-
-                  <Box
-                    as="h2"
-                    fontSize={isMobile ? "26px" : "32px"}
-                    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
-                    fontWeight="600"
-                    textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
-                  >
-                    {slide.title}
-                  </Box>
-                  <Box
-                    as="p"
-                    fontSize={isMobile ? "14px" : "16px"}
-                    margin="0"
-                    opacity="0.9"
-                    textShadow="0 1px 2px rgba(0, 0, 0, 0.3)"
-                  >
-                    {slide.description}
-                  </Box>
-                </Box>
+  <Box
+    as="h2"
+    fontSize={isMobile ? "26px" : "32px"}
+    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
+    fontWeight="600"
+    textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
+  >
+    {slide.title}
+  </Box>
+  <Box
+    as="p"
+    fontSize={isMobile ? "14px" : "16px"}
+    margin="0"
+    opacity="0.9"
+    textShadow="0 1px 2px rgba(0, 0, 0, 0.3)"
+  >
+    {slide.description}
+  </Box>
+</Box>
               </Box>
             </Box>
           );
