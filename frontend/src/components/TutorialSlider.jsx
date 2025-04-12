@@ -288,6 +288,25 @@ const TutorialSlider = ({ onComplete }) => {
                   }}
                 />
 
+                {/* NEW: Gradient overlay for smooth fade effect */}
+                <Box
+                  position="absolute"
+                  bottom="0"
+                  left="0"
+                  width="100%"
+                  height="50%"
+                  background="linear-gradient(
+                    to top,
+                    rgba(0, 0, 0, 0.7) 0%,
+                    rgba(0, 0, 0, 0.6) 10%,
+                    rgba(0, 0, 0, 0.4) 30%,
+                    rgba(0, 0, 0, 0.2) 60%,
+                    rgba(0, 0, 0, 0) 100%
+                  )"
+                  zIndex="1"
+                  pointerEvents="none"
+                />
+
                 {/* Status indicator pill */}
                 {index === currentIndex && (
                   <Box
@@ -308,57 +327,39 @@ const TutorialSlider = ({ onComplete }) => {
                   </Box>
                 )}
 
-                {/* Text overlay with gradient */}
+                {/* Text overlay - now without backdrop-filter or background gradient */}
                 <Box
-  position="absolute"
-  bottom="0"
-  left="0"
-  width="100%"
-  height="42.5%" // Increased height to start lower
-  background="linear-gradient(
-    to bottom,
-        rgba(0, 0, 0, 0) 0%,
-        rgba(0, 0, 0, 0) 35%,
-        rgba(0, 0, 0, 0.001) 40%,
-        rgba(0, 0, 0, 0.003) 45%,
-        rgba(0, 0, 0, 0.008) 50%,
-        rgba(0, 0, 0, 0.015) 55%,
-        rgba(0, 0, 0, 0.03) 60%,
-        rgba(0, 0, 0, 0.06) 65%,
-        rgba(0, 0, 0, 0.12) 70%,
-        rgba(0, 0, 0, 0.24) 75%,
-        rgba(0, 0, 0, 0.4) 80%,
-        rgba(0, 0, 0, 0.6) 90%,
-        rgba(0, 0, 0, 0.7) 100%
-  )"
-  display="flex"
-  flexDirection="column"
-  justifyContent="flex-end"
-  padding={isMobile ? "20px 16px" : "30px 20px"}
-  color={textColor}
-  zIndex="2"
-  backdropFilter="blur(28px)" // Increased blur amount
-  sx={{ WebkitBackdropFilter: "blur(28px)" }}
->
-  <Box
-    as="h2"
-    fontSize={isMobile ? "26px" : "32px"}
-    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
-    fontWeight="600"
-    textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
-  >
-    {slide.title}
-  </Box>
-  <Box
-    as="p"
-    fontSize={isMobile ? "14px" : "16px"}
-    margin="0"
-    opacity="0.9"
-    textShadow="0 1px 2px rgba(0, 0, 0, 0.3)"
-  >
-    {slide.description}
-  </Box>
-</Box>
+                  position="absolute"
+                  bottom="0"
+                  left="0"
+                  width="100%"
+                  height="40%" 
+                  display="flex"
+                  flexDirection="column"
+                  justifyContent="flex-end"
+                  padding={isMobile ? "20px 16px" : "30px 20px"}
+                  color={textColor}
+                  zIndex="2"
+                >
+                  <Box
+                    as="h2"
+                    fontSize={isMobile ? "26px" : "32px"}
+                    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
+                    fontWeight="600"
+                    textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
+                  >
+                    {slide.title}
+                  </Box>
+                  <Box
+                    as="p"
+                    fontSize={isMobile ? "14px" : "16px"}
+                    margin="0"
+                    opacity="0.9"
+                    textShadow="0 1px 2px rgba(0, 0, 0, 0.3)"
+                  >
+                    {slide.description}
+                  </Box>
+                </Box>
               </Box>
             </Box>
           );
