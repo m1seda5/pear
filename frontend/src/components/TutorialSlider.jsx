@@ -314,17 +314,22 @@ const TutorialSlider = ({ onComplete }) => {
   bottom="0"
   left="0"
   width="100%"
-  height="40%" // Increased height to start lower
+  height="42.5%" // Increased height to start lower
   background="linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.01) 30%,
-    rgba(0, 0, 0, 0.05) 40%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.2) 60%,
-    rgba(0, 0, 0, 0.4) 70%,
-    rgba(0, 0, 0, 0.6) 85%,
-    rgba(0, 0, 0, 0.7) 100%
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) 35%,
+        rgba(0, 0, 0, 0.001) 40%,
+        rgba(0, 0, 0, 0.003) 45%,
+        rgba(0, 0, 0, 0.008) 50%,
+        rgba(0, 0, 0, 0.015) 55%,
+        rgba(0, 0, 0, 0.03) 60%,
+        rgba(0, 0, 0, 0.06) 65%,
+        rgba(0, 0, 0, 0.12) 70%,
+        rgba(0, 0, 0, 0.24) 75%,
+        rgba(0, 0, 0, 0.4) 80%,
+        rgba(0, 0, 0, 0.6) 90%,
+        rgba(0, 0, 0, 0.7) 100%
   )"
   display="flex"
   flexDirection="column"
@@ -332,8 +337,8 @@ const TutorialSlider = ({ onComplete }) => {
   padding={isMobile ? "20px 16px" : "30px 20px"}
   color={textColor}
   zIndex="2"
-  backdropFilter="blur(15px)" // Increased blur amount
-  sx={{ WebkitBackdropFilter: "blur(15px)" }}
+  backdropFilter="blur(28px)" // Increased blur amount
+  sx={{ WebkitBackdropFilter: "blur(28px)" }}
 >
 
                   <Box
