@@ -14,6 +14,7 @@ import concertImg from "../assets/images/concert.jpg";
 import sportsImg from "../assets/images/sports.jpg";
 import noticesImg from "../assets/images/notices.jpg";
 import environmentclubImg from "../assets/images/environmentclub.jpg";
+import liveeventsImg from "../assets/images/liveevents.jpg";
 import pearImg from "../assets/images/pear.png";
 
 const TutorialSlider = ({ onComplete }) => {
@@ -26,7 +27,7 @@ const TutorialSlider = ({ onComplete }) => {
   });
   const autoSlideIntervalRef = useRef(null);
 
-  // Tutorial content with images
+  // Tutorial content with images - Added new slide for Live Events
   const slides = [
     {
       title: "Events",
@@ -45,6 +46,12 @@ const TutorialSlider = ({ onComplete }) => {
       image: noticesImg,
       description:
         "Transform boring and mundane to quick-fire updates that keep you informed.",
+    },
+    {
+      title: "Live Events",
+      image: liveeventsImg,
+      description:
+        "Track the action, watch interviews and get live feedback through scores and interviews (COMING SOON) — all through the Brookhouse Journalism Club, only on Pear.",
     },
     {
       title: "Clubs and Communities",
@@ -288,26 +295,27 @@ const TutorialSlider = ({ onComplete }) => {
                   }}
                 />
 
-                {/* NEW: Gradient overlay for smooth fade effect */}
+                {/* Strong dark gradient overlay for better text visibility */}
                 <Box
                   position="absolute"
                   bottom="0"
                   left="0"
                   width="100%"
-                  height="50%"
+                  height="70%"
                   background="linear-gradient(
                     to top,
-                    rgba(0, 0, 0, 0.7) 0%,
-                    rgba(0, 0, 0, 0.6) 10%,
-                    rgba(0, 0, 0, 0.4) 30%,
-                    rgba(0, 0, 0, 0.2) 60%,
+                    rgba(0, 0, 0, 0.85) 0%,
+                    rgba(0, 0, 0, 0.75) 15%,
+                    rgba(0, 0, 0, 0.6) 30%,
+                    rgba(0, 0, 0, 0.4) 50%,
+                    rgba(0, 0, 0, 0.2) 75%,
                     rgba(0, 0, 0, 0) 100%
                   )"
                   zIndex="1"
                   pointerEvents="none"
                 />
 
-                {/* Status indicator pill */}
+                {/* Status indicator pill - show "New" for Live Events */}
                 {index === currentIndex && (
                   <Box
                     position="absolute"
@@ -327,13 +335,13 @@ const TutorialSlider = ({ onComplete }) => {
                   </Box>
                 )}
 
-                {/* Text overlay - now without backdrop-filter or background gradient */}
+                {/* Text overlay with improved visibility */}
                 <Box
                   position="absolute"
                   bottom="0"
                   left="0"
                   width="100%"
-                  height="40%" 
+                  height="50%" 
                   display="flex"
                   flexDirection="column"
                   justifyContent="flex-end"
@@ -345,17 +353,38 @@ const TutorialSlider = ({ onComplete }) => {
                     as="h2"
                     fontSize={isMobile ? "26px" : "32px"}
                     margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
-                    fontWeight="600"
-                    textShadow="0 1px 3px rgba(0, 0, 0, 0.3)"
+                    fontWeight="700" // Increased from 600 to 700 for better visibility
+                    textShadow="0 2px 4px rgba(0, 0, 0, 0.8)" // Enhanced text shadow
+                    letterSpacing="0.5px" // Slightly increased letter spacing
                   >
                     {slide.title}
+                    {/* Add "COMING SOON" badge to Live Events */}
+                    {slide.title === "Live Events" && (
+                      <Box
+                        as="span"
+                        fontSize={isMobile ? "12px" : "14px"}
+                        bg="rgba(255, 59, 48, 0.8)"
+                        color="white"
+                        ml="2"
+                        py="1"
+                        px="2"
+                        borderRadius="full"
+                        verticalAlign="middle"
+                        fontWeight="600"
+                        display="inline-block"
+                      >
+                        COMING SOON
+                      </Box>
+                    )}
                   </Box>
                   <Box
                     as="p"
                     fontSize={isMobile ? "14px" : "16px"}
                     margin="0"
-                    opacity="0.9"
-                    textShadow="0 1px 2px rgba(0, 0, 0, 0.3)"
+                    opacity="1" // Changed from 0.9 to 1 for full opacity
+                    textShadow="0 1px 3px rgba(0, 0, 0, 0.9)" // Enhanced text shadow
+                    lineHeight="1.6" // Improved line height for readability
+                    fontWeight="500" // Slightly bolder
                   >
                     {slide.description}
                   </Box>
