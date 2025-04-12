@@ -288,33 +288,7 @@ const TutorialSlider = ({ onComplete }) => {
                   }}
                 />
 
-                {/* Blurred image overlay for bottom portion only */}
-                <Box
-                  position="absolute"
-                  bottom="0"
-                  left="0"
-                  width="100%"
-                  height="35%"
-                  overflow="hidden"
-                  zIndex="1"
-                >
-                  <Box
-                    position="absolute"
-                    bottom="-10px"
-                    left="-10px"
-                    width="calc(100% + 20px)"
-                    height="calc(100% + 20px)"
-                    sx={{
-                      backgroundImage: `url(${slide.image})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      filter: "blur(20px)",
-                      opacity: "0.9",
-                    }}
-                  />
-                </Box>
-
-                {/* Gradient overlay for smooth fade effect */}
+                {/* NEW: Gradient overlay for smooth fade effect */}
                 <Box
                   position="absolute"
                   bottom="0"
@@ -323,13 +297,13 @@ const TutorialSlider = ({ onComplete }) => {
                   height="50%"
                   background="linear-gradient(
                     to top,
-                    rgba(0, 0, 0, 0.8) 0%,
-                    rgba(0, 0, 0, 0.7) 10%,
-                    rgba(0, 0, 0, 0.5) 25%,
-                    rgba(0, 0, 0, 0.3) 50%,
+                    rgba(0, 0, 0, 0.7) 0%,
+                    rgba(0, 0, 0, 0.6) 10%,
+                    rgba(0, 0, 0, 0.4) 30%,
+                    rgba(0, 0, 0, 0.2) 60%,
                     rgba(0, 0, 0, 0) 100%
                   )"
-                  zIndex="2"
+                  zIndex="1"
                   pointerEvents="none"
                 />
 
@@ -344,7 +318,7 @@ const TutorialSlider = ({ onComplete }) => {
                     padding={isMobile ? "6px 12px" : "8px 16px"}
                     borderRadius="20px"
                     fontSize={isMobile ? "12px" : "14px"}
-                    zIndex="4"
+                    zIndex="3"
                     display="flex"
                     alignItems="center"
                     gap="5px"
@@ -353,7 +327,7 @@ const TutorialSlider = ({ onComplete }) => {
                   </Box>
                 )}
 
-                {/* Text overlay - on top of blur and gradient */}
+                {/* Text overlay - now without backdrop-filter or background gradient */}
                 <Box
                   position="absolute"
                   bottom="0"
@@ -365,7 +339,7 @@ const TutorialSlider = ({ onComplete }) => {
                   justifyContent="flex-end"
                   padding={isMobile ? "20px 16px" : "30px 20px"}
                   color={textColor}
-                  zIndex="3"
+                  zIndex="2"
                 >
                   <Box
                     as="h2"
