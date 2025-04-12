@@ -918,7 +918,14 @@
 
 // admin role update
 import { 
-  Button, Flex, Icon, Link, useColorMode, Tooltip, Box, keyframes
+  Button, 
+  Flex, 
+  Icon,
+  Link, 
+  useColorMode,
+  Tooltip,
+  Box,
+  keyframes
 } from "@chakra-ui/react";
 import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -932,24 +939,51 @@ import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
 import { useState, useEffect } from "react";
-import { FaLock, FaUserShield } from "react-icons/fa";
+import { FaLock, FaUserShield } from "react-icons/fa"; // Added FaUserShield
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 
-const glowKeyframes = keyframes`
-  0% { transform: scale(1); box-shadow: 0 0 0 rgba(56, 161, 105, 0); }
-  50% { transform: scale(1.3); box-shadow: 0 0 15px rgba(56, 161, 105, 0.8); }
-  100% { transform: scale(1.3); box-shadow: 0 0 15px rgba(56, 161, 105, 0.8); }
+// Define keyframes properly outside components
+const pulseKeyframes = keyframes`
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
 `;
 
-const Header = ({ unreadCount = 0, triggerProfileAnimation }) => {
+const shakeKeyframes = keyframes`
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+`;
+
+const rotateKeyframes = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
+`;
+
+const bounceInKeyframes = keyframes`
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
+const Header = ({ unreadCount = 0 }) => {
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useRecoilValue(userAtom);
   const logout = useLogout();
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const navigate = useNavigate();
-  const [showLockIcon, setShowLockIcon] = useState({ chat: false, tv: false, admin: false });
-  const [isProfileAnimating, setIsProfileAnimating] = useState(false);
+  
+  // Consolidated state - only track locks when needed
+  const [showLockIcon, setShowLockIcon] = useState({
+    chat: false,
+    tv: false,
+    admin: false
+  });
 
+  // Only evaluate these if user exists
   const isStudent = user ? user.role === "student" : false;
   const isTeacher = user ? user.role === "teacher" : false;
   const isAdmin = user ? user.role === "admin" : false;
@@ -957,38 +991,55 @@ const Header = ({ unreadCount = 0, triggerProfileAnimation }) => {
   const currentDate = new Date();
   const dayOfWeek = currentDate.getDay();
   const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
-  const schoolStart = 810, lunchStart = 1250, lunchEnd = 1340, schoolEnd = 1535;
 
+  const schoolStart = 810;
+  const lunchStart = 1250;
+  const lunchEnd = 1340;
+  const schoolEnd = 1535;
+
+  // Complete user check before evaluating hasChatAccess
   const hasChatAccess = user && (
-    isTeacher || isAdmin || (isStudent && (
-      (dayOfWeek >= 1 && dayOfWeek <= 5 && (currentTime < schoolStart || (currentTime >= lunchStart && currentTime <= lunchEnd) || currentTime > schoolEnd)) ||
-      dayOfWeek === 0 || dayOfWeek === 6
-    ))
+    isTeacher ||
+    isAdmin ||
+    (isStudent &&
+      ((dayOfWeek >= 1 &&
+        dayOfWeek <= 5 &&
+        (currentTime < schoolStart ||
+          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+          currentTime > schoolEnd)) ||
+        dayOfWeek === 0 ||
+        dayOfWeek === 6))
   );
 
-  useEffect(() => {
-    if (triggerProfileAnimation) {
-      setIsProfileAnimating(true);
-    }
-  }, [triggerProfileAnimation]);
-
   const handleChatClick = (e) => {
-    if (!user || (user && user.isFrozen) || !hasChatAccess) e.preventDefault();
-    else navigate("/chat");
+    if (!user || (user && user.isFrozen) || !hasChatAccess) {
+      e.preventDefault();
+    } else {
+      navigate("/chat");
+    }
   };
 
   const handleTVClick = (e) => {
-    if (!user || (user && !isAdmin)) e.preventDefault();
-    else navigate("/tv");
+    if (!user || (user && !isAdmin)) {
+      e.preventDefault();
+    } else {
+      navigate("/tv");
+    }
   };
 
+  // Handle admin dashboard click
   const handleAdminClick = (e) => {
-    if (!user || (user && !isAdmin)) e.preventDefault();
-    else navigate("/admin");
+    if (!user || (user && !isAdmin)) {
+      e.preventDefault();
+    } else {
+      navigate("/admin");
+    }
   };
 
+  // Safe logout function
   const handleLogout = async () => {
     try {
+      // Navigate first, then logout
       navigate("/auth");
       await logout();
     } catch (error) {
@@ -996,14 +1047,22 @@ const Header = ({ unreadCount = 0, triggerProfileAnimation }) => {
     }
   };
 
+  // Enhanced NavIcon with simpler hover effects
   const NavIcon = ({ icon, label, onClick, isActive, isDisabled, children }) => {
     const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
     const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
     const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
     const hoverBgColor = colorMode === "dark" ? "whiteAlpha.200" : "blackAlpha.50";
-
+    
     return (
-      <Tooltip label={label} placement="bottom" hasArrow openDelay={300} bg={colorMode === "dark" ? "gray.700" : "gray.200"} color={colorMode === "dark" ? "white" : "gray.800"}>
+      <Tooltip 
+        label={label} 
+        placement="bottom" 
+        hasArrow
+        openDelay={300}
+        bg={colorMode === "dark" ? "gray.700" : "gray.200"}
+        color={colorMode === "dark" ? "white" : "gray.800"}
+      >
         <Box
           as="span"
           position="relative"
@@ -1012,81 +1071,294 @@ const Header = ({ unreadCount = 0, triggerProfileAnimation }) => {
           borderRadius="md"
           transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
           color={isDisabled ? disabledColor : (isActive ? activeColor : normalColor)}
-          _hover={{ bg: hoverBgColor, transform: "translateY(-3px)", boxShadow: colorMode === "dark" ? "0 6px 10px rgba(0, 0, 0, 0.4)" : "0 6px 10px rgba(0, 0, 0, 0.1)" }}
+          _hover={{
+            bg: hoverBgColor,
+            transform: "translateY(-3px)",
+            boxShadow: colorMode === "dark" 
+              ? "0 6px 10px rgba(0, 0, 0, 0.4)" 
+              : "0 6px 10px rgba(0, 0, 0, 0.1)",
+            "& .nav-icon-underline": {
+              width: "80%",
+              opacity: 1
+            },
+            "& .settings-icon": {
+              transform: "rotate(90deg)"
+            }
+          }}
           cursor={isDisabled ? "not-allowed" : "pointer"}
+          className="nav-icon-container"
+          sx={{
+            "&:active": {
+              transform: "translateY(1px)",
+              boxShadow: "none",
+              transition: "all 0.1s ease-out"
+            },
+          }}
         >
           {children}
+          
+          {/* Animated underline indicator */}
+          <Box
+            className="nav-icon-underline"
+            position="absolute"
+            bottom="0"
+            left="50%"
+            width="0%"
+            height="2px"
+            bg={isDisabled ? disabledColor : activeColor}
+            transition="all 0.2s ease-out"
+            transform="translateX(-50%)"
+            borderRadius="full"
+            opacity={0}
+          />
         </Box>
       </Tooltip>
     );
   };
 
+  // Define animations
+  const pulseAnimation = `${pulseKeyframes} 1s infinite`;
+  const shakeAnimation = `${shakeKeyframes} 0.5s`;
+  const rotateAnimation = `${rotateKeyframes} 0.3s forwards`;
+  const bounceInAnimation = `${bounceInKeyframes} 0.5s`;
+
   return (
-    <Flex justifyContent="center" mt={6} mb="12" gap={{ base: 4, md: 8 }} px={{ base: 2, md: 0 }} flexWrap={{ base: "wrap", md: "nowrap" }} width="100%">
+    <Flex
+      justifyContent="center"
+      mt={6}
+      mb="12"
+      gap={{ base: 4, md: 8 }}
+      px={{ base: 2, md: 0 }}
+      flexWrap={{ base: "wrap", md: "nowrap" }}
+      width="100%"
+      sx={{
+        ".nav-icon-container": {
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }
+      }}
+    >
       {user && (
-        <NavIcon label="Home" onClick={() => navigate("/")}>
-          <Link as={RouterLink} to="/" display="flex" alignItems="center" _hover={{ textDecoration: "none" }}>
+        <NavIcon 
+          label="Home" 
+          onClick={() => navigate("/")}
+        >
+          <Link
+            as={RouterLink}
+            to="/"
+            display="flex"
+            alignItems="center"
+            _hover={{ textDecoration: "none" }}
+          >
             <AiFillHome size={22} />
           </Link>
         </NavIcon>
       )}
+
       {!user && (
-        <NavIcon label="Login" onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
-          <Link as={RouterLink} to="/auth" display="flex" alignItems="center" fontWeight="medium" _hover={{ textDecoration: "none" }}>Login</Link>
+        <NavIcon 
+          label="Login" 
+          onClick={() => {
+            setAuthScreen("login");
+            navigate("/auth");
+          }}
+        >
+          <Link
+            as={RouterLink}
+            to="/auth"
+            display="flex"
+            alignItems="center"
+            fontWeight="medium"
+            _hover={{ textDecoration: "none" }}
+          >
+            Login
+          </Link>
         </NavIcon>
       )}
-      <NavIcon label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} onClick={toggleColorMode}>
-        <Box position="relative">
-          <Icon as={colorMode === 'dark' ? SunIcon : MoonIcon} w={5} h={5} transition="all 0.3s ease" transform={colorMode === 'dark' ? "rotate(0deg)" : "rotate(-180deg)"} />
+
+      <NavIcon 
+        label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} 
+        onClick={toggleColorMode}
+      >
+        <Box className="theme-toggle-icon" position="relative">
+          <Icon
+            as={colorMode === 'dark' ? SunIcon : MoonIcon}
+            w={5}
+            h={5}
+            transition="all 0.3s ease"
+            transform={colorMode === 'dark' ? "rotate(0deg)" : "rotate(-180deg)"}
+          />
         </Box>
       </NavIcon>
+
       {user && (
-        <Flex alignItems="center" gap={{ base: 4, md: 8 }} flexWrap={{ base: "wrap", md: "nowrap" }}>
-          <NavIcon label="Profile" onClick={() => navigate(`/${user.username}`)}>
-            <Link as={RouterLink} to={`/${user.username}`} display="flex" alignItems="center" _hover={{ textDecoration: "none" }}>
-              <RxAvatar
-                size={22}
-                style={isProfileAnimating ? { animation: `${glowKeyframes} 1.5s forwards`, color: "#38A169" } : {}}
-              />
+        <Flex
+          alignItems="center"
+          gap={{ base: 4, md: 8 }}
+          flexWrap={{ base: "wrap", md: "nowrap" }}
+          justifyContent={{ base: "center", md: "flex-start" }}
+        >
+          <NavIcon 
+            label="Profile" 
+            onClick={() => navigate(`/${user.username}`)}
+          >
+            <Link
+              as={RouterLink}
+              to={`/${user.username}`}
+              display="flex"
+              alignItems="center"
+              _hover={{ textDecoration: "none" }}
+            >
+              <RxAvatar size={22} />
             </Link>
           </NavIcon>
-          <NavIcon label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} onClick={handleChatClick} isDisabled={user.isFrozen || !hasChatAccess}>
-            <Box position="relative" onMouseEnter={() => setShowLockIcon({...showLockIcon, chat: !hasChatAccess || user.isFrozen})} onMouseLeave={() => setShowLockIcon({...showLockIcon, chat: false})} display="flex" alignItems="center" justifyContent="center">
-              {user.isFrozen ? <FaLock size={18} color={colorMode === "dark" ? "#4299E1" : "#3182CE"} /> : showLockIcon.chat ? <FaLock size={18} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} /> : <BsFillChatQuoteFill size={18} />}
+
+          <NavIcon 
+            label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
+            onClick={handleChatClick}
+            isDisabled={user.isFrozen || !hasChatAccess}
+          >
+            <Box
+              position="relative"
+              onMouseEnter={() => setShowLockIcon({...showLockIcon, chat: !hasChatAccess || user.isFrozen})}
+              onMouseLeave={() => setShowLockIcon({...showLockIcon, chat: false})}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {user.isFrozen ? (
+                <FaLock size={18} color={colorMode === "dark" ? "#4299E1" : "#3182CE"} />
+              ) : showLockIcon.chat ? (
+                <FaLock 
+                  size={18} 
+                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
+                  style={{ animation: pulseAnimation }}
+                />
+              ) : (
+                <BsFillChatQuoteFill size={18} />
+              )}
+              
               {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
-                <Flex position="absolute" top="-5px" right="-5px" bg="purple.500" color="white" borderRadius="full" w="18px" h="18px" fontSize="xs" alignItems="center" justifyContent="center" fontWeight="bold" boxShadow={colorMode === "dark" ? "0 0 0 2px #1A202C" : "0 0 0 2px white"} zIndex="1">
+                <Flex
+                  position="absolute"
+                  top="-5px"
+                  right="-5px"
+                  bg="purple.500"
+                  color="white"
+                  borderRadius="full"
+                  w="18px"
+                  h="18px"
+                  fontSize="xs"
+                  alignItems="center"
+                  justifyContent="center"
+                  fontWeight="bold"
+                  boxShadow={colorMode === "dark" ? "0 0 0 2px #1A202C" : "0 0 0 2px white"}
+                  zIndex="1"
+                  animation={bounceInAnimation}
+                >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </Flex>
               )}
             </Box>
           </NavIcon>
+
+          {/* Admin Dashboard Icon - Only visible to admins */}
           {isAdmin && (
-            <NavIcon label="Admin Dashboard" onClick={handleAdminClick}>
-              <Box display="flex" alignItems="center" justifyContent="center" color="teal.500">
+            <NavIcon 
+              label="Admin Dashboard" 
+              onClick={handleAdminClick}
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="teal.500"
+              >
                 <FaUserShield size={20} />
               </Box>
             </NavIcon>
           )}
-          <NavIcon label={isAdmin ? "TV Dashboard" : "Admin Only"} onClick={handleTVClick} isDisabled={!isAdmin}>
-            <Box onMouseEnter={() => setShowLockIcon({...showLockIcon, tv: !isAdmin})} onMouseLeave={() => setShowLockIcon({...showLockIcon, tv: false})} display="flex" alignItems="center" justifyContent="center">
-              {showLockIcon.tv ? <FaLock size={18} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} /> : <PiTelevisionSimpleBold size={20} />}
+
+          <NavIcon 
+            label={isAdmin ? "TV Dashboard" : "Admin Only"} 
+            onClick={handleTVClick}
+            isDisabled={!isAdmin}
+          >
+            <Box
+              onMouseEnter={() => setShowLockIcon({...showLockIcon, tv: !isAdmin})}
+              onMouseLeave={() => setShowLockIcon({...showLockIcon, tv: false})}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {showLockIcon.tv ? (
+                <FaLock 
+                  size={18} 
+                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
+                  style={{ animation: shakeAnimation }}
+                />
+              ) : (
+                <PiTelevisionSimpleBold size={20} />
+              )}
             </Box>
           </NavIcon>
-          <NavIcon label="Settings" onClick={() => navigate("/settings")}>
-            <Link as={RouterLink} to="/settings" display="flex" alignItems="center" _hover={{ textDecoration: "none" }}>
-              <MdOutlineSettings size={20} />
+
+          <NavIcon 
+            label="Settings" 
+            onClick={() => navigate("/settings")}
+          >
+            <Link
+              as={RouterLink}
+              to="/settings"
+              display="flex"
+              alignItems="center"
+              _hover={{ textDecoration: "none" }}
+            >
+              <MdOutlineSettings 
+                size={20} 
+                className="settings-icon"
+                style={{ 
+                  transition: "transform 0.3s ease",
+                  transformOrigin: "center"
+                }}
+              />
             </Link>
           </NavIcon>
-          <NavIcon label="Logout" onClick={handleLogout}>
-            <Box display="flex" alignItems="center">
+
+          <NavIcon 
+            label="Logout" 
+            onClick={handleLogout}
+          >
+            <Box 
+              display="flex" 
+              alignItems="center"
+            >
               <FiLogOut size={20} />
             </Box>
           </NavIcon>
         </Flex>
       )}
+
       {!user && (
-        <NavIcon label="Sign up" onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
-          <Link as={RouterLink} to="/auth" display="flex" alignItems="center" fontWeight="medium" _hover={{ textDecoration: "none" }}>Sign up</Link>
+        <NavIcon 
+          label="Sign up" 
+          onClick={() => {
+            setAuthScreen("signup");
+            navigate("/auth");
+          }}
+        >
+          <Link
+            as={RouterLink}
+            to="/auth"
+            display="flex"
+            alignItems="center"
+            fontWeight="medium"
+            _hover={{ textDecoration: "none" }}
+          >
+            Sign up
+          </Link>
         </NavIcon>
       )}
     </Flex>

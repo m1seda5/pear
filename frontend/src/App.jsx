@@ -181,6 +181,7 @@ import AuthPage from "./pages/AuthPage";
 import { useRecoilValue } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
+import CreatePost from "./components/CreatePost";
 import ChatPage from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -189,7 +190,7 @@ import ResetPassword from "./pages/ResetPassword";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard"; // Add this import
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -199,16 +200,20 @@ function App() {
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
   
+  // Add state for unread messages count
   const [unreadCount, setUnreadCount] = useState(0);
+  
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
-  const isAdminDashboard = pathname === '/admin';
-
+  const isAdminDashboard = pathname === '/admin'; // New variable to check if on admin page
+  
+  // Function to fetch unread count
   const fetchUnreadCount = async () => {
     if (!user) {
       setUnreadCount(0);
       return;
     }
+    
     try {
       const { data } = await axios.get("/api/messages/unread-count");
       setUnreadCount(data.count);
@@ -216,21 +221,32 @@ function App() {
       console.error("Error fetching unread count:", error);
     }
   };
-
+  
+  // Fetch unread count on component mount and when user changes
   useEffect(() => {
     fetchUnreadCount();
+    
+    // Set up polling to check for new messages every 30 seconds
     const intervalId = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(intervalId);
+    
+    return () => clearInterval(intervalId); // Clean up on unmount
   }, [user]);
-
+  
+  // Reset unread count when navigating to chat page
   useEffect(() => {
     if (pathname === '/chat' && user) {
-      // Optionally reset count here if needed
+      // Optionally reset the count when the user visits the chat page
+      // This depends on your app's UX design
+      // setUnreadCount(0);
+      
+      // Alternative: You might want to keep showing notifications until 
+      // the specific conversation is opened, which would be handled in ChatPage component
     }
   }, [pathname, user]);
-
+  
+  // Determine if custom width should be applied (for TV and Admin pages)
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
-
+  
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
@@ -247,6 +263,7 @@ function App() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            {/* Add Admin Dashboard route */}
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
           </Routes>
         </Box>

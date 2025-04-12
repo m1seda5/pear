@@ -497,12 +497,12 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  FormControl, Textarea, Input, useDisclosure, Progress, Box, Text, useColorModeValue,
-  Alert, AlertIcon, Flex, Image, CloseButton, keyframes, Tooltip, Tag, TagLabel,
-  TagCloseButton, Wrap, WrapItem, Menu, MenuButton, MenuList, MenuItem, IconButton,
-  Stack, VStack
+  ModalCloseButton, FormControl, Textarea, Input, useDisclosure, Progress, Box,
+  Text, useColorModeValue, Alert, AlertIcon, Flex, Image, CloseButton, keyframes,
+  Tooltip, Tag, TagLabel, TagCloseButton, Wrap, WrapItem, Menu, MenuButton,
+  MenuList, MenuItem, IconButton, Stack
 } from "@chakra-ui/react";
-import { AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
 import usePreviewImg from "../hooks/usePreviewImg";
@@ -510,14 +510,14 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
-import { PiTelevisionSimpleBold } from "react-icons/pi";
+import CreateGroup from "./CreateGroup";
 
 const MAX_CHAR = 500;
 
-const glowKeyframes = keyframes`
-  0% { box-shadow: 0 0 5px rgba(56, 161, 105, 0.5); }
-  50% { box-shadow: 0 0 15px rgba(56, 161, 105, 0.8); }
-  100% { box-shadow: 0 0 5px rgba(56, 161, 105, 0.5); }
+const pulseKeyframes = keyframes`
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.4); }
+  70% { transform: scale(1.1); box-shadow: 0 0 20px 10px rgba(49, 130, 206, 0.4); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(49, 130, 206, 0); }
 `;
 
 const YEAR_GROUPS = [
@@ -552,7 +552,7 @@ const DEPARTMENTS = [
   { value: "tv", label: "TV" }
 ];
 
-const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorialComplete, blurActive }) => {
+const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [postText, setPostText] = useState("");
   const [targetYearGroups, setTargetYearGroups] = useState([]);
@@ -566,111 +566,89 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
   const showToast = useShowToast();
   const [isLoading, setIsLoading] = useState(false);
   const [postStatus, setPostStatus] = useState(null);
+  const progressColor = useColorModeValue("gray.200", "gray.600");
   const { t } = useTranslation();
-  const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
-
+  const [isPulsing, setIsPulsing] = useState(false);
   const buttonBg = useColorModeValue("blue.500", "blue.200");
   const buttonHoverBg = useColorModeValue("blue.600", "blue.300");
-
-  const teacherAdminFeatures = [
-    {
-      title: "Select Year Group",
-      description: "Post to specific year groups for targeted announcements.",
-      content: (
-        <Menu>
-          <MenuButton as={Button} variant="outline" colorScheme="green">
-            Select Year Groups
-          </MenuButton>
-          <MenuList>
-            {YEAR_GROUPS.map((group) => (
-              <MenuItem key={group.value}>{group.label}</MenuItem>
-            ))}
-          </MenuList>
-        </Menu>
-      )
-    },
-    {
-      title: "Posting Groups",
-      description: "Customize a unique audience to reach specific groups.",
-      content: (
-        <Menu>
-          <MenuButton as={Button} variant="outline" colorScheme="green">
-            Select Groups
-          </MenuButton>
-          <MenuList>
-            <MenuItem>Class Announcements</MenuItem>
-            <MenuItem>Club Updates</MenuItem>
-            <MenuItem>Event Notices</MenuItem>
-          </MenuList>
-        </Menu>
-      )
-    },
-    {
-      title: "Security",
-      description: "Everything is saved and completely secure.",
-      content: <FaLock size={24} color="#38A169" />
-    },
-    {
-      title: "TV Posting",
-      description: "Post directly to the screens, only on Pear.",
-      content: <PiTelevisionSimpleBold size={24} color="#38A169" />
-    }
-  ];
-
-  const studentFeatures = [
-    {
-      title: "Custom Feed",
-      description: "Announcements, general posts, and events are all sent to your custom feed.",
-      content: (
-        <Box>
-          <Text fontSize="sm" color="gray.400">Example Feed:</Text>
-          <Text>Interhouse Rugby Next Week</Text>
-        </Box>
-      )
-    },
-    {
-      title: "Security",
-      description: "Everything is saved and completely secure.",
-      content: <FaLock size={24} color="#38A169" />
-    }
-  ];
-
-  const features = user?.role === "student" ? studentFeatures : teacherAdminFeatures;
+  const tagBg = useColorModeValue("blue.100", "blue.700");
+  const menuBg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setScreenSize({ width: window.innerWidth, height: window.innerHeight });
-      const handleResize = () => setScreenSize({ width: window.innerWidth, height: window.innerHeight });
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showTutorial) {
-      const interval = setInterval(() => {
-        setCurrentFeatureIndex((prev) => {
-          if (prev === features.length - 1) {
-            clearInterval(interval);
-            setTimeout(() => {
-              onTutorialComplete();
-              onClose();
-            }, 3000);
-            return prev;
-          }
-          return prev + 1;
+    const fetchGroups = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch("/api/groups/my-groups", {
+          credentials: "include", // Ensure auth token is sent
         });
-      }, 3000);
-      onOpen();
-      return () => clearInterval(interval);
-    }
-  }, [showTutorial, features, onTutorialComplete, onOpen, onClose]);
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Failed to fetch groups: ${res.status} - ${errorText}`);
+        }
+        const data = await res.json();
+        setAvailableGroups(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Fetch groups error:", error);
+        showToast("Error", "Failed to load groups", "error");
+        setAvailableGroups([]);
+      }
+    };
+    fetchGroups();
+  }, [user, showToast]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsPulsing(true);
+      setTimeout(() => setIsPulsing(false), 1000);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTextChange = (e) => {
     const inputText = e.target.value;
     setPostText(inputText.slice(0, MAX_CHAR));
     setRemainingChar(MAX_CHAR - inputText.length);
+  };
+
+  const handleGroupToggle = (groupId) => {
+    setSelectedGroups(prev =>
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  const handleAddYearGroup = (value) => {
+    if (value === "all") {
+      setTargetYearGroups(["all"]);
+      return;
+    }
+    const newGroups = targetYearGroups.filter(group => group !== "all");
+    if (!newGroups.includes(value)) {
+      setTargetYearGroups([...newGroups, value]);
+    }
+  };
+
+  const handleRemoveYearGroup = (value) => {
+    setTargetYearGroups(targetYearGroups.filter(group => group !== value));
+  };
+
+  const handleAddDepartment = (value) => {
+    if (value === "tv") {
+      setTargetDepartments(["tv"]);
+      return;
+    }
+    const newDepts = targetDepartments.filter(dept => dept !== "tv");
+    if (!newDepts.includes(value)) {
+      setTargetDepartments([...newDepts, value]);
+    }
+  };
+
+  const handleRemoveDepartment = (value) => {
+    setTargetDepartments(targetDepartments.filter(dept => dept !== value));
+  };
+
+  const handleGroupCreated = (newGroup) => {
+    setAvailableGroups(prev => [...prev, newGroup]);
+    setSelectedGroups(prev => [...prev, newGroup._id]);
   };
 
   const handleCreatePost = async () => {
@@ -680,6 +658,7 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
         showToast("Error", "Post text cannot be empty", "error");
         return;
       }
+
       const postData = {
         postedBy: user._id,
         text: postText,
@@ -689,12 +668,14 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
         targetYearGroups: targetYearGroups.length > 0 ? targetYearGroups : [],
         targetDepartments: targetDepartments.length > 0 ? targetDepartments : [],
       };
+
       switch (user.role) {
         case "student":
           postData.targetAudience = "all";
           postData.targetYearGroups = [];
           postData.targetDepartments = [];
           break;
+
         case "teacher":
           if (!targetYearGroups.length && !selectedGroups.length) {
             showToast("Error", "Please select at least one year group or posting group", "error");
@@ -702,29 +683,37 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
           }
           postData.targetAudience = targetYearGroups.length > 0 ? targetYearGroups[0] : "all";
           break;
+
         case "admin":
           if (!targetYearGroups.length && !targetDepartments.length && !selectedGroups.length) {
             showToast("Error", "Please select at least one target audience", "error");
             return;
           }
-          postData.targetAudience = targetYearGroups.length > 0 ? targetYearGroups[0] : targetDepartments.length > 0 ? targetDepartments[0] : "all";
+          postData.targetAudience = 
+            targetYearGroups.length > 0 ? targetYearGroups[0] :
+            targetDepartments.length > 0 ? targetDepartments[0] : "all";
           break;
+
         default:
           showToast("Error", "Invalid user role", "error");
           return;
       }
+
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(postData),
         credentials: "include",
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create post");
+
       setPostStatus(data.reviewStatus || "approved");
       showToast("Success", "Post created successfully", "success");
       resetForm();
     } catch (error) {
+      console.error("Create post error:", error);
       showToast("Error", error.message, "error");
     } finally {
       setIsLoading(false);
@@ -741,22 +730,34 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
     onClose();
   };
 
-  const isMobile = screenSize.width < 768;
-  const cardWidth = isMobile ? Math.min(320, screenSize.width * 0.85) : Math.min(380, screenSize.width * 0.8);
-  const cardHeight = isMobile ? Math.min(480, screenSize.height * 0.7) : Math.min(550, screenSize.height * 0.7);
-  const offsetMultiplier = isMobile ? 0.4 : 0.55;
+  if (user?.isFrozen) {
+    return (
+      <Button
+        position="fixed"
+        bottom={10}
+        right={5}
+        bg={buttonBg}
+        _hover={{ bg: buttonHoverBg }}
+        color="white"
+        size="lg"
+        aria-label="Account Frozen"
+        zIndex={999}
+      >
+        <Flex align="center" gap={2}>
+          <FaLock /> {t("Account Frozen")}
+        </Flex>
+      </Button>
+    );
+  }
 
-  const getFeaturePosition = (index) => {
-    if (index === currentFeatureIndex) return "center";
-    if (index === currentFeatureIndex - 1) return "left";
-    if (index === currentFeatureIndex + 1) return "right";
-    return "hidden";
-  };
+  const availableYearGroupsList = YEAR_GROUPS.filter(
+    group => !targetYearGroups.includes(group.value) || 
+    (targetYearGroups.includes("all") && group.value === "all")
+  );
 
-  if (user?.isFrozen) return (
-    <Button position="fixed" bottom={10} right={5} bg={buttonBg} _hover={{ bg: buttonHoverBg }} color="white" size="lg" aria-label="Account Frozen" zIndex={999}>
-      <Flex align="center" gap={2}><FaLock /> {t("Account Frozen")}</Flex>
-    </Button>
+  const availableDepartmentsList = DEPARTMENTS.filter(
+    dept => !targetDepartments.includes(dept.value) ||
+    (targetDepartments.includes("tv") && dept.value === "tv")
   );
 
   return (
@@ -772,194 +773,233 @@ const CreatePost = ({ triggerAnimation, animationStyle, showTutorial, onTutorial
           size="lg"
           aria-label={t("Create Post")}
           zIndex={999}
+          animation={isPulsing ? `${pulseKeyframes} 1s ease-in-out` : undefined}
           _hover={{ bg: buttonHoverBg }}
-          sx={animationStyle}
         >
           <AddIcon />
         </Button>
       </Tooltip>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" motionPreset="none">
-        {showTutorial && blurActive && (
-          <ModalOverlay backdropFilter="blur(8px)" bg="rgba(0, 0, 0, 0.4)" />
-        )}
-        {showTutorial ? (
-          <>
-            <Button
-              position="absolute"
-              top={isMobile ? "16px" : "20px"}
-              right={isMobile ? "16px" : "20px"}
-              width={isMobile ? "32px" : "36px"}
-              height={isMobile ? "32px" : "36px"}
-              bg="rgba(0, 0, 0, 0.5)"
-              color="white"
-              borderRadius="50%"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              cursor="pointer"
-              zIndex="1003"
-              _hover={{ transform: "rotate(90deg)" }}
-              onClick={() => {
-                onTutorialComplete();
-                onClose();
-              }}
-              p="0"
-            >
-              <Icon as={CloseIcon} />
-            </Button>
-            <Flex
-              position="fixed"
-              top="50%"
-              left="50%"
-              transform="translate(-50%, -50%)"
-              width="100%"
-              height="100%"
-              justify="center"
-              align="center"
-              zIndex="1002"
-              sx={{ perspective: "1000px" }}
-            >
-              {features.map((feature, index) => {
-                const position = getFeaturePosition(index);
-                let transform, opacity, zIndex;
-                switch (position) {
-                  case "left":
-                    transform = `translateX(-${cardWidth * offsetMultiplier}px) rotateY(30deg) scale(0.9)`;
-                    opacity = 0.7;
-                    zIndex = 1;
-                    break;
-                  case "center":
-                    transform = "translateX(0) rotateY(0deg) scale(1)";
-                    opacity = 1;
-                    zIndex = 2;
-                    break;
-                  case "right":
-                    transform = `translateX(${cardWidth * offsetMultiplier}px) rotateY(-30deg) scale(0.9)`;
-                    opacity = 0.7;
-                    zIndex = 1;
-                    break;
-                  default:
-                    transform = `translateX(${cardWidth * 1.1}px) rotateY(-30deg) scale(0.9)`;
-                    opacity = 0;
-                    zIndex = 0;
-                    break;
-                }
-                return (
-                  <Box
-                    key={index}
-                    position="absolute"
-                    width={`${cardWidth}px`}
-                    height={`${cardHeight}px`}
-                    borderRadius="20px"
-                    boxShadow="0 8px 16px rgba(0, 0, 0, 0.3)"
-                    display="flex"
-                    flexDirection="column"
-                    overflow="hidden"
-                    transition="transform 0.5s ease, opacity 0.5s ease"
-                    transform={transform}
-                    opacity={opacity}
-                    zIndex={zIndex}
-                    animation={`${glowKeyframes} 1.5s infinite`}
-                  >
-                    <Box position="relative" width="100%" height="100%" overflow="hidden" borderRadius="20px" bg="gray.800">
-                      <Box
-                        position="absolute"
-                        bottom="0"
-                        left="0"
-                        width="100%"
-                        height="70%"
-                        background="linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0))"
-                        zIndex="1"
-                        pointerEvents="none"
-                      />
-                      {index === currentFeatureIndex && (
-                        <Box position="absolute" top="20px" left="20px" bg="rgba(0, 0, 0, 0.5)" color="white" padding="8px 16px" borderRadius="20px" fontSize="14px" zIndex="3">
-                          New
-                        </Box>
-                      )}
-                      <Box
-                        position="absolute"
-                        bottom="0"
-                        left="0"
-                        width="100%"
-                        height="50%"
-                        display="flex"
-                        flexDirection="column"
-                        justifyContent="flex-end"
-                        padding="30px 20px"
-                        color="white"
-                        zIndex="2"
-                      >
-                        <Box as="h2" fontSize="32px" margin="0 0 10px 0" fontWeight="700" textShadow="0 2px 4px rgba(0, 0, 0, 0.8)">
-                          {feature.title}
-                        </Box>
-                        <Box as="p" fontSize="16px" margin="0" textShadow="0 1px 3px rgba(0, 0, 0, 0.9)" lineHeight="1.6" fontWeight="500">
-                          {feature.description}
-                        </Box>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t("Create Post")}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <Stack spacing={4}>
+                <Box>
+                  <Textarea
+                    placeholder={t("Write your post...")}
+                    value={postText}
+                    onChange={handleTextChange}
+                    resize="vertical"
+                    minH="100px"
+                  />
+                  <Flex justify="space-between" align="center" mt={1}>
+                    <Text fontSize="xs" fontWeight="bold" color={remainingChar < 0 ? "red.500" : "gray.500"}>
+                      {remainingChar}/{MAX_CHAR}
+                    </Text>
+                    <Tooltip label="Add Image" placement="top" hasArrow>
+                      <Box as="span">
+                        <BsFillImageFill
+                          style={{ cursor: "pointer" }}
+                          size={16}
+                          onClick={() => imageRef.current.click()}
+                          aria-label={t("Add Image")}
+                        />
                       </Box>
-                      <Box position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)" zIndex="3">
-                        {feature.content}
-                      </Box>
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Flex>
-          </>
-        ) : (
-          <ModalContent
-            maxW="600px"
-            borderRadius="20px"
-            bg="gray.800"
-            color="white"
-          >
-            <ModalHeader>{t("Create Post")}</ModalHeader>
-            <ModalBody>
-              <FormControl>
-                <Textarea placeholder={t("Write your post...")} value={postText} onChange={handleTextChange} resize="vertical" minH="100px" />
-                <Flex justify="space-between" align="center" mt={1}>
-                  <Text fontSize="xs" fontWeight="bold" color={remainingChar < 0 ? "red.500" : "gray.500"}>{remainingChar}/{MAX_CHAR}</Text>
-                  <Tooltip label="Add Image"><BsFillImageFill style={{ cursor: "pointer" }} size={16} onClick={() => imageRef.current.click()} /></Tooltip>
-                  <Input type="file" hidden ref={imageRef} onChange={handleImageChange} />
-                </Flex>
-                {user?.role !== "student" && (
+                    </Tooltip>
+                    <Input
+                      type="file"
+                      hidden
+                      ref={imageRef}
+                      onChange={handleImageChange}
+                    />
+                  </Flex>
+                </Box>
+
+                {(user.role === "teacher" || user.role === "admin") && (
                   <>
-                    <Menu>
-                      <MenuButton as={Button} variant="outline" mt={4} mr={2}>
-                        Select Year Groups
-                      </MenuButton>
-                      <MenuList>
-                        {YEAR_GROUPS.map((group) => (
-                          <MenuItem key={group.value} onClick={() => setTargetYearGroups([group.value])}>
-                            {group.label}
-                          </MenuItem>
-                        ))}
-                      </MenuList>
-                    </Menu>
-                    <Menu>
-                      <MenuButton as={Button} variant="outline" mt={4}>
-                        Select Departments
-                      </MenuButton>
-                      <MenuList>
-                        {DEPARTMENTS.map((dept) => (
-                          <MenuItem key={dept.value} onClick={() => setTargetDepartments([dept.value])}>
-                            {dept.label}
-                          </MenuItem>
-                        ))}
-                      </MenuList>
-                    </Menu>
+                    <Box>
+                      <Flex justify="space-between" align="center" mb={2}>
+                        <Text fontWeight="medium">{t("Year Groups")}</Text>
+                        <Menu placement="bottom-end">
+                          <MenuButton
+                            as={IconButton}
+                            size="sm"
+                            colorScheme="blue"
+                            variant="outline"
+                            icon={<AddIcon />}
+                            isDisabled={availableYearGroupsList.length === 0 || targetYearGroups.includes("all")}
+                          />
+                          <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                            {availableYearGroupsList.map((group) => (
+                              <MenuItem
+                                key={group.value}
+                                onClick={() => handleAddYearGroup(group.value)}
+                              >
+                                {t(group.label)}
+                              </MenuItem>
+                            ))}
+                          </MenuList>
+                        </Menu>
+                      </Flex>
+                      <Wrap spacing={2}>
+                        {targetYearGroups.length === 0 ? (
+                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                            {t("No year groups selected")}
+                          </Text>
+                        ) : (
+                          targetYearGroups.map((group) => (
+                            <WrapItem key={group}>
+                              <Tag
+                                size="md"
+                                borderRadius="full"
+                                variant="solid"
+                                colorScheme="blue"
+                                bg={tagBg}
+                              >
+                                <TagLabel>{t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}</TagLabel>
+                                <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
+                              </Tag>
+                            </WrapItem>
+                          ))
+                        )}
+                      </Wrap>
+                    </Box>
+
+                    <Box>
+                      <Flex justify="space-between" align="center" mb={2}>
+                        <Text fontWeight="medium">{t("Posting Groups")}</Text>
+                        <CreateGroup onGroupCreated={handleGroupCreated} />
+                      </Flex>
+                      <Wrap spacing={2}>
+                        {availableGroups.length === 0 ? (
+                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                            {t("No groups available")}
+                          </Text>
+                        ) : (
+                          availableGroups.map(group => (
+                            <WrapItem key={group._id}>
+                              <Tag
+                                size="md"
+                                variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
+                                colorScheme="blue"
+                                cursor="pointer"
+                                onClick={() => handleGroupToggle(group._id)}
+                                bg={selectedGroups.includes(group._id) ? group.color : undefined}
+                                _hover={{ opacity: 0.8 }}
+                              >
+                                <TagLabel>{group.name}</TagLabel>
+                                {selectedGroups.includes(group._id) && (
+                                  <TagCloseButton onClick={() => handleGroupToggle(group._id)} />
+                                )}
+                              </Tag>
+                            </WrapItem>
+                          ))
+                        )}
+                      </Wrap>
+                    </Box>
                   </>
                 )}
-              </FormControl>
-            </ModalBody>
-            <ModalFooter>
-              <Button colorScheme="blue" onClick={handleCreatePost} isLoading={isLoading}>
-                Post
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        )}
+
+                {user.role === "admin" && (
+                  <Box>
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text fontWeight="medium">{t("Departments")}</Text>
+                      <Menu placement="bottom-end">
+                        <MenuButton
+                          as={IconButton}
+                          size="sm"
+                          colorScheme="blue"
+                          variant="outline"
+                          icon={<AddIcon />}
+                          isDisabled={availableDepartmentsList.length === 0 || targetDepartments.includes("tv")}
+                        />
+                        <MenuList bg={menuBg} maxH="200px" overflowY="auto">
+                          {availableDepartmentsList.map((dept) => (
+                            <MenuItem
+                              key={dept.value}
+                              onClick={() => handleAddDepartment(dept.value)}
+                            >
+                              {t(dept.label)}
+                            </MenuItem>
+                          ))}
+                        </MenuList>
+                      </Menu>
+                    </Flex>
+                    <Wrap spacing={2}>
+                      {targetDepartments.length === 0 ? (
+                        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                          {t("No departments selected")}
+                        </Text>
+                      ) : (
+                        targetDepartments.map((dept) => (
+                          <WrapItem key={dept}>
+                            <Tag
+                              size="md"
+                              borderRadius="full"
+                              variant="solid"
+                              colorScheme={dept === "tv" ? "red" : "green"}
+                              bg={tagBg}
+                            >
+                              <TagLabel>{t(DEPARTMENTS.find(d => d.value === dept)?.label || dept)}</TagLabel>
+                              <TagCloseButton onClick={() => handleRemoveDepartment(dept)} />
+                            </Tag>
+                          </WrapItem>
+                        ))
+                      )}
+                    </Wrap>
+                  </Box>
+                )}
+
+                {imgUrl && (
+                  <Flex mt={5} w="full" position="relative">
+                    <Image src={imgUrl} alt={t("Uploaded Image")} borderRadius="md" />
+                    <CloseButton
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      onClick={() => setImgUrl("")}
+                    />
+                  </Flex>
+                )}
+
+                {postStatus === 'pending' && (
+                  <Box mt={4}>
+                    <Alert status="info" borderRadius="md">
+                      <AlertIcon />
+                      {t("Your post is being reviewed")}
+                    </Alert>
+                    <Progress
+                      mt={2}
+                      size="xs"
+                      isIndeterminate
+                      bg={progressColor}
+                      colorScheme="blue"
+                      borderRadius="full"
+                    />
+                  </Box>
+                )}
+              </Stack>
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={resetForm} isDisabled={isLoading}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              colorScheme="blue"
+              isLoading={isLoading}
+              onClick={handleCreatePost}
+              isDisabled={postStatus === 'pending'}
+            >
+              {t("Post")}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
       </Modal>
     </>
   );
