@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "./userModel.js"; // Make sure to import your User model
+import User from "./userModel.js";
 
 const groupSchema = new mongoose.Schema({
   name: {
@@ -30,20 +30,7 @@ const groupSchema = new mongoose.Schema({
   }
 });
 
-// Add a pre-save middleware to validate members
-groupSchema.pre('save', async function(next) {
-  try {
-    if (this.members && this.members.length > 0) {
-      const validMembers = await User.find({ _id: { $in: this.members } });
-      if (validMembers.length !== this.members.length) {
-        throw new Error('Invalid user IDs in members array');
-      }
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
+// Removed the pre-save validation hook
 
 const Group = mongoose.model("Group", groupSchema);
 export default Group;
