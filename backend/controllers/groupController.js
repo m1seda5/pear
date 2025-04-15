@@ -7,16 +7,22 @@ const createGroup = async (req, res) => {
   try {
     const { name, description, color, members: rawMembers } = req.body;
     
+    // Validate required fields
     if (!name?.trim()) {
       return res.status(400).json({ error: "Group name is required" });
     }
 
+    if (!req.user?._id) {
+      return res.status(401).json({ error: "Unauthorized - User not authenticated" });
+    }
+
+    // Check for existing group
     const existingGroup = await Group.findOne({ name: name.trim() });
     if (existingGroup) {
       return res.status(400).json({ error: "A group with this name already exists" });
     }
 
-    // Deduplicate members
+    // Deduplicate and validate members
     const members = rawMembers ? [...new Set(rawMembers)] : undefined;
     
     if (members) {
@@ -27,8 +33,8 @@ const createGroup = async (req, res) => {
     }
 
     const newGroup = new Group({
-      name,
-      description,
+      name: name.trim(),
+      description: description?.trim(),
       color: color || "#4CAF50",
       creator: req.user._id,
       members: members ? [...new Set([req.user._id, ...members])] : [req.user._id],
@@ -59,20 +65,20 @@ const createGroup = async (req, res) => {
       }
       
       await session.commitTransaction();
+      res.status(201).json(newGroup);
     } catch (error) {
       await session.abortTransaction();
+      console.error("Transaction error:", error);
       throw error;
     } finally {
       session.endSession();
     }
-
-    res.status(201).json(newGroup);
   } catch (err) {
     console.error("Group creation error:", err);
     if (err.code === 11000) { // MongoDB duplicate key error
       return res.status(400).json({ error: "A group with this name already exists" });
     }
-    res.status(500).json({ error: "Failed to create group" });
+    res.status(500).json({ error: "Failed to create group. Please try again." });
   }
 };
 

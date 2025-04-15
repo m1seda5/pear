@@ -127,7 +127,8 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
       const res = await fetch("/api/groups/create", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify({
           name: groupName,
@@ -137,19 +138,12 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
         })
       });
 
-      const contentType = res.headers.get("content-type");
-      let data;
-      
-      if (contentType?.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(`Unexpected response: ${text.slice(0, 100)}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create group");
       }
 
-      if (!res.ok) {
-        throw new Error(data.error || "Group creation failed");
-      }
+      const data = await res.json();
       
       toast({
         title: "Success",
@@ -174,9 +168,10 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
         onGroupCreated(data);
       }
     } catch (error) {
+      console.error("Group creation error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create group",
         status: "error",
         duration: 5000,
         isClosable: true,
