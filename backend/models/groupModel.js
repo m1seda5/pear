@@ -22,18 +22,26 @@ const groupSchema = new mongoose.Schema({
   },
   members: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    validate: {
-      validator: async function(members) {
-        const users = await User.find({ _id: { $in: members } });
-        return users.length === members.length;
-      },
-      message: "Invalid user IDs in members array"
-    }
+    ref: "User"
   }],
   createdAt: {
     type: Date,
     default: Date.now
+  }
+});
+
+// Add a pre-save middleware to validate members
+groupSchema.pre('save', async function(next) {
+  try {
+    if (this.members && this.members.length > 0) {
+      const validMembers = await User.find({ _id: { $in: this.members } });
+      if (validMembers.length !== this.members.length) {
+        throw new Error('Invalid user IDs in members array');
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 
