@@ -54,37 +54,49 @@ const createGroup = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      await newGroup.save({ session });
-      console.log("Group saved successfully");
+      // Save the group first
+      const savedGroup = await newGroup.save({ session });
+      console.log("Group saved successfully:", savedGroup);
       
-      // Add group to creator
-      await User.findByIdAndUpdate(
+      // Update creator's groups array
+      const creatorUpdate = await User.findByIdAndUpdate(
         req.user._id,
-        { $addToSet: { groups: newGroup._id } },
-        { session }
+        { $addToSet: { groups: savedGroup._id } },
+        { session, new: true }
       );
-      console.log("Creator updated successfully");
+      console.log("Creator updated successfully:", creatorUpdate);
       
-      // Add group to members (excluding creator if present)
+      // Update members' groups arrays
       if (members?.length > 0) {
         const membersToUpdate = members.filter(id => id.toString() !== req.user._id.toString());
         if (membersToUpdate.length > 0) {
-          await User.updateMany(
+          const membersUpdate = await User.updateMany(
             { _id: { $in: membersToUpdate } },
-            { $addToSet: { groups: newGroup._id } },
+            { $addToSet: { groups: savedGroup._id } },
             { session }
           );
-          console.log("Members updated successfully");
+          console.log("Members updated successfully:", membersUpdate);
         }
       }
       
       await session.commitTransaction();
       console.log("Transaction committed successfully");
-      res.status(201).json(newGroup);
+      
+      // Populate the response with user details
+      const populatedGroup = await Group.findById(savedGroup._id)
+        .populate('creator', 'username profilePic')
+        .populate('members', 'username profilePic');
+      
+      res.status(201).json(populatedGroup);
     } catch (error) {
       await session.abortTransaction();
       console.error("Transaction error:", error);
-      throw error;
+      // Return more detailed error information
+      res.status(500).json({ 
+        error: "Failed to create group", 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     } finally {
       session.endSession();
     }
@@ -93,7 +105,11 @@ const createGroup = async (req, res) => {
     if (err.code === 11000) { // MongoDB duplicate key error
       return res.status(400).json({ error: "A group with this name already exists" });
     }
-    res.status(500).json({ error: "Failed to create group. Please try again." });
+    res.status(500).json({ 
+      error: "Failed to create group", 
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 
