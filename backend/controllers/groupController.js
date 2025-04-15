@@ -5,20 +5,28 @@ import mongoose from "mongoose";
 
 const createGroup = async (req, res) => {
   try {
+    console.log("Received group creation request:", {
+      body: req.body,
+      user: req.user
+    });
+
     const { name, description, color, members: rawMembers } = req.body;
     
     // Validate required fields
     if (!name?.trim()) {
+      console.log("Validation failed: Group name is required");
       return res.status(400).json({ error: "Group name is required" });
     }
 
     if (!req.user?._id) {
+      console.log("Validation failed: User not authenticated");
       return res.status(401).json({ error: "Unauthorized - User not authenticated" });
     }
 
     // Check for existing group
     const existingGroup = await Group.findOne({ name: name.trim() });
     if (existingGroup) {
+      console.log("Validation failed: Group name already exists");
       return res.status(400).json({ error: "A group with this name already exists" });
     }
 
@@ -28,6 +36,7 @@ const createGroup = async (req, res) => {
     if (members) {
       const validMembers = await User.find({ _id: { $in: members } });
       if (validMembers.length !== members.length) {
+        console.log("Validation failed: Invalid member IDs");
         return res.status(400).json({ error: "Invalid member IDs provided" });
       }
     }
@@ -40,10 +49,13 @@ const createGroup = async (req, res) => {
       members: members ? [...new Set([req.user._id, ...members])] : [req.user._id],
     });
 
+    console.log("Creating new group:", newGroup);
+
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
       await newGroup.save({ session });
+      console.log("Group saved successfully");
       
       // Add group to creator
       await User.findByIdAndUpdate(
@@ -51,6 +63,7 @@ const createGroup = async (req, res) => {
         { $addToSet: { groups: newGroup._id } },
         { session }
       );
+      console.log("Creator updated successfully");
       
       // Add group to members (excluding creator if present)
       if (members?.length > 0) {
@@ -61,10 +74,12 @@ const createGroup = async (req, res) => {
             { $addToSet: { groups: newGroup._id } },
             { session }
           );
+          console.log("Members updated successfully");
         }
       }
       
       await session.commitTransaction();
+      console.log("Transaction committed successfully");
       res.status(201).json(newGroup);
     } catch (error) {
       await session.abortTransaction();

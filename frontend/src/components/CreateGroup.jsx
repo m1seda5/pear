@@ -124,6 +124,15 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
     try {
       const memberIds = [...selectedUsers.map(u => u._id), user._id];
       
+      // Debug logging
+      console.log("User object:", user);
+      console.log("Request payload:", {
+        name: groupName,
+        description,
+        color,
+        members: memberIds
+      });
+      
       const res = await fetch("/api/groups/create", {
         method: "POST",
         headers: {
@@ -138,12 +147,22 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
         })
       });
 
+      // Debug logging
+      console.log("Response status:", res.status);
+      const responseText = await res.text();
+      console.log("Response text:", responseText);
+
       if (!res.ok) {
-        const errorData = await res.json();
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          errorData = { error: responseText };
+        }
         throw new Error(errorData.error || "Failed to create group");
       }
 
-      const data = await res.json();
+      const data = JSON.parse(responseText);
       
       toast({
         title: "Success",
