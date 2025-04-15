@@ -1353,6 +1353,18 @@ const createPost = async (req, res) => {
     let postTargetGroups = targetGroups || [];
 
     if (user.role === "student") {
+      // Students can only post to groups they belong to or 'all'
+      if (targetGroups.length > 0) {
+        const validGroups = await Group.find({
+          _id: { $in: targetGroups },
+          members: user._id 
+        });
+        
+        if (validGroups.length !== targetGroups.length) {
+          return res.status(403).json({ error: "Invalid group selection" });
+        }
+      }
+      
       // If no groups, force general post
       if (!hasGroups || postTargetGroups.length === 0) {
         postIsGeneral = true;

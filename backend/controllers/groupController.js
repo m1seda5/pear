@@ -5,7 +5,8 @@ import mongoose from "mongoose";
 
 const createGroup = async (req, res) => {
   try {
-    const { name, description, color, members } = req.body;
+    const { name, description, color, members: rawMembers } = req.body;
+    
     if (!name?.trim()) {
       return res.status(400).json({ error: "Group name is required" });
     }
@@ -15,6 +16,9 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ error: "A group with this name already exists" });
     }
 
+    // Deduplicate members
+    const members = rawMembers ? [...new Set(rawMembers)] : undefined;
+    
     if (members) {
       const validMembers = await User.find({ _id: { $in: members } });
       if (validMembers.length !== members.length) {
@@ -34,10 +38,26 @@ const createGroup = async (req, res) => {
     session.startTransaction();
     try {
       await newGroup.save({ session });
-      await User.findByIdAndUpdate(req.user._id, { $addToSet: { groups: newGroup._id } }, { session });
+      
+      // Add group to creator
+      await User.findByIdAndUpdate(
+        req.user._id,
+        { $addToSet: { groups: newGroup._id } },
+        { session }
+      );
+      
+      // Add group to members (excluding creator if present)
       if (members?.length > 0) {
-        await User.updateMany({ _id: { $in: members } }, { $addToSet: { groups: newGroup._id } }, { session });
+        const membersToUpdate = members.filter(id => id.toString() !== req.user._id.toString());
+        if (membersToUpdate.length > 0) {
+          await User.updateMany(
+            { _id: { $in: membersToUpdate } },
+            { $addToSet: { groups: newGroup._id } },
+            { session }
+          );
+        }
       }
+      
       await session.commitTransaction();
     } catch (error) {
       await session.abortTransaction();
@@ -49,6 +69,9 @@ const createGroup = async (req, res) => {
     res.status(201).json(newGroup);
   } catch (err) {
     console.error("Group creation error:", err);
+    if (err.code === 11000) { // MongoDB duplicate key error
+      return res.status(400).json({ error: "A group with this name already exists" });
+    }
     res.status(500).json({ error: "Failed to create group" });
   }
 };
