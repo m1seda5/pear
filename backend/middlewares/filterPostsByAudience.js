@@ -78,40 +78,43 @@ import User from "../models/userModel.js";
 const filterPostsByAudience = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).populate('groups');
+    const userId = req.user._id;
+    const userGroupIds = user.groups.map(g => g._id);
     
-    let filter = {
+    const postFilter = {
       $or: [
         { targetAudience: "all" },
-        { postedBy: req.user._id }
+        { postedBy: userId },
+        { targetGroups: { $in: userGroupIds } },
+        ...(user.role === "student" ? [
+          { targetYearGroups: user.yearGroup }
+        ] : []),
+        ...(user.role === "teacher" ? [
+          { targetDepartments: user.department }
+        ] : [])
       ]
     };
 
     if (user.role === "student") {
-      filter.$or.push(
-        { targetGroups: { $in: user.groups.map(g => g._id) } }
-      );
+      // Additional student specific filters are already included in postFilter
     } else if (user.role === "teacher") {
-      filter.$or.push(
-        { targetDepartments: user.department },
-        { targetYearGroups: { $in: user.yearGroups } },
-        { targetGroups: { $in: user.groups.map(g => g._id) } }
+      postFilter.$or.push(
+        { targetYearGroups: { $in: user.yearGroups } }
       );
     } else if (user.role === "admin") {
-      filter.$or.push(
+      postFilter.$or.push(
         { targetDepartments: { $exists: true } },
-        { targetYearGroups: { $exists: true } },
-        { targetGroups: { $exists: true } }
+        { targetYearGroups: { $exists: true } }
       );
     }
     
-    req.filter = filter;
+    req.filter = postFilter;
     next();
   } catch (error) {
     console.error("Filter posts error:", error);
     res.status(500).json({ error: "Failed to filter posts" });
   }
 };
-
 
 export default filterPostsByAudience;
 

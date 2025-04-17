@@ -616,6 +616,11 @@ const CreatePost = () => {
     );
   };
 
+  const handleGroupDetails = (group) => {
+    // Placeholder for group details functionality
+    console.log("Group details:", group);
+  };
+
   const handleAddYearGroup = (value) => {
     if (value === "all") {
       setTargetYearGroups(["all"]);
@@ -828,7 +833,7 @@ const CreatePost = () => {
                           <MenuButton
                             as={IconButton}
                             size="sm"
-                            colorScheme="blue"
+o                            colorScheme="blue"
                             variant="outline"
                             icon={<AddIcon />}
                             isDisabled={availableYearGroupsList.length === 0 || targetYearGroups.includes("all")}
@@ -862,39 +867,6 @@ const CreatePost = () => {
                               >
                                 <TagLabel>{t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}</TagLabel>
                                 <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
-                              </Tag>
-                            </WrapItem>
-                          ))
-                        )}
-                      </Wrap>
-                    </Box>
-
-                    <Box>
-                      <Flex justify="space-between" align="center" mb={2}>
-                        <Text fontWeight="medium">{t("Posting Groups")}</Text>
-                        <CreateGroup onGroupCreated={handleGroupCreated} />
-                      </Flex>
-                      <Wrap spacing={2}>
-                        {availableGroups.length === 0 ? (
-                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                            {t("No groups available")}
-                          </Text>
-                        ) : (
-                          availableGroups.map(group => (
-                            <WrapItem key={group._id}>
-                              <Tag
-                                size="md"
-                                variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
-                                colorScheme="blue"
-                                cursor="pointer"
-                                onClick={() => handleGroupToggle(group._id)}
-                                bg={selectedGroups.includes(group._id) ? group.color : undefined}
-                                _hover={{ opacity: 0.8 }}
-                              >
-                                <TagLabel>{group.name}</TagLabel>
-                                {selectedGroups.includes(group._id) && (
-                                  <TagCloseButton onClick={() => handleGroupToggle(group._id)} />
-                                )}
                               </Tag>
                             </WrapItem>
                           ))
@@ -980,6 +952,36 @@ const CreatePost = () => {
                       colorScheme="blue"
                       borderRadius="full"
                     />
+                  </Box>
+                )}
+
+                {availableGroups.length > 0 && (
+                  <Box>
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text fontWeight="medium">{t("Post to Group")}</Text>
+                      <CreateGroup onGroupCreated={handleGroupCreated} />
+                    </Flex>
+                    <Wrap spacing={2}>
+                      {availableGroups.map(group => (
+                        <WrapItem key={group._id}>
+                          <Tag
+                            size="md"
+                            variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
+                            colorScheme="blue"
+                            cursor="pointer"
+                            onClick={() => handleGroupToggle(group._id)}
+                            onDoubleClick={() => handleGroupDetails(group)}
+                            bg={selectedGroups.includes(group._id) ? group.color : undefined}
+                            _hover={{ opacity: 0.8 }}
+                          >
+                            <TagLabel>{group.name}</TagLabel>
+                            {selectedGroups.includes(group._id) && (
+                              <TagCloseButton onClick={() => handleGroupToggle(group._id)} />
+                            )}
+                          </Tag>
+                        </WrapItem>
+                      ))}
+                    </Wrap>
                   </Box>
                 )}
               </Stack>

@@ -1,7 +1,60 @@
-// groupController.js
 import Group from "../models/groupModel.js";
 import User from "../models/userModel.js";
 import mongoose from "mongoose";
+import nodemailer from "nodemailer";
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  auth: {
+    user: "81d810001@smtp-brevo.com",
+    pass: "6IBdE9hsKrHUxD4G",
+  },
+});
+
+// Helper function to send group notification email
+const sendNotificationEmail = async (recipientEmail, subject, message) => {
+  const mailOptions = {
+    from: "pearnet104@gmail.com",
+    to: recipientEmail,
+    subject: subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4CAF50;">Group Update on Pear! 🍐</h2>
+        <p style="font-size: 16px;">${message}</p>
+        <p style="font-size: 16px;">This allows you to target posts to that group of people and receive posts that are relevant to you.</p>
+        <a href="https://pear-tsk2.onrender.com/groups" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+          View Groups
+        </a>
+        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+          You received this email because you have notifications enabled. 
+          You can disable these in your Pear account settings.
+        </p>
+      </div>
+    `
+  };
+  
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Group notification email sent to ${recipientEmail}`);
+  } catch (error) {
+    console.error(`Error sending group notification email to ${recipientEmail}:`, error);
+  }
+};
+
+// Notification helper for group updates
+const sendGroupNotification = async (userId, message) => {
+  const user = await User.findById(userId);
+  if (!user || !user.notificationPreferences) return;
+  await sendNotificationEmail(
+    user.email,
+    "Group Update on Pear",
+    message
+  );
+};
 
 const createGroup = async (req, res) => {
   try {
@@ -66,7 +119,7 @@ const createGroup = async (req, res) => {
       );
       console.log("Creator updated successfully:", creatorUpdate);
       
-      // Update members' groups arrays
+      // Update members' groups arrays and send notifications
       if (members?.length > 0) {
         const membersToUpdate = members.filter(id => id.toString() !== req.user._id.toString());
         if (membersToUpdate.length > 0) {
@@ -76,6 +129,15 @@ const createGroup = async (req, res) => {
             { session }
           );
           console.log("Members updated successfully:", membersUpdate);
+          
+          // Send notifications to added members
+          const creatorUser = await User.findById(req.user._id);
+          for (const memberId of membersToUpdate) {
+            await sendGroupNotification(
+              memberId, 
+              `You have been added to the group "${savedGroup.name}" by ${creatorUser.username || 'a user'}`
+            );
+          }
         }
       }
       
@@ -129,4 +191,117 @@ const getGroups = async (req, res) => {
   }
 };
 
-export { createGroup, getGroups };
+const getGroupMembers = async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId)
+      .populate('members', 'username profilePic')
+      .populate('creator', 'username');
+    
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    
+    res.status(200).json(group.members);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const removeGroupMember = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const group = await Group.findById(req.params.groupId).session(session);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+
+    if (group.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: "Only group creator can remove members" });
+    }
+
+    // Get removed user details and group details before removal
+    const removedUser = await User.findById(req.params.userId);
+    const adminUser = await User.findById(req.user._id);
+
+    // Remove member from group
+    group.members = group.members.filter(m => m.toString() !== req.params.userId);
+    await group.save({ session });
+
+    // Remove group from user's groups
+    await User.findByIdAndUpdate(req.params.userId, {
+      $pull: { groups: group._id }
+    }, { session });
+
+    await session.commitTransaction();
+    
+    // Send notification to removed user after successful transaction
+    await sendGroupNotification(
+      req.params.userId,
+      `You have been removed from the group "${group.name}" by ${adminUser.username || 'the group admin'}`
+    );
+    
+    res.status(200).json({ message: "Member removed successfully" });
+  } catch (err) {
+    await session.abortTransaction();
+    res.status(500).json({ error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+const leaveGroup = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const group = await Group.findById(req.params.groupId).session(session);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    
+    const leavingUser = await User.findById(req.user._id);
+
+    // If user is creator, delete the group
+    if (group.creator.toString() === req.user._id.toString()) {
+      // Get all group members for notifications
+      const groupMembers = [...group.members].filter(
+        m => m.toString() !== req.user._id.toString()
+      );
+      
+      await Group.deleteOne({ _id: group._id }).session(session);
+      await User.updateMany(
+        { groups: group._id },
+        { $pull: { groups: group._id } },
+        { session }
+      );
+      
+      await session.commitTransaction();
+      
+      // Notify all members that group was deleted
+      for (const memberId of groupMembers) {
+        await sendGroupNotification(
+          memberId,
+          `The group "${group.name}" has been deleted by ${leavingUser.username || 'the group creator'}`
+        );
+      }
+    } else {
+      // Regular member leaving
+      group.members = group.members.filter(m => m.toString() !== req.user._id.toString());
+      await group.save({ session });
+      await User.findByIdAndUpdate(req.user._id, {
+        $pull: { groups: group._id }
+      }, { session });
+      
+      await session.commitTransaction();
+      
+      // Notify group creator that a member left
+      await sendGroupNotification(
+        group.creator,
+        `${leavingUser.username || 'A member'} has left your group "${group.name}"`
+      );
+    }
+
+    res.status(200).json({ message: "Left group successfully" });
+  } catch (err) {
+    await session.abortTransaction();
+    res.status(500).json({ error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export { createGroup, getGroups, getGroupMembers, removeGroupMember, leaveGroup };
