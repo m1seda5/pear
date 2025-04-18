@@ -938,12 +938,12 @@ import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 import HeaderSearch from "./HeaderSearch";
 
-// Define keyframes properly outside components
+// Define keyframes outside the component
 const pulseKeyframes = keyframes`
   0% { opacity: 0.7; }
   50% { opacity: 1; }
@@ -976,18 +976,16 @@ const Header = ({ unreadCount = 0 }) => {
   const logout = useLogout();
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const navigate = useNavigate();
-  
-  // Consolidated state - only track locks when needed
+
   const [showLockIcon, setShowLockIcon] = useState({
     chat: false,
     tv: false,
     admin: false
   });
 
-  // Only evaluate these if user exists
-  const isStudent = user ? user.role === "student" : false;
-  const isTeacher = user ? user.role === "teacher" : false;
-  const isAdmin = user ? user.role === "admin" : false;
+  const isStudent = user?.role === "student";
+  const isTeacher = user?.role === "teacher";
+  const isAdmin = user?.role === "admin";
 
   const currentDate = new Date();
   const dayOfWeek = currentDate.getDay();
@@ -998,7 +996,6 @@ const Header = ({ unreadCount = 0 }) => {
   const lunchEnd = 1340;
   const schoolEnd = 1535;
 
-  // Complete user check before evaluating hasChatAccess
   const hasChatAccess = user && (
     isTeacher ||
     isAdmin ||
@@ -1013,7 +1010,7 @@ const Header = ({ unreadCount = 0 }) => {
   );
 
   const handleChatClick = (e) => {
-    if (!user || (user && user.isFrozen) || !hasChatAccess) {
+    if (!user || user.isFrozen || !hasChatAccess) {
       e.preventDefault();
     } else {
       navigate("/chat");
@@ -1021,26 +1018,23 @@ const Header = ({ unreadCount = 0 }) => {
   };
 
   const handleTVClick = (e) => {
-    if (!user || (user && !isAdmin)) {
+    if (!user || !isAdmin) {
       e.preventDefault();
     } else {
       navigate("/tv");
     }
   };
 
-  // Handle admin dashboard click
   const handleAdminClick = (e) => {
-    if (!user || (user && !isAdmin)) {
+    if (!user || !isAdmin) {
       e.preventDefault();
     } else {
       navigate("/admin");
     }
   };
 
-  // Safe logout function
   const handleLogout = async () => {
     try {
-      // Navigate first, then logout
       navigate("/auth");
       await logout();
     } catch (error) {
@@ -1048,17 +1042,16 @@ const Header = ({ unreadCount = 0 }) => {
     }
   };
 
-  // Enhanced NavIcon with simpler hover effects
   const NavIcon = ({ icon, label, onClick, isActive, isDisabled, children }) => {
     const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
     const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
     const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
     const hoverBgColor = colorMode === "dark" ? "whiteAlpha.200" : "blackAlpha.50";
-    
+
     return (
-      <Tooltip 
-        label={label} 
-        placement="bottom" 
+      <Tooltip
+        label={label}
+        placement="bottom"
         hasArrow
         openDelay={300}
         bg={colorMode === "dark" ? "gray.700" : "gray.200"}
@@ -1075,8 +1068,8 @@ const Header = ({ unreadCount = 0 }) => {
           _hover={{
             bg: hoverBgColor,
             transform: "translateY(-3px)",
-            boxShadow: colorMode === "dark" 
-              ? "0 6px 10px rgba(0, 0, 0, 0.4)" 
+            boxShadow: colorMode === "dark"
+              ? "0 6px 10px rgba(0, 0, 0, 0.4)"
               : "0 6px 10px rgba(0, 0, 0, 0.1)",
             "& .nav-icon-underline": {
               width: "80%",
@@ -1097,8 +1090,6 @@ const Header = ({ unreadCount = 0 }) => {
           }}
         >
           {children}
-          
-          {/* Animated underline indicator */}
           <Box
             className="nav-icon-underline"
             position="absolute"
@@ -1117,10 +1108,8 @@ const Header = ({ unreadCount = 0 }) => {
     );
   };
 
-  // Define animations
   const pulseAnimation = `${pulseKeyframes} 1s infinite`;
   const shakeAnimation = `${shakeKeyframes} 0.5s`;
-  const rotateAnimation = `${rotateKeyframes} 0.3s forwards`;
   const bounceInAnimation = `${bounceInKeyframes} 0.5s`;
 
   return (
@@ -1143,54 +1132,27 @@ const Header = ({ unreadCount = 0 }) => {
       }}
     >
       {user && (
-        <NavIcon 
-          label="Home" 
-          onClick={() => navigate("/")}
-        >
-          <Link
-            as={RouterLink}
-            to="/"
-            display="flex"
-            alignItems="center"
-            _hover={{ textDecoration: "none" }}
-          >
+        <NavIcon label="Home" onClick={() => navigate("/")}>
+          <Link as={RouterLink} to="/" display="flex" alignItems="center" _hover={{ textDecoration: "none" }}>
             <AiFillHome size={22} />
           </Link>
         </NavIcon>
       )}
 
       {!user && (
-        <NavIcon 
-          label="Login" 
-          onClick={() => {
-            setAuthScreen("login");
-            navigate("/auth");
-          }}
-        >
-          <Link
-            as={RouterLink}
-            to="/auth"
-            display="flex"
-            alignItems="center"
-            fontWeight="medium"
-            _hover={{ textDecoration: "none" }}
-          >
-            Login
-          </Link>
+        <NavIcon label="Login" onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
+          <Link as={RouterLink} to="/auth" fontWeight="medium">Login</Link>
         </NavIcon>
       )}
 
-      <NavIcon 
-        label={colorMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} 
-        onClick={toggleColorMode}
-      >
+      <NavIcon label={colorMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"} onClick={toggleColorMode}>
         <Box className="theme-toggle-icon" position="relative">
           <Icon
-            as={colorMode === 'dark' ? SunIcon : MoonIcon}
+            as={colorMode === "dark" ? SunIcon : MoonIcon}
             w={5}
             h={5}
             transition="all 0.3s ease"
-            transform={colorMode === 'dark' ? "rotate(0deg)" : "rotate(-180deg)"}
+            transform={colorMode === "dark" ? "rotate(0deg)" : "rotate(-180deg)"}
           />
         </Box>
       </NavIcon>
@@ -1198,52 +1160,27 @@ const Header = ({ unreadCount = 0 }) => {
       <HeaderSearch />
 
       {user && (
-        <Flex
-          alignItems="center"
-          gap={{ base: 4, md: 8 }}
-          flexWrap={{ base: "wrap", md: "nowrap" }}
-          justifyContent={{ base: "center", md: "flex-start" }}
-        >
-          <NavIcon 
-            label="Profile" 
-            onClick={() => navigate(`/${user.username}`)}
-          >
-            <Link
-              as={RouterLink}
-              to={`/${user.username}`}
-              display="flex"
-              alignItems="center"
-              _hover={{ textDecoration: "none" }}
-            >
+        <Flex alignItems="center" gap={{ base: 4, md: 8 }} flexWrap="wrap" justifyContent="center">
+          <NavIcon label="Profile" onClick={() => navigate(`/${user.username}`)}>
+            <Link as={RouterLink} to={`/${user.username}`} display="flex" alignItems="center">
               <RxAvatar size={22} />
             </Link>
           </NavIcon>
 
-          <NavIcon 
-            label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")} 
+          <NavIcon
+            label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}
             onClick={handleChatClick}
             isDisabled={user.isFrozen || !hasChatAccess}
           >
             <Box
-              position="relative"
-              onMouseEnter={() => setShowLockIcon({...showLockIcon, chat: !hasChatAccess || user.isFrozen})}
-              onMouseLeave={() => setShowLockIcon({...showLockIcon, chat: false})}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
+              onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
+              onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
             >
-              {user.isFrozen ? (
-                <FaLock size={18} color={colorMode === "dark" ? "#4299E1" : "#3182CE"} />
-              ) : showLockIcon.chat ? (
-                <FaLock 
-                  size={18} 
-                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
-                  style={{ animation: pulseAnimation }}
-                />
+              {user.isFrozen || showLockIcon.chat ? (
+                <FaLock size={18} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} style={{ animation: pulseAnimation }} />
               ) : (
                 <BsFillChatQuoteFill size={18} />
               )}
-              
               {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                 <Flex
                   position="absolute"
@@ -1258,8 +1195,6 @@ const Header = ({ unreadCount = 0 }) => {
                   alignItems="center"
                   justifyContent="center"
                   fontWeight="bold"
-                  boxShadow={colorMode === "dark" ? "0 0 0 2px #1A202C" : "0 0 0 2px white"}
-                  zIndex="1"
                   animation={bounceInAnimation}
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -1269,99 +1204,39 @@ const Header = ({ unreadCount = 0 }) => {
           </NavIcon>
 
           {isAdmin && (
-            <NavIcon 
-              label="Admin Dashboard" 
-              onClick={handleAdminClick}
-            >
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="teal.500"
-              >
-                <FaUserShield size={20} />
-              </Box>
+            <NavIcon label="Admin Dashboard" onClick={handleAdminClick}>
+              <FaUserShield size={20} color="teal.500" />
             </NavIcon>
           )}
 
-          <NavIcon 
-            label={isAdmin ? "TV Dashboard" : "Admin Only"} 
-            onClick={handleTVClick}
-            isDisabled={!isAdmin}
-          >
+          <NavIcon label={isAdmin ? "TV Dashboard" : "Admin Only"} onClick={handleTVClick} isDisabled={!isAdmin}>
             <Box
-              onMouseEnter={() => setShowLockIcon({...showLockIcon, tv: !isAdmin})}
-              onMouseLeave={() => setShowLockIcon({...showLockIcon, tv: false})}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
+              onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
+              onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
             >
               {showLockIcon.tv ? (
-                <FaLock 
-                  size={18} 
-                  color={colorMode === "dark" ? "#F56565" : "#E53E3E"} 
-                  style={{ animation: shakeAnimation }}
-                />
+                <FaLock size={18} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} style={{ animation: shakeAnimation }} />
               ) : (
                 <PiTelevisionSimpleBold size={20} />
               )}
             </Box>
           </NavIcon>
 
-          <NavIcon 
-            label="Settings" 
-            onClick={() => navigate("/settings")}
-          >
-            <Link
-              as={RouterLink}
-              to="/settings"
-              display="flex"
-              alignItems="center"
-              _hover={{ textDecoration: "none" }}
-            >
-              <MdOutlineSettings 
-                size={20} 
-                className="settings-icon"
-                style={{ 
-                  transition: "transform 0.3s ease",
-                  transformOrigin: "center"
-                }}
-              />
+          <NavIcon label="Settings" onClick={() => navigate("/settings")}>
+            <Link as={RouterLink} to="/settings">
+              <MdOutlineSettings size={20} className="settings-icon" style={{ transition: "transform 0.3s ease" }} />
             </Link>
           </NavIcon>
 
-          <NavIcon 
-            label="Logout" 
-            onClick={handleLogout}
-          >
-            <Box 
-              display="flex" 
-              alignItems="center"
-            >
-              <FiLogOut size={20} />
-            </Box>
+          <NavIcon label="Logout" onClick={handleLogout}>
+            <FiLogOut size={20} />
           </NavIcon>
         </Flex>
       )}
 
       {!user && (
-        <NavIcon 
-          label="Sign up" 
-          onClick={() => {
-            setAuthScreen("signup");
-            navigate("/auth");
-          }}
-        >
-          <Link
-            as={RouterLink}
-            to="/auth"
-            display="flex"
-            alignItems="center"
-            fontWeight="medium"
-            _hover={{ textDecoration: "none" }}
-          >
-            Sign up
-          </Link>
+        <NavIcon label="Sign up" onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
+          <Link as={RouterLink} to="/auth" fontWeight="medium">Sign up</Link>
         </NavIcon>
       )}
     </Flex>

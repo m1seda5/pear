@@ -1,3 +1,4 @@
+// UserPage.jsx
 import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -24,60 +25,60 @@ const UserPage = () => {
 
   // Check if the page was accessed via search
   useEffect(() => {
-    // Check location.state for initial navigation
     const isFromSearch = location.state?.fromSearch;
     if (isFromSearch) {
       sessionStorage.setItem(`userPage_${username}_fromSearch`, "true");
       setFromSearch(true);
     } else {
-      // Check sessionStorage for persisted state (e.g., after refresh)
       const storedFromSearch = sessionStorage.getItem(`userPage_${username}_fromSearch`);
       setFromSearch(storedFromSearch === "true");
     }
 
-    // Cleanup on unmount (when navigating away)
     return () => {
-      // Only clear if navigating to a different page
       if (!window.location.pathname.includes(`/user/${username}`)) {
         sessionStorage.removeItem(`userPage_${username}_fromSearch`);
       }
     };
   }, [location.state, username]);
 
-  // Handle message button click
+  // Updated handleMessage function
   const handleMessage = () => {
     const currentDate = new Date();
     const dayOfWeek = currentDate.getDay();
     const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
 
-    const schoolStart = 810;
-    const lunchStart = 1250;
-    const lunchEnd = 1340;
-    const schoolEnd = 1535;
+    // School hours configuration
+    const schoolStart = 810;  // 8:10 AM
+    const lunchStart = 1250;  // 12:50 PM
+    const lunchEnd = 1340;    // 1:40 PM
+    const schoolEnd = 1535;   // 3:35 PM
 
     const isStudent = currentUser?.role === "student";
-    const isTeacher = currentUser?.role === "teacher";
-    const isAdmin = currentUser?.role === "admin";
-
-    const hasChatAccess = currentUser && (
-      isTeacher ||
-      isAdmin ||
-      (isStudent &&
-        ((dayOfWeek >= 1 &&
-          dayOfWeek <= 5 &&
-          (currentTime < schoolStart ||
-            (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-            currentTime > schoolEnd)) ||
-          dayOfWeek === 0 ||
-          dayOfWeek === 6))
+    const allowedAccess = !isStudent || (
+      (dayOfWeek >= 1 && dayOfWeek <= 5 && (
+        currentTime < schoolStart ||
+        (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+        currentTime > schoolEnd
+      )) || 
+      dayOfWeek === 0 || 
+      dayOfWeek === 6
     );
 
-    if (!hasChatAccess) {
-      showToast("Error", "Messaging is only available during breaks", "error");
+    if (!allowedAccess) {
+      let message = "Messaging is only available during breaks";
+      if (currentTime < schoolStart) message = "Please wait until school starts";
+      else if (currentTime <= schoolEnd) message = "Wait until lunch time or school ends";
+      
+      showToast("Error", message, "error");
       return;
     }
 
-    navigate(`/chat`, { state: { recipient: user, fromSearch: true } });
+    navigate(`/chat`, { 
+      state: { 
+        recipient: user,
+        fromSearch: true 
+      } 
+    });
   };
 
   useEffect(() => {
@@ -92,11 +93,9 @@ const UserPage = () => {
         });
         if (!res.ok) {
           const errorText = await res.text();
-          console.error("API Error Response:", errorText);
           throw new Error(`Failed to fetch posts: ${res.status} - ${errorText}`);
         }
         const data = await res.json();
-        console.log("Fetched posts:", data);
         setPosts(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -166,3 +165,4 @@ const UserPage = () => {
 };
 
 export default UserPage;
+
