@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import useShowToast from "../hooks/useShowToast";
-import { Flex, Spinner, Text, Box } from "@chakra-ui/react";
+import { Flex, Spinner, Text, Box, Button } from "@chakra-ui/react";
 import Post from "../components/Post";
 import useGetUserProfile from "../hooks/useGetUserProfile";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
+import userAtom from "../atoms/userAtom";
 
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
@@ -16,6 +17,68 @@ const UserPage = () => {
   const [posts, setPosts] = useRecoilState(postsAtom);
   const [fetchingPosts, setFetchingPosts] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentUser = useRecoilValue(userAtom);
+  const [fromSearch, setFromSearch] = useState(false);
+
+  // Check if the page was accessed via search
+  useEffect(() => {
+    // Check location.state for initial navigation
+    const isFromSearch = location.state?.fromSearch;
+    if (isFromSearch) {
+      sessionStorage.setItem(`userPage_${username}_fromSearch`, "true");
+      setFromSearch(true);
+    } else {
+      // Check sessionStorage for persisted state (e.g., after refresh)
+      const storedFromSearch = sessionStorage.getItem(`userPage_${username}_fromSearch`);
+      setFromSearch(storedFromSearch === "true");
+    }
+
+    // Cleanup on unmount (when navigating away)
+    return () => {
+      // Only clear if navigating to a different page
+      if (!window.location.pathname.includes(`/user/${username}`)) {
+        sessionStorage.removeItem(`userPage_${username}_fromSearch`);
+      }
+    };
+  }, [location.state, username]);
+
+  // Handle message button click
+  const handleMessage = () => {
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay();
+    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+
+    const schoolStart = 810;
+    const lunchStart = 1250;
+    const lunchEnd = 1340;
+    const schoolEnd = 1535;
+
+    const isStudent = currentUser?.role === "student";
+    const isTeacher = currentUser?.role === "teacher";
+    const isAdmin = currentUser?.role === "admin";
+
+    const hasChatAccess = currentUser && (
+      isTeacher ||
+      isAdmin ||
+      (isStudent &&
+        ((dayOfWeek >= 1 &&
+          dayOfWeek <= 5 &&
+          (currentTime < schoolStart ||
+            (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+            currentTime > schoolEnd)) ||
+          dayOfWeek === 0 ||
+          dayOfWeek === 6))
+    );
+
+    if (!hasChatAccess) {
+      showToast("Error", "Messaging is only available during breaks", "error");
+      return;
+    }
+
+    navigate(`/chat`, { state: { recipient: user, fromSearch: true } });
+  };
 
   useEffect(() => {
     const getPosts = async () => {
@@ -25,7 +88,7 @@ const UserPage = () => {
 
       try {
         const res = await fetch(`/api/posts/user/${username}`, {
-          credentials: "include", // Ensure auth token is sent
+          credentials: "include",
         });
         if (!res.ok) {
           const errorText = await res.text();
@@ -67,6 +130,13 @@ const UserPage = () => {
   return (
     <Box>
       <UserHeader user={user} />
+      {fromSearch && currentUser?._id !== user._id && (
+        <Flex justifyContent="flex-end" px={4} mb={4}>
+          <Button onClick={handleMessage} ml={2}>
+            Message
+          </Button>
+        </Flex>
+      )}
 
       {error && (
         <Box p={4} bg="red.50" color="red.700" borderRadius="md" my={4}>

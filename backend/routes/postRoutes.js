@@ -73,7 +73,8 @@ import {
   getUserPosts,
   repostPost,
   notifyReviewers,
-  addViewToPost
+  addViewToPost,
+  searchPosts
 } from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import checkTeacherAccess from "../middlewares/checkTeacherAccess.js";
@@ -82,6 +83,16 @@ import validateObjectId from "../middlewares/validateObjectId.js";
 import Post from "../models/postModel.js";
 
 const router = express.Router();
+
+// Search posts
+router.get("/search/:query", protectRoute, async (req, res) => {
+  try {
+    const posts = await searchPosts(req.params.query);
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Review system routes
 router.get("/pending-reviews", protectRoute, getPendingReviews);

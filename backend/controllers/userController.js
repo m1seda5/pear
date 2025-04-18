@@ -2303,8 +2303,32 @@ const levenshteinDistance = (str1, str2) => {
   
   return dp[m][n];
 };
+const searchHeader = async (req, res) => {
+  try {
+    const query = req.query.q;
+    
+    const [users, posts] = await Promise.all([
+      User.find({
+        $or: [
+          { username: new RegExp(query, 'i') },
+          { name: new RegExp(query, 'i') }
+        ]
+      }).limit(5),
+      Post.find({
+        $text: { $search: query },
+        reviewStatus: 'approved'
+      })
+      .limit(5)
+      .populate('postedBy', 'username')
+    ]);
 
+    res.json({ users, posts });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 export {
+  searchHeader,
   signupUser,
   forgotPassword,
   resetPassword,

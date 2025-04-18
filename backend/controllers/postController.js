@@ -1222,6 +1222,7 @@ import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
 import mongoose from "mongoose";
+import Group from "../models/groupModel.js";
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -2050,7 +2051,18 @@ const deleteComment = async (req, res) => {
   }
   // Add this function alongside your other controller functions
 };
+// In postController.js
+const searchPosts = async (query) => {
+  return Post.find({
+    $text: { $search: query },
+    reviewStatus: 'approved'
+  })
+  .limit(5)
+  .populate('postedBy', 'username');
+};
+
 export {
+  searchPosts,
   addViewToPost,
   createPost,
   deleteComment,

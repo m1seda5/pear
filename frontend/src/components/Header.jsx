@@ -939,8 +939,9 @@ import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
 import { useState, useEffect } from "react";
-import { FaLock, FaUserShield } from "react-icons/fa"; // Added FaUserShield
+import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
+import HeaderSearch from "./HeaderSearch";
 
 // Define keyframes properly outside components
 const pulseKeyframes = keyframes`
@@ -1127,10 +1128,11 @@ const Header = ({ unreadCount = 0 }) => {
       justifyContent="center"
       mt={6}
       mb="12"
-      gap={{ base: 4, md: 8 }}
+      gap={10}
       px={{ base: 2, md: 0 }}
       flexWrap={{ base: "wrap", md: "nowrap" }}
       width="100%"
+      alignItems="center"
       sx={{
         ".nav-icon-container": {
           position: "relative",
@@ -1192,6 +1194,8 @@ const Header = ({ unreadCount = 0 }) => {
           />
         </Box>
       </NavIcon>
+
+      <HeaderSearch />
 
       {user && (
         <Flex
@@ -1264,7 +1268,6 @@ const Header = ({ unreadCount = 0 }) => {
             </Box>
           </NavIcon>
 
-          {/* Admin Dashboard Icon - Only visible to admins */}
           {isAdmin && (
             <NavIcon 
               label="Admin Dashboard" 

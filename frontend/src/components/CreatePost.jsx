@@ -512,6 +512,7 @@ import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 import CreateGroup from "./CreateGroup";
 
+
 const MAX_CHAR = 500;
 
 const pulseKeyframes = keyframes`

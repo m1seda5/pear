@@ -643,6 +643,7 @@ import userAtom from "../atoms/userAtom";
 import { useTranslation } from 'react-i18next';
 import { useSocket } from "../context/SocketContext";
 import UserSearch from "../components/UserSearch";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const ChatPage = () => {
   const [loadingConversations, setLoadingConversations] = useState(true);
@@ -655,11 +656,23 @@ const ChatPage = () => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isMonitoring, setIsMonitoring] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Color mode values
   const cardBg = useColorModeValue("white", "gray.800");
   const subtleBg = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
+
+  // Handle recipient from navigation state
+  useEffect(() => {
+    const recipient = location.state?.recipient;
+    if (recipient && !isMonitoring) {
+      handleUserSelect(recipient);
+      // Clear the state to prevent re-triggering on refresh
+      navigate(location.pathname, { replace: true, state: { fromSearch: location.state?.fromSearch } });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (socket && conversations) {

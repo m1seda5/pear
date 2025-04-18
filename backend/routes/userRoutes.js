@@ -57,29 +57,31 @@
 // email verififcation update import express from "express";
 import express from "express";
 import {
-    followUnFollowUser,
-    getUserProfile,
-    loginUser,
-    logoutUser,
-    signupUser,
-    updateUser,
-    getSuggestedUsers,
-    freezeAccount,
-    verifyOTP,
-    adminFreezeUser,
-    adminDeleteUser,
-    searchUsers,
-    searchReviewers,
-    forgotPassword,
-    resetPassword,
-    resendOTP
+  followUnFollowUser,
+  getUserProfile,
+  loginUser,
+  logoutUser,
+  signupUser,
+  updateUser,
+  getSuggestedUsers,
+  freezeAccount,
+  verifyOTP,
+  adminFreezeUser,
+  adminDeleteUser,
+  searchUsers,
+  searchReviewers,
+  forgotPassword,
+  resetPassword,
+  resendOTP,
+  searchHeader
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
-// Add the search routes
+// Search routes
+router.get("/search", protectRoute, searchHeader);
 router.get("/search/:query", protectRoute, searchUsers);
 router.get("/search-reviewers/:query", protectRoute, searchReviewers);
 
