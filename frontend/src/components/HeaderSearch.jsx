@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import _ from 'lodash';
+import { t } from 'i18next';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -157,10 +158,10 @@ const HeaderSearch = () => {
               exit="exit"
               variants={itemVariants}
             >
-              {results.users.length > 0 && (
+              {results.users?.length > 0 && (
                 <>
                   <MotionText fontWeight="bold" mb={2} variants={itemVariants}>
-                    Users
+                    {t("Users")}
                   </MotionText>
                   {results.users.map(user => (
                     <motion.div key={user._id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -180,10 +181,10 @@ const HeaderSearch = () => {
                 </>
               )}
 
-              {results.posts.length > 0 && (
+              {results.posts?.length > 0 && (
                 <>
                   <MotionText fontWeight="bold" mt={4} mb={2} variants={itemVariants}>
-                    Posts
+                    {t("Posts")}
                   </MotionText>
                   {results.posts.map(post => (
                     <motion.div key={post._id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
