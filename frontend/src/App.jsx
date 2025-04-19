@@ -171,12 +171,11 @@
 // export default App;
 
 // post review 
-// App.jsx
-import { Box, Flex } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
-// import Header from "./components/Header"; // REMOVE this import
+import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import { useRecoilValue } from "recoil";
@@ -191,30 +190,30 @@ import ResetPassword from "./pages/ResetPassword";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard"; // Add this import
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { CustomNavigation } from "./components/CustomNavigation"; // Ensure this import exists
 
 function App() {
   const user = useRecoilValue(userAtom);
   const { pathname } = useLocation();
   const savedLanguage = localStorage.getItem('language') || 'en';
   i18n.changeLanguage(savedLanguage);
-
+  
+  // Add state for unread messages count
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-
+  
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
-  const isAdminDashboard = pathname === '/admin';
-  const isHomePage = pathname === '/';
-
+  const isAdminDashboard = pathname === '/admin'; // New variable to check if on admin page
+  
+  // Function to fetch unread count
   const fetchUnreadCount = async () => {
     if (!user) {
       setUnreadCount(0);
       return;
     }
+    
     try {
       const { data } = await axios.get("/api/messages/unread-count");
       setUnreadCount(data.count);
@@ -222,74 +221,53 @@ function App() {
       console.error("Error fetching unread count:", error);
     }
   };
-
+  
+  // Fetch unread count on component mount and when user changes
   useEffect(() => {
     fetchUnreadCount();
+    
+    // Set up polling to check for new messages every 30 seconds
     const intervalId = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(intervalId);
+    
+    return () => clearInterval(intervalId); // Clean up on unmount
   }, [user]);
-
+  
+  // Reset unread count when navigating to chat page
   useEffect(() => {
     if (pathname === '/chat' && user) {
-      // You might want to reset the count or handle notifications in the ChatPage
+      // Optionally reset the count when the user visits the chat page
+      // This depends on your app's UX design
+      // setUnreadCount(0);
+      
+      // Alternative: You might want to keep showing notifications until 
+      // the specific conversation is opened, which would be handled in ChatPage component
     }
   }, [pathname, user]);
-
-  const handleCreatePostOpen = () => {
-    setIsCreatePostOpen(true);
-  };
-
-  const handleCreatePostClose = () => {
-    setIsCreatePostOpen(false);
-  };
-
+  
+  // Determine if custom width should be applied (for TV and Admin pages)
+  const shouldUseFullWidth = isTVPage || isAdminDashboard;
+  
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
-        {isHomePage && user ? (
-          <Flex direction="row" minH="100vh">
-            <CustomNavigation
-              placement="side"
-              unreadCount={unreadCount}
-              onCreatePostOpen={handleCreatePostOpen}
-            />
-            <Box flex="1" mx="auto" px={4} maxW="600px" py={6}>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/:username" element={<UserPage />} />
-                <Route path="/:username/post/:pid" element={<PostPage />} />
-              </Routes>
-            </Box>
-          </Flex>
-        ) : (
-          <Box mx="auto" px={4} maxW={isTVPage || isAdminDashboard ? "100vw" : "600px"} pb={16}>
-            <Routes>
-              <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
-              <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
-              <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-              <Route path="/:username" element={<UserPage />} />
-              <Route path="/:username/post/:pid" element={<PostPage />} />
-              <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
-              <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/tv" element={<TVPage />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
-            </Routes>
-            {user && !isHomePage && (
-              <Box position="fixed" bottom="0" left="0" right="0" bg="white" borderTop="1px solid" borderColor="gray.200" zIndex="10">
-                <CustomNavigation
-                  placement="bottom"
-                  unreadCount={unreadCount}
-                  onCreatePostOpen={handleCreatePostOpen}
-                />
-              </Box>
-            )}
-          </Box>
-        )}
-
+        {!isTVPage && <Header unreadCount={unreadCount} />}
+        <Box mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
+          <Routes>
+            <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
+            <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
+            <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
+            <Route path="/:username" element={<UserPage />} />
+            <Route path="/:username/post/:pid" element={<PostPage />} />
+            <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
+            <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/tv" element={<TVPage />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            {/* Add Admin Dashboard route */}
+            <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
+          </Routes>
+        </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
-        {isCreatePostOpen && <CreatePost onClose={handleCreatePostClose} isOpen={isCreatePostOpen} />}
       </Box>
     </I18nextProvider>
   );

@@ -1,6 +1,6 @@
 // UserPage.jsx
 import { useEffect, useState } from "react";
-import UserHeader from "../components/UserHeader"; // You might want to remove this import as well
+import UserHeader from "../components/UserHeader";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import useShowToast from "../hooks/useShowToast";
 import { Flex, Spinner, Text, Box, Button } from "@chakra-ui/react";
@@ -8,7 +8,7 @@ import Post from "../components/Post";
 import useGetUserProfile from "../hooks/useGetUserProfile";
 import { useRecoilState, useRecoilValue } from "recoil";
 import postsAtom from "../atoms/postsAtom";
-// import CreatePost from "../components/CreatePost"; // REMOVE this import
+import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 
 const UserPage = () => {
@@ -59,8 +59,8 @@ const UserPage = () => {
         currentTime < schoolStart ||
         (currentTime >= lunchStart && currentTime <= lunchEnd) ||
         currentTime > schoolEnd
-      )) ||
-      dayOfWeek === 0 ||
+      )) || 
+      dayOfWeek === 0 || 
       dayOfWeek === 6
     );
 
@@ -68,16 +68,16 @@ const UserPage = () => {
       let message = "Messaging is only available during breaks";
       if (currentTime < schoolStart) message = "Please wait until school starts";
       else if (currentTime <= schoolEnd) message = "Wait until lunch time or school ends";
-
+      
       showToast("Error", message, "error");
       return;
     }
 
-    navigate(`/chat`, {
-      state: {
+    navigate(`/chat`, { 
+      state: { 
         recipient: user,
-        fromSearch: true
-      }
+        fromSearch: true 
+      } 
     });
   };
 
@@ -128,7 +128,7 @@ const UserPage = () => {
 
   return (
     <Box>
-      {/* <UserHeader user={user} /> */} {/* You might want to remove this line */}
+      <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
           <Button onClick={handleMessage} ml={2}>
@@ -159,9 +159,10 @@ const UserPage = () => {
         <Post key={post._id} post={post} postedBy={post.postedBy} />
       ))}
 
-      {/* <CreatePost /> */} {/* ENSURE THIS LINE IS REMOVED */}
+      <CreatePost />
     </Box>
   );
 };
 
 export default UserPage;
+
