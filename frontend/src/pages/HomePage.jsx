@@ -342,127 +342,107 @@ import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
 import postsAtom from "../atoms/postsAtom";
 import userAtom from "../atoms/userAtom";
-import TutorialSlider from "../components/TutorialSlider";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
 
 const HomePage = () => {
-    const [posts, setPosts] = useRecoilState(postsAtom);
-    const [loading, setLoading] = useState(true);
-    const [newPosts, setNewPosts] = useState([]);
-    const showToast = useShowToast();
-    const { t, i18n } = useTranslation();
-    const [language, setLanguage] = useState(i18n.language);
-    const [showTutorial, setShowTutorial] = useState(false);
-    const user = useRecoilValue(userAtom);
+  const [posts, setPosts] = useRecoilState(postsAtom);
+  const [loading, setLoading] = useState(true);
+  const [newPosts, setNewPosts] = useState([]);
+  const showToast = useShowToast();
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState(i18n.language);
+  const user = useRecoilValue(userAtom);
 
-    // Handle language change
-    useEffect(() => {
-        const handleLanguageChange = (lng) => {
-            setLanguage(lng);
-        };
-        i18n.on('languageChanged', handleLanguageChange);
-        return () => {
-            i18n.off('languageChanged', handleLanguageChange);
-        };
-    }, [i18n]);
+  // Handle language change
+  useEffect(() => {
+    const handleLanguageChange = (lng) => {
+      setLanguage(lng);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
-    // Show tutorial on every page load when user is present
-    useEffect(() => {
-        if (user) {
-            // Trigger tutorial on initial load or significant navigation
-            setTimeout(() => {
-                setShowTutorial(true);
-            }, 500);
+  // Fetch feed posts
+  useEffect(() => {
+    const getFeedPosts = async () => {
+      setLoading(true);
+      setPosts([]);
+      try {
+        const res = await fetch("/api/posts/feed");
+        if (!res.ok) {
+          throw new Error(t("Failed to fetch posts"));
         }
-    }, []); // Empty dependency array: runs once per page load/component mount
-
-    // Fetch feed posts
-    useEffect(() => {
-        const getFeedPosts = async () => {
-            setLoading(true);
-            setPosts([]);
-            try {
-                const res = await fetch("/api/posts/feed");
-                if (!res.ok) {
-                    throw new Error(t("Failed to fetch posts"));
-                }
-                const data = await res.json();
-                if (data.error) {
-                    if (!data.error.includes("User not found")) {
-                        showToast(t("Error"), data.error, "error");
-                    }
-                    return;
-                }
-                setPosts(data);
-                const now = Date.now();
-                const recentPosts = data.filter(post => {
-                    const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
-                    return postAgeInHours <= 3;
-                });
-                setNewPosts(recentPosts);
-                setTimeout(() => {
-                    setNewPosts([]);
-                }, 30000);
-            } catch (error) {
-                if (!error.message.includes('User not found')) {
-                    showToast(t("Error"), error.message, "error");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        getFeedPosts();
-    }, [showToast, setPosts, t]);
-
-    const handleTutorialComplete = () => {
-        setShowTutorial(false);
-        // No persistent flag set here; tutorial can show again on next load
-    };
-
-    const isNewPost = (postTime) => {
+        const data = await res.json();
+        if (data.error) {
+          if (!data.error.includes("User not found")) {
+            showToast(t("Error"), data.error, "error");
+          }
+          return;
+        }
+        setPosts(data);
         const now = Date.now();
-        const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
-        return postAgeInHours <= 3;
+        const recentPosts = data.filter(post => {
+          const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
+          return postAgeInHours <= 3;
+        });
+        setNewPosts(recentPosts);
+        setTimeout(() => {
+          setNewPosts([]);
+        }, 30000);
+      } catch (error) {
+        if (!error.message.includes('User not found')) {
+          showToast(t("Error"), error.message, "error");
+        }
+      } finally {
+        setLoading(false);
+      }
     };
+    getFeedPosts();
+  }, [showToast, setPosts, t]);
 
-    return (
-        <>
-            {showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-            <Flex gap="10" alignItems={"flex-start"}>
-                <Box flex={70}>
-                    {!loading && posts.length === 0 && (
-                        <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-                    )}
-                    {loading && (
-                        <Flex justifyContent="center">
-                            <Spinner size="xl" />
-                        </Flex>
-                    )}
-                    {posts.map((post) => {
-                        const isNew = isNewPost(post.createdAt);
-                        return (
-                            <Box
-                                key={post._id}
-                                className="postContainer"
-                                borderWidth="1px"
-                                borderRadius="lg"
-                                p={4}
-                                mb={6}
-                                boxShadow="sm"
-                            >
-                                <Post post={post} postedBy={post.postedBy} />
-                                {isNew && newPosts.includes(post) && (
-                                    <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-                                )}
-                            </Box>
-                        );
-                    })}
-                </Box>
-            </Flex>
-        </>
-    );
+  const isNewPost = (postTime) => {
+    const now = Date.now();
+    const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
+    return postAgeInHours <= 3;
+  };
+
+  return (
+    <Flex gap="10" alignItems={"flex-start"}>
+      <Box flex={70}>
+        {!loading && posts.length === 0 && (
+          <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+        )}
+        {loading && (
+          <Flex justifyContent="center">
+            <Spinner size="xl" />
+          </Flex>
+        )}
+        {posts.map((post) => {
+          const isNew = isNewPost(post.createdAt);
+          return (
+            <Box
+              key={post._id}
+              className="postContainer"
+              borderWidth="1px"
+              borderRadius="lg"
+              p={4}
+              mb={6}
+              boxShadow="sm"
+            >
+              <Post post={post} postedBy={post.postedBy} />
+              {isNew && newPosts.includes(post) && (
+                <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+    </Flex>
+  );
 };
 
 export default HomePage;
