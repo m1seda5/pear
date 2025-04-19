@@ -759,23 +759,22 @@ const ChatPage = () => {
           : "/api/messages/conversations";
 
         const res = await fetch(endpoint, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
-          },
+          headers: { 'Authorization': `Bearer ${currentUser.token}` },
         });
         
         const data = await res.json();
         
         if (!res.ok) {
           showToast(t("Error"), data.error || t("Failed to fetch conversations"), "error");
-          setConversations([]);
+          setConversations([]); // Reset to empty array on error
           return;
         }
 
-        setConversations(data);
+        // Ensure data is an array before setting
+        setConversations(Array.isArray(data) ? data : []);
       } catch (error) {
         showToast(t("Error"), error.message, "error");
-        setConversations([]);
+        setConversations([]); // Reset to empty array on error
       } finally {
         setLoadingConversations(false);
       }
@@ -967,10 +966,10 @@ const ChatPage = () => {
             ))}
 
           {!loadingConversations && Array.isArray(conversations) &&
-            conversations.map((conversation) => (
+            conversations?.map((conversation) => (
               <Conversation
                 key={conversation._id}
-                isOnline={!conversation.isGroup && onlineUsers.includes(conversation.participants[0]._id)}
+                isOnline={onlineUsers.includes(conversation.participants[0]?._id)}
                 conversation={conversation}
                 onClick={() => handleConversationClick(conversation)}
                 isMonitoring={isMonitoring}
