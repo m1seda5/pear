@@ -345,6 +345,7 @@ import userAtom from "../atoms/userAtom";
 import TutorialSlider from "../components/TutorialSlider";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
+import _ from 'lodash';
 
 const HomePage = () => {
     const [posts, setPosts] = useRecoilState(postsAtom);

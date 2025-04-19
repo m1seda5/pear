@@ -511,6 +511,7 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 import CreateGroup from "./CreateGroup";
+import _ from 'lodash';
 
 
 const MAX_CHAR = 500;

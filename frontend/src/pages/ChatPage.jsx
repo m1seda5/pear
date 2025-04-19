@@ -644,6 +644,7 @@ import { useTranslation } from 'react-i18next';
 import { useSocket } from "../context/SocketContext";
 import UserSearch from "../components/UserSearch";
 import { useLocation, useNavigate } from "react-router-dom";
+import _ from 'lodash';
 
 const ChatPage = () => {
   const [loadingConversations, setLoadingConversations] = useState(true);

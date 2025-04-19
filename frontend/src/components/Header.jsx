@@ -942,6 +942,7 @@ import { useState } from "react";
 import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 import HeaderSearch from "./HeaderSearch";
+import _ from 'lodash';
 
 // Define keyframes outside the component
 const pulseKeyframes = keyframes`
