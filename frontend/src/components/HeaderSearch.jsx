@@ -51,7 +51,11 @@ const HeaderSearch = () => {
     setIsSearching(true);
     try {
       const { data } = await axios.get(`/api/search?q=${encodeURIComponent(query)}`);
-      setResults(data);
+      // Ensure users and posts are arrays
+      setResults({
+        users: data.users || [],
+        posts: data.posts || []
+      });
     } catch (error) {
       toast({
         title: "Search Error",
@@ -203,7 +207,7 @@ const HeaderSearch = () => {
                 </>
               )}
 
-              {!isSearching && results.users.length === 0 && results.posts.length === 0 && (
+              {!isSearching && results.users?.length === 0 && results.posts?.length === 0 && (
                 <MotionText color="gray.500" variants={itemVariants}>
                   No results found for "{searchText}"
                 </MotionText>

@@ -2347,11 +2347,15 @@ const searchHeader = async (req, res) => {
     })).sort((a, b) => b.score - a.score);
 
     res.json({ 
-      users: scoredUsers.slice(0, 5), 
-      posts: scoredPosts.slice(0, 5) 
+      users: scoredUsers.slice(0, 5) || [], 
+      posts: scoredPosts.slice(0, 5) || [] 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      users: [],
+      posts: [],
+      error: error.message 
+    });
   }
 };
 export {
