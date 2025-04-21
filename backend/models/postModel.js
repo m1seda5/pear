@@ -197,7 +197,7 @@ const postSchema = mongoose.Schema(
         "Mathematics", "Physics", "Chemistry", "Biology", "Geography",
         "Computer Science", "Arts", "History", "Psychology", "Sociology",
         "Economics", "Business", "BTEC Business", "Physical Education",
-        "BTEC Sport", "Music", "BTEC Music", "BTEC Art", "Englich", "tv"
+        "BTEC Sport", "Music", "BTEC Music", "BTEC Art", "English", "tv"
       ],
       default: "all",
     },
@@ -267,10 +267,13 @@ const postSchema = mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true }, // Enable virtuals in JSON output
-    toObject: { virtuals: true } // Enable virtuals in object output
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
+
+// Add text index for post text
+postSchema.index({ text: 'text' });
 
 const Post = mongoose.model("Post", postSchema);
 

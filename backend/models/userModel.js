@@ -426,7 +426,7 @@ const userSchema = mongoose.Schema(
     },
     notificationPreferences: {
       type: Boolean,
-      default: true, // Enable notifications by default
+      default: true,
     },
     resetToken: {
       type: String,
@@ -438,22 +438,25 @@ const userSchema = mongoose.Schema(
     },
     lastActive: {
       type: Date, 
-    }, // For online status tracking
+    },
     groups: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Group",
       },
-    ], // New field for user groups
+    ],
     reviewerGroups: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ReviewerGroup",
       },
-    ], // Field for reviewer groups
+    ],
   },
   { timestamps: true }
 );
+
+// Add text index for username and name
+userSchema.index({ username: 'text', name: 'text' });
 
 const User = mongoose.model("User", userSchema);
 export default User;

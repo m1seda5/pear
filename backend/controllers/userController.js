@@ -2309,24 +2309,22 @@ const searchHeader = async (req, res) => {
     const query = req.query.q;
     if (!query) return res.json({ users: [], posts: [] });
 
-    // Fuzzy search pattern
-    const fuzzyPattern = createFuzzyPattern(query.toLowerCase());
+    // Simple fuzzy search pattern
+    const fuzzyPattern = new RegExp(_.escapeRegExp(query), 'i');
 
     const [users, posts] = await Promise.all([
       User.find({
         $or: [
-          { username: { $regex: fuzzyPattern, $options: 'i' } },
-          { name: { $regex: fuzzyPattern, $options: 'i' } }
+          { username: fuzzyPattern },
+          { name: fuzzyPattern }
         ]
       })
       .limit(5)
+      .select('username name profilePic role')
       .lean(),
 
       Post.find({
-        $or: [
-          { text: { $regex: fuzzyPattern, $options: 'i' } },
-          { 'postedBy.username': { $regex: fuzzyPattern, $options: 'i' } }
-        ],
+        $text: { $search: query },
         reviewStatus: 'approved'
       })
       .limit(5)
@@ -2334,21 +2332,15 @@ const searchHeader = async (req, res) => {
       .lean()
     ]);
 
-    // Add relevance scores
-    const scoredUsers = users.map(user => ({
-      ...user,
-      score: calculateRelevanceScore(user.username, query) 
-        + calculateRelevanceScore(user.name || '', query)
-    })).sort((a, b) => b.score - a.score);
-
-    const scoredPosts = posts.map(post => ({
+    // Format posts with username
+    const formattedPosts = posts.map(post => ({
       ...post,
-      score: calculateRelevanceScore(post.text, query)
-    })).sort((a, b) => b.score - a.score);
+      postedBy: post.postedBy ? { username: post.postedBy.username } : { username: 'unknown' }
+    }));
 
     res.json({ 
-      users: scoredUsers.slice(0, 5) || [], 
-      posts: scoredPosts.slice(0, 5) || [] 
+      users: users.slice(0, 5),
+      posts: formattedPosts.slice(0, 5)
     });
   } catch (error) {
     res.status(500).json({ 
