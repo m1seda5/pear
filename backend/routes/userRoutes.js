@@ -81,7 +81,6 @@ import adminMiddleware from "../middlewares/adminMiddleware.js";
 const router = express.Router();
 
 // Search routes
-// Add this route at the top of userRoutes.js
 router.get("/search", protectRoute, searchHeader);
 router.get("/search/:query", protectRoute, searchUsers);
 router.get("/search-reviewers/:query", protectRoute, searchReviewers);

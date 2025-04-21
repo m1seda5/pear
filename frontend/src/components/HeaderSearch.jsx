@@ -50,7 +50,7 @@ const HeaderSearch = () => {
     
     setIsSearching(true);
     try {
-      const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+      const { data } = await axios.get(`/api/search?q=${encodeURIComponent(query)}`);
       // Ensure users and posts are arrays
       setResults({
         users: data.users || [],
@@ -89,7 +89,7 @@ const HeaderSearch = () => {
     if (type === 'user') {
       navigate(`/${item.username}`);
     } else {
-      navigate(`/${item.postedBy?.username || 'unknown'}/post/${item._id}`);
+      navigate(`/${item.postedBy.username}/post/${item._id}`);
     }
   };
 
@@ -200,9 +200,7 @@ const HeaderSearch = () => {
                         onClick={() => handleResultClick('post', post)}
                       >
                         <Text noOfLines={1} fontStyle="italic">"{post.text}"</Text>
-                        <Text ml={2} color="gray.500">
-                          by {post.postedBy?.username || 'unknown'}
-                        </Text>
+                        <Text ml={2} color="gray.500">by {post.postedBy.username}</Text>
                       </Flex>
                     </motion.div>
                   ))}
