@@ -942,11 +942,12 @@ import { MdOutlineSettings } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
 import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
+import { Children, cloneElement, createContext, useContext, useMemo } from 'react';
 
-// Modified DockComponents to remove scrollbars
-import { Box as MotionBox, Flex as MotionFlex } from "framer-motion";
-import { Children, cloneElement, createContext, useContext, useMemo, useState as useStateMotion } from 'react';
+// Create motion components
+const MotionBox = motion(Box);
+const MotionFlex = motion(Flex);
 
 // Constants for dock component
 const DOCK_HEIGHT = 128;
