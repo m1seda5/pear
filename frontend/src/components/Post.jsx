@@ -155,21 +155,18 @@
 // export default Post;
 
 // version 2 with translations working
-// version 2 with translations working
-import { Avatar } from "@chakra-ui/avatar";
-import { Image } from "@chakra-ui/image";
-import { Box, Flex, Text } from "@chakra-ui/layout";
-import { Link, useNavigate } from "react-router-dom";
-import Actions from "./Actions";
-import { useEffect, useState, useRef } from "react";
-import useShowToast from "../hooks/useShowToast";
-import { formatDistanceToNow } from "date-fns";
+import { Box, Flex, Text, useColorModeValue } from "@chakra-ui/layout";
+import { Avatar, Image } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
-import { BiShow } from "react-icons/bi";
+import useShowToast from "../hooks/useShowToast";
+import Actions from "./Actions";
 
 const Post = ({ post, postedBy, isTV = false }) => {
     const [user, setUser] = useState(null);
@@ -180,7 +177,13 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const { t, i18n } = useTranslation();
     const [language, setLanguage] = useState(i18n.language);
     const viewTimeoutRef = useRef(null);
-
+    
+    // Color mode values
+    const bgColor = useColorModeValue("white", "gray.900");
+    const borderColor = useColorModeValue("gray.200", "gray.800");
+    const textColor = useColorModeValue("gray.600", "gray.300");
+    const secondaryTextColor = useColorModeValue("gray.500", "gray.400");
+    
     useEffect(() => {
         const handleLanguageChange = (lng) => {
             setLanguage(lng);
@@ -194,8 +197,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
     useEffect(() => {
         const getUser = async () => {
-            console.log("postedBy:", postedBy);
-
             try {
                 const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
                 const res = await fetch("/api/users/profile/" + userId);
@@ -275,111 +276,79 @@ const Post = ({ post, postedBy, isTV = false }) => {
     };
 
     if (!user) return null;
-
+    
     return (
         <Link to={`/${user.username}/post/${post._id}`} style={isTV ? { width: "100%" } : {}}>
-            <Flex
-                gap={3}
+            <Box
+                w="full"
+                maxW={isTV ? "full" : "2xl"}
+                mx="auto"
+                bg={bgColor}
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="3xl"
+                shadow="xl"
                 mb={4}
-                py={5}
-                width="100%"
-                bg={isTV ? "white" : "transparent"}
-                _dark={{ bg: isTV ? "gray.800" : "transparent" }}
-                borderRadius={isTV ? "xl" : "none"}
-                px={isTV ? 6 : 0}
             >
-                <Flex flexDirection={"column"} alignItems={"center"}>
-                    <Avatar
-                        size={isTV ? "xl" : "md"}
-                        name={user.name}
-                        src={user?.profilePic}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/${user.username}`);
-                        }}
-                    />
-                    <Box
-                        w="1px"
-                        h={"full"}
-                        bg="gray.light"
-                        my={2}
-                        display={isTV ? "none" : "block"}
-                    ></Box>
-                    <Box position={"relative"} w={"full"}>
-                        {post.replies.length === 0 && <Text textAlign={"center"}>🍐</Text>}
-                        {post.replies[0] && (
+                <Box p={6}>
+                    {/* Author section */}
+                    <Flex alignItems="center" justifyContent="space-between" mb={4}>
+                        <Flex alignItems="center" gap={3}>
                             <Avatar
-                                size="xs"
-                                name="John doe"
-                                src={post.replies[0].userProfilePic}
-                                position={"absolute"}
-                                top={"0px"}
-                                left="15px"
-                                padding={"2px"}
-                            />
-                        )}
-                        {post.replies[1] && (
-                            <Avatar
-                                size="xs"
-                                name="John doe"
-                                src={post.replies[1].userProfilePic}
-                                position={"absolute"}
-                                bottom={"0px"}
-                                right="-5px"
-                                padding={"2px"}
-                            />
-                        )}
-                        {post.replies[2] && (
-                            <Avatar
-                                size="xs"
-                                name="John doe"
-                                src={post.replies[2].userProfilePic}
-                                position={"absolute"}
-                                bottom={"0px"}
-                                left="4px"
-                                padding={"2px"}
-                            />
-                        )}
-                    </Box>
-                </Flex>
-                <Flex flex={1} flexDirection={"column"} gap={2} width="100%">
-                    <Flex justifyContent={"space-between"} w={"full"}>
-                        <Flex w={"full"} alignItems={"center"}>
-                            <Text
-                                fontSize={isTV ? "2xl" : "sm"}
-                                fontWeight={"bold"}
+                                size="md"
+                                name={user.name}
+                                src={user?.profilePic}
+                                ring="2px"
+                                ringColor={useColorModeValue("white", "gray.800")}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     navigate(`/${user.username}`);
                                 }}
+                            />
+                            <Box>
+                                <Text 
+                                    fontSize="sm" 
+                                    fontWeight="medium" 
+                                    color={useColorModeValue("gray.900", "gray.100")}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/${user.username}`);
+                                    }}
+                                >
+                                    {user?.username}
+                                    {user?.role === "admin" && (
+                                        <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
+                                    )}
+                                </Text>
+                                <Text fontSize="xs" color={secondaryTextColor}>
+                                    @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
+                                </Text>
+                            </Box>
+                        </Flex>
+                        {(currentUser?._id === user._id || currentUser?.role === "admin") && (
+                            <Box 
+                                as="button"
+                                p={2} 
+                                borderRadius="full"
+                                _hover={{ bg: useColorModeValue("gray.100", "gray.800") }}
+                                transition="colors"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDeletePost(e);
+                                }}
                             >
-                                {user?.username}
-                            </Text>
-                            {user?.role === "admin" && (
-                                <Image src="/verified.png" w={isTV ? 6 : 4} h={isTV ? 6 : 4} ml={1} />
-                            )}
-                        </Flex>
-                        <Flex gap={4} alignItems={"center"}>
-                            <Text fontSize={isTV ? "lg" : "xs"} width={36} textAlign={"right"} color={"gray.light"}>
-                                {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
-                            </Text>
-                            {!isTV && (currentUser?._id === user._id || currentUser?.role === "admin") && (
-                                <DeleteIcon size={20} onClick={handleDeletePost} />
-                            )}
-                        </Flex>
+                                <DeleteIcon boxSize={4} color={secondaryTextColor} />
+                            </Box>
+                        )}
                     </Flex>
 
-                    <Text
-                        fontSize={isTV ? "xl" : "sm"}
-                        className="post-text"
-                        color={isTV ? "black" : "inherit"}
-                        _dark={{ color: isTV ? "white" : "inherit" }}
-                    >
+                    {/* Content section */}
+                    <Text mb={4} fontSize="sm" color={textColor} className="post-text">
                         {post.text}
                     </Text>
 
                     {/* Target Groups and General Post Indicators */}
-                    <Flex gap={2} wrap="wrap" my={2}>
+                    <Flex gap={2} wrap="wrap" mb={4}>
                         {post.targetGroups && post.targetGroups.map(group => (
                             <Flex key={group._id} align="center" mr={2}>
                                 <Box
@@ -389,7 +358,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                     bg={group.color}
                                     mr={1}
                                 />
-                                <Text fontSize="sm">{group.name}</Text>
+                                <Text fontSize="xs">{group.name}</Text>
                             </Flex>
                         ))}
                         {post.isGeneral && (
@@ -401,37 +370,72 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                     bg="gray.500"
                                     mr={1}
                                 />
-                                <Text fontSize="sm">{t("General Post")}</Text>
+                                <Text fontSize="xs">{t("General Post")}</Text>
                             </Flex>
                         )}
                     </Flex>
 
+                    {/* Image preview */}
                     {post.img && (
-                        <Box
-                            borderRadius={6}
-                            overflow={"hidden"}
-                            border={"1px solid"}
-                            borderColor={"gray.light"}
-                            width="100%"
-                            margin="0 auto"
-                            maxHeight={isTV ? "70vh" : "auto"}
+                        <Box 
+                            borderRadius="2xl" 
+                            overflow="hidden" 
+                            borderWidth="1px"
+                            borderColor={borderColor}
+                            mb={4}
                         >
                             <Image
                                 src={post.img}
-                                w={"full"}
+                                w="full"
                                 h={isTV ? "auto" : "full"}
-                                maxHeight={isTV ? "70vh" : "auto"}
+                                maxH={isTV ? "70vh" : "auto"}
                                 objectFit={isTV ? "contain" : "cover"}
                                 className="post-image"
                             />
                         </Box>
                     )}
 
-                    <Flex gap={3} my={1}>
+                    {/* Engagement section */}
+                    <Flex alignItems="center" justifyContent="space-between" pt={2}>
+                        {/* Actions component with likes, comments, reposts, and views */}
                         <Actions post={post} />
+                        
+                        {/* Replies visualization */}
+                        <Box position="relative" w="auto">
+                            {post.replies.length === 0 ? (
+                                <Text textAlign="center">🍐</Text>
+                            ) : (
+                                <Flex>
+                                    {post.replies[0] && (
+                                        <Avatar
+                                            size="xs"
+                                            name="Reply"
+                                            src={post.replies[0].userProfilePic}
+                                            ml={-1}
+                                        />
+                                    )}
+                                    {post.replies[1] && (
+                                        <Avatar
+                                            size="xs"
+                                            name="Reply"
+                                            src={post.replies[1].userProfilePic}
+                                            ml={-2}
+                                        />
+                                    )}
+                                    {post.replies[2] && (
+                                        <Avatar
+                                            size="xs"
+                                            name="Reply"
+                                            src={post.replies[2].userProfilePic}
+                                            ml={-2}
+                                        />
+                                    )}
+                                </Flex>
+                            )}
+                        </Box>
                     </Flex>
-                </Flex>
-            </Flex>
+                </Box>
+            </Box>
         </Link>
     );
 };
