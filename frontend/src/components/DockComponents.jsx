@@ -1,4 +1,5 @@
 // DockComponents.js - Core dock functionality
+// DockComponents.js - Core dock functionality with fixed hover animation
 import { Box, Flex, useColorMode } from "@chakra-ui/react";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { Children, cloneElement, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -41,6 +42,7 @@ function Dock({
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
   const { colorMode } = useColorMode();
+  const dockRef = useRef(null);
 
   const maxHeight = useMemo(() => {
     return Math.max(DOCK_HEIGHT, magnification + magnification / 2 + 4);
@@ -62,7 +64,6 @@ function Dock({
       const containerWidth = container.offsetWidth;
       
       // Dynamic calculation based on available space
-      // This is simplified - you'll want to adjust based on your UI
       const itemCount = Children.count(children);
       const itemWidth = 64; // Average width of an item
       const visibleCount = Math.floor(containerWidth / itemWidth);
@@ -77,6 +78,26 @@ function Dock({
       window.removeEventListener('resize', updateVisibleItems);
     };
   }, [children]);
+
+  // The critical function for handling mouse position
+  const handleMouseMove = (e) => {
+    if (!dockRef.current) return;
+    
+    // Get dock position relative to viewport
+    const dockRect = dockRef.current.getBoundingClientRect();
+    
+    // Calculate mouse X position relative to the dock
+    const relativeMouseX = e.clientX - dockRect.left;
+    
+    // Set values for animation
+    isHovered.set(1);
+    mouseX.set(relativeMouseX);
+  };
+
+  const handleMouseLeave = () => {
+    isHovered.set(0);
+    mouseX.set(Infinity);
+  };
 
   return (
     <MotionBox
@@ -99,15 +120,12 @@ function Dock({
       }}
     >
       <MotionFlex
-        ref={containerRef}
-        onMouseMove={({ pageX }) => {
-          isHovered.set(1);
-          mouseX.set(pageX);
+        ref={(el) => {
+          containerRef.current = el;
+          dockRef.current = el;
         }}
-        onMouseLeave={() => {
-          isHovered.set(0);
-          mouseX.set(Infinity);
-        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         mx="auto"
         width="fit-content"
         gap={4}
@@ -169,29 +187,42 @@ function Dock({
   );
 }
 
-// DockItem component
+// DockItem component - this is where the hover magic happens
 function DockItem({ children, className, onClick, isDisabled }) {
   const ref = useRef(null);
   const { mouseX, spring, distance, magnification } = useDock();
   const itemHovered = useMotionValue(0);
 
+  // This transform is critical for the effect to work properly
   const mouseDistance = useTransform(mouseX, (val) => {
-    const domRect = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
-    return val - domRect.x - domRect.width / 2;
+    if (!ref.current) return 0;
+    
+    const domRect = ref.current.getBoundingClientRect();
+    const itemCenter = domRect.left + domRect.width / 2;
+    
+    // Calculate distance from mouse to center of this item
+    // We need to adjust for the dock's position by using the item's actual position
+    // rather than relative to the dock container
+    return Math.abs(val - (itemCenter - domRect.left));
   });
 
+  // This is where the magic happens - transform distance to width
   const widthTransform = useTransform(
     mouseDistance,
-    [-distance, 0, distance],
-    [40, magnification, 40]
+    [0, distance],
+    [magnification, 40],
+    {
+      clamp: true // This ensures values stay within our defined range
+    }
   );
 
+  // Apply spring physics for smooth animation
   const width = useSpring(widthTransform, spring);
 
   return (
     <MotionBox
       ref={ref}
-      style={{ width }}
+      style={{ width }} // This directly applies the animated width
       onHoverStart={() => itemHovered.set(1)}
       onHoverEnd={() => itemHovered.set(0)}
       onFocus={() => itemHovered.set(1)}
@@ -221,6 +252,8 @@ function DockLabel({ children, className, ...rest }) {
   const { colorMode } = useColorMode();
 
   useEffect(() => {
+    if (!isHovered) return;
+    
     const unsubscribe = isHovered.on('change', (latest) => {
       setIsVisible(latest === 1);
     });
@@ -230,7 +263,6 @@ function DockLabel({ children, className, ...rest }) {
 
   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
   const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
-  const borderColor = isDisabled ? disabledColor : activeColor;
 
   return (
     <AnimatePresence>
@@ -270,6 +302,7 @@ function DockIcon({ children, className, ...rest }) {
   const { width, isDisabled } = rest;
   const { colorMode } = useColorMode();
 
+  // Scale icon size proportionally with the container width
   const widthTransform = useTransform(width, (val) => val / 2);
 
   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
