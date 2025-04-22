@@ -917,7 +917,6 @@
 
 
 // admin role update
-// Header.js
 import { 
   Box, 
   Flex, 
@@ -926,7 +925,6 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
-  IconButton,
   Collapse,
   useDisclosure
 } from "@chakra-ui/react";
@@ -945,12 +943,240 @@ import { useState, useRef, useEffect } from "react";
 import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
 import { motion, useMotionValue } from 'framer-motion';
-import { Dock, DockItem, DockLabel, DockIcon } from './DockComponents';
 
-// Define keyframes for animations
-const pulseAnimation = "pulse 1s infinite";
-const shakeAnimation = "shake 0.5s";
-const bounceInAnimation = "bounceIn 0.5s";
+// Modified DockComponents to remove scrollbars
+import { Box as MotionBox, Flex as MotionFlex } from "framer-motion";
+import { Children, cloneElement, createContext, useContext, useMemo, useState as useStateMotion } from 'react';
+
+// Constants for dock component
+const DOCK_HEIGHT = 128;
+const DEFAULT_MAGNIFICATION = 80;
+const DEFAULT_DISTANCE = 150;
+const DEFAULT_PANEL_HEIGHT = 64;
+
+// Create Dock Context
+const DockContext = createContext(undefined);
+
+function DockProvider({ children, value }) {
+  return <DockContext.Provider value={value}>{children}</DockContext.Provider>;
+}
+
+function useDock() {
+  const context = useContext(DockContext);
+  if (!context) {
+    throw new Error('useDock must be used within a DockProvider');
+  }
+  return context;
+}
+
+// Main Dock component - Modified to remove scrolling
+function Dock({
+  children,
+  className,
+  spring = { mass: 0.1, stiffness: 150, damping: 12 },
+  magnification = DEFAULT_MAGNIFICATION,
+  distance = DEFAULT_DISTANCE,
+  panelHeight = DEFAULT_PANEL_HEIGHT,
+}) {
+  const mouseX = useMotionValue(Infinity);
+  const isHovered = useMotionValue(0);
+  const { colorMode } = useColorMode();
+
+  const maxHeight = useMemo(() => {
+    return Math.max(DOCK_HEIGHT, magnification + magnification / 2 + 4);
+  }, [magnification]);
+
+  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
+  const height = useSpring(heightRow, spring);
+
+  // Instead of responsively hiding items, we'll use a fixed width and ensure all items fit
+  return (
+    <MotionBox
+      style={{
+        height: height,
+      }}
+      mx={2}
+      display="flex"
+      width="100%"
+      alignItems="flex-end"
+      justifyContent="center"
+      mt={6}
+      mb={10}
+      overflow="visible" // Ensure no scrollbars appear
+    >
+      <MotionFlex
+        onMouseMove={({ pageX }) => {
+          isHovered.set(1);
+          mouseX.set(pageX);
+        }}
+        onMouseLeave={() => {
+          isHovered.set(0);
+          mouseX.set(Infinity);
+        }}
+        mx="auto"
+        width="fit-content"
+        maxWidth="100%"
+        gap={2} // Reduced gap to fit more items
+        borderRadius="3xl"
+        bg={colorMode === "dark" ? "gray.800" : "gray.50"}
+        px={4}
+        style={{ height: panelHeight }}
+        role="toolbar"
+        aria-label="Application dock"
+        alignItems="center"
+        justifyContent="center"
+        boxShadow={colorMode === "dark" ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)"}
+        position="relative"
+        overflow="visible" // Ensure no scrollbars appear
+      >
+        <DockProvider value={{ mouseX, spring, distance, magnification }}>
+          {children}
+        </DockProvider>
+      </MotionFlex>
+    </MotionBox>
+  );
+}
+
+// DockItem component
+function DockItem({ children, className, onClick, isDisabled }) {
+  const ref = useRef(null);
+  const { mouseX, spring, distance, magnification } = useDock();
+  const itemHovered = useMotionValue(0);
+
+  const mouseDistance = useTransform(mouseX, (val) => {
+    const domRect = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+    return val - domRect.x - domRect.width / 2;
+  });
+
+  const widthTransform = useTransform(
+    mouseDistance,
+    [-distance, 0, distance],
+    [40, magnification, 40]
+  );
+
+  const width = useSpring(widthTransform, spring);
+
+  return (
+    <MotionBox
+      ref={ref}
+      style={{ width }}
+      onHoverStart={() => itemHovered.set(1)}
+      onHoverEnd={() => itemHovered.set(0)}
+      onFocus={() => itemHovered.set(1)}
+      onBlur={() => itemHovered.set(0)}
+      position="relative"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      onClick={isDisabled ? undefined : onClick}
+      cursor={isDisabled ? "not-allowed" : "pointer"}
+      tabIndex={0}
+      role="button"
+      aria-haspopup="true"
+      className={className}
+    >
+      {Children.map(children, (child) =>
+        cloneElement(child, { width, isHovered: itemHovered, isDisabled })
+      )}
+    </MotionBox>
+  );
+}
+
+// DockLabel component
+function DockLabel({ children, className, ...rest }) {
+  const { isHovered, isDisabled } = rest;
+  const [isVisible, setIsVisible] = useState(false);
+  const { colorMode } = useColorMode();
+
+  useEffect(() => {
+    const unsubscribe = isHovered.on('change', (latest) => {
+      setIsVisible(latest === 1);
+    });
+
+    return () => unsubscribe();
+  }, [isHovered]);
+
+  const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
+  const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <MotionBox
+          initial={{ opacity: 0, y: 0 }}
+          animate={{ opacity: 1, y: -10 }}
+          exit={{ opacity: 0, y: 0 }}
+          transition={{ duration: 0.2 }}
+          position="absolute"
+          top="-6"
+          left="50%"
+          width="fit-content"
+          whiteSpace="pre"
+          borderRadius="md"
+          border="1px solid"
+          borderColor={isDisabled ? "red.300" : (colorMode === "dark" ? "whiteAlpha.300" : "gray.200")}
+          bg={colorMode === "dark" ? "gray.700" : "gray.100"}
+          px={2}
+          py={0.5}
+          fontSize="xs"
+          color={isDisabled ? disabledColor : (colorMode === "dark" ? "white" : "gray.800")}
+          role="tooltip"
+          style={{ x: '-50%' }}
+          className={className}
+          zIndex={10}
+        >
+          {children}
+        </MotionBox>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// DockIcon component
+function DockIcon({ children, className, ...rest }) {
+  const { width, isDisabled } = rest;
+  const { colorMode } = useColorMode();
+
+  const widthTransform = useTransform(width, (val) => val / 2);
+
+  const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
+  const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+  const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
+  const iconColor = isDisabled ? disabledColor : normalColor;
+
+  return (
+    <MotionBox
+      style={{ width: widthTransform }}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      position="relative"
+      color={iconColor}
+      _hover={{
+        "& .nav-icon-underline": {
+          width: "80%",
+          opacity: 1
+        }
+      }}
+      className={className}
+    >
+      {children}
+      <Box
+        className="nav-icon-underline"
+        position="absolute"
+        bottom="-8px"
+        left="50%"
+        width="0%"
+        height="2px"
+        bg={isDisabled ? disabledColor : activeColor}
+        transition="all 0.2s ease-out"
+        transform="translateX(-50%)"
+        borderRadius="full"
+        opacity={0}
+      />
+    </MotionBox>
+  );
+}
 
 function Header({ unreadCount = 0 }) {
   const { colorMode, toggleColorMode } = useColorMode();
@@ -1088,158 +1314,156 @@ function Header({ unreadCount = 0 }) {
     );
   };
 
+  // Define icon sizes to be smaller to fit better in fixed width dock
+  const iconSize = 20;
+
   return (
-    <Dock 
-      panelHeight={64} 
-      magnification={80} 
-      distance={150}
-      spring={{ mass: 0.1, stiffness: 150, damping: 12 }}
+    <Box 
+      width="100%" 
+      display="flex" 
+      justifyContent="center"
+      position="relative"
+      overflow="visible" // Ensure no scrollbars appear
     >
-      {user && (
-        <DockItem onClick={() => navigate("/")}>
-          <DockIcon>
-            <AiFillHome size={22} />
-          </DockIcon>
-          <DockLabel>Home</DockLabel>
-        </DockItem>
-      )}
-
-      {!user && (
-        <DockItem onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
-          <DockIcon>
-            <Box fontWeight="medium">Login</Box>
-          </DockIcon>
-          <DockLabel>Login</DockLabel>
-        </DockItem>
-      )}
-
-      <DockItem onClick={toggleColorMode}>
-        <DockIcon>
-          <Icon
-            as={colorMode === "dark" ? SunIcon : MoonIcon}
-            w={5}
-            h={5}
-            transition="all 0.3s ease"
-            transform={colorMode === "dark" ? "rotate(0deg)" : "rotate(-180deg)"}
-          />
-        </DockIcon>
-        <DockLabel>{colorMode === "dark" ? "Light Mode" : "Dark Mode"}</DockLabel>
-      </DockItem>
-
-      <ExpandableSearch />
-
-      {user && (
-        <>
-          <DockItem onClick={() => navigate(`/${user.username}`)}>
+      <Dock 
+        panelHeight={56} // Slightly smaller than original
+        magnification={72} // Slightly smaller magnification
+        distance={120} // Smaller distance for tighter layout
+        spring={{ mass: 0.1, stiffness: 150, damping: 12 }}
+      >
+        {user && (
+          <DockItem onClick={() => navigate("/")}>
             <DockIcon>
-              <RxAvatar size={22} />
+              <AiFillHome size={iconSize} />
             </DockIcon>
-            <DockLabel>Profile</DockLabel>
+            <DockLabel>Home</DockLabel>
           </DockItem>
+        )}
 
-          <DockItem 
-            onClick={handleChatClick} 
-            isDisabled={user.isFrozen || !hasChatAccess}
-          >
+        {!user && (
+          <DockItem onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
             <DockIcon>
-              <Box position="relative"
-                onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
-                onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
-              >
-                {user.isFrozen || showLockIcon.chat ? (
-                  <FaLock size={18} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
-                ) : (
-                  <BsFillChatQuoteFill size={18} />
-                )}
-                {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
-                  <Flex
-                    position="absolute"
-                    top="-5px"
-                    right="-5px"
-                    bg="purple.500"
-                    color="white"
-                    borderRadius="full"
-                    w="18px"
-                    h="18px"
-                    fontSize="xs"
-                    alignItems="center"
-                    justifyContent="center"
-                    fontWeight="bold"
-                    sx={{
-                      animation: bounceInAnimation
-                    }}
-                  >
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </Flex>
-                )}
-              </Box>
+              <Box fontWeight="medium">Login</Box>
             </DockIcon>
-            <DockLabel>{user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}</DockLabel>
+            <DockLabel>Login</DockLabel>
           </DockItem>
+        )}
 
-          {isAdmin && (
-            <DockItem onClick={handleAdminClick}>
+        <DockItem onClick={toggleColorMode}>
+          <DockIcon>
+            <Icon
+              as={colorMode === "dark" ? SunIcon : MoonIcon}
+              w={iconSize - 2}
+              h={iconSize - 2}
+              transition="all 0.3s ease"
+              transform={colorMode === "dark" ? "rotate(0deg)" : "rotate(-180deg)"}
+            />
+          </DockIcon>
+          <DockLabel>{colorMode === "dark" ? "Light Mode" : "Dark Mode"}</DockLabel>
+        </DockItem>
+
+        <ExpandableSearch />
+
+        {user && (
+          <>
+            <DockItem onClick={() => navigate(`/${user.username}`)}>
               <DockIcon>
-                <FaUserShield size={20} />
+                <RxAvatar size={iconSize} />
               </DockIcon>
-              <DockLabel>Admin Dashboard</DockLabel>
+              <DockLabel>Profile</DockLabel>
             </DockItem>
-          )}
 
-          <DockItem 
-            onClick={handleTVClick}
-            isDisabled={!isAdmin}
-          >
+            <DockItem 
+              onClick={handleChatClick} 
+              isDisabled={user.isFrozen || !hasChatAccess}
+            >
+              <DockIcon>
+                <Box position="relative"
+                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
+                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
+                >
+                  {user.isFrozen || showLockIcon.chat ? (
+                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
+                  ) : (
+                    <BsFillChatQuoteFill size={iconSize - 2} />
+                  )}
+                  {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
+                    <Flex
+                      position="absolute"
+                      top="-5px"
+                      right="-5px"
+                      bg="purple.500"
+                      color="white"
+                      borderRadius="full"
+                      w="16px"
+                      h="16px"
+                      fontSize="xs"
+                      alignItems="center"
+                      justifyContent="center"
+                      fontWeight="bold"
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Flex>
+                  )}
+                </Box>
+              </DockIcon>
+              <DockLabel>{user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}</DockLabel>
+            </DockItem>
+
+            {isAdmin && (
+              <DockItem onClick={handleAdminClick}>
+                <DockIcon>
+                  <FaUserShield size={iconSize - 2} />
+                </DockIcon>
+                <DockLabel>Admin</DockLabel>
+              </DockItem>
+            )}
+
+            <DockItem 
+              onClick={handleTVClick}
+              isDisabled={!isAdmin}
+            >
+              <DockIcon>
+                <Box
+                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
+                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
+                >
+                  {showLockIcon.tv ? (
+                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
+                  ) : (
+                    <PiTelevisionSimpleBold size={iconSize} />
+                  )}
+                </Box>
+              </DockIcon>
+              <DockLabel>{isAdmin ? "TV" : "Admin Only"}</DockLabel>
+            </DockItem>
+
+            <DockItem onClick={() => navigate("/settings")}>
+              <DockIcon>
+                <MdOutlineSettings size={iconSize} />
+              </DockIcon>
+              <DockLabel>Settings</DockLabel>
+            </DockItem>
+
+            <DockItem onClick={handleLogout}>
+              <DockIcon>
+                <FiLogOut size={iconSize - 2} />
+              </DockIcon>
+              <DockLabel>Logout</DockLabel>
+            </DockItem>
+          </>
+        )}
+
+        {!user && (
+          <DockItem onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
             <DockIcon>
-              <Box
-                onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
-                onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
-              >
-                {showLockIcon.tv ? (
-                  <FaLock 
-                    size={18} 
-                    color={colorMode === "dark" ? "#F56565" : "#E53E3E"}
-                    sx={{
-                      animation: shakeAnimation
-                    }}
-                  />
-                ) : (
-                  <PiTelevisionSimpleBold size={20} />
-                )}
-              </Box>
+              <Box fontWeight="medium">Sign up</Box>
             </DockIcon>
-            <DockLabel>{isAdmin ? "TV Dashboard" : "Admin Only"}</DockLabel>
+            <DockLabel>Sign up</DockLabel>
           </DockItem>
-
-          <DockItem onClick={() => navigate("/settings")}>
-            <DockIcon>
-              <MdOutlineSettings 
-                size={20} 
-                className="settings-icon" 
-                style={{ transition: "transform 0.3s ease" }} 
-              />
-            </DockIcon>
-            <DockLabel>Settings</DockLabel>
-          </DockItem>
-
-          <DockItem onClick={handleLogout}>
-            <DockIcon>
-              <FiLogOut size={20} />
-            </DockIcon>
-            <DockLabel>Logout</DockLabel>
-          </DockItem>
-        </>
-      )}
-
-      {!user && (
-        <DockItem onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
-          <DockIcon>
-            <Box fontWeight="medium">Sign up</Box>
-          </DockIcon>
-          <DockLabel>Sign up</DockLabel>
-        </DockItem>
-      )}
-    </Dock>
+        )}
+      </Dock>
+    </Box>
   );
 }
 
