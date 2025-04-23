@@ -178,10 +178,10 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const [language, setLanguage] = useState(i18n.language);
     const viewTimeoutRef = useRef(null);
     
-    // Match white color from homepage
-    const bgColor = useColorModeValue("white", "#1A202C");
-    const textColor = useColorModeValue("gray.600", "gray.300");
-    const secondaryTextColor = useColorModeValue("gray.500", "gray.400");
+    // Match colors from HomePage background
+    const bgColor = useColorModeValue("#ffffff", "#1A202C");
+    const textColor = useColorModeValue("gray.700", "gray.200");
+    const borderColor = useColorModeValue("gray.100", "gray.700");
     
     useEffect(() => {
         const handleLanguageChange = (lng) => {
@@ -282,141 +282,140 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 w="full"
                 maxW={isTV ? "full" : "2xl"}
                 mx="auto"
+                py={4}
+                px={5}
                 bg={bgColor}
-                borderRadius="2xl"
-                shadow="md"
-                mb={4}
-                className="postContainer"
+                borderBottom="1px"
+                borderColor={borderColor}
+                transition="all 0.2s"
+                _hover={{ bg: useColorModeValue("gray.50", "gray.800") }}
+                boxShadow="sm"
             >
-                <Box p={5}>
-                    {/* Author section with views moved to right */}
-                    <Flex alignItems="center" justifyContent="space-between" mb={3}>
-                        <Flex alignItems="center" gap={3}>
-                            <Avatar
-                                size="md"
-                                name={user.name}
-                                src={user?.profilePic}
+                {/* Author section with views moved to right */}
+                <Flex alignItems="center" justifyContent="space-between" mb={3}>
+                    <Flex alignItems="center" gap={3}>
+                        <Avatar
+                            size="md"
+                            name={user.name}
+                            src={user?.profilePic}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigate(`/${user.username}`);
+                            }}
+                        />
+                        <Box>
+                            <Text 
+                                fontSize="sm" 
+                                fontWeight="semibold" 
+                                color={textColor}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     navigate(`/${user.username}`);
                                 }}
-                            />
-                            <Box>
-                                <Text 
-                                    fontSize="sm" 
-                                    fontWeight="semibold" 
-                                    color={useColorModeValue("gray.900", "gray.100")}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        navigate(`/${user.username}`);
-                                    }}
-                                >
-                                    {user?.username}
-                                    {user?.role === "admin" && (
-                                        <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
-                                    )}
-                                </Text>
-                                <Text fontSize="xs" color={secondaryTextColor}>
-                                    @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
-                                </Text>
-                            </Box>
-                        </Flex>
-                        <Flex gap={4} alignItems="center">
-                            {/* Views count with eye icon */}
-                            <Flex align="center" gap={1}>
-                                <svg
-                                    aria-label={t("Views")}
-                                    color="gray"
-                                    fill="transparent"
-                                    height="16"
-                                    role="img"
-                                    viewBox="0 0 24 24"
-                                    width="16"
-                                >
-                                    <path
-                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                                        fill="currentColor"
-                                    />
-                                </svg>
-                                <Text color="gray.light" fontSize="sm">
-                                    {post?.viewCount || 0}
-                                </Text>
-                            </Flex>
-                            {(currentUser?._id === user._id || currentUser?.role === "admin") && (
-                                <Box 
-                                    as="button"
-                                    p={2} 
-                                    borderRadius="full"
-                                    _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
-                                    transition="all 0.2s"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleDeletePost(e);
-                                    }}
-                                >
-                                    <DeleteIcon boxSize={4} color={secondaryTextColor} />
-                                </Box>
-                            )}
-                        </Flex>
+                            >
+                                {user?.username}
+                                {user?.role === "admin" && (
+                                    <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
+                                )}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500">
+                                @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
+                            </Text>
+                        </Box>
                     </Flex>
-
-                    {/* Content section */}
-                    <Text mb={4} fontSize="sm" color={textColor} className="post-text">
-                        {post.text}
-                    </Text>
-
-                    {/* Target Groups and General Post Indicators */}
-                    <Flex gap={2} wrap="wrap" mb={4}>
-                        {post.targetGroups && post.targetGroups.map(group => (
-                            <Flex key={group._id} align="center" mr={2}>
-                                <Box
-                                    w="10px"
-                                    h="10px"
-                                    borderRadius="full"
-                                    bg={group.color}
-                                    mr={1}
+                    <Flex gap={4} alignItems="center">
+                        <Flex align="center" gap={1}>
+                            <Text color="gray.500" fontSize="sm">
+                                {post?.viewCount || 0}
+                            </Text>
+                            <svg
+                                aria-label={t("Views")}
+                                color="gray"
+                                fill="currentColor"
+                                height="16"
+                                role="img"
+                                viewBox="0 0 24 24"
+                                width="16"
+                            >
+                                <path
+                                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
                                 />
-                                <Text fontSize="xs">{group.name}</Text>
-                            </Flex>
-                        ))}
-                        {post.isGeneral && (
-                            <Flex align="center">
-                                <Box
-                                    w="10px"
-                                    h="10px"
-                                    borderRadius="full"
-                                    bg="gray.500"
-                                    mr={1}
-                                />
-                                <Text fontSize="xs">{t("General Post")}</Text>
-                            </Flex>
+                            </svg>
+                        </Flex>
+                        {(currentUser?._id === user._id || currentUser?.role === "admin") && (
+                            <Box 
+                                as="button"
+                                p={2} 
+                                borderRadius="full"
+                                _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                                transition="all 0.2s"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDeletePost(e);
+                                }}
+                            >
+                                <DeleteIcon boxSize={4} color="gray.500" />
+                            </Box>
                         )}
                     </Flex>
+                </Flex>
 
-                    {/* Image preview */}
-                    {post.img && (
-                        <Box 
-                            borderRadius="xl" 
-                            overflow="hidden" 
-                            mb={4}
-                        >
-                            <Image
-                                src={post.img}
-                                w="full"
-                                h={isTV ? "auto" : "full"}
-                                maxH={isTV ? "70vh" : "auto"}
-                                objectFit={isTV ? "contain" : "cover"}
-                                className="post-image"
+                {/* Content section */}
+                <Text mb={4} fontSize="sm" color={textColor} className="post-text">
+                    {post.text}
+                </Text>
+
+                {/* Target Groups and General Post Indicators */}
+                <Flex gap={2} wrap="wrap" mb={4}>
+                    {post.targetGroups && post.targetGroups.map(group => (
+                        <Flex key={group._id} align="center" mr={2}>
+                            <Box
+                                w="10px"
+                                h="10px"
+                                borderRadius="full"
+                                bg={group.color}
+                                mr={1}
                             />
-                        </Box>
+                            <Text fontSize="xs">{group.name}</Text>
+                        </Flex>
+                    ))}
+                    {post.isGeneral && (
+                        <Flex align="center">
+                            <Box
+                                w="10px"
+                                h="10px"
+                                borderRadius="full"
+                                bg="gray.500"
+                                mr={1}
+                            />
+                            <Text fontSize="xs">{t("General Post")}</Text>
+                        </Flex>
                     )}
+                </Flex>
 
-                    {/* Engagement section */}
-                    <Flex alignItems="center" justifyContent="space-between" pt={2}>
-                        {/* Actions component with likes, comments, reposts */}
-                        <Actions post={post} />
-                    </Flex>
-                </Box>
+                {/* Image preview */}
+                {post.img && (
+                    <Box 
+                        borderRadius="xl" 
+                        overflow="hidden" 
+                        mb={4}
+                    >
+                        <Image
+                            src={post.img}
+                            w="full"
+                            h={isTV ? "auto" : "full"}
+                            maxH={isTV ? "70vh" : "auto"}
+                            objectFit={isTV ? "contain" : "cover"}
+                            className="post-image"
+                        />
+                    </Box>
+                )}
+
+                {/* Engagement section */}
+                <Flex alignItems="center" justifyContent="space-between" pt={2}>
+                    {/* Actions component with likes, comments, reposts */}
+                    <Actions post={post} />
+                </Flex>
             </Box>
         </Link>
     );
