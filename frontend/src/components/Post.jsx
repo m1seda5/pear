@@ -178,9 +178,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const [language, setLanguage] = useState(i18n.language);
     const viewTimeoutRef = useRef(null);
     
-    // Color mode values updated to match homepage (white for light, black for dark)
-    const bgColor = useColorModeValue("white", "black");
-    const borderColor = useColorModeValue("gray.200", "gray.800");
+    // Match white color from homepage
+    const bgColor = useColorModeValue("white", "#1A202C");
     const textColor = useColorModeValue("gray.600", "gray.300");
     const secondaryTextColor = useColorModeValue("gray.500", "gray.400");
     
@@ -284,22 +283,19 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 maxW={isTV ? "full" : "2xl"}
                 mx="auto"
                 bg={bgColor}
-                borderTop="1px solid" // Only keeping top border
-                borderColor={borderColor}
-                borderRadius="0" // Removed rounding since only top border
-                shadow="xl"
+                borderRadius="2xl"
+                shadow="md"
                 mb={4}
+                className="postContainer"
             >
-                <Box p={6}>
+                <Box p={5}>
                     {/* Author section with views moved to right */}
-                    <Flex alignItems="center" justifyContent="space-between" mb={4}>
+                    <Flex alignItems="center" justifyContent="space-between" mb={3}>
                         <Flex alignItems="center" gap={3}>
                             <Avatar
                                 size="md"
                                 name={user.name}
                                 src={user?.profilePic}
-                                ring="2px"
-                                ringColor={useColorModeValue("white", "gray.800")}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     navigate(`/${user.username}`);
@@ -308,7 +304,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             <Box>
                                 <Text 
                                     fontSize="sm" 
-                                    fontWeight="medium" 
+                                    fontWeight="semibold" 
                                     color={useColorModeValue("gray.900", "gray.100")}
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -326,7 +322,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             </Box>
                         </Flex>
                         <Flex gap={4} alignItems="center">
-                            {/* Views moved here with eye icon */}
+                            {/* Views count with eye icon */}
                             <Flex align="center" gap={1}>
                                 <svg
                                     aria-label={t("Views")}
@@ -351,8 +347,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                     as="button"
                                     p={2} 
                                     borderRadius="full"
-                                    _hover={{ bg: useColorModeValue("gray.100", "gray.800") }}
-                                    transition="colors"
+                                    _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                                    transition="all 0.2s"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         handleDeletePost(e);
@@ -400,10 +396,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     {/* Image preview */}
                     {post.img && (
                         <Box 
-                            borderRadius="2xl" 
+                            borderRadius="xl" 
                             overflow="hidden" 
-                            borderWidth="1px"
-                            borderColor={borderColor}
                             mb={4}
                         >
                             <Image
