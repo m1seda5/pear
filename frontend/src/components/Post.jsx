@@ -154,7 +154,291 @@
 
 // export default Post;
 
-// version 2 with translations working
+// this is edited in thursday 24th april 2025 this desing is good jus tthe image isnt aligned and stuff
+// import { Flex, Text } from "@chakra-ui/layout";
+// import { Avatar, Image, useColorModeValue } from "@chakra-ui/react";
+// import { DeleteIcon } from "@chakra-ui/icons";
+// import { Link, useNavigate } from "react-router-dom";
+// import { useEffect, useState, useRef } from "react";
+// import { formatDistanceToNow } from "date-fns";
+// import { useRecoilState, useRecoilValue } from "recoil";
+// import userAtom from "../atoms/userAtom";
+// import postsAtom from "../atoms/postsAtom";
+// import { useTranslation } from "react-i18next";
+// import useShowToast from "../hooks/useShowToast";
+// import Actions from "./Actions";
+
+// const Post = ({ post, postedBy, isTV = false }) => {
+//     const [user, setUser] = useState(null);
+//     const showToast = useShowToast();
+//     const currentUser = useRecoilValue(userAtom);
+//     const [posts, setPosts] = useRecoilState(postsAtom);
+//     const navigate = useNavigate();
+//     const { t, i18n } = useTranslation();
+//     const [language, setLanguage] = useState(i18n.language);
+//     const viewTimeoutRef = useRef(null);
+    
+//     // Match colors from HomePage background
+//     const textColor = useColorModeValue("gray.700", "gray.200");
+//     const borderColor = useColorModeValue("gray.100", "gray.700");
+    
+//     useEffect(() => {
+//         const handleLanguageChange = (lng) => {
+//             setLanguage(lng);
+//         };
+
+//         i18n.on("languageChanged", handleLanguageChange);
+//         return () => {
+//             i18n.off("languageChanged", handleLanguageChange);
+//         };
+//     }, [i18n]);
+
+//     useEffect(() => {
+//         const getUser = async () => {
+//             try {
+//                 const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
+//                 const res = await fetch("/api/users/profile/" + userId);
+//                 const data = await res.json();
+//                 if (data.error) {
+//                     showToast(t("Error"), data.error, "error");
+//                     return;
+//                 }
+//                 setUser(data);
+//             } catch (error) {
+//                 showToast(t("Error"), error.message, "error");
+//                 setUser(null);
+//             }
+//         };
+
+//         getUser();
+//     }, [postedBy, showToast, t]);
+
+//     useEffect(() => {
+//         const markAsViewed = async () => {
+//             try {
+//                 const res = await fetch(`/api/posts/view/${post._id}`, {
+//                     method: "PUT",
+//                     headers: {
+//                         "Content-Type": "application/json",
+//                         Authorization: `Bearer ${currentUser.token}`,
+//                     },
+//                 });
+//                 const data = await res.json();
+//                 if (data.error) throw new Error(data.error);
+
+//                 setPosts(prevPosts =>
+//                     prevPosts.map(p =>
+//                         p._id === post._id ? { ...p, viewCount: data.viewCount, isViewed: true } : p
+//                     )
+//                 );
+//             } catch (error) {
+//                 console.error("Error marking post as viewed:", error);
+//                 showToast(t("Error"), error.message, "error");
+//             }
+//         };
+
+//         if (!post.isViewed) {
+//             viewTimeoutRef.current = setTimeout(() => {
+//                 markAsViewed();
+//             }, 3000);
+//         }
+
+//         return () => {
+//             if (viewTimeoutRef.current) {
+//                 clearTimeout(viewTimeoutRef.current);
+//             }
+//         };
+//     }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
+
+//     const handleDeletePost = async (e) => {
+//         try {
+//             e.preventDefault();
+//             if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
+
+//             const res = await fetch(`/api/posts/${post._id}`, {
+//                 method: "DELETE",
+//                 headers: {
+//                     Authorization: `Bearer ${currentUser.token}`,
+//                 },
+//             });
+//             const data = await res.json();
+//             if (data.error) {
+//                 showToast(t("Error deleting post"), data.error, "error");
+//                 return;
+//             }
+//             showToast(t("Success"), t("Post deleted"), "success");
+//             setPosts(posts.filter((p) => p._id !== post._id));
+//         } catch (error) {
+//             showToast(t("Error"), error.message, "error");
+//         }
+//     };
+
+//     if (!user) return null;
+    
+//     return (
+//         <Link 
+//             to={`/${user.username}/post/${post._id}`} 
+//             style={{ 
+//                 width: isTV ? "100%" : "auto",
+//                 display: "block"
+//             }}
+//         >
+//             <Flex
+//                 direction="column"
+//                 w="full"
+//                 maxW={isTV ? "full" : "2xl"}
+//                 mx="auto"
+//                 borderBottom="1px"
+//                 borderColor={borderColor}
+//                 overflow="hidden"
+//                 className="post-container"
+//             >
+//                 {/* Author section with views moved to right */}
+//                 <Flex 
+//                     alignItems="center" 
+//                     justifyContent="space-between" 
+//                     px={5}
+//                     pt={4}
+//                     pb={3}
+//                 >
+//                     <Flex alignItems="center" gap={3}>
+//                         <Avatar
+//                             size="md"
+//                             name={user.name}
+//                             src={user?.profilePic}
+//                             onClick={(e) => {
+//                                 e.preventDefault();
+//                                 navigate(`/${user.username}`);
+//                             }}
+//                         />
+//                         <Flex direction="column">
+//                             <Text 
+//                                 fontSize="sm" 
+//                                 fontWeight="semibold" 
+//                                 color={textColor}
+//                                 onClick={(e) => {
+//                                     e.preventDefault();
+//                                     navigate(`/${user.username}`);
+//                                 }}
+//                             >
+//                                 {user?.username}
+//                                 {user?.role === "admin" && (
+//                                     <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
+//                                 )}
+//                             </Text>
+//                             <Text fontSize="xs" color="gray.500">
+//                                 @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
+//                             </Text>
+//                         </Flex>
+//                     </Flex>
+//                     <Flex gap={4} alignItems="center">
+//                         <Flex align="center" gap={1}>
+//                             <Text color="gray.500" fontSize="sm">
+//                                 {post?.viewCount || 0}
+//                             </Text>
+//                             <svg
+//                                 aria-label={t("Views")}
+//                                 color="gray"
+//                                 fill="currentColor"
+//                                 height="16"
+//                                 role="img"
+//                                 viewBox="0 0 24 24"
+//                                 width="16"
+//                             >
+//                                 <path
+//                                     d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+//                                 />
+//                             </svg>
+//                         </Flex>
+//                         {(currentUser?._id === user._id || currentUser?.role === "admin") && (
+//                             <Flex 
+//                                 as="button"
+//                                 p={2} 
+//                                 borderRadius="full"
+//                                 _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+//                                 transition="all 0.2s"
+//                                 onClick={(e) => {
+//                                     e.preventDefault();
+//                                     handleDeletePost(e);
+//                                 }}
+//                             >
+//                                 <DeleteIcon boxSize={4} color="gray.500" />
+//                             </Flex>
+//                         )}
+//                     </Flex>
+//                 </Flex>
+
+//                 {/* Content section */}
+//                 <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
+//                     {post.text}
+//                 </Text>
+
+//                 {/* Target Groups and General Post Indicators */}
+//                 <Flex gap={2} wrap="wrap" mb={4} px={5}>
+//                     {post.targetGroups && post.targetGroups.map(group => (
+//                         <Flex key={group._id} align="center" mr={2}>
+//                             <Flex
+//                                 w="10px"
+//                                 h="10px"
+//                                 borderRadius="full"
+//                                 bg={group.color}
+//                                 mr={1}
+//                             />
+//                             <Text fontSize="xs">{group.name}</Text>
+//                         </Flex>
+//                     ))}
+//                     {post.isGeneral && (
+//                         <Flex align="center">
+//                             <Flex
+//                                 w="10px"
+//                                 h="10px"
+//                                 borderRadius="full"
+//                                 bg="gray.500"
+//                                 mr={1}
+//                             />
+//                             <Text fontSize="xs">{t("General Post")}</Text>
+//                         </Flex>
+//                     )}
+//                 </Flex>
+
+//                 {/* Image preview */}
+//                 {post.img && (
+//                     <Flex 
+//                         w="full"
+//                         overflow="hidden"
+//                         mb={4}
+//                     >
+//                         <Image
+//                             src={post.img}
+//                             w="full"
+//                             h={isTV ? "auto" : "full"}
+//                             maxH={isTV ? "70vh" : "auto"}
+//                             objectFit={isTV ? "contain" : "cover"}
+//                             className="post-image"
+//                         />
+//                     </Flex>
+//                 )}
+
+//                 {/* Engagement section */}
+//                 <Flex 
+//                     alignItems="center" 
+//                     justifyContent="space-between" 
+//                     px={5}
+//                     pb={4}
+//                     pt={2}
+//                 >
+//                     {/* Actions component with likes, comments, reposts */}
+//                     <Actions post={post} />
+//                 </Flex>
+//             </Flex>
+//         </Link>
+//     );
+// };
+
+// export default Post;
+
+
+
 import { Flex, Text } from "@chakra-ui/layout";
 import { Avatar, Image, useColorModeValue } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
@@ -181,6 +465,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
     // Match colors from HomePage background
     const textColor = useColorModeValue("gray.700", "gray.200");
     const borderColor = useColorModeValue("gray.100", "gray.700");
+    const bgColor = useColorModeValue("white", "#1A202C"); // Add background color
     
     useEffect(() => {
         const handleLanguageChange = (lng) => {
@@ -288,9 +573,12 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 w="full"
                 maxW={isTV ? "full" : "2xl"}
                 mx="auto"
-                borderBottom="1px"
+                borderWidth="1px"
+                borderRadius="lg"
                 borderColor={borderColor}
                 overflow="hidden"
+                bg={bgColor}
+                mb={4}
                 className="post-container"
             >
                 {/* Author section with views moved to right */}
@@ -373,7 +661,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     {post.text}
                 </Text>
 
-                {/* Target Groups and General Post Indicators */}
+                {/* Target Groups and General Post Indicators - aligned with text */}
                 <Flex gap={2} wrap="wrap" mb={4} px={5}>
                     {post.targetGroups && post.targetGroups.map(group => (
                         <Flex key={group._id} align="center" mr={2}>
@@ -401,12 +689,13 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     )}
                 </Flex>
 
-                {/* Image preview */}
+                {/* Image preview with more rounded corners */}
                 {post.img && (
                     <Flex 
                         w="full"
                         overflow="hidden"
                         mb={4}
+                        px={5} // Align with text padding
                     >
                         <Image
                             src={post.img}
@@ -414,6 +703,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             h={isTV ? "auto" : "full"}
                             maxH={isTV ? "70vh" : "auto"}
                             objectFit={isTV ? "contain" : "cover"}
+                            borderRadius="xl" // More rounded corners
                             className="post-image"
                         />
                     </Flex>
