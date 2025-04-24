@@ -155,7 +155,7 @@
 // export default Post;
 
 // version 2 with translations working
-import { Box, Flex, Text } from "@chakra-ui/layout";
+import { Flex, Text } from "@chakra-ui/layout";
 import { Avatar, Image, useColorModeValue } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -179,7 +179,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const viewTimeoutRef = useRef(null);
     
     // Match colors from HomePage background
-    const bgColor = useColorModeValue("#ffffff", "#1A202C");
     const textColor = useColorModeValue("gray.700", "gray.200");
     const borderColor = useColorModeValue("gray.100", "gray.700");
     
@@ -277,22 +276,31 @@ const Post = ({ post, postedBy, isTV = false }) => {
     if (!user) return null;
     
     return (
-        <Link to={`/${user.username}/post/${post._id}`} style={isTV ? { width: "100%" } : {}}>
-            <Box
+        <Link 
+            to={`/${user.username}/post/${post._id}`} 
+            style={{ 
+                width: isTV ? "100%" : "auto",
+                display: "block"
+            }}
+        >
+            <Flex
+                direction="column"
                 w="full"
                 maxW={isTV ? "full" : "2xl"}
                 mx="auto"
-                py={4}
-                px={5}
-                bg={bgColor}
                 borderBottom="1px"
                 borderColor={borderColor}
-                transition="all 0.2s"
-                _hover={{ bg: useColorModeValue("gray.50", "gray.800") }}
-                boxShadow="sm"
+                overflow="hidden"
+                className="post-container"
             >
                 {/* Author section with views moved to right */}
-                <Flex alignItems="center" justifyContent="space-between" mb={3}>
+                <Flex 
+                    alignItems="center" 
+                    justifyContent="space-between" 
+                    px={5}
+                    pt={4}
+                    pb={3}
+                >
                     <Flex alignItems="center" gap={3}>
                         <Avatar
                             size="md"
@@ -303,7 +311,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                 navigate(`/${user.username}`);
                             }}
                         />
-                        <Box>
+                        <Flex direction="column">
                             <Text 
                                 fontSize="sm" 
                                 fontWeight="semibold" 
@@ -321,7 +329,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             <Text fontSize="xs" color="gray.500">
                                 @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
                             </Text>
-                        </Box>
+                        </Flex>
                     </Flex>
                     <Flex gap={4} alignItems="center">
                         <Flex align="center" gap={1}>
@@ -343,7 +351,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             </svg>
                         </Flex>
                         {(currentUser?._id === user._id || currentUser?.role === "admin") && (
-                            <Box 
+                            <Flex 
                                 as="button"
                                 p={2} 
                                 borderRadius="full"
@@ -355,21 +363,21 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                 }}
                             >
                                 <DeleteIcon boxSize={4} color="gray.500" />
-                            </Box>
+                            </Flex>
                         )}
                     </Flex>
                 </Flex>
 
                 {/* Content section */}
-                <Text mb={4} fontSize="sm" color={textColor} className="post-text">
+                <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
                     {post.text}
                 </Text>
 
                 {/* Target Groups and General Post Indicators */}
-                <Flex gap={2} wrap="wrap" mb={4}>
+                <Flex gap={2} wrap="wrap" mb={4} px={5}>
                     {post.targetGroups && post.targetGroups.map(group => (
                         <Flex key={group._id} align="center" mr={2}>
-                            <Box
+                            <Flex
                                 w="10px"
                                 h="10px"
                                 borderRadius="full"
@@ -381,7 +389,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     ))}
                     {post.isGeneral && (
                         <Flex align="center">
-                            <Box
+                            <Flex
                                 w="10px"
                                 h="10px"
                                 borderRadius="full"
@@ -395,9 +403,9 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
                 {/* Image preview */}
                 {post.img && (
-                    <Box 
-                        borderRadius="xl" 
-                        overflow="hidden" 
+                    <Flex 
+                        w="full"
+                        overflow="hidden"
                         mb={4}
                     >
                         <Image
@@ -408,15 +416,21 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             objectFit={isTV ? "contain" : "cover"}
                             className="post-image"
                         />
-                    </Box>
+                    </Flex>
                 )}
 
                 {/* Engagement section */}
-                <Flex alignItems="center" justifyContent="space-between" pt={2}>
+                <Flex 
+                    alignItems="center" 
+                    justifyContent="space-between" 
+                    px={5}
+                    pb={4}
+                    pt={2}
+                >
                     {/* Actions component with likes, comments, reposts */}
                     <Actions post={post} />
                 </Flex>
-            </Box>
+            </Flex>
         </Link>
     );
 };
