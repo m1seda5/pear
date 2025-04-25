@@ -401,19 +401,21 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     )}
                 </Flex>
 
-                {/* Image preview */}
+                {/* Image preview - UPDATED with rounded corners, centered, and aligned with text */}
                 {post.img && (
                     <Flex 
                         w="full"
-                        overflow="hidden"
+                        justifyContent="center"
+                        px={5}  // Match text padding
                         mb={4}
                     >
                         <Image
                             src={post.img}
-                            w="full"
+                            w="full"  // Width matches container with padding
                             h={isTV ? "auto" : "full"}
-                            maxH={isTV ? "70vh" : "auto"}
+                            maxH={isTV ? "65vh" : "auto"}  // Slightly smaller
                             objectFit={isTV ? "contain" : "cover"}
+                            borderRadius="xl"  // Rounded corners
                             className="post-image"
                         />
                     </Flex>
