@@ -949,10 +949,10 @@ import { Children, cloneElement, createContext, useContext, useMemo } from 'reac
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
 
-// Constants for dock component
+// Constants for dock component - Adjusted for more Apple-like effect
 const DOCK_HEIGHT = 128;
-const DEFAULT_MAGNIFICATION = 80;
-const DEFAULT_DISTANCE = 150;
+const DEFAULT_MAGNIFICATION = 100; // Increased for more noticeable effect
+const DEFAULT_DISTANCE = 180; // Increased for wider magnification area
 const DEFAULT_PANEL_HEIGHT = 64;
 
 // Create Dock Context
@@ -970,11 +970,11 @@ function useDock() {
   return context;
 }
 
-// Main Dock component - Modified to remove scrolling
+// Main Dock component - Improved for Apple-like effect
 function Dock({
   children,
   className,
-  spring = { mass: 0.1, stiffness: 150, damping: 12 },
+  spring = { mass: 0.2, stiffness: 300, damping: 20 }, // Adjusted for Apple-like physics
   magnification = DEFAULT_MAGNIFICATION,
   distance = DEFAULT_DISTANCE,
   panelHeight = DEFAULT_PANEL_HEIGHT,
@@ -982,15 +982,35 @@ function Dock({
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
   const { colorMode } = useColorMode();
+  const dockRef = useRef(null);
 
   const maxHeight = useMemo(() => {
-    return Math.max(DOCK_HEIGHT, magnification + magnification / 2 + 4);
+    return Math.max(DOCK_HEIGHT, magnification + 24); // Added padding for visual space
   }, [magnification]);
 
   const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
   const height = useSpring(heightRow, spring);
 
-  // Instead of responsively hiding items, we'll use a fixed width and ensure all items fit
+  // Improved mouse tracking - calculate relative to dock container
+  const handleMouseMove = (e) => {
+    if (!dockRef.current) return;
+    
+    // Get dock position relative to viewport
+    const dockRect = dockRef.current.getBoundingClientRect();
+    
+    // Calculate mouse X position relative to the dock
+    const relativeMouseX = e.clientX - dockRect.left;
+    
+    // Set values for animation
+    isHovered.set(1);
+    mouseX.set(relativeMouseX);
+  };
+
+  const handleMouseLeave = () => {
+    isHovered.set(0);
+    mouseX.set(Infinity);
+  };
+
   return (
     <MotionBox
       style={{
@@ -1006,27 +1026,23 @@ function Dock({
       overflow="visible" // Ensure no scrollbars appear
     >
       <MotionFlex
-        onMouseMove={({ pageX }) => {
-          isHovered.set(1);
-          mouseX.set(pageX);
-        }}
-        onMouseLeave={() => {
-          isHovered.set(0);
-          mouseX.set(Infinity);
-        }}
+        ref={dockRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         mx="auto"
         width="fit-content"
         maxWidth="100%"
-        gap={2} // Reduced gap to fit more items
+        gap={3} // Gap between icons
         borderRadius="3xl"
-        bg={colorMode === "dark" ? "gray.800" : "gray.50"}
+        bg={colorMode === "dark" ? "rgba(26, 32, 44, 0.85)" : "rgba(247, 250, 252, 0.85)"}
+        backdropFilter="blur(12px)" // Apple-style glass effect
         px={4}
         style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"
         alignItems="center"
         justifyContent="center"
-        boxShadow={colorMode === "dark" ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)"}
+        boxShadow={colorMode === "dark" ? "0 4px 20px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.15)"}
         position="relative"
         overflow="visible" // Ensure no scrollbars appear
       >
@@ -1038,29 +1054,40 @@ function Dock({
   );
 }
 
-// DockItem component
+// DockItem component - Fixed for proper Apple dock magnification effect
 function DockItem({ children, className, onClick, isDisabled }) {
   const ref = useRef(null);
   const { mouseX, spring, distance, magnification } = useDock();
   const itemHovered = useMotionValue(0);
 
+  // Critical improvement: Better distance calculation
   const mouseDistance = useTransform(mouseX, (val) => {
-    const domRect = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
-    return val - domRect.x - domRect.width / 2;
+    if (!ref.current) return distance;
+    
+    const domRect = ref.current.getBoundingClientRect();
+    const itemCenter = domRect.left + domRect.width / 2;
+    
+    // Distance from mouse to center of this item
+    return Math.abs(val - (itemCenter - domRect.x));
   });
 
+  // Improved transformation function with parabolic curve for more Apple-like effect
   const widthTransform = useTransform(
     mouseDistance,
-    [-distance, 0, distance],
-    [40, magnification, 40]
+    [0, distance * 0.25, distance * 0.5, distance],
+    [magnification, magnification * 0.85, magnification * 0.6, 40],
+    {
+      clamp: true // Ensures values stay within our defined range
+    }
   );
 
+  // Spring physics for smooth animation
   const width = useSpring(widthTransform, spring);
 
   return (
     <MotionBox
       ref={ref}
-      style={{ width }}
+      style={{ width }} // This directly applies the animated width
       onHoverStart={() => itemHovered.set(1)}
       onHoverEnd={() => itemHovered.set(0)}
       onFocus={() => itemHovered.set(1)}
@@ -1083,13 +1110,15 @@ function DockItem({ children, className, onClick, isDisabled }) {
   );
 }
 
-// DockLabel component
+// DockLabel component - Enhanced for Apple dock style
 function DockLabel({ children, className, ...rest }) {
   const { isHovered, isDisabled } = rest;
   const [isVisible, setIsVisible] = useState(false);
   const { colorMode } = useColorMode();
 
   useEffect(() => {
+    if (!isHovered) return;
+    
     const unsubscribe = isHovered.on('change', (latest) => {
       setIsVisible(latest === 1);
     });
@@ -1109,14 +1138,15 @@ function DockLabel({ children, className, ...rest }) {
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.2 }}
           position="absolute"
-          top="-6"
+          top="-8"
           left="50%"
           width="fit-content"
           whiteSpace="pre"
           borderRadius="md"
           border="1px solid"
           borderColor={isDisabled ? "red.300" : (colorMode === "dark" ? "whiteAlpha.300" : "gray.200")}
-          bg={colorMode === "dark" ? "gray.700" : "gray.100"}
+          bg={colorMode === "dark" ? "rgba(45, 55, 72, 0.95)" : "rgba(255, 255, 255, 0.95)"}
+          backdropFilter="blur(8px)" // Apple-style glass effect
           px={2}
           py={0.5}
           fontSize="xs"
@@ -1133,12 +1163,13 @@ function DockLabel({ children, className, ...rest }) {
   );
 }
 
-// DockIcon component
+// DockIcon component - Enhanced for Apple dock style
 function DockIcon({ children, className, ...rest }) {
   const { width, isDisabled } = rest;
   const { colorMode } = useColorMode();
 
-  const widthTransform = useTransform(width, (val) => val / 2);
+  // Scale icon size proportionally with the container width
+  const widthTransform = useTransform(width, (val) => val * 0.6); // Adjusted ratio for better scaling
 
   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
   const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
@@ -1290,7 +1321,8 @@ function Header({ unreadCount = 0 }) {
             left="50%" 
             transform="translateX(-50%)" 
             width="240px"
-            bg={colorMode === "dark" ? "gray.700" : "white"}
+            bg={colorMode === "dark" ? "rgba(45, 55, 72, 0.95)" : "rgba(255, 255, 255, 0.95)"}
+            backdropFilter="blur(8px)"
             borderRadius="xl"
             boxShadow="lg"
             p={2}
@@ -1315,7 +1347,7 @@ function Header({ unreadCount = 0 }) {
     );
   };
 
-  // Define icon sizes to be smaller to fit better in fixed width dock
+  // Define icon sizes for dock
   const iconSize = 20;
 
   return (
@@ -1327,10 +1359,10 @@ function Header({ unreadCount = 0 }) {
       overflow="visible" // Ensure no scrollbars appear
     >
       <Dock 
-        panelHeight={56} // Slightly smaller than original
-        magnification={72} // Slightly smaller magnification
-        distance={120} // Smaller distance for tighter layout
-        spring={{ mass: 0.1, stiffness: 150, damping: 12 }}
+        panelHeight={56} 
+        magnification={84} // Adjusted for more pronounced effect
+        distance={180} // Wider influence area for smoother transitions
+        spring={{ mass: 0.2, stiffness: 300, damping: 20 }} // More Apple-like physics
       >
         {user && (
           <DockItem onClick={() => navigate("/")}>
