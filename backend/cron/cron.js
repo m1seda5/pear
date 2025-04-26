@@ -20,27 +20,27 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
 });
 
 
-// thisis disabled temporarily for the holidays
+
+// twe are back babyy
 
 
+// Idle notification schedule
+const notificationJob = new cron.CronJob(
+  '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
+  sendIdleNotifications,
+  null,
+  true,
+  'Africa/Nairobi'
+);
 
-// // Idle notification schedule
-// const notificationJob = new cron.CronJob(
-//   '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
-//   sendIdleNotifications,
-//   null,
-//   true,
-//   'Africa/Nairobi'
-// );
-
-// // Saturday special notification
-// const saturdayJob = new cron.CronJob(
-//   '30 12 * * 6', // Saturday at 12:30 PM
-//   () => sendIdleNotifications(),
-//   null,
-//   true,
-//   'Africa/Nairobi'
-// );
+// Saturday special notification
+const saturdayJob = new cron.CronJob(
+  '30 12 * * 6', // Saturday at 12:30 PM
+  () => sendIdleNotifications(),
+  null,
+  true,
+  'Africa/Nairobi'
+);
 
 export default {
   start: () => {

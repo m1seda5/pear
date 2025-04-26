@@ -9,6 +9,8 @@ import messageRoutes from "./routes/messageRoutes.js";
 import reviewerGroupRoutes from "./routes/reviewerGroupRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import gameRoutes from "./routes/gameRoutes.js";
+import presetTeamRoutes from "./routes/presetTeamRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { app, server } from "./socket/socket.js";
 import cronJobs from "./cron/cron.js";
@@ -38,6 +40,8 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/reviewer-groups", reviewerGroupRoutes);
 app.use("/api/groups", groupRoutes); // Changed from "/groups" to "/api/groups" for consistency
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/games", gameRoutes);
+app.use("/api/teams", presetTeamRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
@@ -56,7 +60,6 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));
-
 // email verficiation update 
 // import path from "path";
 // import express from "express";

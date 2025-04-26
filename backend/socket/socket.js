@@ -40,10 +40,9 @@ io.on("connection", (socket) => {
 
     // Join direct message room
     socket.on("joinChat", (conversationId) => {
-        // Clear previous rooms first for this socket
         if (userRooms.has(userId)) {
             userRooms.get(userId).forEach(room => {
-                if (room.startsWith('chat_')) {  // Only leave direct chat rooms
+                if (room.startsWith('chat_')) {
                     socket.leave(room);
                 }
             });
@@ -52,7 +51,6 @@ io.on("connection", (socket) => {
         const roomId = `chat_${conversationId}`;
         socket.join(roomId);
         
-        // Update the user's room set
         if (!userRooms.has(userId)) {
             userRooms.set(userId, new Set());
         }
@@ -61,12 +59,11 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined direct chat: ${roomId}`);
     });
 
-    // When a user joins a group chat
+    // Join group chat room
     socket.on("joinGroup", (groupId) => {
         const roomId = `group_${groupId}`;
         socket.join(roomId);
         
-        // Update the user's room set
         if (!userRooms.has(userId)) {
             userRooms.set(userId, new Set());
         }
@@ -75,21 +72,26 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined group: ${roomId}`);
     });
 
+    // ** ADDING YOUR NEW CODE HERE **
+    // Join game room
+    socket.on("joinGameRoom", (gameId) => {
+        const roomId = `game_${gameId}`;
+        socket.join(roomId);
+        console.log(`User joined game room ${gameId}`);
+    });
+
     // Handle new direct message
     socket.on("newMessage", (socketPayload) => {
         const { conversationId, receiverId, conversation, senderId } = socketPayload;
         const roomId = `chat_${conversationId}`;
         
-        // Broadcast to the room
         socket.to(roomId).emit("messageReceived", socketPayload);
         
-        // Also send to the specific recipient if they're online but not in the room
         const recipientSocketId = getRecipientSocketId(receiverId);
         if (recipientSocketId) {
             io.to(recipientSocketId).emit("newMessageNotification", socketPayload);
         }
         
-        // When sending messages - Added code
         if (conversation && !conversation.isGroup) {
             const recipient = conversation.participants.find(
                 p => p.toString() !== senderId.toString()
@@ -109,8 +111,6 @@ io.on("connection", (socket) => {
     socket.on("newGroupMessage", (socketPayload) => {
         const { conversationId } = socketPayload;
         const roomId = `group_${conversationId}`;
-        
-        // Broadcast to everyone in the group room except sender
         socket.to(roomId).emit("messageReceived", socketPayload);
     });
 
@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
         socket.to(roomId).emit("stopTyping", { conversationId });
     });
 
-    // Message seen functionality
+    // Message seen
     socket.on("markMessagesAsSeen", async ({ conversationId, userId, isGroup }) => {
         try {
             await Message.updateMany(
@@ -161,11 +161,27 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Disconnect handler
+    // Game updates
+    socket.on("joinGameUpdates", () => {
+        socket.join("gameUpdates");
+    });
+
+    socket.on("gameCreated", (game) => {
+        io.to("gameUpdates").emit("gameAdded", game);
+    });
+
+    socket.on("gameUpdated", (game) => {
+        io.to("gameUpdates").emit("gameModified", game);
+    });
+
+    socket.on("gameDeleted", (gameId) => {
+        io.to("gameUpdates").emit("gameRemoved", gameId);
+    });
+
+    // Disconnect
     socket.on("disconnect", () => {
         console.log("user disconnected");
         
-        // Clean up rooms
         if (userRooms.has(userId)) {
             userRooms.get(userId).forEach(room => {
                 socket.leave(room);

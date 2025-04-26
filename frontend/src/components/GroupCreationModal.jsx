@@ -1,253 +1,183 @@
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  Input,
-  Button,
-  Flex,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  Box,
-  Text,
-  Avatar,
-  Stack,
-  FormControl,
-  FormLabel,
-  FormHelperText,
-  useColorModeValue,
-  Divider
+import { useState, useEffect } from "react";
+import { 
+  Box, Flex, Image, Text, Badge, IconButton, 
+  Drawer, DrawerOverlay, DrawerContent, useDisclosure, 
+  useMediaQuery, Button, Avatar, Tag, Stack, useColorModeValue 
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { CloseIcon, ChevronUpIcon, AddIcon } from "@chakra-ui/icons";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import GameModal from "./GameModal";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import useShowToast from "../hooks/useShowToast";
-import { useTranslation } from 'react-i18next';
-import UserSearch from "./UserSearch"; // Import our new component
 
-const MAX_GROUP_MEMBERS = 50;
+const GameWidget = () => {
+  const [games, setGames] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isMobile] = useMediaQuery("(max-width: 768px)");
+  const navigate = useNavigate();
+  const user = useRecoilValue(userAtom);
+  const bgColor = useColorModeValue("white", "gray.800");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
-const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [groupName, setGroupName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const showToast = useShowToast();
-  const currentUser = useRecoilValue(userAtom);
-  const { t } = useTranslation();
-  
-  // Color mode values
-  const tagBg = useColorModeValue("blue.50", "blue.800");
-  const tagColor = useColorModeValue("blue.800", "blue.100");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-
-  const checkExistingGroup = async (name) => {
-    if (!name.trim()) return null;
-    
-    try {
-      const res = await fetch(
-        `/api/messages/groups/check?name=${encodeURIComponent(name.trim())}`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser.token}`,
-          },
-        }
-      );
-      if (!res.ok) return null;
-      return res.json();
-    } catch (error) {
-      console.error("Error checking group name:", error);
-      return null;
-    }
-  };
-
-  const handleUserSelect = (user) => {
-    if (selectedUsers.length >= MAX_GROUP_MEMBERS - 1) {
-      showToast(
-        "Error",
-        t(`Maximum ${MAX_GROUP_MEMBERS} members allowed`),
-        "error"
-      );
-      return;
-    }
-
-    setSelectedUsers(prev => [...prev, user]);
-  };
-  
-  const handleRemoveUser = (userId) => {
-    setSelectedUsers(prev => prev.filter(user => user._id !== userId));
-  };
-
-  const handleGroupNameChange = async (e) => {
-    const value = e.target.value;
-    setGroupName(value);
-    setError("");
-    
-    // Check for duplicate group name when user has typed at least 3 characters
-    if (value.trim().length >= 3) {
-      const existingGroup = await checkExistingGroup(value);
-      if (existingGroup) {
-        setError(t("A group with this name already exists"));
-      }
-    }
-  };
-
-  const handleCreateGroup = async () => {
-    // Validation
-    if (!groupName.trim()) {
-      setError(t("Please enter a group name"));
-      return;
-    }
-    
-    if (selectedUsers.length < 1) {
-      showToast("Error", t("Please add at least one member"), "error");
-      return;
-    }
-    
-    // Final check for duplicate group name
-    const existingGroup = await checkExistingGroup(groupName);
-    if (existingGroup) {
-      setError(t("A group with this name already exists"));
-      return;
-    }
-  
-    setLoading(true);
-    try {
-      const res = await fetch("/api/messages/groups/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-        body: JSON.stringify({
-          participants: selectedUsers.map((u) => u._id),
-          groupName: groupName.trim(),
-        }),
-      });
-      
-      // Handle JSON parsing safely
-      let data;
+  useEffect(() => {
+    const fetchGames = async () => {
       try {
-        const text = await res.text();
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(t("Server returned invalid response"));
+        const res = await axios.get("/api/games");
+        setGames(res.data);
+      } catch (err) {
+        console.error("Error fetching games:", err);
       }
-  
-      if (!res.ok) throw new Error(data.error || t("Failed to create group"));
-  
-      onGroupCreated(data);
-      resetForm();
-      onClose();
-      
-      showToast("Success", t("Group created successfully"), "success");
-    } catch (error) {
-      showToast("Error", error.message, "error");
-    } finally {
-      setLoading(false);
+    };
+    fetchGames();
+    const interval = setInterval(fetchGames, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const getStatusProps = (status) => {
+    switch (status) {
+      case "live": return { color: "green.500", label: "Live" };
+      case "upcoming": return { color: "orange.500", label: "Upcoming" };
+      default: return { color: "gray.500", label: "Completed" };
     }
   };
-  
-  const resetForm = () => {
-    setGroupName("");
-    setSelectedUsers([]);
-    setError("");
-  };
-  
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
-  
-  return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
-      <ModalOverlay />
-      <ModalContent bg={useColorModeValue("white", "gray.800")}>
-        <ModalHeader borderBottom="1px solid" borderColor={borderColor}>
-          {t("Create New Group")}
-        </ModalHeader>
-        <ModalCloseButton />
-        
-        <ModalBody pb={6} bg={useColorModeValue("gray.50", "gray.700")}>
-          <Stack spacing={4} my={2}>
-            {/* Group Name Input */}
-            <FormControl isRequired isInvalid={!!error}>
-              <FormLabel>{t("Group Name")}</FormLabel>
-              <Input 
-                placeholder={t("Enter group name")}
-                value={groupName}
-                onChange={handleGroupNameChange}
-                bg={useColorModeValue("white", "gray.800")}
-              />
-              {error && <FormHelperText color="red.500">{error}</FormHelperText>}
-            </FormControl>
-            
-            {/* User Search */}
-            <FormControl>
-              <FormLabel>{t("Search and Add Members")}</FormLabel>
-              <UserSearch
-                placeholder={t("Type username or email...")}
-                onUserSelect={handleUserSelect}
-                selectedUsers={selectedUsers}
-              />
-              <FormHelperText>
-                {t("{{current}}/{{max}} members selected", { 
-                  current: selectedUsers.length + 1, // +1 for current user
-                  max: MAX_GROUP_MEMBERS 
-                })}
-              </FormHelperText>
-            </FormControl>
-            
-            {/* Selected Members */}
-            {selectedUsers.length > 0 && (
-              <Box mt={4}>
-                <Text fontWeight="medium" mb={2}>{t("Selected Members")}</Text>
-                <Flex flexWrap="wrap" gap={2}>
-                  {selectedUsers.map((user) => (
-                    <Tag
-                      key={user._id}
-                      size="md"
-                      borderRadius="full"
-                      variant="subtle"
-                      bg={tagBg}
-                      color={tagColor}
-                    >
-                      <Avatar
-                        src={user.profilePic}
-                        size="xs"
-                        name={user.username}
-                        ml={-1}
-                        mr={2}
-                      />
-                      <TagLabel>{user.username}</TagLabel>
-                      <TagCloseButton
-                        onClick={() => handleRemoveUser(user._id)}
-                      />
-                    </Tag>
-                  ))}
-                </Flex>
-              </Box>
-            )}
-          </Stack>
 
-          <Divider my={4} borderColor={borderColor} />
-          
-          <Button
-            colorScheme="blue"
-            width="full"
-            onClick={handleCreateGroup}
-            isLoading={loading}
-            isDisabled={!groupName.trim() || selectedUsers.length < 1 || !!error}
+  const GameCard = ({ game, onClick, isMobile }) => {
+    const status = getStatusProps(game.status);
+    const isAdmin = user?.role === "admin";
+    const isPast = game.status === "past";
+    
+    return (
+      <Box
+        p={4}
+        mb={4}
+        borderRadius="lg"
+        borderWidth="1px"
+        cursor="pointer"
+        _hover={{ bg: hoverBg }}
+        onClick={() => onClick(game)}
+        position="relative"
+      >
+        {isAdmin && (
+          <IconButton
+            aria-label="Delete game"
+            icon={<CloseIcon />}
+            size="sm"
+            position="absolute"
+            top={2}
+            right={2}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteGame(game._id);
+            }}
+          />
+        )}
+        <Flex justify="space-between" align="center" mb={2}>
+          <Flex align="center" gap={2}>
+            <Avatar src={game.teamA.logo} name={game.teamA.name} size="sm" />
+            <Text fontWeight="bold">{game.teamA.name}</Text>
+          </Flex>
+          <Text fontSize="xl" fontWeight="bold">
+            {game.status === "live" ? `${game.scoreA || 0} - ${game.scoreB || 0}` : "VS"}
+          </Text>
+          <Flex align="center" gap={2}>
+            <Text fontWeight="bold">{game.teamB.name}</Text>
+            <Avatar src={game.teamB.logo} name={game.teamB.name} size="sm" />
+          </Flex>
+        </Flex>
+        <Flex justify="space-between" align="center">
+          <Badge colorScheme={status.color.replace(".500", "")}>{status.label}</Badge>
+          <Text fontSize="sm">
+            {game.status === "past" 
+              ? new Date(game.endTime).toLocaleDateString()
+              : new Date(game.startTime).toLocaleTimeString()}
+          </Text>
+        </Flex>
+      </Box>
+    );
+  };
+
+  return (
+    <>
+      {/* Desktop/Tablet View */}
+      {!isMobile && (
+        <Box
+          position="fixed"
+          right="4"
+          top="20"
+          w="300px"
+          bg={bgColor}
+          borderRadius="lg"
+          boxShadow="xl"
+          p="4"
+          zIndex="docked"
+        >
+          <Flex justify="space-between" align="center" mb={4}>
+            <Text fontSize="xl" fontWeight="bold">Live Scores</Text>
+            {user?.role === "admin" && (
+              <IconButton
+                icon={<AddIcon />}
+                size="sm"
+                onClick={() => navigate("/create-game")}
+              />
+            )}
+          </Flex>
+          {games.map((game) => (
+            <GameCard key={game._id} game={game} onClick={handleGameClick} />
+          ))}
+        </Box>
+      )}
+
+      {/* Mobile Floating Button & Bottom Sheet */}
+      {isMobile && (
+        <>
+          <Box
+            position="fixed"
+            bottom="4"
+            right="4"
+            zIndex="overlay"
           >
-            {t("Create Group")}
-          </Button>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+            <Button
+              colorScheme="green"
+              borderRadius="full"
+              boxShadow="lg"
+              onClick={onOpen}
+              leftIcon={<ChevronUpIcon />}
+            >
+              Game Scores
+            </Button>
+          </Box>
+
+          <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+            <DrawerOverlay />
+            <DrawerContent borderTopRadius="lg" maxH="85vh">
+              <Flex justify="space-between" align="center" p={4}>
+                <Text fontWeight="bold">Live Scores</Text>
+                <IconButton
+                  icon={<CloseIcon />}
+                  size="sm"
+                  onClick={onClose}
+                />
+              </Flex>
+              <Box overflowY="auto" px={4}>
+                {games.map((game) => (
+                  <GameCard key={game._id} game={game} isMobile onClick={handleGameClick} />
+                ))}
+              </Box>
+            </DrawerContent>
+          </Drawer>
+        </>
+      )}
+
+      {selectedGame && (
+        <GameModal 
+          game={selectedGame}
+          onClose={() => setSelectedGame(null)}
+          isMobile={isMobile}
+          isAdmin={user?.role === "admin"}
+        />
+      )}
+    </>
   );
 };
-
-export default GroupCreationModal;
