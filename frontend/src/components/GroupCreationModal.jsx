@@ -7,7 +7,6 @@ import {
 import { CloseIcon, ChevronUpIcon, AddIcon } from "@chakra-ui/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import GameModal from "./GameModal";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 
@@ -168,15 +167,6 @@ const GameWidget = () => {
             </DrawerContent>
           </Drawer>
         </>
-      )}
-
-      {selectedGame && (
-        <GameModal 
-          game={selectedGame}
-          onClose={() => setSelectedGame(null)}
-          isMobile={isMobile}
-          isAdmin={user?.role === "admin"}
-        />
       )}
     </>
   );
