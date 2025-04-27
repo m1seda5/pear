@@ -1,6 +1,6 @@
 // routes/gameRoutes.js
 import express from "express";
-import { createGame, getGames } from "../controllers/gameController.js";
+import { createGame, getGames, updateGame } from "../controllers/gameController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
 import { gameUpdateLimiter } from "../middlewares/rateLimiter.js";
