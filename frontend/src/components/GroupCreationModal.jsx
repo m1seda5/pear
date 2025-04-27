@@ -181,3 +181,9 @@ const GameWidget = () => {
     </>
   );
 };
+
+const GroupCreationModal = ({ isOpen, onClose, onGroupCreated }) => {
+  // ... existing component code ...
+};
+
+export default GroupCreationModal;
