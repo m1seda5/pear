@@ -105,6 +105,8 @@ const HomePage = () => {
 						<Post key={post._id} post={post} postedBy={post.postedBy} />
 					))}
 				</Box>
+				{/*
+				// SuggestedUsers sidebar is disabled because everyone follows each other now.
 				<Box
 					flex={30}
 					display={{
@@ -114,6 +116,7 @@ const HomePage = () => {
 				>
 					<SuggestedUsers />
 				</Box>
+				*/}
 			</Flex>
 		</>
 	);
