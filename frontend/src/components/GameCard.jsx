@@ -16,7 +16,7 @@ import { EditIcon, DeleteIcon } from "@chakra-ui/icons";
 import { FaRegClock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useGesture } from "react-use-gesture";
+import { useGesture } from '@use-gesture/react';
 
 const MotionFlex = motion(Flex);
 
