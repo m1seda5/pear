@@ -102,7 +102,19 @@ const HomePage = () => {
 						</Flex>
 					)}
 					{posts.map((post) => (
-						<Post key={post._id} post={post} postedBy={post.postedBy} />
+						<Box
+							key={post._id}
+							borderWidth="1px"
+							borderRadius="lg"
+							p={4}
+							mb={6}
+							boxShadow="sm"
+							maxW="800px"
+							mx="auto"
+							bg="white"
+						>
+							<Post post={post} postedBy={post.postedBy} />
+						</Box>
 					))}
 				</Box>
 				{/*
