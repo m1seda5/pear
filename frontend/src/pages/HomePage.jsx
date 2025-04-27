@@ -20,9 +20,7 @@ const HomePage = () => {
 	const [language, setLanguage] = useState(i18n.language);
 	const [showTutorial, setShowTutorial] = useState(false);
 	const user = useRecoilValue(userAtom);
-	const [isLargerThan1280] = useMediaQuery("(min-width: 1280px)");
 	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
-	const [isLargerThan768] = useMediaQuery("(min-width: 768px)");
 
 	// Handle language change
 	useEffect(() => {
@@ -38,12 +36,11 @@ const HomePage = () => {
 	// Show tutorial on every page load when user is present
 	useEffect(() => {
 		if (user) {
-			// Trigger tutorial on initial load or significant navigation
 			setTimeout(() => {
 				setShowTutorial(true);
 			}, 500);
 		}
-	}, []); // Empty dependency array: runs once per page load/component mount
+	}, []);
 
 	// Fetch feed posts
 	useEffect(() => {
@@ -85,7 +82,6 @@ const HomePage = () => {
 
 	const handleTutorialComplete = () => {
 		setShowTutorial(false);
-		// No persistent flag set here; tutorial can show again on next load
 	};
 
 	const isNewPost = (postTime) => {
@@ -94,33 +90,10 @@ const HomePage = () => {
 		return postAgeInHours <= 3;
 	};
 
-	// Determine widget width based on screen size
-	const getWidgetWidth = () => {
-		if (isLargerThan1280) return "300px";
-		if (isLargerThan1024) return "250px";
-		if (isLargerThan768) return "200px";
-		return "0px"; // Hide on mobile
-	};
-
-	const widgetWidth = getWidgetWidth();
-
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
 			<Flex gap="10" alignItems={"flex-start"} position="relative">
-				{/* Left Game Widget */}
-				{isLargerThan768 && (
-					<Box 
-						position="sticky" 
-						top="20px" 
-						width={widgetWidth} 
-						flexShrink={0}
-						display={{ base: "none", md: "block" }}
-					>
-						<GameWidget />
-					</Box>
-				)}
-
 				{/* Main Content */}
 				<Box flex={1} minW="0">
 					{!loading && posts.length === 0 && (
@@ -142,6 +115,8 @@ const HomePage = () => {
 								p={4}
 								mb={6}
 								boxShadow="sm"
+								maxW="800px"
+								mx="auto"
 							>
 								<Post post={post} postedBy={post.postedBy} />
 								{isNew && newPosts.includes(post) && (
@@ -157,7 +132,7 @@ const HomePage = () => {
 					<Box 
 						position="sticky" 
 						top="20px" 
-						width={widgetWidth} 
+						width="300px" 
 						flexShrink={0}
 						display={{ base: "none", lg: "block" }}
 					>
