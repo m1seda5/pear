@@ -431,7 +431,7 @@ const formatTeamName = (name, isCompact) => {
     'Crawford International School': 'CRW',
     'Light Academy': 'LGT',
     'St. Christophers School': 'STC',
-    'BGE (Brookhouse Girls’ Enrichment?)': 'BGE',
+    'BGE (Brookhouse Girls\' Enrichment?)': 'BGE',
   };
   
   return abbreviations[name] || name.substring(0, 3).toUpperCase();

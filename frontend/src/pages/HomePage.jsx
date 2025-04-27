@@ -140,6 +140,12 @@ const HomePage = () => {
 					</Box>
 				)}
 			</Flex>
+			{/* Top-of-feed widget for mobile */}
+			{!isLargerThan1024 && (
+				<Box width="100%" mb={4}>
+					<GameWidget />
+				</Box>
+			)}
 		</>
 	);
 };
