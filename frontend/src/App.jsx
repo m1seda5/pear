@@ -191,9 +191,6 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import ReviewModal from './components/ReviewModal';
 import AdminDashboard from "./pages/AdminDashboard";
-import GamePage from "./pages/GamePage"; // Added import
-import CreateGamePage from "./pages/CreateGamePage"; // Added import
-import GameDetailsPage from "./pages/GameDetailsPage"; // New import
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -253,9 +250,6 @@ function App() {
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
-            <Route path="/games" element={<GamePage />} />
-            <Route path="/create-game" element={user?.role === "admin" ? <CreateGamePage /> : <Navigate to="/" />} />
-            <Route path="/games/:gameId" element={<GameDetailsPage />} /> {/* Added Route */}
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}

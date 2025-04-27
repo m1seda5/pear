@@ -6,10 +6,10 @@ import Post from "../components/Post";
 import postsAtom from "../atoms/postsAtom";
 import userAtom from "../atoms/userAtom";
 import TutorialSlider from "../components/TutorialSlider";
-import GameWidget from "../components/GameWidget";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
+import SuggestedUsers from "../components/SuggestedUsers";
 
 const HomePage = () => {
 	const [posts, setPosts] = useRecoilState(postsAtom);
@@ -93,59 +93,28 @@ const HomePage = () => {
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			<Flex gap="10" alignItems={"flex-start"} position="relative">
-				{/* Main Content */}
-				<Box w="100%" maxW={{ base: "100%", md: "600px", xl: "700px" }} mx="auto" minW="0">
-					{!loading && posts.length === 0 && (
-						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-					)}
+			<Flex gap='10' alignItems={"flex-start"}>
+				<Box flex={70}>
+					{!loading && posts.length === 0 && <h1>Follow some users to see the feed</h1>}
 					{loading && (
-						<Flex justifyContent="center">
-							<Spinner size="xl" />
+						<Flex justify='center'>
+							<Spinner size='xl' />
 						</Flex>
 					)}
-					{posts.map((post) => {
-						const isNew = isNewPost(post.createdAt);
-						return (
-							<Box
-								key={post._id}
-								className="postContainer"
-								borderWidth="1px"
-								borderRadius="lg"
-								p={4}
-								mb={6}
-								boxShadow="sm"
-								maxW="800px"
-								mx="auto"
-							>
-								<Post post={post} postedBy={post.postedBy} />
-								{isNew && newPosts.includes(post) && (
-									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-								)}
-							</Box>
-						);
-					})}
+					{posts.map((post) => (
+						<Post key={post._id} post={post} postedBy={post.postedBy} />
+					))}
 				</Box>
-
-				{/* Right Game Widget */}
-				{isLargerThan1024 && (
-					<Box 
-						position="sticky" 
-						top="20px" 
-						width="300px" 
-						flexShrink={0}
-						display={{ base: "none", lg: "block" }}
-					>
-						<GameWidget />
-					</Box>
-				)}
+				<Box
+					flex={30}
+					display={{
+						base: "none",
+						md: "block",
+					}}
+				>
+					<SuggestedUsers />
+				</Box>
 			</Flex>
-			{/* Top-of-feed widget for mobile */}
-			{!isLargerThan1024 && (
-				<Box width="100%" mb={4}>
-					<GameWidget />
-				</Box>
-			)}
 		</>
 	);
 };

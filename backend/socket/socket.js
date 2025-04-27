@@ -72,14 +72,6 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined group: ${roomId}`);
     });
 
-    // ** ADDING YOUR NEW CODE HERE **
-    // Join game room
-    socket.on("joinGameRoom", (gameId) => {
-        const roomId = `game_${gameId}`;
-        socket.join(roomId);
-        console.log(`User joined game room ${gameId}`);
-    });
-
     // Handle new direct message
     socket.on("newMessage", (socketPayload) => {
         const { conversationId, receiverId, conversation, senderId } = socketPayload;
@@ -159,23 +151,6 @@ io.on("connection", (socket) => {
         } catch (error) {
             console.error("Error updating group:", error);
         }
-    });
-
-    // Game updates
-    socket.on("joinGameUpdates", () => {
-        socket.join("gameUpdates");
-    });
-
-    socket.on("gameCreated", (game) => {
-        io.to("gameUpdates").emit("gameAdded", game);
-    });
-
-    socket.on("gameUpdated", (game) => {
-        io.to("gameUpdates").emit("gameModified", game);
-    });
-
-    socket.on("gameDeleted", (gameId) => {
-        io.to("gameUpdates").emit("gameRemoved", gameId);
     });
 
     // Disconnect
