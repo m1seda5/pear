@@ -1,127 +1,153 @@
-import React, { useEffect, useState } from "react";
-import { Flex, Box, Text, Spinner } from "@chakra-ui/react";
-import { useTranslation } from "react-i18next";
-import TutorialSlider from "../components/TutorialSlider";
+import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { useRecoilState, useRecoilValue } from "recoil";
+import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
+import postsAtom from "../atoms/postsAtom";
+import userAtom from "../atoms/userAtom";
+import TutorialSlider from "../components/TutorialSlider";
 import GameWidget from "../components/GameWidget";
+import { useTranslation } from 'react-i18next';
+import '../index.css';
+import _ from 'lodash';
 
 const HomePage = () => {
-  const { t } = useTranslation();
-  const [showTutorial, setShowTutorial] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState([]);
-  const [newPosts, setNewPosts] = useState([]);
-  const [isLargerThan1024, setIsLargerThan1024] = useState(false);
+	const [posts, setPosts] = useRecoilState(postsAtom);
+	const [loading, setLoading] = useState(true);
+	const [newPosts, setNewPosts] = useState([]);
+	const showToast = useShowToast();
+	const { t, i18n } = useTranslation();
+	const [language, setLanguage] = useState(i18n.language);
+	const [showTutorial, setShowTutorial] = useState(false);
+	const user = useRecoilValue(userAtom);
+	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch("/api/posts");
-        const data = await response.json();
-        setPosts(data);
-        setNewPosts(data.filter(post => isNewPost(post.createdAt)));
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setLoading(false);
-      }
-    };
+	// Handle language change
+	useEffect(() => {
+		const handleLanguageChange = (lng) => {
+			setLanguage(lng);
+		};
+		i18n.on('languageChanged', handleLanguageChange);
+		return () => {
+			i18n.off('languageChanged', handleLanguageChange);
+		};
+	}, [i18n]);
 
-    fetchPosts();
-  }, []);
+	// Show tutorial on every page load when user is present
+	useEffect(() => {
+		if (user) {
+			setTimeout(() => {
+				setShowTutorial(true);
+			}, 500);
+		}
+	}, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsLargerThan1024(window.innerWidth > 1024);
-    };
+	// Fetch feed posts
+	useEffect(() => {
+		const getFeedPosts = async () => {
+			setLoading(true);
+			setPosts([]);
+			try {
+				const res = await fetch("/api/posts/feed");
+				if (!res.ok) {
+					throw new Error(t("Failed to fetch posts"));
+				}
+				const data = await res.json();
+				if (data.error) {
+					if (!data.error.includes("User not found")) {
+						showToast(t("Error"), data.error, "error");
+					}
+					return;
+				}
+				setPosts(data);
+				const now = Date.now();
+				const recentPosts = data.filter(post => {
+					const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
+					return postAgeInHours <= 3;
+				});
+				setNewPosts(recentPosts);
+				setTimeout(() => {
+					setNewPosts([]);
+				}, 30000);
+			} catch (error) {
+				if (!error.message.includes('User not found')) {
+					showToast(t("Error"), error.message, "error");
+				}
+			} finally {
+				setLoading(false);
+			}
+		};
+		getFeedPosts();
+	}, [showToast, setPosts, t]);
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+	const handleTutorialComplete = () => {
+		setShowTutorial(false);
+	};
 
-  const handleTutorialComplete = () => {
-    setShowTutorial(false);
-  };
+	const isNewPost = (postTime) => {
+		const now = Date.now();
+		const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
+		return postAgeInHours <= 3;
+	};
 
-  const isNewPost = (createdAt) => {
-    const postDate = new Date(createdAt);
-    const today = new Date();
-    const diffTime = Math.abs(today - postDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  };
+	return (
+		<>
+			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
+			<Flex gap="10" alignItems={"flex-start"} position="relative">
+				{/* Main Content */}
+				<Box flex={1} minW="0">
+					{!loading && posts.length === 0 && (
+						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+					)}
+					{loading && (
+						<Flex justifyContent="center">
+							<Spinner size="xl" />
+						</Flex>
+					)}
+					{posts.map((post) => {
+						const isNew = isNewPost(post.createdAt);
+						return (
+							<Box
+								key={post._id}
+								className="postContainer"
+								borderWidth="1px"
+								borderRadius="lg"
+								p={4}
+								mb={6}
+								boxShadow="sm"
+								maxW="800px"
+								mx="auto"
+							>
+								<Post post={post} postedBy={post.postedBy} />
+								{isNew && newPosts.includes(post) && (
+									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+								)}
+							</Box>
+						);
+					})}
+				</Box>
 
-  return (
-    <>
-      {showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-      <Flex
-        gap="10"
-        alignItems="flex-start"
-        justify="center"
-        w="100%"
-        maxW="1400px"
-        mx="auto"
-        px={{ base: 2, md: 6 }}
-      >
-        {/* Main Content */}
-        <Box
-          flex="0 0 600px"
-          maxW="600px"
-          w="100%"
-          minW="0"
-        >
-          {!loading && posts.length === 0 && (
-            <h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-          )}
-          {loading && (
-            <Flex justifyContent="center">
-              <Spinner size="xl" />
-            </Flex>
-          )}
-          {posts.map((post) => {
-            const isNew = isNewPost(post.createdAt);
-            return (
-              <Box
-                key={post._id}
-                className="postContainer"
-                borderWidth="1px"
-                borderRadius="lg"
-                p={4}
-                mb={6}
-                boxShadow="sm"
-                maxW="800px"
-                mx="auto"
-              >
-                <Post post={post} postedBy={post.postedBy} />
-                {isNew && newPosts.includes(post) && (
-                  <Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-                )}
-              </Box>
-            );
-          })}
-        </Box>
-        {/* Right Game Widget */}
-        {isLargerThan1024 && (
-          <Box
-            position="sticky"
-            top="20px"
-            width="320px"
-            flexShrink={0}
-            display={{ base: "none", lg: "block" }}
-          >
-            <GameWidget />
-          </Box>
-        )}
-      </Flex>
-      {/* Top-of-feed widget for mobile */}
-      {!isLargerThan1024 && (
-        <Box width="100%" mb={4}>
-          <GameWidget />
-        </Box>
-      )}
-    </>
-  );
+				{/* Right Game Widget */}
+				{isLargerThan1024 && (
+					<Box 
+						position="sticky" 
+						top="20px" 
+						width="300px" 
+						flexShrink={0}
+						display={{ base: "none", lg: "block" }}
+					>
+						<GameWidget />
+					</Box>
+				)}
+			</Flex>
+			{/* Top-of-feed widget for mobile */}
+			{!isLargerThan1024 && (
+				<Box width="100%" mb={4}>
+					<GameWidget />
+				</Box>
+			)}
+		</>
+	);
 };
 
 export default HomePage;
