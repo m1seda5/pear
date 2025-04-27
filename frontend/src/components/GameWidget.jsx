@@ -14,12 +14,18 @@ const MotionBox = motion(Box);
 
 // Skeleton Component
 const GameSkeleton = () => (
-  <Box p={4} bg={useColorModeValue('gray.100', 'gray.700')} borderRadius="md">
+  <Box 
+    p={4} 
+    bg={useColorModeValue('#EDF2F7', '#0F0F0F')} 
+    borderRadius="lg"
+    boxShadow="sm"
+    mb={3}
+  >
     <Skeleton height="20px" width="60%" mb={2} />
-    <Flex justify="space-between">
-      <SkeletonCircle size="8" />
-      <Skeleton height="20px" width="20%" />
-      <SkeletonCircle size="8" />
+    <Flex justify="space-between" align="center" my={3}>
+      <SkeletonCircle size="10" />
+      <Skeleton height="30px" width="80px" />
+      <SkeletonCircle size="10" />
     </Flex>
     <Skeleton height="15px" mt={2} width="80%" />
   </Box>
@@ -32,10 +38,11 @@ const EmptyGames = () => (
     align="center" 
     justify="center" 
     height="200px"
-    bg={useColorModeValue('gray.50', 'gray.800')}
+    bg={useColorModeValue('#EDF2F7', '#0F0F0F')}
     borderRadius="lg"
+    boxShadow="sm"
   >
-    <Text fontSize="xl" mb={4}>🎮 No games scheduled</Text>
+    <Text fontSize="xl" mb={4}>🏀 No games scheduled</Text>
     <Text color="gray.500">Check back later for upcoming matches!</Text>
   </Flex>
 );
@@ -47,7 +54,7 @@ const ErrorState = ({ message }) => (
     align="center" 
     justify="center" 
     height="200px"
-    bg={useColorModeValue('gray.50', 'gray.800')}
+    bg={useColorModeValue('#EDF2F7', '#0F0F0F')}
     borderRadius="lg"
     border="2px dashed" 
     borderColor="red.200"
@@ -58,52 +65,95 @@ const ErrorState = ({ message }) => (
 
 // Game Card Component
 const GameCard = ({ game, onClick, isCompact }) => {
+  const bgColor = useColorModeValue('#EDF2F7', '#0F0F0F');
+  const textColor = useColorModeValue('#1A202C', '#E2E8F0');
   const { status } = game;
   const statusProps = getStatusProps(status);
   
+  // Determine which team is winning
+  const homeWinning = game.homeScore > game.awayScore;
+  const awayWinning = game.awayScore > game.homeScore;
+  const isTie = game.homeScore === game.awayScore;
+  
   return (
     <Box 
-      p={3} 
-      bg={useColorModeValue('white', 'gray.700')} 
-      borderRadius="md" 
+      p={4} 
+      bg={bgColor}
+      color={textColor}
+      borderRadius="lg" 
       boxShadow="sm"
-      borderWidth="1px"
       _hover={{ boxShadow: "md", cursor: "pointer" }}
       onClick={() => onClick(game)}
-      mb={2}
+      mb={3}
+      position="relative"
+      overflow="hidden"
     >
+      {/* Header with game status and time */}
       <Flex justify="space-between" align="center" mb={2}>
-        <Badge colorScheme={statusProps.color} variant="subtle" px={2}>
-          {statusProps.label}
+        <Text fontSize="sm">
+          {status === "completed" ? "Final" : status === "live" ? "Live" : "Today"}
+        </Text>
+        <Badge colorScheme={statusProps.color} px={2} borderRadius="full">
+          {status === "live" ? 
+            `${game.currentPeriod} · ${game.timeRemaining}` : 
+            new Date(game.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
         </Badge>
-        <Text fontSize="sm" color="gray.500">
-          {new Date(game.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
       </Flex>
       
-      <Flex justify="space-between" align="center">
-        <Flex align="center" gap={2}>
-          <Image src={game.homeTeam.logo} boxSize="30px" borderRadius="full" />
-          <Text fontWeight={game.homeScore > game.awayScore ? "bold" : "normal"}>
-            {formatTeamName(game.homeTeam.name, isCompact)}
+      {/* Teams and Score */}
+      <Flex justify="space-between" align="center" my={3}>
+        {/* Home Team */}
+        <Flex align="center" direction="column" width="40%">
+          <Image 
+            src={game.homeTeam.logo} 
+            boxSize={isCompact ? "40px" : "60px"} 
+            borderRadius="full" 
+            mb={2}
+          />
+          <Text 
+            fontWeight={homeWinning ? "bold" : "normal"} 
+            fontSize={isCompact ? "sm" : "md"}
+            textAlign="center"
+          >
+            {isCompact ? formatTeamName(game.homeTeam.name, true) : game.homeTeam.name}
           </Text>
+          <Text fontSize="xs" color="gray.500">({game.homeTeam.record || "0-0"})</Text>
         </Flex>
         
-        <Text fontWeight="bold">
-          {game.homeScore} - {game.awayScore}
-        </Text>
-        
-        <Flex align="center" gap={2}>
-          <Text fontWeight={game.awayScore > game.homeScore ? "bold" : "normal"}>
-            {formatTeamName(game.awayTeam.name, isCompact)}
+        {/* Score */}
+        <Flex direction="column" align="center">
+          <Text fontSize={isCompact ? "2xl" : "4xl"} fontWeight="bold">
+            {game.homeScore} - {game.awayScore}
           </Text>
-          <Image src={game.awayTeam.logo} boxSize="30px" borderRadius="full" />
+          {status === "live" && (
+            <Badge colorScheme="red" mt={1}>LIVE</Badge>
+          )}
+        </Flex>
+        
+        {/* Away Team */}
+        <Flex align="center" direction="column" width="40%">
+          <Image 
+            src={game.awayTeam.logo} 
+            boxSize={isCompact ? "40px" : "60px"} 
+            borderRadius="full" 
+            mb={2}
+          />
+          <Text 
+            fontWeight={awayWinning ? "bold" : "normal"}
+            fontSize={isCompact ? "sm" : "md"}
+            textAlign="center"
+          >
+            {isCompact ? formatTeamName(game.awayTeam.name, true) : game.awayTeam.name}
+          </Text>
+          <Text fontSize="xs" color="gray.500">({game.awayTeam.record || "0-0"})</Text>
         </Flex>
       </Flex>
       
-      {game.status === "live" && (
-        <Text fontSize="sm" color="gray.500" mt={1}>
-          {game.currentPeriod} · {game.timeRemaining}
+      {/* Game series info, if applicable */}
+      {game.seriesInfo && (
+        <Text fontSize="sm" textAlign="center" mt={2} color="gray.500">
+          {game.seriesInfo}
         </Text>
       )}
     </Box>
@@ -113,6 +163,10 @@ const GameCard = ({ game, onClick, isCompact }) => {
 // Game Modal Component
 const GameModal = ({ game, isOpen, onClose, isMobile, navigate }) => {
   if (!isOpen) return null;
+  
+  const bgColor = useColorModeValue('#EDF2F7', '#0F0F0F');
+  const textColor = useColorModeValue('#1A202C', '#E2E8F0');
+  const statusProps = getStatusProps(game.status);
   
   return (
     <Box
@@ -130,7 +184,8 @@ const GameModal = ({ game, isOpen, onClose, isMobile, navigate }) => {
         width={isMobile ? "95%" : "600px"}
         maxHeight="80vh"
         margin="10vh auto"
-        bg={useColorModeValue('white', 'gray.800')}
+        bg={bgColor}
+        color={textColor}
         borderRadius="lg"
         p={4}
         overflow="auto"
@@ -147,49 +202,49 @@ const GameModal = ({ game, isOpen, onClose, isMobile, navigate }) => {
             size="sm" 
             onClick={onClose} 
             aria-label="Close modal"
+            bg="transparent"
           />
         </Flex>
         
         <Flex direction="column" align="center" mb={6}>
-          <Badge 
-            colorScheme={getStatusProps(game.status).color} 
-            fontSize="md" 
-            py={1} 
-            px={3} 
-            borderRadius="full"
-            mb={3}
-          >
-            {getStatusProps(game.status).label}
-          </Badge>
+          <Flex width="100%" justify="center" mb={2}>
+            <Text fontSize="sm">{game.status === "live" ? "Live" : game.status === "completed" ? "Final" : "Today"}</Text>
+          </Flex>
           
           <Flex width="100%" justify="space-between" align="center">
             <Flex direction="column" align="center" width="40%">
               <Image src={game.homeTeam.logo} boxSize="80px" mb={2} />
               <Text fontWeight="bold" fontSize="lg">{game.homeTeam.name}</Text>
-              <Text fontSize="sm" color="gray.500">{game.homeTeam.record}</Text>
+              <Text fontSize="sm" color="gray.500">({game.homeTeam.record || "0-0"})</Text>
             </Flex>
             
             <Flex direction="column" align="center">
-              <Text fontSize="3xl" fontWeight="bold">
+              <Text fontSize="4xl" fontWeight="bold">
                 {game.homeScore} - {game.awayScore}
               </Text>
               {game.status === "live" && (
-                <Text color="red.500" fontWeight="semibold">
+                <Badge colorScheme="red" mt={1}>
                   {game.currentPeriod} · {game.timeRemaining}
-                </Text>
+                </Badge>
               )}
             </Flex>
             
             <Flex direction="column" align="center" width="40%">
               <Image src={game.awayTeam.logo} boxSize="80px" mb={2} />
               <Text fontWeight="bold" fontSize="lg">{game.awayTeam.name}</Text>
-              <Text fontSize="sm" color="gray.500">{game.awayTeam.record}</Text>
+              <Text fontSize="sm" color="gray.500">({game.awayTeam.record || "0-0"})</Text>
             </Flex>
           </Flex>
+          
+          {game.seriesInfo && (
+            <Text fontSize="md" fontWeight="medium" mt={4}>
+              {game.seriesInfo}
+            </Text>
+          )}
         </Flex>
         
         {/* Game Details Section */}
-        <Box bg={useColorModeValue('gray.50', 'gray.700')} p={4} borderRadius="md">
+        <Box bg={useColorModeValue('white', 'gray.800')} p={4} borderRadius="md" boxShadow="sm">
           <Text fontWeight="semibold" mb={2}>Game Information</Text>
           <SimpleGrid columns={2} spacing={3}>
             <Box>
@@ -232,7 +287,7 @@ const GameWidget = () => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
   const [isMobile] = useMediaQuery("(max-width: 768px)");
   const navigate = useNavigate();
 
@@ -302,13 +357,19 @@ const GameWidget = () => {
     setSelectedGame(game);
   };
 
-  const getStatusProps = (status) => {
-    switch (status) {
-      case "live": return { color: "green", label: "Live" };
-      case "upcoming": return { color: "orange", label: "Upcoming" };
-      default: return { color: "gray", label: "Completed" };
+  // Add demo data for series info
+  const addSeriesInfo = (game) => {
+    if (game.status === "completed" || game.status === "live") {
+      return {
+        ...game,
+        seriesInfo: `Playoffs Round 1 · Game ${Math.floor(Math.random() * 7) + 1} (Series tied 2-2)`
+      };
     }
+    return game;
   };
+
+  // Example games with series info for demonstration
+  const gamesWithSeriesInfo = games.map(addSeriesInfo);
 
   return (
     <>
@@ -318,8 +379,8 @@ const GameWidget = () => {
           position="fixed"
           right="4"
           top="20"
-          w="300px"
-          bg={useColorModeValue('white', 'gray.800')}
+          w="350px"
+          bg={useColorModeValue('#EDF2F7', '#0F0F0F')}
           borderRadius="lg"
           boxShadow="lg"
           p="4"
@@ -333,16 +394,16 @@ const GameWidget = () => {
             </>
           ) : error ? (
             <ErrorState message={error} />
-          ) : games.length === 0 ? (
+          ) : gamesWithSeriesInfo.length === 0 ? (
             <EmptyGames />
           ) : (
             <AnimatePresence>
-              {games.map((game) => (
+              {gamesWithSeriesInfo.map((game) => (
                 <MotionBox
                   key={game._id}
-                  initial={{ rotateY: 90 }}
-                  animate={{ rotateY: 0 }}
-                  exit={{ rotateY: -90 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
                   <GameCard 
@@ -363,7 +424,7 @@ const GameWidget = () => {
           position="sticky"
           top="0"
           zIndex="sticky"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={useColorModeValue('#EDF2F7', '#0F0F0F')}
           pb={2}
           borderBottomWidth="1px"
         >
@@ -379,17 +440,17 @@ const GameWidget = () => {
           
           <Collapse in={isOpen}>
             {loading ? (
-              <SimpleGrid columns={2} gap={2} px={2}>
+              <SimpleGrid columns={1} gap={2} px={2}>
                 <GameSkeleton />
                 <GameSkeleton />
               </SimpleGrid>
             ) : error ? (
               <ErrorState message={error} />
-            ) : games.length === 0 ? (
+            ) : gamesWithSeriesInfo.length === 0 ? (
               <EmptyGames />
             ) : (
-              <SimpleGrid columns={2} gap={2} px={2}>
-                {games.slice(0,2).map((game) => (
+              <Box px={2}>
+                {gamesWithSeriesInfo.slice(0,3).map((game) => (
                   <GameCard 
                     key={game._id}
                     game={game}
@@ -397,7 +458,7 @@ const GameWidget = () => {
                     isCompact={true}
                   />
                 ))}
-              </SimpleGrid>
+              </Box>
             )}
           </Collapse>
         </Box>
@@ -432,9 +493,21 @@ const formatTeamName = (name, isCompact) => {
     'Light Academy': 'LGT',
     'St. Christophers School': 'STC',
     'BGE (Brookhouse Girls\' Enrichment?)': 'BGE',
+    'LA Clippers': 'LAC',
+    'Denver Nuggets': 'DEN',
   };
   
   return abbreviations[name] || name.substring(0, 3).toUpperCase();
+};
+
+// Utility function for status colors and labels
+const getStatusProps = (status) => {
+  switch (status) {
+    case "live": return { color: "red", label: "Live" };
+    case "upcoming": return { color: "orange", label: "Upcoming" };
+    case "completed": return { color: "gray", label: "Final" };
+    default: return { color: "gray", label: "Completed" };
+  }
 };
 
 export default GameWidget;
