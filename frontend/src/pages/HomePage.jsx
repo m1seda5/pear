@@ -95,7 +95,7 @@ const HomePage = () => {
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
 			<Flex gap="10" alignItems={"flex-start"} position="relative">
 				{/* Main Content */}
-				<Box flex={1} minW="0">
+				<Box w="100%" maxW={{ base: "100%", md: "600px", xl: "700px" }} mx="auto" minW="0">
 					{!loading && posts.length === 0 && (
 						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
 					)}
