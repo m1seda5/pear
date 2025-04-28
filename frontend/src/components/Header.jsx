@@ -393,7 +393,7 @@ function Header({ unreadCount = 0 }) {
           <DockIcon>
             <SearchIcon w={5} h={5} />
           </DockIcon>
-          <DockLabel>Search</DockLabel>
+          <DockLabel>Search for users</DockLabel>
         </DockItem>
         
         <Collapse in={expanded} animateOpacity>

@@ -5,321 +5,235 @@ import {
   InputLeftElement,
   InputRightElement,
   Box,
+  List,
+  ListItem,
+  Avatar,
+  Text,
   Flex,
   Spinner,
+  Button,
+  Badge,
   useColorModeValue,
-  useToast,
-  Text,
-  Avatar,
-  useDisclosure,
-  Button
+  useToast
 } from "@chakra-ui/react";
 import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
-import { BsChat } from "react-icons/bs";
-import { FaLock } from "react-icons/fa";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-import _ from 'lodash';
 import { t } from 'i18next';
-import Fuse from 'fuse.js';
-
-const itemVariants = {
-  hidden: { opacity: 0, y: -10 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
-};
-
-// Fuzzy search configuration
-const fuseOptions = {
-  keys: ['username', 'name', 'email'],
-  threshold: 0.3,
-  includeScore: true,
-  minMatchCharLength: 2
-};
+import debounce from 'lodash/debounce';
 
 const HeaderSearch = () => {
   const [searchText, setSearchText] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [results, setResults] = useState({ users: [], posts: [] });
+  const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [allUsers, setAllUsers] = useState([]);
+  const [noResults, setNoResults] = useState(false);
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
   const toast = useToast();
   const inputRef = useRef(null);
-  const containerRef = useRef(null);
-  const fuse = useRef(null);
+  const resultsRef = useRef(null);
 
-  // Load all users for fuzzy search
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const { data } = await axios.get('/api/users');
-        setAllUsers(data);
-        fuse.current = new Fuse(data, fuseOptions);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
+  // Color mode values
+  const bgColor = useColorModeValue("white", "gray.700");
+  const hoverBg = useColorModeValue("gray.100", "gray.600");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
+  const textColor = useColorModeValue("gray.600", "gray.200");
 
-  const fuzzySearch = (query) => {
-    if (!query || !fuse.current) return [];
-    return fuse.current.search(query).map(result => result.item);
-  };
-
-  const searchHandler = async (query) => {
-    if (!query.trim()) {
-      setResults({ users: [], posts: [] });
-      return;
-    }
-    
-    setIsSearching(true);
-    try {
-      // Use fuzzy search for users
-      const fuzzyResults = fuzzySearch(query);
-      
-      // Still fetch posts from API
-      const { data } = await axios.get(`/api/search?q=${encodeURIComponent(query)}`);
-      console.log("Search results:", data); // Debug the response
-      
-      setResults({
-        users: fuzzyResults.length > 0 ? fuzzyResults : (Array.isArray(data.users) ? data.users : []),
-        posts: Array.isArray(data.posts) ? data.posts : []
-      });
-    } catch (error) {
-      console.error("Search error:", error);
-      toast({
-        title: "Search Error",
-        description: error.response?.data?.error || "Failed to search",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      setResults({ users: [], posts: [] });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Improved debounced search with proper delay
+  // Debounced backend search
   const debouncedSearch = useRef(
-    _.debounce(searchHandler, 300)
+    debounce(async (term) => {
+      if (term.length < 1) {
+        setSearchResults([]);
+        setNoResults(false);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/users/search/${encodeURIComponent(term)}`, {
+          headers: {
+            'Authorization': currentUser?.token ? `Bearer ${currentUser.token}` : undefined,
+          },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 404) {
+            setSearchResults([]);
+            setNoResults(true);
+            return;
+          }
+          throw new Error(data.error || "Search failed");
+        }
+        // Always return an array
+        const users = Array.isArray(data) ? data : [data];
+        setSearchResults(users);
+        setNoResults(users.length === 0);
+      } catch (error) {
+        toast({
+          title: t("Search Error"),
+          description: error.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+        setSearchResults([]);
+        setNoResults(true);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400)
   ).current;
 
   useEffect(() => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
+  // Handle search text changes
   const handleInputChange = (e) => {
     const value = e.target.value;
     setSearchText(value);
     if (value.trim()) {
-      debouncedSearch(value);
+      debouncedSearch(value.trim());
     } else {
-      setResults({ users: [], posts: [] });
+      debouncedSearch.cancel();
+      setSearchResults([]);
+      setNoResults(false);
     }
   };
 
-  const handleResultClick = (type, item) => {
+  // Handle selecting a user from results
+  const handleSelectUser = (user) => {
     setSearchText("");
-    setIsExpanded(false);
-    
-    if (type === 'user') {
-      navigate(`/${item.username}`);
-    } else if (type === 'post') {
-      navigate(`/${item.postedBy.username}/post/${item._id}`);
-    }
+    setSearchResults([]);
+    setNoResults(false);
+    navigate(`/${user.username}`, { state: { fromSearch: true } });
   };
 
-  // Chat access check
-  const checkChatAccess = () => {
-    const currentDate = new Date();
-    const day = currentDate.getDay();
-    const hours = currentDate.getHours();
-    
-    if (currentUser?.role === 'student') {
-      const isWeekday = day >= 1 && day <= 5;
-      const isRestrictedTime = (hours >= 8 && hours < 15) && !(hours === 12 && currentDate.getMinutes() >= 50);
-      return !isWeekday || !isRestrictedTime;
-    }
-    return true;
-  };
-
-  // Handle click outside to close dropdown
+  // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsExpanded(false);
+      if (resultsRef.current && !resultsRef.current.contains(event.target) && 
+          inputRef.current && !inputRef.current.contains(event.target)) {
+        setSearchResults([]);
+        setNoResults(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [containerRef]);
+  }, []);
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchText("");
+    setSearchResults([]);
+    setNoResults(false);
+    inputRef.current?.focus();
+  };
 
   return (
-    <Box 
-      ref={containerRef}
-      position="fixed"
-      bottom="20px"
-      left="50%"
-      transform="translateX(-50%)"
-      width="400px"
-      zIndex="1400"
-      backdropFilter="blur(12px)"
-      borderRadius="20px"
-      boxShadow="xl"
-    >
+    <Box position="fixed" bottom="20px" left="50%" transform="translateX(-50%)" width="400px" zIndex="1400" backdropFilter="blur(12px)" borderRadius="20px" boxShadow="xl">
       <InputGroup>
         <InputLeftElement pointerEvents="none">
           <SearchIcon color="gray.500" />
         </InputLeftElement>
-        
         <Input
           ref={inputRef}
-          placeholder={t("Search users or posts...")}
+          placeholder={t("Search for users")}
           value={searchText}
           onChange={handleInputChange}
-          onFocus={() => setIsExpanded(true)}
+          onFocus={() => searchText && searchResults.length > 0}
           variant="filled"
           borderRadius="full"
           bg={useColorModeValue('white', 'gray.800')}
           _focus={{ boxShadow: "none" }}
         />
-        
         {searchText && (
-          <InputRightElement>
+          <InputRightElement width="4.5rem">
             {isSearching ? (
-              <Spinner size="sm" />
+              <Spinner size="sm" color="blue.500" mr={2} />
             ) : (
-              <CloseIcon
-                fontSize="sm"
-                cursor="pointer"
-                onClick={() => {
-                  setSearchText("");
-                  setResults({ users: [], posts: [] });
-                }}
-              />
+              <Button h="1.75rem" size="sm" onClick={clearSearch}>
+                <CloseIcon boxSize={3} />
+              </Button>
             )}
           </InputRightElement>
         )}
       </InputGroup>
-
-      <AnimatePresence>
-        {isExpanded && searchText && (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={itemVariants}
-            style={{
-              width: '100%',
-              zIndex: 10,
-              marginTop: '8px',
-            }}
-          >
-            <Box
-              bg={useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.8)')}
-              borderRadius="lg"
-              border="1px solid"
-              borderColor={useColorModeValue('gray.200', 'gray.600')}
-              boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"
-              backdropFilter="blur(12px)"
-              maxH="500px"
-              overflowY="auto"
-            >
-              {results.users?.length > 0 && (
-                <Box mb={4} p={4}>
-                  <Text fontWeight="bold" mb={2}>
-                    {t("Users")}
-                  </Text>
-                  {results.users.map(user => (
-                    <Flex 
-                      key={user._id} 
-                      align="center" 
-                      justify="space-between" 
-                      p={2}
-                      borderRadius="md"
-                      mb={1}
-                    >
-                      <Flex
-                        align="center"
-                        flex="1"
-                        onClick={() => handleResultClick('user', user)}
-                        _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}
-                        cursor="pointer"
-                        p={2}
-                        borderRadius="md"
-                      >
-                        <Avatar src={user.profilePic} size="sm" mr={3} />
-                        <Text>{user.username}</Text>
-                      </Flex>
-                      
-                      <Button
-                        size="xs"
-                        leftIcon={checkChatAccess() ? <BsChat /> : <FaLock />}
-                        colorScheme={checkChatAccess() ? "teal" : "red"}
-                        variant="ghost"
-                        isDisabled={!checkChatAccess()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/chat/${user._id}`);
-                        }}
-                      >
-                        {checkChatAccess() ? "Message" : "Locked"}
-                      </Button>
-                    </Flex>
-                  ))}
-                </Box>
-              )}
-
-              {results.posts?.length > 0 && (
-                <Box p={4}>
-                  <Text fontWeight="bold" mb={2}>
-                    {t("Posts")}
-                  </Text>
-                  {results.posts.map(post => (
-                    <Flex
-                      key={post._id}
-                      p={2}
-                      borderRadius="md"
-                      _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}
-                      cursor="pointer"
-                      onClick={() => handleResultClick('post', post)}
-                      transition="background 0.2s"
-                      mb={1}
-                    >
-                      <Box>
-                        <Text noOfLines={1} fontStyle="italic">"{post.text}"</Text>
-                        <Text fontSize="sm" color="gray.500">by {post.postedBy.username}</Text>
-                      </Box>
-                    </Flex>
-                  ))}
-                </Box>
-              )}
-
-              {!isSearching && searchText && results.users?.length === 0 && results.posts?.length === 0 && (
-                <Text color="gray.500" textAlign="center" py={4}>
-                  No results found for "{searchText}"
-                </Text>
-              )}
-
-              {isSearching && (
-                <Flex justify="center" py={4}>
-                  <Spinner size="md" />
-                </Flex>
-              )}
+      {(searchResults.length > 0 || noResults) && (
+        <List
+          ref={resultsRef}
+          position="absolute"
+          top="100%"
+          left={0}
+          right={0}
+          mt={1}
+          maxH="300px"
+          overflowY="auto"
+          bg={bgColor}
+          boxShadow="md"
+          borderRadius="xl"
+          zIndex={10}
+          border="1px solid"
+          borderColor={borderColor}
+        >
+          {noResults ? (
+            <Box p={4} textAlign="center">
+              <Text color={textColor}>{t('No users found')}</Text>
+              <Text fontSize="sm" mt={1}>
+                {t('Try a different search term or check spelling')}
+              </Text>
             </Box>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ) : (
+            searchResults.map((user) => (
+              <ListItem
+                key={user._id}
+                px={3}
+                py={2}
+                cursor="pointer"
+                borderBottom="1px solid"
+                borderColor={borderColor}
+                _hover={{ bg: hoverBg }}
+                onClick={() => handleSelectUser(user)}
+                transition="background-color 0.2s"
+                borderRadius="md"
+                mb={1}
+              >
+                <Flex align="center" justify="space-between">
+                  <Flex align="center">
+                    <Avatar 
+                      size="sm" 
+                      name={user.username} 
+                      src={user.profilePic} 
+                      mr={3}
+                      bg={user.profilePic ? "transparent" : "blue.500"}
+                    />
+                    <Box>
+                      <Text fontWeight="medium">{user.username}</Text>
+                      {user.department && (
+                        <Text fontSize="xs" color="gray.500">
+                          {user.department}
+                        </Text>
+                      )}
+                    </Box>
+                  </Flex>
+                  <Flex align="center">
+                    {user.isActive && (
+                      <Badge colorScheme="green" variant="subtle" mr={2} fontSize="xs">
+                        {t('Online')}
+                      </Badge>
+                    )}
+                    <Badge colorScheme={user.role === 'admin' ? 'red' : user.role === 'teacher' ? 'purple' : 'blue'} variant="subtle" fontSize="xs">
+                      {user.role}
+                    </Badge>
+                  </Flex>
+                </Flex>
+              </ListItem>
+            ))
+          )}
+        </List>
+      )}
     </Box>
   );
 };
