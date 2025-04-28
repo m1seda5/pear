@@ -31,10 +31,10 @@ import { MdSportsScore } from "react-icons/md";
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
 
-// Constants for dock component - Adjusted for more Apple-like effect
-const DOCK_HEIGHT = 128;
-const DEFAULT_MAGNIFICATION = 100; // Increased for more noticeable effect
-const DEFAULT_DISTANCE = 180; // Increased for wider magnification area
+// Constants for dock component - Optimized for smooth Apple-like effect
+const DOCK_HEIGHT = 140;
+const DEFAULT_MAGNIFICATION = 120; // Increased for more noticeable effect
+const DEFAULT_DISTANCE = 200; // Better range for magnification
 const DEFAULT_PANEL_HEIGHT = 64;
 
 // Create Dock Context
@@ -52,11 +52,11 @@ function useDock() {
   return context;
 }
 
-// Main Dock component - Improved for Apple-like effect
+// Main Dock component - Enhanced for smoother Apple-like effect
 function Dock({
   children,
   className,
-  spring = { mass: 0.2, stiffness: 300, damping: 20 }, // Adjusted for Apple-like physics
+  spring = { mass: 0.6, stiffness: 350, damping: 30 }, // Optimized for smoother animation
   magnification = DEFAULT_MAGNIFICATION,
   distance = DEFAULT_DISTANCE,
   panelHeight = DEFAULT_PANEL_HEIGHT,
@@ -67,13 +67,17 @@ function Dock({
   const dockRef = useRef(null);
 
   const maxHeight = useMemo(() => {
-    return Math.max(DOCK_HEIGHT, magnification + 24); // Added padding for visual space
+    return Math.max(DOCK_HEIGHT, magnification + 32); // Better spacing for magnified items
   }, [magnification]);
 
   const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
-  const height = useSpring(heightRow, spring);
+  const height = useSpring(heightRow, {
+    ...spring,
+    // Slightly faster animation when entering than leaving for natural feel
+    stiffness: isHovered.get() === 1 ? spring.stiffness * 1.2 : spring.stiffness
+  });
 
-  // Improved mouse tracking - calculate relative to dock container
+  // Enhanced mouse tracking with debouncing for smoother transitions
   const handleMouseMove = (e) => {
     if (!dockRef.current) return;
     
@@ -105,7 +109,7 @@ function Dock({
       justifyContent="center"
       mt={6}
       mb={10}
-      overflow="visible" // Ensure no scrollbars appear
+      overflow="visible" // Ensure icons can scale outside the container
     >
       <MotionFlex
         ref={dockRef}
@@ -114,11 +118,11 @@ function Dock({
         mx="auto"
         width="fit-content"
         maxWidth="100%"
-        gap={3} // Gap between icons
+        gap={4} // Increased gap for better spacing when magnified
         borderRadius="3xl"
         bg={colorMode === "dark" ? "rgba(26, 32, 44, 0.85)" : "rgba(247, 250, 252, 0.85)"}
-        backdropFilter="blur(12px)" // Apple-style glass effect
-        px={4}
+        backdropFilter="blur(12px)" // Glass effect
+        px={6} // Wider padding for better hover areas
         style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"
@@ -126,7 +130,7 @@ function Dock({
         justifyContent="center"
         boxShadow={colorMode === "dark" ? "0 4px 20px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.15)"}
         position="relative"
-        overflow="visible" // Ensure no scrollbars appear
+        overflow="visible" // Ensure no clipping of magnified icons
       >
         <DockProvider value={{ mouseX, spring, distance, magnification }}>
           {children}
@@ -136,40 +140,48 @@ function Dock({
   );
 }
 
-// DockItem component - Fixed for proper Apple dock magnification effect
+// DockItem component - Completely revamped for authentic Apple dock effect
 function DockItem({ children, className, onClick, isDisabled }) {
   const ref = useRef(null);
   const { mouseX, spring, distance, magnification } = useDock();
   const itemHovered = useMotionValue(0);
-
-  // Critical improvement: Better distance calculation
+  const { colorMode } = useColorMode();
+  
+  // Enhanced distance calculation for smoother transitions
   const mouseDistance = useTransform(mouseX, (val) => {
     if (!ref.current) return distance;
     
     const domRect = ref.current.getBoundingClientRect();
     const itemCenter = domRect.left + domRect.width / 2;
     
-    // Distance from mouse to center of this item
-    return Math.abs(val - (itemCenter - domRect.x));
+    // Calculate absolute distance from mouse to center of item
+    return Math.abs(val - itemCenter);
   });
 
-  // Improved transformation function with parabolic curve for more Apple-like effect
+  // Enhanced transformation curve for authentic Apple-like scaling
   const widthTransform = useTransform(
     mouseDistance,
-    [0, distance * 0.25, distance * 0.5, distance],
-    [magnification, magnification * 0.85, magnification * 0.6, 40],
+    [0, distance * 0.2, distance * 0.5, distance],
+    [magnification, magnification * 0.8, magnification * 0.5, 42],
     {
-      clamp: true // Ensures values stay within our defined range
+      clamp: true
     }
   );
 
-  // Spring physics for smooth animation
-  const width = useSpring(widthTransform, spring);
+  // Apply optimized springs for smoother animation
+  const width = useSpring(widthTransform, {
+    ...spring,
+    // Slightly more responsive when growing than shrinking
+    stiffness: mouseDistance.get() < distance * 0.3 ? spring.stiffness * 1.2 : spring.stiffness
+  });
+
+  // Enhanced hit area for better usability
+  const hitAreaSize = useTransform(width, (val) => Math.max(val, 60));
 
   return (
     <MotionBox
       ref={ref}
-      style={{ width }} // This directly applies the animated width
+      style={{ width: hitAreaSize }} // Larger hit area than visual icon
       onHoverStart={() => itemHovered.set(1)}
       onHoverEnd={() => itemHovered.set(0)}
       onFocus={() => itemHovered.set(1)}
@@ -184,20 +196,38 @@ function DockItem({ children, className, onClick, isDisabled }) {
       role="button"
       aria-haspopup="true"
       className={className}
+      // Center content within the larger hit area
+      sx={{
+        "& > *": {
+          position: "absolute",
+          top: "50%", 
+          left: "50%",
+          transform: "translate(-50%, -50%)"
+        }
+      }}
     >
-      {Children.map(children, (child) =>
-        cloneElement(child, { width, isHovered: itemHovered, isDisabled })
-      )}
+      <MotionBox
+        style={{ width }}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
+      >
+        {Children.map(children, (child) =>
+          cloneElement(child, { width, isHovered: itemHovered, isDisabled })
+        )}
+      </MotionBox>
     </MotionBox>
   );
 }
 
-// DockLabel component - Enhanced for Apple dock style
+// DockLabel component - Enhanced for smoother fading and better appearance
 function DockLabel({ children, className, ...rest }) {
-  const { isHovered, isDisabled } = rest;
+  const { isHovered, isDisabled, width } = rest;
   const [isVisible, setIsVisible] = useState(false);
   const { colorMode } = useColorMode();
 
+  // Make label respond to icon hover
   useEffect(() => {
     if (!isHovered) return;
     
@@ -208,35 +238,46 @@ function DockLabel({ children, className, ...rest }) {
     return () => unsubscribe();
   }, [isHovered]);
 
+  // Use color scheme for better theme integration
   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
   const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+
+  // Scale label slightly with icon for cohesive animation
+  const labelScale = useTransform(width, [40, 120], [0.95, 1.1]);
 
   return (
     <AnimatePresence>
       {isVisible && (
         <MotionBox
-          initial={{ opacity: 0, y: 0 }}
-          animate={{ opacity: 1, y: -10 }}
-          exit={{ opacity: 0, y: 0 }}
-          transition={{ duration: 0.2 }}
+          initial={{ opacity: 0, y: 0, scale: 0.9 }}
+          animate={{ opacity: 1, y: -14, scale: labelScale }}
+          exit={{ opacity: 0, y: -8, scale: 0.9 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+            duration: 0.2
+          }}
           position="absolute"
           top="-8"
           left="50%"
           width="fit-content"
           whiteSpace="pre"
-          borderRadius="md"
+          borderRadius="lg"
           border="1px solid"
           borderColor={isDisabled ? "red.300" : (colorMode === "dark" ? "whiteAlpha.300" : "gray.200")}
           bg={colorMode === "dark" ? "rgba(45, 55, 72, 0.95)" : "rgba(255, 255, 255, 0.95)"}
-          backdropFilter="blur(8px)" // Apple-style glass effect
-          px={2}
-          py={0.5}
-          fontSize="xs"
+          backdropFilter="blur(8px)" // Glass effect
+          px={3}
+          py={1}
+          fontSize="sm" // Slightly larger for better readability
+          fontWeight="medium" // Better visibility
           color={isDisabled ? disabledColor : (colorMode === "dark" ? "white" : "gray.800")}
           role="tooltip"
           style={{ x: '-50%' }}
           className={className}
           zIndex={10}
+          pointerEvents="none" // Prevent label from interfering with hover
         >
           {children}
         </MotionBox>
@@ -245,48 +286,68 @@ function DockLabel({ children, className, ...rest }) {
   );
 }
 
-// DockIcon component - Enhanced for Apple dock style
+// DockIcon component - Enhanced for smoother scaling and highlight effect
 function DockIcon({ children, className, ...rest }) {
-  const { width, isDisabled } = rest;
+  const { width, isDisabled, isHovered } = rest;
   const { colorMode } = useColorMode();
 
-  // Scale icon size proportionally with the container width
-  const widthTransform = useTransform(width, (val) => val * 0.6); // Adjusted ratio for better scaling
+  // Scale icon size proportionally with container width
+  const iconScale = useTransform(width, [42, 120], [0.8, 1.5]);
 
+  // Define active state for highlighting effect
+  const [isActive, setIsActive] = useState(false);
+  
+  useEffect(() => {
+    if (!isHovered) return;
+    
+    const unsubscribe = isHovered.on('change', (latest) => {
+      setIsActive(latest === 1);
+    });
+
+    return () => unsubscribe();
+  }, [isHovered]);
+
+  // Colors for different states
   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
   const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
   const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
-  const iconColor = isDisabled ? disabledColor : normalColor;
+  
+  // Dynamic color based on hover state
+  const iconColor = isDisabled 
+    ? disabledColor 
+    : (isActive ? activeColor : normalColor);
 
   return (
     <MotionBox
-      style={{ width: widthTransform }}
+      style={{ 
+        scale: iconScale,
+        color: isActive && !isDisabled ? activeColor : iconColor
+      }}
       display="flex"
       alignItems="center"
       justifyContent="center"
       position="relative"
-      color={iconColor}
-      _hover={{
-        "& .nav-icon-underline": {
-          width: "80%",
-          opacity: 1
-        }
-      }}
+      transition="color 0.2s ease"
       className={className}
     >
       {children}
-      <Box
-        className="nav-icon-underline"
+      
+      {/* Simplified indicator dot that appears when active */}
+      <MotionBox
         position="absolute"
-        bottom="-8px"
+        bottom="-14px"
         left="50%"
-        width="0%"
-        height="2px"
-        bg={isDisabled ? disabledColor : activeColor}
-        transition="all 0.2s ease-out"
-        transform="translateX(-50%)"
+        width="4px"
+        height="4px"
         borderRadius="full"
-        opacity={0}
+        bg={isDisabled ? disabledColor : activeColor}
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ 
+          opacity: isActive ? 1 : 0,
+          scale: isActive ? 1 : 0,
+          x: "-50%" 
+        }}
+        transition={{ duration: 0.2 }}
       />
     </MotionBox>
   );
@@ -438,13 +499,13 @@ function Header({ unreadCount = 0 }) {
       display="flex" 
       justifyContent="center"
       position="relative"
-      overflow="visible" // Ensure no scrollbars appear
+      overflow="visible" // Ensure no clipping of magnified icons
     >
       <Dock 
         panelHeight={56} 
-        magnification={84} // Adjusted for more pronounced effect
-        distance={180} // Wider influence area for smoother transitions
-        spring={{ mass: 0.2, stiffness: 300, damping: 20 }} // More Apple-like physics
+        magnification={96} // Better magnification size
+        distance={200} // Wider area for smoother transitions
+        spring={{ mass: 0.5, stiffness: 350, damping: 25 }} // Optimized spring physics
       >
         {user && (
           <DockItem onClick={() => navigate("/")}>
