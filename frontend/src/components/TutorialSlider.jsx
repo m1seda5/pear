@@ -26,6 +26,24 @@ const TutorialSlider = ({ onComplete }) => {
     height: 0,
   });
   const autoSlideIntervalRef = useRef(null);
+  
+  // Check view count on component mount
+  useEffect(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== "undefined") {
+      // Get the current view count from localStorage
+      const viewCount = parseInt(localStorage.getItem("tutorialViewCount") || "0");
+      
+      // If the user has already seen the tutorial 3 times, skip it
+      if (viewCount >= 3) {
+        handleComplete();
+        return;
+      }
+      
+      // Increment and save the view count
+      localStorage.setItem("tutorialViewCount", (viewCount + 1).toString());
+    }
+  }, []);
 
   // Tutorial content with images - Added new slide for Live Events
   const slides = [
