@@ -165,24 +165,16 @@ const PostPage = () => {
 
   const formatSafeDate = (dateString) => {
     if (!dateString) return t("just now");
-    
     try {
-      // Check if dateString is a valid string format
       if (typeof dateString !== 'string' && !(dateString instanceof Date)) {
         return t("recently");
       }
-      
       const parsedDate = new Date(dateString);
-      
-      // Additional validation for the date
       if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 2000) {
-        console.error("Invalid date:", dateString);
         return t("recently");
       }
-      
       return formatDistanceToNow(parsedDate) + " " + t("ago");
     } catch (error) {
-      console.error("Date formatting error:", error);
       return t("recently");
     }
   };
@@ -374,7 +366,11 @@ const PostPage = () => {
         if (!reply || typeof reply !== 'object' || !reply._id) {
           return null;
         }
-        
+        // Defensive: ensure reply.createdAt is a valid ISO string
+        let replyCreatedAt = reply.createdAt;
+        if (!replyCreatedAt || isNaN(new Date(replyCreatedAt).getTime())) {
+          replyCreatedAt = new Date().toISOString();
+        }
         return (
           <Comment
             key={reply._id}
@@ -384,7 +380,7 @@ const PostPage = () => {
               userId: reply.userId || "",
               _id: reply._id,
               text: reply.text || "",
-              createdAt: reply.createdAt || new Date().toISOString(),
+              createdAt: replyCreatedAt,
             }}
             lastReply={index === (currentPost.replies?.length || 0) - 1}
             onDelete={handleDeleteComment}

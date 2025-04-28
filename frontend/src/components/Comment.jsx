@@ -48,6 +48,22 @@ import { FaThumbsUp, FaFire, FaSmile } from "react-icons/fa";
 import { FaFaceGrinStars } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 
+const safeFormatDate = (dateString) => {
+    if (!dateString) return "just now";
+    try {
+        if (typeof dateString !== 'string' && !(dateString instanceof Date)) {
+            return "recently";
+        }
+        const parsedDate = new Date(dateString);
+        if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 2000) {
+            return "recently";
+        }
+        return formatDistanceToNow(parsedDate) + " ago";
+    } catch (error) {
+        return "recently";
+    }
+};
+
 const Comment = ({ reply, lastReply, onDelete }) => {
     const currentUser = useRecoilValue(userAtom);
     const showToast = useShowToast();
@@ -150,7 +166,7 @@ const Comment = ({ reply, lastReply, onDelete }) => {
                     <Flex align="center" gap={2}>
                         <Text fontSize="xl">{renderReaction(selectedReaction)}</Text>
                         <Text fontSize="sm" color="gray.500" ml={2}>
-                            {formatDistanceToNow(new Date(reply.createdAt))} ago
+                            {safeFormatDate(reply.createdAt)}
                         </Text>
                     </Flex>
 
