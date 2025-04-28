@@ -8,8 +8,6 @@ import {
   Text,
   Box,
   Button,
-  Skeleton,
-  useBreakpointValue,
   Avatar,
   Stack,
 } from "@chakra-ui/react";
@@ -20,25 +18,6 @@ import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
-import NotelyWidget from "../components/NotelyWidget";
-
-// --- BentoGrid Component ---
-function BentoGrid({ children }) {
-  const columns = useBreakpointValue({ base: 1, sm: 2, lg: 3 });
-  return (
-    <Box
-      display="grid"
-      gridTemplateColumns={`repeat(${columns}, 1fr)`}
-      gap={6}
-      w="100%"
-      autoRows="22rem"
-      mt={6}
-      mb={8}
-    >
-      {children}
-    </Box>
-  );
-}
 
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
@@ -52,7 +31,6 @@ const UserPage = () => {
   const currentUser = useRecoilValue(userAtom);
   const [fromSearch, setFromSearch] = useState(false);
 
-  // Check if the page was accessed via search
   useEffect(() => {
     if (currentUser?._id === user?._id) {
       setFromSearch(false);
@@ -73,34 +51,6 @@ const UserPage = () => {
       }
     };
   }, [location.state, username, currentUser?._id, user?._id]);
-
-  const handleMessage = () => {
-    const currentDate = new Date();
-    const dayOfWeek = currentDate.getDay();
-    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
-    const schoolStart = 810;
-    const lunchStart = 1250;
-    const lunchEnd = 1340;
-    const schoolEnd = 1535;
-    const isStudent = currentUser?.role === "student";
-    const allowedAccess = !isStudent || (
-      (dayOfWeek >= 1 && dayOfWeek <= 5 && (
-        currentTime < schoolStart ||
-        (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-        currentTime > schoolEnd
-      )) ||
-      dayOfWeek === 0 ||
-      dayOfWeek === 6
-    );
-    if (!allowedAccess) {
-      let message = "Messaging is only available during breaks";
-      if (currentTime < schoolStart) message = "Please wait until school starts";
-      else if (currentTime <= schoolEnd) message = "Wait until lunch time or school ends";
-      showToast("Error", message, "error");
-      return;
-    }
-    navigate(`/chat`, { state: { recipient: user, fromSearch: true } });
-  };
 
   useEffect(() => {
     const getPosts = async () => {
@@ -126,7 +76,6 @@ const UserPage = () => {
     if (user) getPosts();
   }, [username, showToast, setPosts, user]);
 
-  // --- Skeleton grid for loading ---
   if (!user && loading) {
     return (
       <Flex justifyContent="center" alignItems="center" minH="100vh">
@@ -142,9 +91,9 @@ const UserPage = () => {
     );
   }
 
-  // --- Enlarged Profile Header ---
   return (
     <Box px={{ base: 2, md: 8 }} pt={8} maxW="900px" mx="auto">
+      {/* Profile Header */}
       <Flex
         direction={{ base: "column", md: "row" }}
         align="center"
@@ -155,7 +104,7 @@ const UserPage = () => {
       >
         <Avatar
           src={user.profilePic}
-          size={useBreakpointValue({ base: "2xl", md: "2xl", lg: "2xl" })}
+          size={{ base: "2xl", md: "2xl", lg: "2xl" }}
           boxSize={{ base: "120px", md: "180px", lg: "200px" }}
           borderWidth={3}
           borderColor="green.400"
@@ -193,40 +142,17 @@ const UserPage = () => {
 
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
-          {(() => {
-            const currentDate = new Date();
-            const dayOfWeek = currentDate.getDay();
-            const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
-            const schoolStart = 810;
-            const lunchStart = 1250;
-            const lunchEnd = 1340;
-            const schoolEnd = 1535;
-            const isStudent = currentUser?.role === "student";
-            const allowedAccess = !isStudent || (
-              (dayOfWeek >= 1 && dayOfWeek <= 5 && (
-                currentTime < schoolStart ||
-                (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-                currentTime > schoolEnd
-              )) ||
-              dayOfWeek === 0 ||
-              dayOfWeek === 6
-            );
-            return (
-              <Button
-                onClick={allowedAccess ? handleMessage : undefined}
-                ml={2}
-                size="sm"
-                colorScheme={allowedAccess ? "teal" : "red"}
-                leftIcon={!allowedAccess ? <FaLock /> : undefined}
-                isDisabled={!allowedAccess}
-                variant="solid"
-                fontWeight="medium"
-                borderRadius="full"
-              >
-                {allowedAccess ? "Go to Message" : "Locked"}
-              </Button>
-            );
-          })()}
+          <Button
+            onClick={() => navigate(`/chat`, { state: { recipient: user, fromSearch: true } })}
+            ml={2}
+            size="sm"
+            colorScheme="teal"
+            variant="solid"
+            fontWeight="medium"
+            borderRadius="full"
+          >
+            Go to Message
+          </Button>
         </Flex>
       )}
 
@@ -237,18 +163,13 @@ const UserPage = () => {
       )}
 
       {fetchingPosts && (
-        <BentoGrid>
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} height="22rem" borderRadius="xl" />
-          ))}
-        </BentoGrid>
+        <Flex justifyContent="center" alignItems="center" minH="200px">
+          <Spinner size="lg" />
+        </Flex>
       )}
 
       {!fetchingPosts && (
-        <BentoGrid>
-          <Box gridColumn={{ base: "1", md: "span 1" }}>
-            <NotelyWidget isOpen={true} setIsOpen={() => {}} fixed />
-          </Box>
+        <Box>
           {posts.length === 0 && !error ? (
             <Box
               borderWidth="1px"
@@ -257,22 +178,27 @@ const UserPage = () => {
               textAlign="center"
               fontSize="xl"
               color="gray.400"
-              gridColumn="1 / -1"
+              my={6}
             >
               User has no posts.
             </Box>
           ) : (
-            posts.map((post, i) => (
+            posts.map((post) => (
               <Box
                 key={post._id}
-                gridColumn={i % 7 === 0 ? { lg: "span 2" } : undefined}
-                gridRow={i % 5 === 0 ? { lg: "span 2" } : undefined}
+                borderWidth="1px"
+                borderRadius="lg"
+                p={4}
+                mb={6}
+                boxShadow="sm"
+                maxW="800px"
+                mx="auto"
               >
                 <Post post={post} postedBy={post.postedBy} />
               </Box>
             ))
           )}
-        </BentoGrid>
+        </Box>
       )}
 
       <CreatePost />
