@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
-import { BentoGrid } from "../components/BentoGrid";
 import CreatePostCard from "../components/CreatePostCard";
 
 const HomePage = () => {
