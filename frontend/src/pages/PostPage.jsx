@@ -164,13 +164,18 @@ const PostPage = () => {
   const [loadingPost, setLoadingPost] = useState(true);
 
   const formatSafeDate = (dateString) => {
-    if (!dateString) return t("just now"); // Handle missing dates
+    if (!dateString) return t("just now");
     
     try {
+      // Check if dateString is a valid string format
+      if (typeof dateString !== 'string' && !(dateString instanceof Date)) {
+        return t("recently");
+      }
+      
       const parsedDate = new Date(dateString);
       
-      // Check if date is invalid
-      if (isNaN(parsedDate.getTime())) {
+      // Additional validation for the date
+      if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 2000) {
         console.error("Invalid date:", dateString);
         return t("recently");
       }
@@ -184,18 +189,23 @@ const PostPage = () => {
 
   const handleDeletePost = async (postId) => {
     try {
+      if (!postId) {
+        showToast(t("Error"), t("Invalid post ID"), "error");
+        return;
+      }
+
       const res = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${currentUser.token}`,
+          Authorization: `Bearer ${currentUser?.token || ""}`,
         },
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const errorData = await res.json();
         showToast(
           t("Error"),
-          errorData.error || t("Failed to delete post"),
+          data.error || t("Failed to delete post"),
           "error"
         );
         return;
@@ -204,6 +214,7 @@ const PostPage = () => {
       navigate("/");
       showToast(t("Success"), t("Post deleted successfully"), "success");
     } catch (error) {
+      console.error("Delete post error:", error);
       showToast(
         t("Error"),
         error.message || t("Failed to delete post"),
@@ -214,10 +225,14 @@ const PostPage = () => {
 
   const handleDeleteComment = (deletedCommentId) => {
     setPosts((prevPosts) => {
+      if (!prevPosts || !prevPosts[0] || !prevPosts[0].replies) {
+        return prevPosts;
+      }
+      
       const updatedPost = {
         ...prevPosts[0],
         replies: prevPosts[0].replies.filter(
-          (reply) => reply._id !== deletedCommentId
+          (reply) => reply && reply._id !== deletedCommentId
         ),
       };
       return [updatedPost];
@@ -228,6 +243,12 @@ const PostPage = () => {
     const getPost = async () => {
       setLoadingPost(true);
       try {
+        if (!pid) {
+          showToast(t("Error"), t("Invalid post ID"), "error");
+          navigate("/");
+          return;
+        }
+
         const res = await fetch(`/api/posts/${pid}`);
         const data = await res.json();
 
@@ -237,14 +258,27 @@ const PostPage = () => {
           return;
         }
 
-        // Verify post structure
-        if (!data._id || !data.createdAt) {
-          throw new Error("Invalid post data structure");
+        // Enhanced validation
+        if (!data || typeof data !== 'object') {
+          throw new Error("Invalid response format");
         }
 
-        setPosts([data]);
+        // Check critical fields and provide defaults if needed
+        const sanitizedPost = {
+          ...data,
+          createdAt: data.createdAt || new Date().toISOString(),
+          _id: data._id || null,
+          text: data.text || "",
+          img: data.img || null,
+          likes: Array.isArray(data.likes) ? data.likes : [],
+          replies: Array.isArray(data.replies) ? data.replies.filter(reply => reply && typeof reply === 'object') : [],
+        };
+
+        // Only set the post if it passed validation
+        setPosts([sanitizedPost]);
       } catch (error) {
-        showToast(t("Error"), error.message, "error");
+        console.error("Fetch post error:", error);
+        showToast(t("Error"), error.message || t("Failed to load post"), "error");
         navigate("/");
       } finally {
         setLoadingPost(false);
@@ -269,7 +303,7 @@ const PostPage = () => {
     );
   }
 
-  const currentPost = posts[0];
+  const currentPost = posts && posts.length > 0 ? posts[0] : null;
 
   if (!currentPost) {
     return (
@@ -283,10 +317,14 @@ const PostPage = () => {
     <>
       <Flex>
         <Flex w={"full"} alignItems={"center"} gap={3}>
-          <Avatar src={user.profilePic} size={"md"} name={user.username} />
+          <Avatar 
+            src={user?.profilePic || ""} 
+            size={"md"} 
+            name={user?.username || "User"} 
+          />
           <Flex>
             <Text fontSize={"sm"} fontWeight={"bold"}>
-              {user.username}
+              {user?.username || t("Unknown User")}
             </Text>
             {user?.role === "admin" && (
               <Image src="/verified.png" w={4} h={4} ml={1} />
@@ -302,7 +340,7 @@ const PostPage = () => {
           >
             {formatSafeDate(currentPost.createdAt)}
           </Text>
-          {(currentUser?.role === "admin" || currentUser?._id === user._id) && (
+          {(currentUser?.role === "admin" || currentUser?._id === user?._id) && (
             <DeleteIcon
               size={20}
               cursor={"pointer"}
@@ -321,7 +359,7 @@ const PostPage = () => {
           border={"1px solid"}
           borderColor={"gray.light"}
         >
-          <Image src={currentPost.img} w={"full"} />
+          <Image src={currentPost.img} w={"full"} alt={t("Post image")} />
         </Box>
       )}
 
@@ -331,19 +369,28 @@ const PostPage = () => {
 
       <Divider my={4} />
 
-      {currentPost.replies?.map((reply, index) => (
-        <Comment
-          key={reply._id}
-          reply={{
-            ...reply,
-            userProfilePic: reply.userProfilePic,
-            userId: reply.userId,
-            _id: reply._id,
-          }}
-          lastReply={index === currentPost.replies.length - 1}
-          onDelete={handleDeleteComment}
-        />
-      ))}
+      {currentPost.replies?.map((reply, index) => {
+        // Additional validation for each reply
+        if (!reply || typeof reply !== 'object' || !reply._id) {
+          return null;
+        }
+        
+        return (
+          <Comment
+            key={reply._id}
+            reply={{
+              ...reply,
+              userProfilePic: reply.userProfilePic || "",
+              userId: reply.userId || "",
+              _id: reply._id,
+              text: reply.text || "",
+              createdAt: reply.createdAt || new Date().toISOString(),
+            }}
+            lastReply={index === (currentPost.replies?.length || 0) - 1}
+            onDelete={handleDeleteComment}
+          />
+        );
+      })}
     </>
   );
 };
