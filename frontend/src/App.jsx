@@ -175,7 +175,7 @@ import { Box } from "@chakra-ui/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
-import Header from "./components/Header";
+// import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import { useRecoilValue } from "recoil";
@@ -193,6 +193,7 @@ import ReviewModal from './components/ReviewModal';
 import AdminDashboard from "./pages/AdminDashboard";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Sidebar from "./components/Sidebar";
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -236,14 +237,15 @@ function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
-        {!isTVPage && <Header unreadCount={unreadCount} />}
-        <Box mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
+        <Sidebar />
+        {/* {!isTVPage && <Header unreadCount={unreadCount} />} */}
+        <Box ml={{ base: "64px", md: "250px" }} mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
           <Routes>
             <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-            <Route path="/:username" element={<UserPage />} />
-            <Route path="/:username/post/:pid" element={<PostPage />} />
+            <Route path=":username" element={<UserPage />} />
+            <Route path=":username/post/:pid" element={<PostPage />} />
             <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
