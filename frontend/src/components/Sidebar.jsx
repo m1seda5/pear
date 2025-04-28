@@ -5,131 +5,139 @@ import {
   IconButton,
   Input,
   useColorModeValue,
-  Collapse,
   Avatar,
   Button,
   Text,
-  Divider,
   Tooltip,
 } from "@chakra-ui/react";
-import {
-  AiFillHome,
-  AiOutlineDashboard,
-} from "react-icons/ai";
-import { BsCheckSquare, BsCreditCard, BsBell, BsSearch, BsChevronDown, BsChevronUp } from "react-icons/bs";
-import { FaUser, FaUsers, FaShieldAlt, FaSignOutAlt, FaCog } from "react-icons/fa";
+import { AiFillHome } from "react-icons/ai";
+import { BsSearch, BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
+import { SunIcon, MoonIcon } from "@chakra-ui/icons";
+import { RxAvatar } from "react-icons/rx";
+import { FaLock, FaUserShield } from "react-icons/fa";
+import { PiTelevisionSimpleBold } from "react-icons/pi";
+import { FiLogOut } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import userAtom from "../atoms/userAtom";
+import useLogout from "../hooks/useLogout";
 
-// Replace with your actual logo and user data
-const logoSrc = "/pear.png";
-const userProfileSrc = "/user-profile.png";
-const userName = "YourUsername";
-const userRole = "UX Designer";
-
-const greenAccent = {
-  light: "#27ae60",
-  dark: "#219150",
-};
-
-export default function Sidebar() {
-  const [userMenuOpen, setUserMenuOpen] = useState(true);
+export default function Sidebar({ onQuickNotes }) {
+  const user = useRecoilValue(userAtom);
+  const logout = useLogout();
   const navigate = useNavigate();
+  const [showLockIcon, setShowLockIcon] = useState({ chat: false, tv: false });
+  const colorMode = useColorModeValue("light", "dark");
+  const toggleColorMode = () => {
+    const event = new CustomEvent("toggleColorMode");
+    window.dispatchEvent(event);
+  };
 
-  // Color mode values
+  // User info
+  const username = user?.username || "";
+  const yearGroup = user?.yearGroup || "";
+  const profilePic = user?.profilePic || "/user-profile.png";
+  const isAdmin = user?.role === "admin";
+  const isTeacher = user?.role === "teacher";
+  const isStudent = user?.role === "student";
+
+  // Chat access logic (from Header)
+  const currentDate = new Date();
+  const dayOfWeek = currentDate.getDay();
+  const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+  const schoolStart = 810;
+  const lunchStart = 1250;
+  const lunchEnd = 1340;
+  const schoolEnd = 1535;
+  const hasChatAccess = user && (
+    isTeacher ||
+    isAdmin ||
+    (isStudent &&
+      ((dayOfWeek >= 1 &&
+        dayOfWeek <= 5 &&
+        (currentTime < schoolStart ||
+          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+          currentTime > schoolEnd)) ||
+        dayOfWeek === 0 ||
+        dayOfWeek === 6))
+  );
+
+  // Sidebar style
   const bg = useColorModeValue("white", "#181c1f");
   const border = useColorModeValue("gray.100", "gray.700");
   const text = useColorModeValue("gray.700", "gray.200");
   const subText = useColorModeValue("gray.400", "gray.500");
   const hoverBg = useColorModeValue("gray.100", "#23282c");
   const activeBg = useColorModeValue("#eafaf1", "#1e2a22");
-  const accent = useColorModeValue(greenAccent.light, greenAccent.dark);
+  const accent = useColorModeValue("#27ae60", "#219150");
 
-  // Navigation items
-  const mainNavItems = [
-    { icon: <AiFillHome size={20} />, label: "Home", active: false, onClick: () => navigate("/") },
-    { icon: <AiOutlineDashboard size={20} />, label: "Dashboard", active: true, onClick: () => navigate("/dashboard") },
-    { icon: <BsCheckSquare size={20} />, label: "Tasks", active: false, onClick: () => navigate("/tasks") },
-  ];
-
-  const userSubItems = [
-    { label: "Profile", onClick: () => navigate("/profile") },
-    { label: "Email Address", onClick: () => navigate("/email") },
-    { label: "Organization", onClick: () => navigate("/organization") },
-  ];
-
-  const settingsNavItems = [
-    { icon: <FaShieldAlt size={20} />, label: "Security", active: false, highlight: true, onClick: () => navigate("/security") },
-    { icon: <BsCreditCard size={20} />, label: "Account", active: false, onClick: () => navigate("/account") },
-    { icon: <BsCreditCard size={20} />, label: "Payment", active: false, onClick: () => navigate("/payment") },
-  ];
-
-  const bottomNavItems = [
-    { icon: <MdOutlineSettings size={20} />, label: "Setting", onClick: () => navigate("/settings") },
-    { icon: <BsBell size={20} />, label: "Notifications", onClick: () => navigate("/notifications") },
-  ];
+  // Sidebar nav items
+  const navItems = [
+    {
+      icon: <AiFillHome size={22} />, label: "Home", onClick: () => navigate("/"),
+    },
+    {
+      icon: <BsSearch size={22} />, label: "Search", onClick: () => {/* TODO: open search modal */},
+    },
+    {
+      icon: colorMode === "dark" ? <SunIcon boxSize={5} /> : <MoonIcon boxSize={5} />, label: colorMode === "dark" ? "Light Mode" : "Dark Mode", onClick: toggleColorMode,
+    },
+    user && {
+      icon: <RxAvatar size={22} />, label: "Profile", onClick: () => navigate(`/${username}`),
+    },
+    user && {
+      icon: <BsFillChatQuoteFill size={22} />, label: "Chat", onClick: hasChatAccess && !user.isFrozen ? () => navigate("/chat") : undefined, isDisabled: user.isFrozen || !hasChatAccess, lock: user.isFrozen || !hasChatAccess,
+    },
+    user && isAdmin && {
+      icon: <PiTelevisionSimpleBold size={22} />, label: "TV", onClick: () => navigate("/tv"),
+    },
+    user && isAdmin && {
+      icon: <FaUserShield size={22} />, label: "Admin Dashboard", onClick: () => navigate("/admin"),
+    },
+    {
+      icon: <MdOutlineSettings size={22} />, label: "Settings", onClick: () => navigate("/settings"),
+    },
+    {
+      icon: <Box as="span" fontWeight="bold" fontSize="lg">Q</Box>, label: "Quick Notes", onClick: onQuickNotes,
+    },
+    {
+      icon: <FiLogOut size={22} />, label: "Logout", onClick: async () => { await logout(); navigate("/auth"); },
+    },
+  ].filter(Boolean);
 
   return (
     <Flex
       direction="column"
       w={{ base: "64px", md: "250px" }}
-      h="100vh"
+      h="calc(100vh - 32px)"
       justify="space-between"
       px={{ base: 2, md: 4 }}
-      py={6}
+      py={4}
       bg={bg}
-      borderRight="1px solid"
+      borderRadius="2xl"
+      boxShadow="2xl"
+      border="1px solid"
       borderColor={border}
-      transition="width 0.2s"
       position="fixed"
+      top={4}
+      left={4}
       zIndex={100}
+      transition="width 0.2s"
     >
-      {/* Top section */}
-      <Flex direction="column" gap={6} w="full">
-        {/* Logo and brand */}
-        <Flex align="center" gap={3} w="full">
-          <Box
-            w="40px"
-            h="40px"
-            bg={hoverBg}
-            rounded="md"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            overflow="hidden"
-          >
-            <img src={logoSrc} alt="Pear Logo" className="w-full h-full object-cover" />
-          </Box>
-          <Text
-            fontWeight="bold"
-            fontSize="lg"
-            color={text}
-            display={{ base: "none", md: "block" }}
-          >
-            Pear
-          </Text>
-        </Flex>
-
-        {/* Search bar */}
-        <Box w="full" display={{ base: "none", md: "block" }}>
-          <Flex align="center" w="full" px={3} py={2.5} bg={hoverBg} rounded="lg">
-            <BsSearch className="mr-2" color={subText} />
-            <Input
-              variant="unstyled"
-              placeholder="Search"
-              color={subText}
-              _placeholder={{ color: subText }}
-              fontSize="sm"
-              pl={2}
-            />
-          </Flex>
+      {/* Top: Logo */}
+      <Flex align="center" gap={3} mb={8}>
+        <Box w="40px" h="40px" bg={hoverBg} rounded="md" display="flex" alignItems="center" justifyContent="center" overflow="hidden">
+          <img src="/pear.png" alt="Pear Logo" className="w-full h-full object-cover" />
         </Box>
-
-        {/* Main navigation */}
-        <Flex direction="column" gap={2} w="full">
-          {mainNavItems.map((item, idx) => (
+        <Text fontWeight="bold" fontSize="lg" color={text} display={{ base: "none", md: "block" }}>Pear</Text>
+      </Flex>
+      {/* Nav */}
+      <Flex direction="column" gap={2} flex={1}>
+        {navItems.map((item, idx) => (
+          <Tooltip label={item.label} placement="right" key={item.label} isDisabled={!!item.isDisabled || undefined}>
             <Button
-              key={idx}
+              key={item.label}
               variant="ghost"
               justifyContent="flex-start"
               alignItems="center"
@@ -137,148 +145,31 @@ export default function Sidebar() {
               px={3}
               py={2.5}
               h="auto"
-              leftIcon={item.icon}
-              onClick={item.onClick}
+              leftIcon={item.lock ? <FaLock size={18} color="#E53E3E" /> : item.icon}
+              onClick={item.isDisabled ? undefined : item.onClick}
               bg={item.active ? activeBg : "transparent"}
-              color={item.active ? accent : text}
+              color={item.isDisabled ? "red.400" : text}
               _hover={{ bg: hoverBg, color: accent }}
               fontWeight={item.active ? "bold" : "normal"}
               fontSize="md"
               transition="all 0.15s"
+              isDisabled={item.isDisabled}
             >
               <Box display={{ base: "none", md: "block" }}>{item.label}</Box>
             </Button>
-          ))}
-
-          {/* User section with collapsible submenu */}
-          <Box w="full">
-            <Button
-              variant="ghost"
-              justifyContent="space-between"
-              alignItems="center"
-              w="full"
-              px={3}
-              py={2.5}
-              h="auto"
-              onClick={() => setUserMenuOpen((v) => !v)}
-              color={text}
-              _hover={{ bg: hoverBg }}
-              rightIcon={
-                userMenuOpen ? (
-                  <BsChevronUp color={subText} />
-                ) : (
-                  <BsChevronDown color={subText} />
-                )
-              }
-            >
-              <Flex align="center">
-                <FaUsers size={20} />
-                <Text ml={2} display={{ base: "none", md: "block" }}>
-                  User
-                </Text>
-              </Flex>
-            </Button>
-            <Collapse in={userMenuOpen} animateOpacity>
-              <Flex direction="column" w="full">
-                {userSubItems.map((item, idx) => (
-                  <Button
-                    key={idx}
-                    variant="ghost"
-                    justifyContent="flex-start"
-                    alignItems="center"
-                    w="full"
-                    pl={9}
-                    pr={3}
-                    py={2.5}
-                    h="auto"
-                    color={text}
-                    _hover={{ bg: hoverBg, color: accent }}
-                    fontSize="md"
-                    onClick={item.onClick}
-                  >
-                    <Box display={{ base: "none", md: "block" }}>{item.label}</Box>
-                  </Button>
-                ))}
-              </Flex>
-            </Collapse>
-          </Box>
-
-          {/* Settings nav items */}
-          {settingsNavItems.map((item, idx) => (
-            <Button
-              key={idx}
-              variant="ghost"
-              justifyContent="flex-start"
-              alignItems="center"
-              w="full"
-              px={3}
-              py={2.5}
-              h="auto"
-              leftIcon={item.icon}
-              onClick={item.onClick}
-              bg={item.active ? activeBg : item.highlight ? hoverBg : "transparent"}
-              color={item.active ? accent : text}
-              _hover={{ bg: hoverBg, color: accent }}
-              fontWeight={item.active ? "bold" : "normal"}
-              fontSize="md"
-              transition="all 0.15s"
-            >
-              <Box display={{ base: "none", md: "block" }}>{item.label}</Box>
-            </Button>
-          ))}
-        </Flex>
+          </Tooltip>
+        ))}
       </Flex>
-
-      {/* Bottom section */}
-      <Flex direction="column" gap={5} w="full">
-        {/* Bottom navigation */}
-        <Flex direction="column" gap={2} w="full">
-          {bottomNavItems.map((item, idx) => (
-            <Button
-              key={idx}
-              variant="ghost"
-              justifyContent="flex-start"
-              alignItems="center"
-              w="full"
-              px={3}
-              py={2.5}
-              h="auto"
-              leftIcon={item.icon}
-              onClick={item.onClick}
-              color={text}
-              _hover={{ bg: hoverBg, color: accent }}
-              fontSize="md"
-              transition="all 0.15s"
-            >
-              <Box display={{ base: "none", md: "block" }}>{item.label}</Box>
-            </Button>
-          ))}
-        </Flex>
-        <Divider borderColor={border} />
-        {/* User profile */}
-        <Flex align="center" justify="space-between" w="full">
-          <Flex align="center" gap={3}>
-            <Avatar src={userProfileSrc} size="md" />
-            <Flex direction="column" gap={1} display={{ base: "none", md: "flex" }}>
-              <Text fontWeight="medium" color={text}>
-                {userName}
-              </Text>
-              <Text fontSize="xs" color={subText}>
-                {userRole}
-              </Text>
-            </Flex>
+      {/* Bottom: User info */}
+      {user && (
+        <Flex align="center" gap={3} mt={8}>
+          <Avatar src={profilePic} size="md" />
+          <Flex direction="column" gap={1} display={{ base: "none", md: "flex" }}>
+            <Text fontWeight="medium" color={text}>{username}</Text>
+            <Text fontSize="xs" color={subText}>{yearGroup}</Text>
           </Flex>
-          <IconButton
-            icon={<FaSignOutAlt />}
-            variant="ghost"
-            aria-label="Logout"
-            color={text}
-            _hover={{ color: accent, bg: hoverBg }}
-            size="sm"
-            onClick={() => {/* handle logout */}}
-          />
         </Flex>
-      </Flex>
+      )}
     </Flex>
   );
 }
