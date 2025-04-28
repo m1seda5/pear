@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useMediaQuery, Skeleton, useBreakpointValue } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
@@ -10,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
+import { BentoGrid } from "../components/BentoGrid";
+import CreatePostCard from "../components/CreatePostCard";
 
 const HomePage = () => {
 	const [posts, setPosts] = useRecoilState(postsAtom);
@@ -90,44 +92,64 @@ const HomePage = () => {
 		return postAgeInHours <= 3;
 	};
 
+	// Skeleton grid for loading
+	if (loading) {
+		return (
+			<Box px={{ base: 2, md: 8 }} pt={8}>
+				<Text fontSize="3xl" fontWeight="bold" color="green.500" mb={6}>Your Feed</Text>
+				<BentoGrid>
+					{[...Array(6)].map((_, i) => (
+						<Skeleton key={i} height="22rem" borderRadius="xl" />
+					))}
+				</BentoGrid>
+			</Box>
+		);
+	}
+
+	// Randomize post grid spans for variety
+	const getGridProps = (i) => {
+		if (i % 7 === 0) return { gridColumn: { lg: "span 2" }, gridRow: { lg: "span 2" } };
+		if (i % 5 === 0) return { gridColumn: { lg: "span 2" } };
+		if (i % 3 === 0) return { gridRow: { lg: "span 2" } };
+		return {};
+	};
+
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			<Flex gap="10" alignItems={"flex-start"} position="relative">
-				{/* Main Content */}
-				<Box w="100%" maxW={{ base: "100%", md: "600px", xl: "700px" }} mx="auto" minW="0">
-					{!loading && posts.length === 0 && (
-						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-					)}
-					{loading && (
-						<Flex justifyContent="center">
-							<Spinner size="xl" />
-						</Flex>
-					)}
-					{posts.map((post) => {
-						const isNew = isNewPost(post.createdAt);
-						return (
-							<Box
-								key={post._id}
-								className="postContainer"
-								borderWidth="1px"
-								borderRadius="lg"
-								p={4}
-								mb={6}
-								boxShadow="sm"
-								maxW="800px"
-								mx="auto"
-							>
+			<Box px={{ base: 2, md: 8 }} pt={8}>
+				<Text fontSize="3xl" fontWeight="bold" color="green.500" mb={6}>Your Feed</Text>
+				<BentoGrid>
+					{/* CreatePostCard always first */}
+					<Box gridColumn={{ base: "1", md: "span 2" }}>
+						<CreatePostCard onPostCreated={post => setPosts([post, ...posts])} />
+					</Box>
+					{/* NotelyWidget as a fixed grid item */}
+					<Box gridColumn={{ base: "1", md: "span 1" }}>
+						<NotelyWidget isOpen={true} setIsOpen={() => {}} fixed />
+					</Box>
+					{/* Posts */}
+					{posts.length === 0 ? (
+						<Box
+							borderWidth="1px"
+							borderRadius="lg"
+							p={8}
+							textAlign="center"
+							fontSize="xl"
+							color="gray.400"
+							gridColumn="1 / -1"
+						>
+							No posts yet.
+						</Box>
+					) : (
+						posts.map((post, i) => (
+							<Box key={post._id} {...getGridProps(i)}>
 								<Post post={post} postedBy={post.postedBy} />
-								{isNew && newPosts.includes(post) && (
-									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-								)}
 							</Box>
-						);
-					})}
-				</Box>
-				<NotelyWidget />
-			</Flex>
+						))
+					)}
+				</BentoGrid>
+			</Box>
 		</>
 	);
 };
