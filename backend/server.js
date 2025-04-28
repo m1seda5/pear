@@ -12,6 +12,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { app, server } from "./socket/socket.js";
 import cronJobs from "./cron/cron.js";
+import noteRoutes from "./routes/noteRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -38,6 +39,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/reviewer-groups", reviewerGroupRoutes);
 app.use("/api/groups", groupRoutes); // Changed from "/groups" to "/api/groups" for consistency
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/notes", noteRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
