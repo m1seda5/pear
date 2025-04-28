@@ -147,9 +147,9 @@ const Actions = ({ post }) => {
 
     return (
         <Flex justifyContent="space-between" width="full" onClick={(e) => e.preventDefault()}>
-            {/* Left section with like, comment, repost */}
-            <Flex gap={3} alignItems="center">
-                {/* Like Action - moved counter to right */}
+            {/* Left section with like, comment, repost - reduced gap from 3 to 2 */}
+            <Flex gap={2} alignItems="center">
+                {/* Like Action - kept in the same position */}
                 <Flex alignItems="center" gap={2} cursor="pointer" onClick={handleLikeAndUnlike}>
                     <Flex 
                         _hover={iconHoverStyle} 
@@ -176,7 +176,7 @@ const Actions = ({ post }) => {
                     </Text>
                 </Flex>
 
-                {/* Comment Action - modal with emoji reactions only */}
+                {/* Comment Action - closer to the like button */}
                 <Flex alignItems="center" gap={2} cursor="pointer" onClick={onOpen}>
                     <Flex 
                         _hover={iconHoverStyle} 
@@ -204,7 +204,7 @@ const Actions = ({ post }) => {
                     </Text>
                 </Flex>
 
-                {/* Repost Action - updated icon and moved counter to right */}
+                {/* Repost Action - closer to the comment button */}
                 <Flex alignItems="center" gap={2} cursor="pointer">
                     <Flex 
                         _hover={iconHoverStyle} 
@@ -232,7 +232,7 @@ const Actions = ({ post }) => {
                 </Flex>
             </Flex>
 
-            {/* Right section with view count instead of share */}
+            {/* Right section with view count - changed color to gray.500 instead of black */}
             <Flex alignItems="center" gap={2}>
                 <Flex 
                     _hover={iconHoverStyle}
@@ -240,7 +240,7 @@ const Actions = ({ post }) => {
                 >
                     <svg
                         aria-label={t("Views")}
-                        color="gray"
+                        color="gray.500"  // Changed to gray.500 to match other icons
                         fill="currentColor"
                         height="16"
                         role="img"
@@ -252,7 +252,7 @@ const Actions = ({ post }) => {
                         />
                     </svg>
                 </Flex>
-                <Text fontSize="sm" fontWeight="medium">
+                <Text fontSize="sm" fontWeight="medium" color="gray.500">
                     {post?.viewCount || 0}
                 </Text>
             </Flex>

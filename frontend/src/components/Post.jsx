@@ -293,7 +293,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 overflow="hidden"
                 className="post-container"
             >
-                {/* Author section with views moved to right */}
+                {/* Author section with delete button only */}
                 <Flex 
                     alignItems="center" 
                     justifyContent="space-between" 
@@ -383,21 +383,21 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     )}
                 </Flex>
 
-                {/* Image preview - UPDATED with rounded corners, centered, and aligned with text */}
+                {/* Image preview */}
                 {post.img && (
                     <Flex 
                         w="full"
                         justifyContent="center"
-                        px={5}  // Match text padding
+                        px={5}
                         mb={4}
                     >
                         <Image
                             src={post.img}
-                            w="full"  // Width matches container with padding
+                            w="full"
                             h={isTV ? "auto" : "full"}
-                            maxH={isTV ? "65vh" : "auto"}  // Slightly smaller
+                            maxH={isTV ? "65vh" : "auto"}
                             objectFit={isTV ? "contain" : "cover"}
-                            borderRadius="xl"  // Rounded corners
+                            borderRadius="xl"
                             className="post-image"
                         />
                     </Flex>
