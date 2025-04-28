@@ -116,7 +116,7 @@ const Actions = ({ post }) => {
     return (
         <Flex justifyContent="space-between" width="full" onClick={(e) => e.preventDefault()}>
             {/* Left section with like, comment, repost */}
-            <Flex gap={6} alignItems="center">
+            <Flex gap={3} alignItems="center">
                 {/* Like Action - moved counter to right */}
                 <Flex alignItems="center" gap={2} cursor="pointer" onClick={handleLikeAndUnlike}>
                     <Flex 
