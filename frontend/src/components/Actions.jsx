@@ -107,6 +107,38 @@ const Actions = ({ post }) => {
         }
     };
 
+    const handleReplyEmoji = async (emoji) => {
+        if (!user) return showToast("Error", "You must be logged in to reply to a post", "error");
+        if (isReplying) return;
+        setIsReplying(true);
+        try {
+            const res = await fetch("/api/posts/reply/" + post._id, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text: emoji }),
+            });
+            const data = await res.json();
+            if (data.error) return showToast("Error", data.error, "error");
+
+            const updatedPosts = posts.map((p) => {
+                if (p._id === post._id) {
+                    return { ...p, replies: [...p.replies, data] };
+                }
+                return p;
+            });
+            setPosts(updatedPosts);
+            showToast("Success", "Reply posted successfully", "success");
+            onClose();
+            setReply("");
+        } catch (error) {
+            showToast("Error", error.message, "error");
+        } finally {
+            setIsReplying(false);
+        }
+    };
+
     // Hover animation style for action buttons
     const iconHoverStyle = {
         transform: "scale(1.15)",
@@ -144,7 +176,7 @@ const Actions = ({ post }) => {
                     </Text>
                 </Flex>
 
-                {/* Comment Action - moved counter to right */}
+                {/* Comment Action - modal with emoji reactions only */}
                 <Flex alignItems="center" gap={2} cursor="pointer" onClick={onOpen}>
                     <Flex 
                         _hover={iconHoverStyle} 
@@ -234,18 +266,28 @@ const Actions = ({ post }) => {
                     <ModalBody pb={6}>
                         <FormControl>
                             <Input
-                                placeholder={t('Write your reply...')}
-                                value={reply}
-                                onChange={(e) => setReply(e.target.value)}
+                                placeholder={t('Live comments coming soon, pick a reaction.')}
+                                value={''}
+                                isDisabled
                             />
                         </FormControl>
+                        <Flex mt={4} gap={4} justifyContent="center">
+                            {['😊', '👍', '🔥', '👏'].map((emoji) => (
+                                <Button
+                                    key={emoji}
+                                    fontSize="2xl"
+                                    onClick={async () => {
+                                        setReply(emoji);
+                                        await handleReplyEmoji(emoji);
+                                    }}
+                                    isLoading={isReplying && reply === emoji}
+                                    variant="ghost"
+                                >
+                                    {emoji}
+                                </Button>
+                            ))}
+                        </Flex>
                     </ModalBody>
-
-                    <ModalFooter>
-                        <Button colorScheme='blue' size={"sm"} mr={3} isLoading={isReplying} onClick={handleReply}>
-                            {t('Reply')}
-                        </Button>
-                    </ModalFooter>
                 </ModalContent>
             </Modal>
         </Flex>
