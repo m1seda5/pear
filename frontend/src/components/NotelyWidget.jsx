@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Box, Button, Input, Textarea, Flex, IconButton, useToast } from "@chakra-ui/react";
+import { Box, Button, Input, Textarea, Flex, IconButton, useToast, useColorModeValue } from "@chakra-ui/react";
 import { CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useMediaQuery } from "@chakra-ui/react";
 
-const DEFAULT_POSITION = { top: 100, left: window.innerWidth - 440 };
+const DEFAULT_POSITION = { top: 100, left: window.innerWidth - 340 };
 
 const NotelyWidget = () => {
   const [isOpen, setIsOpen] = useState(() => {
-    return localStorage.getItem("notelyClosed") !== "true";
+    return sessionStorage.getItem("notelyClosed") !== "true";
   });
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState("");
@@ -30,6 +30,12 @@ const NotelyWidget = () => {
   });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+
+  const widgetBg = useColorModeValue("#ffe066", "#232323"); // softer yellow for light, dark card for dark
+  const noteBg = useColorModeValue("white", "#2d2d2d");
+  const noteText = useColorModeValue("#46180f", "#ffe066");
+  const inputBg = useColorModeValue("white", "#232323");
+  const inputText = useColorModeValue("#46180f", "#ffe066");
 
   useEffect(() => {
     if (isOpen) fetchNotes();
@@ -140,11 +146,11 @@ const NotelyWidget = () => {
 
   const handleClose = () => {
     setIsOpen(false);
-    localStorage.setItem("notelyClosed", "true");
+    sessionStorage.setItem("notelyClosed", "true");
   };
 
   useEffect(() => {
-    if (isOpen) localStorage.setItem("notelyClosed", "false");
+    if (isOpen) sessionStorage.setItem("notelyClosed", "false");
   }, [isOpen]);
 
   if (!isLargerThan1024 || !isOpen) return null;
@@ -156,26 +162,26 @@ const NotelyWidget = () => {
       left={position.left + "px"}
       top={position.top + "px"}
       zIndex={2000}
-      w="380px"
-      bg="#ffd527"
-      borderRadius="21.33px"
-      p={6}
+      w="320px"
+      bg={widgetBg}
+      borderRadius="16px"
+      p={4}
       boxShadow="2xl"
       border="none"
       cursor={dragging ? "grabbing" : "default"}
       userSelect={dragging ? "none" : "auto"}
     >
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
-        <Box fontWeight="bold" fontSize="2xl" color="#46180f">Notely</Box>
-        <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: "yellow.300" }} />
+        <Box fontWeight="bold" fontSize="xl" color={noteText}>Notely</Box>
+        <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
       <Input
         placeholder="Title"
         value={title}
         onChange={e => setTitle(e.target.value)}
         mb={2}
-        bg="white"
-        color="#46180f"
+        bg={inputBg}
+        color={inputText}
         fontWeight="bold"
         borderRadius="md"
       />
@@ -184,12 +190,12 @@ const NotelyWidget = () => {
         value={content}
         onChange={e => setContent(e.target.value)}
         mb={2}
-        bg="white"
-        color="#46180f"
+        bg={inputBg}
+        color={inputText}
         borderRadius="md"
         minH="80px"
       />
-      <Flex gap={2} mb={4}>
+      <Flex gap={2} mb={3}>
         <Button colorScheme="yellow" onClick={handleSave} flex={1}>
           {editingId ? "Update" : "Save"}
         </Button>
@@ -199,13 +205,13 @@ const NotelyWidget = () => {
           </Button>
         )}
       </Flex>
-      <Box maxH="180px" overflowY="auto">
+      <Box maxH="140px" overflowY="auto">
         {notes.map(note => (
-          <Box key={note._id} bg="white" borderRadius="md" p={3} mb={2} boxShadow="sm" cursor="pointer" onClick={() => handleEdit(note)}>
+          <Box key={note._id} bg={noteBg} borderRadius="md" p={2} mb={2} boxShadow="sm" cursor="pointer" onClick={() => handleEdit(note)}>
             <Flex justify="space-between" align="center">
               <Box>
-                <Box fontWeight="bold" color="#46180f">{note.title || "Untitled"}</Box>
-                <Box fontSize="sm" color="#46180f">{note.content?.slice(0, 60)}</Box>
+                <Box fontWeight="bold" color={noteText}>{note.title || "Untitled"}</Box>
+                <Box fontSize="sm" color={noteText}>{note.content?.slice(0, 60)}</Box>
               </Box>
               <IconButton icon={<DeleteIcon />} size="sm" colorScheme="red" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(note._id); }} aria-label="Delete" />
             </Flex>
