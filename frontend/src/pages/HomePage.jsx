@@ -96,9 +96,11 @@ const HomePage = () => {
 		return (
 			<Box px={{ base: 2, md: 8 }} pt={8}>
 				<Text fontSize="3xl" fontWeight="bold" color="green.500" mb={6}>Your Feed</Text>
-				{[...Array(6)].map((_, i) => (
-					<Skeleton key={i} height="22rem" borderRadius="xl" />
-				))}
+				<BentoGrid>
+					{[...Array(6)].map((_, i) => (
+						<Skeleton key={i} height="22rem" borderRadius="xl" />
+					))}
+				</BentoGrid>
 			</Box>
 		);
 	}
@@ -116,34 +118,36 @@ const HomePage = () => {
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
 			<Box px={{ base: 2, md: 8 }} pt={8}>
 				<Text fontSize="3xl" fontWeight="bold" color="green.500" mb={6}>Your Feed</Text>
-				{/* CreatePostCard always first */}
-				<Box gridColumn={{ base: "1", md: "span 2" }}>
-					<CreatePostCard onPostCreated={post => setPosts([post, ...posts])} />
-				</Box>
-				{/* NotelyWidget as a fixed grid item */}
-				<Box gridColumn={{ base: "1", md: "span 1" }}>
-					<NotelyWidget isOpen={true} setIsOpen={() => {}} fixed />
-				</Box>
-				{/* Posts */}
-				{posts.length === 0 ? (
-					<Box
-						borderWidth="1px"
-						borderRadius="lg"
-						p={8}
-						textAlign="center"
-						fontSize="xl"
-						color="gray.400"
-						gridColumn="1 / -1"
-					>
-						No posts yet.
+				<BentoGrid>
+					{/* CreatePostCard always first */}
+					<Box gridColumn={{ base: "1", md: "span 2" }}>
+						<CreatePostCard onPostCreated={post => setPosts([post, ...posts])} />
 					</Box>
-				) : (
-					posts.map((post, i) => (
-						<Box key={post._id} {...getGridProps(i)}>
-							<Post post={post} postedBy={post.postedBy} />
+					{/* NotelyWidget as a fixed grid item */}
+					<Box gridColumn={{ base: "1", md: "span 1" }}>
+						<NotelyWidget isOpen={true} setIsOpen={() => {}} fixed />
+					</Box>
+					{/* Posts */}
+					{posts.length === 0 ? (
+						<Box
+							borderWidth="1px"
+							borderRadius="lg"
+							p={8}
+							textAlign="center"
+							fontSize="xl"
+							color="gray.400"
+							gridColumn="1 / -1"
+						>
+							No posts yet.
 						</Box>
-					))
-				)}
+					) : (
+						posts.map((post, i) => (
+							<Box key={post._id} {...getGridProps(i)}>
+								<Post post={post} postedBy={post.postedBy} />
+							</Box>
+						))
+					)}
+				</BentoGrid>
 			</Box>
 		</>
 	);
