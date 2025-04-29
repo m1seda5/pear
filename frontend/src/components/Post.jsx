@@ -278,17 +278,20 @@ const Post = ({ post, postedBy, isTV = false }) => {
     return (
         <Link 
             to={`/${user.username}/post/${post._id}`} 
-            style={{ width: "100%", height: "100%" }}
+            style={{ 
+                width: isTV ? "100%" : "auto",
+                display: "block"
+            }}
         >
             <Flex
                 direction="column"
-                w="100%"
-                h="100%"
-                bg={useColorModeValue("white", "gray.800")}
-                p={4}
-                borderWidth="1px"
-                borderRadius="xl"
-                _hover={{ shadow: "md" }}
+                w="full"
+                maxW={isTV ? "full" : "2xl"}
+                mx="auto"
+                borderBottom="1px"
+                borderColor={borderColor}
+                overflow="hidden"
+                className="post-container"
             >
                 {/* Author section with delete button only */}
                 <Flex 

@@ -163,13 +163,13 @@ export default function CreatePostCard({ onPostCreated }) {
   return (
     <Box
       borderWidth="1px"
-      borderRadius="xl"
+      borderRadius="lg"
       p={4}
-      h="100%"
-      display="flex"
-      flexDirection="column"
+      mb={6}
+      boxShadow="sm"
+      maxW="800px"
+      mx="auto"
       bg={useColorModeValue("white", "gray.800")}
-      _hover={{ shadow: "md" }}
     >
       <Flex align="center" mb={4} gap={3}>
         <Avatar src={user?.profilePic || "/user-profile.png"} size="md" />

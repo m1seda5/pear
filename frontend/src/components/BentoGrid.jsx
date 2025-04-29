@@ -2,25 +2,17 @@
 import { Box, useBreakpointValue } from "@chakra-ui/react";
 
 export function BentoGrid({ children }) {
-  const columns = useBreakpointValue({ base: 1, md: 2, lg: 3 });
-  const rows = useBreakpointValue({ base: "22rem", lg: "24rem" });
-
+  // Responsive: 1 col on mobile, 2 on tablet, 3 on desktop
+  const columns = useBreakpointValue({ base: 1, sm: 2, lg: 3 });
   return (
     <Box
       display="grid"
       gridTemplateColumns={`repeat(${columns}, 1fr)`}
       gap={6}
       w="100%"
-      autoRows={{ base: "22rem", lg: "24rem" }}
+      autoRows="22rem"
       mt={6}
       mb={8}
-      px={{ base: 2, md: 8 }}
-      sx={{
-        "& > *": {
-          minW: "0", // Prevent grid blowout
-          transition: "all 0.3s ease",
-        },
-      }}
     >
       {children}
     </Box>
