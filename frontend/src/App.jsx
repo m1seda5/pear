@@ -194,7 +194,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "./components/Sidebar";
-import NotelyWidget from "./components/NotelyWidget";
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -203,7 +202,6 @@ function App() {
   i18n.changeLanguage(savedLanguage);
 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notelyOpen, setNotelyOpen] = useState(false);
 
   const isPotentialReviewer = user && (user.role === "admin" || user.role === "teacher" || user.role === "student");
   const isTVPage = pathname === '/tv';
@@ -239,7 +237,7 @@ function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <Box>
-        <Sidebar onQuickNotes={() => setNotelyOpen(true)} />
+        <Sidebar />
         {/* {!isTVPage && <Header unreadCount={unreadCount} />} */}
         <Box ml={{ base: "64px", md: "250px" }} mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
           <Routes>
@@ -256,7 +254,6 @@ function App() {
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
           </Routes>
         </Box>
-        {notelyOpen && <NotelyWidget isOpen={notelyOpen} setIsOpen={setNotelyOpen} />}
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
       </Box>
     </I18nextProvider>

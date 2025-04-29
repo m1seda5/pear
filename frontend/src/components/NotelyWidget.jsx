@@ -5,12 +5,10 @@ import { useMediaQuery } from "@chakra-ui/react";
 
 const DEFAULT_POSITION = { top: 100, left: window.innerWidth - 340 };
 
-const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp }) => {
-  const [internalOpen, setInternalOpen] = useState(() => {
+const NotelyWidget = () => {
+  const [isOpen, setIsOpen] = useState(() => {
     return sessionStorage.getItem("notelyClosed") !== "true";
   });
-  const isOpen = typeof isOpenProp === "boolean" ? isOpenProp : internalOpen;
-  const setIsOpen = setIsOpenProp || setInternalOpen;
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -146,6 +144,11 @@ const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp }) => {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    sessionStorage.setItem("notelyClosed", "true");
+  };
+
   useEffect(() => {
     if (isOpen) sessionStorage.setItem("notelyClosed", "false");
   }, [isOpen]);
@@ -170,7 +173,7 @@ const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp }) => {
     >
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
         <Box fontWeight="bold" fontSize="xl" color={noteText}>Notely</Box>
-        <IconButton icon={<CloseIcon />} size="sm" onClick={() => setIsOpen(false)} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
+        <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
       <Input
         placeholder="Title"
