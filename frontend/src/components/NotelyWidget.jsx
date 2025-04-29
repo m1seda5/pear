@@ -5,7 +5,7 @@ import { useMediaQuery } from "@chakra-ui/react";
 
 const DEFAULT_POSITION = { top: 100, left: window.innerWidth - 340 };
 
-const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp, fixed }) => {
+const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp }) => {
   const [internalOpen, setInternalOpen] = useState(() => {
     return sessionStorage.getItem("notelyClosed") !== "true";
   });
@@ -150,7 +150,7 @@ const NotelyWidget = ({ isOpen: isOpenProp, setIsOpen: setIsOpenProp, fixed }) =
     if (isOpen) sessionStorage.setItem("notelyClosed", "false");
   }, [isOpen]);
 
-  if (!fixed && (!isLargerThan1024 || !isOpen)) return null;
+  if (!isLargerThan1024 || !isOpen) return null;
 
   return (
     <Box
