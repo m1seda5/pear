@@ -238,10 +238,9 @@ const Post = ({ post, postedBy }) => {
 	};
 
 	return (
-		<Box bg={bgColor} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={4} mb={4}>
-			{/* Post Header */}
-			<Flex justify="space-between" align="center" mb={4}>
-				<HStack spacing={3}>
+		<Box className="card is-post">
+			<Box className="card-heading">
+				<div className="user-block">
 					<Avatar
 						size="md"
 						name={postedBy?.name}
@@ -249,19 +248,11 @@ const Post = ({ post, postedBy }) => {
 						onClick={() => navigate(`/${postedBy?.username}`)}
 						cursor="pointer"
 					/>
-					<VStack align="start" spacing={0}>
-						<Text
-							fontWeight="bold"
-							onClick={() => navigate(`/${postedBy?.username}`)}
-							cursor="pointer"
-						>
-							{postedBy?.name}
-						</Text>
-						<Text fontSize="sm" color="gray.500">
-							{formatDistanceToNow(new Date(post.createdAt))} ago
-						</Text>
-					</VStack>
-				</HStack>
+					<div className="user-info">
+						<a onClick={() => navigate(`/${postedBy?.username}`)} style={{ cursor: 'pointer' }}>{postedBy?.name}</a>
+						<span className="time">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+					</div>
+				</div>
 				<Menu>
 					<MenuButton>
 						<Icon as={FaEllipsisH} />
@@ -273,86 +264,77 @@ const Post = ({ post, postedBy }) => {
 						)}
 					</MenuList>
 				</Menu>
-			</Flex>
-
-			{/* Post Content */}
-			<Text mb={4}>{post.text}</Text>
-			{post.img && (
-				<Image
-					src={post.img}
-					alt="Post image"
-					borderRadius="lg"
-					w="100%"
-					maxH="500px"
-					objectFit="cover"
-					onClick={() => navigate(`/post/${post._id}`)}
-					cursor="pointer"
-					mb={4}
-				/>
-			)}
-
-			{/* Post Actions */}
-			<HStack justify="space-between" color="gray.500" mb={4}>
-				<HStack spacing={4}>
-					<Button
-						variant="ghost"
-						leftIcon={liked ? <FaHeart color="red" /> : <FaRegHeart />}
-						onClick={handleLikeAndUnlike}
-					>
-						{likes}
-					</Button>
-					<Button
-						variant="ghost"
-						leftIcon={<FaRegComment />}
-						onClick={() => setIsCommenting(!isCommenting)}
-					>
-						{post.comments.length}
-					</Button>
-					<Button variant="ghost" leftIcon={<FaShare />}>
-						Share
-					</Button>
-				</HStack>
-			</HStack>
-
-			{/* Comments Section */}
-			{isCommenting && (
-				<VStack align="stretch" spacing={2}>
-					<Divider />
-					<HStack>
-						<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
-						<Input
-							placeholder="Write a comment..."
-							value={comment}
-							onChange={(e) => setComment(e.target.value)}
-							onKeyPress={(e) => {
-								if (e.key === "Enter") {
-									handleComment();
-								}
-							}}
+			</Box>
+			<Box className="card-body content-wrap">
+				<div className="post-text">
+					<Text>{post.text}</Text>
+				</div>
+				{post.img && (
+					<div className="post-image">
+						<Image
+							src={post.img}
+							alt="Post image"
+							borderRadius="lg"
+							w="100%"
+							maxH="500px"
+							objectFit="cover"
+							onClick={() => navigate(`/post/${post._id}`)}
+							cursor="pointer"
+							mb={4}
 						/>
+					</div>
+				)}
+			</Box>
+			<Box className="card-footer">
+				<HStack justify="space-between" color="gray.500">
+					<HStack spacing={4}>
+						<Button
+							variant="ghost"
+							leftIcon={liked ? <FaHeart color="red" /> : <FaRegHeart />}
+							onClick={handleLikeAndUnlike}
+						>
+							{likes}
+						</Button>
+						<Button
+							variant="ghost"
+							leftIcon={<FaRegComment />}
+							onClick={() => setIsCommenting(!isCommenting)}
+						>
+							{post.comments.length}
+						</Button>
+						<Button variant="ghost" leftIcon={<FaShare />}>
+							Share
+						</Button>
 					</HStack>
-					{post.comments.map((comment) => (
-						<HStack key={comment._id} align="start" spacing={2}>
-							<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
-							<VStack align="start" spacing={0}>
-								<Text fontWeight="bold">{comment.postedBy.name}</Text>
-								<Text>{comment.text}</Text>
-							</VStack>
+				</HStack>
+				{isCommenting && (
+					<VStack align="stretch" spacing={2} mt={2}>
+						<Divider />
+						<HStack>
+							<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
+							<Input
+								placeholder="Write a comment..."
+								value={comment}
+								onChange={(e) => setComment(e.target.value)}
+								onKeyPress={(e) => {
+									if (e.key === "Enter") {
+										handleComment();
+									}
+								}}
+							/>
 						</HStack>
-					))}
-				</VStack>
-			)}
-
-			{/* Image Modal */}
-			<Modal isOpen={isOpen} onClose={onClose} size="xl">
-				<ModalOverlay />
-				<ModalContent>
-					<ModalCloseButton />
-					<ModalBody p={0}>
-						<Image src={post.img} alt="Post image" w="100%" />
-					</ModalBody>
-				</ModalContent>
-			</Modal>
+						{post.comments.map((comment) => (
+							<HStack key={comment._id} align="start" spacing={2}>
+								<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
+								<VStack align="start" spacing={0}>
+									<Text fontWeight="bold">{comment.postedBy.name}</Text>
+									<Text>{comment.text}</Text>
+								</VStack>
+							</HStack>
+						))}
+					</VStack>
+				)}
+			</Box>
 		</Box>
 	);
 };
