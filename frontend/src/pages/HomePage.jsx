@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import Post from "../components/Post";
-import '/friendkit-all.css';
 
 const demoWeather = {
   temp: "71°",
