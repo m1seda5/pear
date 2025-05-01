@@ -41,7 +41,7 @@ import { PiTelevisionSimpleBold } from "react-icons/pi";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { Children, cloneElement, createContext, useContext, useMemo } from 'react';
 import { MdSportsScore } from "react-icons/md";
-import PearLogo from "../assets/pear.png"; // Use your PNG logo
+import PearLogo from "../assets/images/pear.png"; // Use your PNG logo
 
 // Create motion components
 const MotionBox = motion(Box);
