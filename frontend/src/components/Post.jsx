@@ -300,7 +300,7 @@ const Post = ({ post, postedBy }) => {
 							leftIcon={<FaRegComment />}
 							onClick={() => setIsCommenting(!isCommenting)}
 						>
-							{post.comments.length}
+							{post.comments?.length || 0}
 						</Button>
 						<Button variant="ghost" leftIcon={<FaShare />}>
 							Share
@@ -323,7 +323,7 @@ const Post = ({ post, postedBy }) => {
 								}}
 							/>
 						</HStack>
-						{post.comments.map((comment) => (
+						{(post.comments || []).map((comment) => (
 							<HStack key={comment._id} align="start" spacing={2}>
 								<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
 								<VStack align="start" spacing={0}>
