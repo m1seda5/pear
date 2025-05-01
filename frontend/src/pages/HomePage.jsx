@@ -1,88 +1,162 @@
-import { Box, Flex, Text, Avatar, Button, Input, VStack, HStack, Icon, useColorModeValue } from "@chakra-ui/react";
-import { useState } from "react";
+import { Box, Flex, VStack, HStack, Text, Avatar, Button, Input, useColorModeValue, Tooltip } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
-import { FaImage, FaVideo, FaSmile, FaMapMarkerAlt, FaUserTag, FaEllipsisH } from "react-icons/fa";
+import { FaImage, FaVideo, FaUserTag, FaMapMarkerAlt } from "react-icons/fa";
+
+const demoWeather = {
+	temp: "71°",
+	desc: "Sunny",
+	realFeel: "78°",
+	rainChance: "5%",
+	days: [
+		{ day: "MON", icon: "☀️", temp: "69°" },
+		{ day: "TUE", icon: "🌧️", temp: "74°" },
+		{ day: "WED", icon: "🌧️", temp: "73°" },
+		{ day: "THU", icon: "☁️", temp: "68°" },
+		{ day: "FRI", icon: "🌧️", temp: "55°" },
+		{ day: "SAT", icon: "🌧️", temp: "58°" },
+		{ day: "SUN", icon: "☀️", temp: "64°" },
+	],
+	date: "Sunday, 18th 2018",
+	location: "Los Angeles, CA"
+};
+
+const demoPages = [
+	{ name: "Fast Pizza", desc: "Pizza & Fast Food" },
+	{ name: "Lonely Droid", desc: "Technology" },
+	{ name: "Meta Movies", desc: "Movies / Entertainment" },
+	{ name: "Nuclearjs", desc: "Technology" },
+	{ name: "Slicer", desc: "Web / Design" }
+];
+
+const demoFriends = [
+	{ name: "Nelly Schwartz", location: "Melbourne" },
+	{ name: "Lana Henrikssen", location: "Helsinki" },
+	{ name: "Gaelle Morris", location: "Lyon" },
+	{ name: "Mike Lasalle", location: "Toronto" },
+	{ name: "Rolf Krupp", location: "Berlin" }
+];
 
 const HomePage = () => {
 	const user = useRecoilValue(userAtom);
 	const [posts, setPosts] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const showToast = useShowToast();
 	const [postText, setPostText] = useState("");
-	const bgColor = useColorModeValue("white", "gray.800");
-	const borderColor = useColorModeValue("gray.200", "gray.700");
+	const bgColor = useColorModeValue("#f5f6fa", "#23272f");
+	const cardBg = useColorModeValue("#fff", "#23272f");
+	const borderColor = useColorModeValue("#e6e6e6", "#23272f");
+
+	useEffect(() => {
+		// Fetch posts logic here
+		// setPosts(fetchedPosts);
+	}, []);
 
 	return (
-		<Flex gap={10} alignItems={"flex-start"} maxW="1200px" mx="auto" px={4} py={8}>
-			{/* Left Sidebar */}
-			<Box flex="1" position="sticky" top="20" display={{ base: "none", md: "block" }}>
-				<VStack spacing={4} align="stretch">
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-						<Text fontWeight="bold" mb={2}>Temperature</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
+		<Box minH="100vh" bg={bgColor} py={6}>
+			<Flex maxW="1400px" mx="auto" gap={8} align="flex-start">
+				{/* Left Sidebar */}
+				<VStack spacing={6} align="stretch" flex="1" minW="260px">
+					{/* Weather Widget */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
+						<Text fontWeight="bold" fontSize="2xl">{demoWeather.temp}</Text>
+						<Text color="gray.500">{demoWeather.desc}</Text>
+						<Text fontSize="sm" color="gray.400">Real Feel: {demoWeather.realFeel} | Rain Chance: {demoWeather.rainChance}</Text>
+						<HStack mt={2} spacing={2}>
+							{demoWeather.days.map((d) => (
+								<VStack key={d.day} spacing={0}>
+									<Text fontSize="xs" color="gray.400">{d.day}</Text>
+									<Text>{d.icon}</Text>
+									<Text fontSize="xs" color="gray.400">{d.temp}</Text>
+								</VStack>
+							))}
+						</HStack>
+						<Text mt={4} fontSize="sm" color="gray.400">{demoWeather.date}</Text>
+						<Text fontSize="sm" color="gray.400">{demoWeather.location}</Text>
 					</Box>
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
+					{/* Recommended Pages */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" mb={2}>Recommended Pages</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
+						{demoPages.map((p) => (
+							<HStack key={p.name} justify="space-between" py={1}>
+								<Text>{p.name}</Text>
+								<Text fontSize="xs" color="gray.400">{p.desc}</Text>
+							</HStack>
+						))}
 					</Box>
 				</VStack>
-			</Box>
 
-			{/* Main Content */}
-			<Box flex="2">
-				{/* Compose Card */}
-				<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} mb={4}>
-					<HStack spacing={4} mb={4}>
-						<Avatar size="md" src={user?.profilePic} name={user?.name} />
-						<Input
-							placeholder="Write something about you..."
-							value={postText}
-							onChange={(e) => setPostText(e.target.value)}
-							borderRadius="full"
-						/>
-					</HStack>
-					<HStack justify="space-between" px={4}>
-						<HStack spacing={4}>
-							<Button variant="ghost" leftIcon={<FaImage />} colorScheme="blue">
-								Photo
-							</Button>
-							<Button variant="ghost" leftIcon={<FaVideo />} colorScheme="blue">
-								Video
-							</Button>
-							<Button variant="ghost" leftIcon={<FaUserTag />} colorScheme="blue">
-								Tag
-							</Button>
-							<Button variant="ghost" leftIcon={<FaMapMarkerAlt />} colorScheme="blue">
-								Location
-							</Button>
+				{/* Center Feed */}
+				<Box flex="2" maxW="600px">
+					{/* Stories (demo) */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md" mb={6}>
+						<Text fontWeight="bold" mb={2}>Stories</Text>
+						<HStack>
+							<Avatar name="Dan Walker" />
+							<Avatar name="Bobby Brown" />
+							<Avatar name="Elise Walker" />
 						</HStack>
-						<Button colorScheme="blue" size="sm" isDisabled={!postText.trim()}>
-							Publish
-						</Button>
-					</HStack>
+					</Box>
+					{/* Compose Card */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md" mb={6}>
+						<HStack mb={4}>
+							<Avatar size="md" src={user?.profilePic} name={user?.name} />
+							<Input
+								placeholder="Write something about you..."
+								value={postText}
+								onChange={(e) => setPostText(e.target.value)}
+								borderRadius="full"
+								bg={bgColor}
+							/>
+						</HStack>
+						<HStack spacing={4}>
+							<Tooltip label="Add a photo" hasArrow>
+								<Button variant="ghost" leftIcon={<FaImage />} colorScheme="blue">Photo</Button>
+							</Tooltip>
+							<Tooltip label="Coming soon" hasArrow>
+								<Button variant="ghost" leftIcon={<FaVideo />} colorScheme="blue">Video</Button>
+							</Tooltip>
+							<Tooltip label="Tag friends" hasArrow>
+								<Button variant="ghost" leftIcon={<FaUserTag />} colorScheme="blue">Tag</Button>
+							</Tooltip>
+							<Tooltip label="Add location" hasArrow>
+								<Button variant="ghost" leftIcon={<FaMapMarkerAlt />} colorScheme="blue">Location</Button>
+							</Tooltip>
+							<Button colorScheme="blue" size="sm" isDisabled={!postText.trim()}>Publish</Button>
+						</HStack>
+					</Box>
+					{/* Posts */}
+					<VStack spacing={6}>
+						{posts.map((post) => (
+							<Post key={post._id} post={post} postedBy={post.postedBy} />
+						))}
+					</VStack>
 				</Box>
 
-				{/* Posts */}
-				<VStack spacing={4}>
-					{posts.map((post) => (
-						<Post key={post._id} post={post} postedBy={post.postedBy} />
-					))}
-				</VStack>
-			</Box>
-
-			{/* Right Sidebar */}
-			<Box flex="1" position="sticky" top="20" display={{ base: "none", md: "block" }}>
-				<VStack spacing={4} align="stretch">
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
+				{/* Right Sidebar */}
+				<VStack spacing={6} align="stretch" flex="1" minW="260px">
+					{/* Suggested Friends */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
+						<Text fontWeight="bold" mb={2}>Suggested Friends</Text>
+						{demoFriends.map((f) => (
+							<HStack key={f.name} justify="space-between" py={1}>
+								<Avatar size="sm" name={f.name} />
+								<Box>
+									<Text>{f.name}</Text>
+									<Text fontSize="xs" color="gray.400">{f.location}</Text>
+								</Box>
+								<Button size="xs" colorScheme="blue">+</Button>
+							</HStack>
+						))}
+					</Box>
+					{/* Notely Widget */}
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" mb={2}>Notely</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
+						<Text fontSize="sm" color="gray.400">Your notes and reminders will appear here.</Text>
 					</Box>
 				</VStack>
-			</Box>
-		</Flex>
+			</Flex>
+		</Box>
 	);
 };
 
