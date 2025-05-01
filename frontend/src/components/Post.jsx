@@ -155,36 +155,10 @@
 // export default Post;
 
 // version 2 with translations working
-import { 
-	Box, 
-	Flex, 
-	Text, 
-	Avatar, 
-	Icon, 
-	useColorModeValue,
-	HStack,
-	VStack,
-	Button,
-	Image,
-	Menu,
-	MenuButton,
-	MenuList,
-	MenuItem,
-	useDisclosure,
-	Modal,
-	ModalOverlay,
-	ModalContent,
-	ModalHeader,
-	ModalBody,
-	ModalCloseButton,
-	Input,
-	Divider
-} from "@chakra-ui/react";
 import { useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { useNavigate } from "react-router-dom";
-import { FaRegHeart, FaHeart, FaRegComment, FaShare, FaEllipsisH } from "react-icons/fa";
 import { formatDistanceToNow } from "date-fns";
 
 const Post = ({ post, postedBy }) => {
@@ -194,9 +168,6 @@ const Post = ({ post, postedBy }) => {
 	const [likes, setLikes] = useState(post.likes.length);
 	const [isCommenting, setIsCommenting] = useState(false);
 	const [comment, setComment] = useState("");
-	const { isOpen, onOpen, onClose } = useDisclosure();
-	const bgColor = useColorModeValue("white", "gray.800");
-	const borderColor = useColorModeValue("gray.200", "gray.700");
 
 	const handleLikeAndUnlike = async () => {
 		try {
@@ -238,81 +209,130 @@ const Post = ({ post, postedBy }) => {
 	};
 
 	return (
-		<div className="card" style={{ marginBottom: 24 }}>
-			<div className="card-content">
-				<div className="media">
-					<div className="media-left">
-						<figure className="image is-48x48">
-							<img src={postedBy?.profilePic} alt={postedBy?.name} style={{ borderRadius: '50%' }} />
-						</figure>
+		<div className="card is-post">
+			<div className="card-heading">
+				<div className="user-block">
+					<div className="image">
+						<img src={postedBy?.profilePic} alt={postedBy?.name} data-user-popover="1" />
 					</div>
-					<div className="media-content">
-						<p className="title is-6">{postedBy?.name}</p>
-						<p className="subtitle is-7">{formatDistanceToNow(new Date(post.createdAt))} ago</p>
-					</div>
-					<div className="media-right">
-						<Menu>
-							<MenuButton>
-								<Icon as={FaEllipsisH} />
-							</MenuButton>
-							<MenuList>
-								<MenuItem>Report</MenuItem>
-								{currentUser?._id === postedBy?._id && (
-									<MenuItem color="red.500">Delete</MenuItem>
-								)}
-							</MenuList>
-						</Menu>
+					<div className="user-info">
+						<a href={`/${postedBy?.username}`}>{postedBy?.name}</a>
+						<span className="time">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
 					</div>
 				</div>
-				<div className="content" style={{ marginTop: 8 }}>
-					{post.text}
+				<div className="dropdown is-spaced is-right is-neutral dropdown-trigger">
+					<div>
+						<div className="button">
+							<i data-feather="more-vertical"></i>
+						</div>
+					</div>
+					<div className="dropdown-menu" role="menu">
+						<div className="dropdown-content">
+							<a href="#" className="dropdown-item">
+								<div className="media">
+									<i data-feather="bookmark"></i>
+									<div className="media-content">
+										<h3>Bookmark</h3>
+										<small>Add this post to your bookmarks.</small>
+									</div>
+								</div>
+							</a>
+							<a className="dropdown-item">
+								<div className="media">
+									<i data-feather="bell"></i>
+									<div className="media-content">
+										<h3>Notify me</h3>
+										<small>Send me notifications for this post.</small>
+									</div>
+								</div>
+							</a>
+							<hr className="dropdown-divider" />
+							<a href="#" className="dropdown-item">
+								<div className="media">
+									<i data-feather="flag"></i>
+									<div className="media-content">
+										<h3>Flag</h3>
+										<small>Report this post for review.</small>
+									</div>
+								</div>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div className="card-body">
+				<div className="post-text">
+					<p>{post.text}</p>
 				</div>
 				{post.img && (
-					<figure className="image" style={{ marginTop: 8 }}>
-						<img src={post.img} alt="Post" style={{ borderRadius: 8, width: '100%' }} />
-					</figure>
-				)}
-				<nav className="level is-mobile" style={{ marginTop: 8 }}>
-					<div className="level-left">
-						<button onClick={handleLikeAndUnlike} className="button is-white is-small">
-							<span className="icon is-small">{liked ? '❤️' : '🤍'}</span>
-							<span>{likes}</span>
-						</button>
-						<button onClick={() => setIsCommenting(!isCommenting)} className="button is-white is-small">
-							<span className="icon is-small">💬</span>
-							<span>{post.comments?.length || 0}</span>
-						</button>
-						<button className="button is-white is-small">Share</button>
+					<div className="post-image">
+						<img src={post.img} alt="Post" />
 					</div>
-				</nav>
+				)}
+				<div className="post-actions">
+					<div className="like-wrapper">
+						<button className={`button like-button ${liked ? 'is-active' : ''}`} onClick={handleLikeAndUnlike}>
+							<i data-feather="heart"></i>
+							<span className="like-overlay"></span>
+						</button>
+						<div className="likes-count">
+							{likes} {likes === 1 ? 'like' : 'likes'}
+						</div>
+					</div>
+					<div className="comments-wrapper">
+						<button className="button" onClick={() => setIsCommenting(!isCommenting)}>
+							<i data-feather="message-circle"></i>
+						</button>
+						<div className="comments-count">
+							{post.replies.length} {post.replies.length === 1 ? 'comment' : 'comments'}
+						</div>
+					</div>
+					<div className="share-wrapper">
+						<button className="button">
+							<i data-feather="share-2"></i>
+						</button>
+					</div>
+				</div>
 				{isCommenting && (
-					<div>
-						<div className="field">
-							<div className="control">
-								<input
-									type="text"
-									className="input"
-									placeholder="Write a comment..."
-									value={comment}
-									onChange={(e) => setComment(e.target.value)}
-									onKeyPress={(e) => {
-										if (e.key === "Enter") {
-											handleComment();
-										}
-									}}
-								/>
+					<div className="comments-box">
+						<div className="media is-comment">
+							<div className="media-left">
+								<div className="image">
+									<img src={currentUser?.profilePic} alt={currentUser?.name} />
+								</div>
+							</div>
+							<div className="media-content">
+								<div className="field">
+									<div className="control">
+										<textarea 
+											className="textarea comment-textarea" 
+											rows="1" 
+											placeholder="Write a comment..."
+											value={comment}
+											onChange={(e) => setComment(e.target.value)}
+										></textarea>
+									</div>
+								</div>
+								<div className="comment-controls">
+									<button className="button is-solid primary-button raised" onClick={handleComment}>
+										Post Comment
+									</button>
+								</div>
 							</div>
 						</div>
-						{(post.comments || []).map((comment) => (
-							<div key={comment._id} className="media">
+						{post.replies.map((reply, index) => (
+							<div key={index} className="media is-comment">
 								<div className="media-left">
-									<figure className="image is-48x48">
-										<img src={comment.postedBy.profilePic} alt={comment.postedBy.name} style={{ borderRadius: '50%' }} />
-									</figure>
+									<div className="image">
+										<img src={reply.userProfilePic} alt={reply.username} />
+									</div>
 								</div>
 								<div className="media-content">
-									<p className="title is-6">{comment.postedBy.name}</p>
-									<p className="subtitle is-7">{comment.text}</p>
+									<div className="comment-meta">
+										<a href={`/${reply.username}`}>{reply.username}</a>
+										<span className="time">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
+									</div>
+									<p>{reply.text}</p>
 								</div>
 							</div>
 						))}

@@ -7,19 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "compile-friendkit": "node scripts/compile-friendkit.js"
   },
   "dependencies": {
-    "@chakra-ui/icons": "^2.1.0",
-    "@chakra-ui/react": "^2.8.2",
-    "@emotion/react": "^11.13.0",
-    "@emotion/styled": "^11.13.0",
-    "@use-gesture/react": "^10.3.1",
     "axios": "^1.8.2",
     "backend": "file:..",
     "date-fns": "^2.30.0",
     "emoji-picker-react": "^4.12.0",
-    "framer-motion": "^10.18.0",
+    "feather-icons": "^4.29.2",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -27,6 +23,7 @@
     "react-icons": "^4.10.1",
     "react-router-dom": "^6.14.1",
     "recoil": "^0.7.7",
+    "slick-carousel": "^1.8.1",
     "socket.io-client": "^4.7.2"
   },
   "devDependencies": {
@@ -37,6 +34,7 @@
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
+    "sass": "^1.87.0",
     "vite": "^6.2.1"
   }
 }

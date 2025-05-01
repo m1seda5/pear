@@ -18,6 +18,8 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { BsCheck2All, BsFillImageFill } from "react-icons/bs";
 import { FaUsers } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
+import { formatDistanceToNow } from "date-fns";
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp);
@@ -28,117 +30,69 @@ const formatTime = (timestamp) => {
 };
 
 const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
-  // Early return if conversation is invalid
-  if (!conversation || typeof conversation !== 'object') {
-    return null;
-  }
-
   const currentUser = useRecoilValue(userAtom);
-  const { colorMode } = useColorMode();
-  
-  // Safely access conversation properties with defaults
-  const participants = conversation.participants || [];
-  const user = conversation.isGroup ? null : participants[0] || {};
-  const lastMessage = conversation.lastMessage || { text: '', sender: '' };
-  const groupName = conversation.groupName || '';
-  
-  // Handle the click event
-  const handleClick = () => {
-    if (onClick) {
-      onClick(conversation);
+  const { t } = useTranslation();
+
+  const getConversationName = () => {
+    if (conversation.isGroup) {
+      return conversation.groupName;
     }
+    return conversation.participants[0].username;
+  };
+
+  const getConversationAvatar = () => {
+    if (conversation.isGroup) {
+      return conversation.groupAvatar || "/default-group.png";
+    }
+    return conversation.participants[0].profilePic;
+  };
+
+  const getLastMessage = () => {
+    if (!conversation.lastMessage) return "";
+    if (conversation.lastMessage.sender === currentUser._id) {
+      return t("You") + ": " + conversation.lastMessage.text;
+    }
+    return conversation.lastMessage.text;
+  };
+
+  const getUnreadCount = () => {
+    if (!conversation.unreadCount || conversation.unreadCount === 0) return null;
+    return (
+      <div className="unread-count">
+        {conversation.unreadCount}
+      </div>
+    );
   };
 
   return (
-    <Flex
-      p={2}
-      align="center"
-      _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
-      cursor="pointer"
-      borderRadius="md"
-      onClick={handleClick}
+    <div 
+      className={`conversation-item ${isOnline ? 'is-online' : ''} ${conversation.unreadCount > 0 ? 'has-unread' : ''}`}
+      onClick={onClick}
     >
-      {conversation.isGroup ? (
-        <Flex align="center" gap={3} w="full">
-          <AvatarGroup size="sm" max={2} spacing="-0.5rem">
-            {participants.slice(0, 3).map((p) => (
-              <Avatar
-                key={p?._id}
-                src={p?.profilePic}
-                name={p?.username}
-                size="sm"
-                border="2px solid"
-                borderColor={useColorModeValue("white", "gray.800")}
-              />
-            ))}
-          </AvatarGroup>
-          
-          <Flex direction="column" flex={1}>
-            <Text fontWeight="600" fontSize="sm">
-              {groupName}
-            </Text>
-            <Flex align="center" gap={1}>
-              <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                {lastMessage?.text || <BsFillImageFill size={12} />}
-              </Text>
-              {conversation.unreadCount > 0 && (
-                <Badge colorScheme="green" ml={1} fontSize="2xs">
-                  {conversation.unreadCount}
-                </Badge>
-              )}
-            </Flex>
-          </Flex>
-          
-          <Text fontSize="2xs" color="gray.500" whiteSpace="nowrap">
-            {formatTime(conversation.updatedAt)}
-          </Text>
-        </Flex>
-      ) : (
-        <Flex align="center" gap={4}>
-          <WrapItem>
-            <Avatar
-              size={{
-                base: "xs",
-                sm: "sm",
-                md: "md",
-              }}
-              src={user?.profilePic}
-              name={user?.username}
-            >
-              {isOnline && <AvatarBadge boxSize="1em" bg="green.500" />}
-            </Avatar>
-          </WrapItem>
-
-          <Stack direction={"column"} fontSize={"sm"}>
-            <Text fontWeight="700" display={"flex"} alignItems={"center"}>
-              {user?.username}
-              {user?.role === "admin" && (
-                <Image src="/verified.png" w={4} h={4} ml={1} />
-              )}
-            </Text>
-            <Text
-              fontSize={"xs"}
-              display={"flex"}
-              alignItems={"center"}
-              gap={1}
-            >
-              {currentUser._id === lastMessage?.sender && (
-                <Box color={lastMessage?.seen ? "blue.400" : ""}>
-                  <BsCheck2All size={16} />
-                </Box>
-              )}
-              {lastMessage?.text ? (
-                lastMessage.text.length > 18 
-                  ? `${lastMessage.text.substring(0, 18)}...`
-                  : lastMessage.text
-              ) : (
-                <BsFillImageFill size={16} />
-              )}
-            </Text>
-          </Stack>
-        </Flex>
+      <div className="conversation-avatar">
+        <img src={getConversationAvatar()} alt={getConversationName()} />
+        {isOnline && <div className="online-indicator"></div>}
+      </div>
+      <div className="conversation-content">
+        <div className="conversation-header">
+          <h3>{getConversationName()}</h3>
+          {conversation.lastMessage && (
+            <span className="time">
+              {formatDistanceToNow(new Date(conversation.lastMessage.createdAt))} {t("ago")}
+            </span>
+          )}
+        </div>
+        <div className="conversation-message">
+          <p>{getLastMessage()}</p>
+          {getUnreadCount()}
+        </div>
+      </div>
+      {isMonitoring && (
+        <div className="monitoring-badge">
+          <i data-feather="eye"></i>
+        </div>
       )}
-    </Flex>
+    </div>
   );
 };
 

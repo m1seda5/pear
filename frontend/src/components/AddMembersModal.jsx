@@ -1,19 +1,3 @@
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  Input,
-  Button,
-  Flex,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  useToast,
-  useColorModeValue
-} from "@chakra-ui/react";
 import { useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -23,7 +7,18 @@ const AddMembersModal = ({ isOpen, onClose, conversationId, onMemberAdded }) => 
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const currentUser = useRecoilValue(userAtom);
-  const toast = useToast();
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const showToast = (message, type = "error") => {
+    if (type === "error") {
+      setError(message);
+      setTimeout(() => setError(""), 3000);
+    } else {
+      setSuccess(message);
+      setTimeout(() => setSuccess(""), 3000);
+    }
+  };
 
   const handleSearchUser = async () => {
     if (!searchInput.trim()) return;
@@ -42,25 +37,13 @@ const AddMembersModal = ({ isOpen, onClose, conversationId, onMemberAdded }) => 
       setSelectedUsers(prev => [...new Set([...prev, data])]);
       setSearchInput("");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      showToast(error.message);
     }
   };
 
   const handleAddMembers = async () => {
     if (selectedUsers.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one user to add",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      showToast("Please select at least one user to add");
       return;
     }
 
@@ -79,76 +62,94 @@ const AddMembersModal = ({ isOpen, onClose, conversationId, onMemberAdded }) => 
 
       await Promise.all(promises);
       
-      toast({
-        title: "Success",
-        description: "Members added successfully",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
+      showToast("Members added successfully", "success");
       onMemberAdded && onMemberAdded(selectedUsers);
       onClose();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      showToast(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent bg={useColorModeValue("white", "gray.800")}>
-        <ModalHeader borderBottom="1px solid" borderColor={useColorModeValue("gray.200", "gray.600")}>Add Members</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody pb={6} bg={useColorModeValue("gray.50", "gray.700")}>
-          <Flex gap={2} mb={4} wrap="wrap">
-            {selectedUsers.map(user => (
-              <Tag key={user._id} size="md" borderRadius="full">
-                <TagLabel>{user.username}</TagLabel>
-                <TagCloseButton 
-                  onClick={() => setSelectedUsers(prev => 
-                    prev.filter(u => u._id !== user._id)
-                  )} 
+    <div className="modal is-active">
+      <div className="modal-background" onClick={onClose}></div>
+      <div className="modal-content">
+        <div className="card">
+          <div className="card-heading">
+            <h3>Add Members</h3>
+            <div className="close-wrap">
+              <span className="close-modal" onClick={onClose}>
+                <i data-feather="x"></i>
+              </span>
+            </div>
+          </div>
+          <div className="card-body">
+            {error && (
+              <div className="notification is-danger is-light">
+                <button className="delete" onClick={() => setError("")}></button>
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="notification is-success is-light">
+                <button className="delete" onClick={() => setSuccess("")}></button>
+                {success}
+              </div>
+            )}
+
+            <div className="field">
+              <div className="control">
+                {selectedUsers.map(user => (
+                  <span key={user._id} className="tag is-primary is-medium">
+                    {user.username}
+                    <button 
+                      className="delete is-small"
+                      onClick={() => setSelectedUsers(prev => 
+                        prev.filter(u => u._id !== user._id)
+                      )}
+                    ></button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="field is-grouped">
+              <div className="control is-expanded">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearchUser()}
                 />
-              </Tag>
-            ))}
-          </Flex>
+              </div>
+              <div className="control">
+                <button className="button is-primary" onClick={handleSearchUser}>
+                  Search
+                </button>
+              </div>
+            </div>
 
-          <Flex gap={2}>
-            <Input
-              placeholder="Search users..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearchUser()}
-              variant="filled"
-              _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
-              _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-            />
-            <Button onClick={handleSearchUser}>
-              Search
-            </Button>
-          </Flex>
-
-          <Button
-            colorScheme="blue"
-            mt={4}
-            w="full"
-            onClick={handleAddMembers}
-            isLoading={loading}
-          >
-            Add Selected Members
-          </Button>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+            <div className="field">
+              <div className="control">
+                <button 
+                  className={`button is-primary is-fullwidth ${loading ? 'is-loading' : ''}`}
+                  onClick={handleAddMembers}
+                  disabled={loading}
+                >
+                  Add Selected Members
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
