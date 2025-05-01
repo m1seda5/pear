@@ -43,9 +43,7 @@ const HomePage = () => {
 	const user = useRecoilValue(userAtom);
 	const [posts, setPosts] = useState([]);
 	const [postText, setPostText] = useState("");
-	const bgColor = useColorModeValue("#f5f6fa", "#23272f");
-	const cardBg = useColorModeValue("#fff", "#23272f");
-	const borderColor = useColorModeValue("#e6e6e6", "#23272f");
+	const bgColor = useColorModeValue("#f5f6fa", "#181a1b");
 
 	useEffect(() => {
 		const fetchPosts = async () => {
@@ -66,9 +64,9 @@ const HomePage = () => {
 
 	return (
 		<Box minH="100vh" bg={bgColor} py={6}>
-			<Flex maxW="1400px" mx="auto" gap={8} align="flex-start">
+			<Flex maxW="1200px" mx="auto" px={2} gap={6}>
 				{/* Left Sidebar */}
-				<VStack spacing={6} align="stretch" flex="1" minW="260px">
+				<VStack spacing={6} align="stretch" flex="1" minW="260px" maxW="300px">
 					{/* Weather Widget */}
 					<Box className="card" p={6}>
 						<Text fontWeight="bold" fontSize="2xl">{demoWeather.temp}</Text>
@@ -99,16 +97,7 @@ const HomePage = () => {
 				</VStack>
 
 				{/* Center Feed */}
-				<Box flex="2" className="posts-feed-wrapper">
-					{/* Stories (demo) */}
-					<Box className="card" p={6} mb={6}>
-						<Text fontWeight="bold" mb={2}>Stories</Text>
-						<HStack>
-							<Avatar name="Dan Walker" />
-							<Avatar name="Bobby Brown" />
-							<Avatar name="Elise Walker" />
-						</HStack>
-					</Box>
+				<Box flex="2" maxW="700px" mx="auto">
 					{/* Compose Card */}
 					<Box className="card" p={6} mb={6}>
 						<HStack mb={4}>
@@ -146,8 +135,17 @@ const HomePage = () => {
 				</Box>
 
 				{/* Right Sidebar */}
-				<VStack spacing={6} align="stretch" flex="1" minW="260px">
-					{/* Suggested Friends */}
+				<VStack spacing={6} align="stretch" flex="1" minW="260px" maxW="300px">
+					{/* Stories Widget */}
+					<Box className="card" p={6}>
+						<Text fontWeight="bold" mb={2}>Stories</Text>
+						<HStack>
+							<Avatar name="Dan Walker" />
+							<Avatar name="Bobby Brown" />
+							<Avatar name="Elise Walker" />
+						</HStack>
+					</Box>
+					{/* Suggested Friends Widget */}
 					<Box className="card" p={6}>
 						<Text fontWeight="bold" mb={2}>Suggested Friends</Text>
 						{demoFriends.map((f) => (

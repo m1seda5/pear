@@ -238,58 +238,54 @@ const Post = ({ post, postedBy }) => {
 	};
 
 	return (
-		<Box className="card is-post">
-			<Box className="card-heading">
-				<div className="user-block">
-					<Avatar
-						size="md"
-						name={postedBy?.name}
-						src={postedBy?.profilePic}
-						onClick={() => navigate(`/${postedBy?.username}`)}
-						cursor="pointer"
-					/>
-					<div className="user-info">
-						<a onClick={() => navigate(`/${postedBy?.username}`)} style={{ cursor: 'pointer' }}>{postedBy?.name}</a>
-						<span className="time">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
-					</div>
-				</div>
-				<Menu>
-					<MenuButton>
-						<Icon as={FaEllipsisH} />
-					</MenuButton>
-					<MenuList>
-						<MenuItem>Report</MenuItem>
-						{currentUser?._id === postedBy?._id && (
-							<MenuItem color="red.500">Delete</MenuItem>
-						)}
-					</MenuList>
-				</Menu>
-			</Box>
-			<Box className="card-body content-wrap">
-				<div className="post-text">
-					<Text>{post.text}</Text>
-				</div>
-				{post.img && (
-					<div className="post-image">
-						<Image
-							src={post.img}
-							alt="Post image"
-							borderRadius="lg"
-							w="100%"
-							maxH="500px"
-							objectFit="cover"
-							onClick={() => navigate(`/post/${post._id}`)}
-							cursor="pointer"
-							mb={4}
-						/>
-					</div>
-				)}
-			</Box>
-			<Box className="card-footer">
-				<HStack justify="space-between" color="gray.500">
-					<HStack spacing={4}>
+		<Box className="card is-post" p={0} mb={4} boxShadow="sm" borderRadius="lg" overflow="hidden">
+			<Flex align="flex-start" p={5} pb={2} borderBottom="1px solid" borderColor={borderColor}>
+				<Avatar
+					size="md"
+					name={postedBy?.name}
+					src={postedBy?.profilePic}
+					onClick={() => navigate(`/${postedBy?.username}`)}
+					cursor="pointer"
+					mr={4}
+				/>
+				<Box flex="1">
+					<Flex align="center" justify="space-between">
+						<Box>
+							<Text fontWeight="bold" fontSize="md" cursor="pointer" onClick={() => navigate(`/${postedBy?.username}`)}>{postedBy?.name}</Text>
+							<Text fontSize="xs" color="gray.400">{formatDistanceToNow(new Date(post.createdAt))} ago</Text>
+						</Box>
+						<Menu>
+							<MenuButton>
+								<Icon as={FaEllipsisH} />
+							</MenuButton>
+							<MenuList>
+								<MenuItem>Report</MenuItem>
+								{currentUser?._id === postedBy?._id && (
+									<MenuItem color="red.500">Delete</MenuItem>
+								)}
+							</MenuList>
+						</Menu>
+					</Flex>
+					<Box mt={2} mb={2}>
+						<Text fontSize="md">{post.text}</Text>
+					</Box>
+					{post.img && (
+						<Box borderRadius="lg" overflow="hidden" border="1px solid" borderColor={borderColor} mb={2}>
+							<Image
+								src={post.img}
+								alt="Post image"
+								w="100%"
+								maxH="400px"
+								objectFit="cover"
+								onClick={() => navigate(`/post/${post._id}`)}
+								cursor="pointer"
+							/>
+						</Box>
+					)}
+					<Flex align="center" mt={2} mb={1} gap={2}>
 						<Button
 							variant="ghost"
+							size="sm"
 							leftIcon={liked ? <FaHeart color="red" /> : <FaRegHeart />}
 							onClick={handleLikeAndUnlike}
 						>
@@ -297,44 +293,43 @@ const Post = ({ post, postedBy }) => {
 						</Button>
 						<Button
 							variant="ghost"
+							size="sm"
 							leftIcon={<FaRegComment />}
 							onClick={() => setIsCommenting(!isCommenting)}
 						>
 							{post.comments?.length || 0}
 						</Button>
-						<Button variant="ghost" leftIcon={<FaShare />}>
-							Share
-						</Button>
-					</HStack>
-				</HStack>
-				{isCommenting && (
-					<VStack align="stretch" spacing={2} mt={2}>
-						<Divider />
-						<HStack>
-							<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
-							<Input
-								placeholder="Write a comment..."
-								value={comment}
-								onChange={(e) => setComment(e.target.value)}
-								onKeyPress={(e) => {
-									if (e.key === "Enter") {
-										handleComment();
-									}
-								}}
-							/>
-						</HStack>
-						{(post.comments || []).map((comment) => (
-							<HStack key={comment._id} align="start" spacing={2}>
-								<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
-								<VStack align="start" spacing={0}>
-									<Text fontWeight="bold">{comment.postedBy.name}</Text>
-									<Text>{comment.text}</Text>
-								</VStack>
+						<Button variant="ghost" size="sm" leftIcon={<FaShare />}>Share</Button>
+					</Flex>
+					{isCommenting && (
+						<VStack align="stretch" spacing={2} mt={2}>
+							<Divider />
+							<HStack>
+								<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
+								<Input
+									placeholder="Write a comment..."
+									value={comment}
+									onChange={(e) => setComment(e.target.value)}
+									onKeyPress={(e) => {
+										if (e.key === "Enter") {
+											handleComment();
+										}
+									}}
+								/>
 							</HStack>
-						))}
-					</VStack>
-				)}
-			</Box>
+							{(post.comments || []).map((comment) => (
+								<HStack key={comment._id} align="start" spacing={2}>
+									<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
+									<VStack align="start" spacing={0}>
+										<Text fontWeight="bold">{comment.postedBy.name}</Text>
+										<Text>{comment.text}</Text>
+									</VStack>
+								</HStack>
+							))}
+						</VStack>
+					)}
+				</Box>
+			</Flex>
 		</Box>
 	);
 };
