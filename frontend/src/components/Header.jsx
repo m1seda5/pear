@@ -7,9 +7,22 @@ import {
   InputGroup,
   InputLeftElement,
   Collapse,
-  useDisclosure
+  useDisclosure,
+  Image,
+  Container,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Badge,
+  Avatar,
+  Text,
+  VStack,
+  HStack,
+  Button,
+  useColorModeValue
 } from "@chakra-ui/react";
-import { SunIcon, MoonIcon, SearchIcon } from "@chakra-ui/icons";
+import { SunIcon, MoonIcon, SearchIcon, ChatIcon, BellIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { AiFillHome } from "react-icons/ai";
@@ -360,6 +373,9 @@ function Header({ unreadCount = 0 }) {
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const navigate = useNavigate();
   const { isOpen, onToggle } = useDisclosure();
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
   
   // State for locked icons
   const [showLockIcon, setShowLockIcon] = useState({
@@ -430,15 +446,18 @@ function Header({ unreadCount = 0 }) {
     }
   };
 
+  const handleSearchClick = () => {
+    setIsSearchExpanded(!isSearchExpanded);
+  };
+
   // Search component with expandable functionality
   const ExpandableSearch = () => {
-    const [expanded, setExpanded] = useState(false);
     const searchRef = useRef(null);
     
     useEffect(() => {
       function handleClickOutside(event) {
         if (searchRef.current && !searchRef.current.contains(event.target)) {
-          setExpanded(false);
+          setIsSearchExpanded(false);
         }
       }
       
@@ -450,14 +469,14 @@ function Header({ unreadCount = 0 }) {
 
     return (
       <Box ref={searchRef} position="relative" zIndex="3">
-        <DockItem onClick={() => setExpanded(!expanded)}>
+        <DockItem onClick={handleSearchClick}>
           <DockIcon>
             <SearchIcon w={5} h={5} />
           </DockIcon>
           <DockLabel>Search for users</DockLabel>
         </DockItem>
         
-        <Collapse in={expanded} animateOpacity>
+        <Collapse in={isSearchExpanded} animateOpacity>
           <Box 
             position="absolute" 
             top="110%" 
@@ -494,160 +513,127 @@ function Header({ unreadCount = 0 }) {
   const iconSize = 20;
 
   return (
-    <Box 
-      width="100%" 
-      display="flex" 
-      justifyContent="center"
-      position="relative"
-      overflow="visible" // Ensure no clipping of magnified icons
+    <Box
+      as="nav"
+      position="sticky"
+      top={0}
+      zIndex="sticky"
+      bg={bgColor}
+      borderBottom="1px"
+      borderColor={borderColor}
+      py={2}
     >
-      <Dock 
-        panelHeight={56} 
-        magnification={96} // Better magnification size
-        distance={200} // Wider area for smoother transitions
-        spring={{ mass: 0.5, stiffness: 350, damping: 25 }} // Optimized spring physics
-      >
-        {user && (
-          <DockItem onClick={() => navigate("/")}>
-            <DockIcon>
-              <AiFillHome size={iconSize} />
-            </DockIcon>
-            <DockLabel>Home</DockLabel>
-          </DockItem>
-        )}
+      <Container maxW="container.xl">
+        <Flex justify="space-between" align="center">
+          {/* Logo and Home */}
+          <Flex align="center" gap={4}>
+            <Box onClick={() => navigate("/")} cursor="pointer">
+              <Image
+                src={colorMode === "dark" ? "/logo-white.svg" : "/logo.svg"}
+                alt="Pear Network"
+                h="28px"
+                w="auto"
+              />
+            </Box>
+          </Flex>
 
-        {!user && (
-          <DockItem onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
-            <DockIcon>
-              <Box fontWeight="medium">Login</Box>
-            </DockIcon>
-            <DockLabel>Login</DockLabel>
-          </DockItem>
-        )}
+          {/* Search Bar */}
+          <Box flex="1" maxW="600px" mx={4}>
+            <InputGroup>
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search..."
+                borderRadius="full"
+                bg={useColorModeValue("gray.100", "gray.700")}
+                _focus={{
+                  bg: useColorModeValue("white", "gray.600"),
+                  boxShadow: "md"
+                }}
+              />
+            </InputGroup>
+          </Box>
 
-        <DockItem onClick={toggleColorMode}>
-          <DockIcon>
+          {/* Right Side Icons */}
+          <Flex align="center" gap={4}>
             <Icon
               as={colorMode === "dark" ? SunIcon : MoonIcon}
-              w={iconSize - 2}
-              h={iconSize - 2}
-              transition="all 0.3s ease"
-              transform={colorMode === "dark" ? "rotate(0deg)" : "rotate(-180deg)"}
+              cursor="pointer"
+              onClick={toggleColorMode}
+              boxSize={5}
             />
-          </DockIcon>
-          <DockLabel>{colorMode === "dark" ? "Light Mode" : "Dark Mode"}</DockLabel>
-        </DockItem>
 
-        <ExpandableSearch />
+            {user && (
+              <>
+                <Menu>
+                  <MenuButton>
+                    <Box position="relative">
+                      <BellIcon boxSize={5} />
+                      {unreadCount > 0 && (
+                        <Badge
+                          position="absolute"
+                          top="-1"
+                          right="-1"
+                          colorScheme="red"
+                          borderRadius="full"
+                        >
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </Box>
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem>Notifications</MenuItem>
+                  </MenuList>
+                </Menu>
 
-        {user && (
-          <>
-            <DockItem onClick={() => navigate(`/${user.username}`)}>
-              <DockIcon>
-                <RxAvatar size={iconSize} />
-              </DockIcon>
-              <DockLabel>Profile</DockLabel>
-            </DockItem>
+                <Menu>
+                  <MenuButton>
+                    <Box position="relative">
+                      <ChatIcon boxSize={5} />
+                    </Box>
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={() => navigate("/chat")}>Messages</MenuItem>
+                  </MenuList>
+                </Menu>
 
-            <DockItem 
-              onClick={handleChatClick} 
-              isDisabled={user.isFrozen || !hasChatAccess}
-            >
-              <DockIcon>
-                <Box position="relative"
-                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
-                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
-                >
-                  {user.isFrozen || showLockIcon.chat ? (
-                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
-                  ) : (
-                    <BsFillChatQuoteFill size={iconSize - 2} />
-                  )}
-                  {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
-                    <Flex
-                      position="absolute"
-                      top="-5px"
-                      right="-5px"
-                      bg="purple.500"
-                      color="white"
-                      borderRadius="full"
-                      w="16px"
-                      h="16px"
-                      fontSize="xs"
-                      alignItems="center"
-                      justifyContent="center"
-                      fontWeight="bold"
-                    >
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </Flex>
-                  )}
-                </Box>
-              </DockIcon>
-              <DockLabel>{user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}</DockLabel>
-            </DockItem>
-
-            {isAdmin && (
-              <DockItem onClick={handleAdminClick}>
-                <DockIcon>
-                  <FaUserShield size={iconSize - 2} />
-                </DockIcon>
-                <DockLabel>Admin</DockLabel>
-              </DockItem>
+                <Menu>
+                  <MenuButton>
+                    <Avatar
+                      size="sm"
+                      name={user.name}
+                      src={user.profilePic}
+                    />
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={() => navigate(`/${user.username}`)}>
+                      Profile
+                    </MenuItem>
+                    <MenuItem onClick={() => navigate("/settings")}>
+                      Settings
+                    </MenuItem>
+                    <MenuItem onClick={logout}>
+                      Logout
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </>
             )}
 
-            <DockItem 
-              onClick={handleTVClick}
-              isDisabled={!isAdmin}
-            >
-              <DockIcon>
-                <Box
-                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
-                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
-                >
-                  {showLockIcon.tv ? (
-                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
-                  ) : (
-                    <PiTelevisionSimpleBold size={iconSize} />
-                  )}
-                </Box>
-              </DockIcon>
-              <DockLabel>{isAdmin ? "TV" : "Admin Only"}</DockLabel>
-            </DockItem>
-
-            {user && isAdmin && (
-              <DockItem onClick={() => navigate("/games")}> 
-                <DockIcon>
-                  <MdSportsScore size={iconSize} />
-                </DockIcon>
-                <DockLabel>Scores</DockLabel>
-              </DockItem>
+            {!user && (
+              <Button
+                colorScheme="green"
+                size="sm"
+                onClick={() => { setAuthScreen("login"); navigate("/auth"); }}
+              >
+                Login
+              </Button>
             )}
-
-            <DockItem onClick={() => navigate("/settings")}>
-              <DockIcon>
-                <MdOutlineSettings size={iconSize} />
-              </DockIcon>
-              <DockLabel>Settings</DockLabel>
-            </DockItem>
-
-            <DockItem onClick={handleLogout}>
-              <DockIcon>
-                <FiLogOut size={iconSize - 2} />
-              </DockIcon>
-              <DockLabel>Logout</DockLabel>
-            </DockItem>
-          </>
-        )}
-
-        {!user && (
-          <DockItem onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
-            <DockIcon>
-              <Box fontWeight="medium">Sign up</Box>
-            </DockIcon>
-            <DockLabel>Sign up</DockLabel>
-          </DockItem>
-        )}
-      </Dock>
+          </Flex>
+        </Flex>
+      </Container>
     </Box>
   );
 }

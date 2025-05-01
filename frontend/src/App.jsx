@@ -193,6 +193,7 @@ import ReviewModal from './components/ReviewModal';
 import AdminDashboard from "./pages/AdminDashboard";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import PostDetailPage from "./pages/PostDetailPage";
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -250,6 +251,7 @@ function App() {
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
+            <Route path="/post/:postId" element={<PostDetailPage />} />
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}

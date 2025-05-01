@@ -155,268 +155,206 @@
 // export default Post;
 
 // version 2 with translations working
-import { Flex, Text } from "@chakra-ui/layout";
-import { Avatar, Image, useColorModeValue } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { 
+	Box, 
+	Flex, 
+	Text, 
+	Avatar, 
+	Icon, 
+	useColorModeValue,
+	HStack,
+	VStack,
+	Button,
+	Image,
+	Menu,
+	MenuButton,
+	MenuList,
+	MenuItem,
+	useDisclosure,
+	Modal,
+	ModalOverlay,
+	ModalContent,
+	ModalHeader,
+	ModalBody,
+	ModalCloseButton,
+	Input,
+	Divider
+} from "@chakra-ui/react";
+import { useState } from "react";
+import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import postsAtom from "../atoms/postsAtom";
-import { useTranslation } from "react-i18next";
-import useShowToast from "../hooks/useShowToast";
-import Actions from "./Actions";
+import { useNavigate } from "react-router-dom";
+import { FaRegHeart, FaHeart, FaRegComment, FaShare, FaEllipsisH } from "react-icons/fa";
+import { formatDistanceToNow } from "date-fns";
 
-const Post = ({ post, postedBy, isTV = false }) => {
-    const [user, setUser] = useState(null);
-    const showToast = useShowToast();
-    const currentUser = useRecoilValue(userAtom);
-    const [posts, setPosts] = useRecoilState(postsAtom);
-    const navigate = useNavigate();
-    const { t, i18n } = useTranslation();
-    const [language, setLanguage] = useState(i18n.language);
-    const viewTimeoutRef = useRef(null);
-    
-    // Match colors from HomePage background
-    const textColor = useColorModeValue("gray.700", "gray.200");
-    const borderColor = useColorModeValue("gray.100", "gray.700");
-    
-    useEffect(() => {
-        const handleLanguageChange = (lng) => {
-            setLanguage(lng);
-        };
+const Post = ({ post, postedBy }) => {
+	const currentUser = useRecoilValue(userAtom);
+	const navigate = useNavigate();
+	const [liked, setLiked] = useState(post.likes.includes(currentUser?._id));
+	const [likes, setLikes] = useState(post.likes.length);
+	const [isCommenting, setIsCommenting] = useState(false);
+	const [comment, setComment] = useState("");
+	const { isOpen, onOpen, onClose } = useDisclosure();
+	const bgColor = useColorModeValue("white", "gray.800");
+	const borderColor = useColorModeValue("gray.200", "gray.700");
 
-        i18n.on("languageChanged", handleLanguageChange);
-        return () => {
-            i18n.off("languageChanged", handleLanguageChange);
-        };
-    }, [i18n]);
+	const handleLikeAndUnlike = async () => {
+		try {
+			const res = await fetch(`/api/posts/like/${post._id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+			const data = await res.json();
+			if (data.error) {
+				return;
+			}
+			setLiked(!liked);
+			setLikes(liked ? likes - 1 : likes + 1);
+		} catch (error) {
+			console.log(error);
+		}
+	};
 
-    useEffect(() => {
-        const getUser = async () => {
-            try {
-                const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
-                const res = await fetch("/api/users/profile/" + userId);
-                const data = await res.json();
-                if (data.error) {
-                    showToast(t("Error"), data.error, "error");
-                    return;
-                }
-                setUser(data);
-            } catch (error) {
-                showToast(t("Error"), error.message, "error");
-                setUser(null);
-            }
-        };
+	const handleComment = async () => {
+		try {
+			const res = await fetch(`/api/posts/comment/${post._id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ text: comment }),
+			});
+			const data = await res.json();
+			if (data.error) {
+				return;
+			}
+			setComment("");
+			setIsCommenting(false);
+		} catch (error) {
+			console.log(error);
+		}
+	};
 
-        getUser();
-    }, [postedBy, showToast, t]);
+	return (
+		<Box bg={bgColor} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={4} mb={4}>
+			{/* Post Header */}
+			<Flex justify="space-between" align="center" mb={4}>
+				<HStack spacing={3}>
+					<Avatar
+						size="md"
+						name={postedBy?.name}
+						src={postedBy?.profilePic}
+						onClick={() => navigate(`/${postedBy?.username}`)}
+						cursor="pointer"
+					/>
+					<VStack align="start" spacing={0}>
+						<Text
+							fontWeight="bold"
+							onClick={() => navigate(`/${postedBy?.username}`)}
+							cursor="pointer"
+						>
+							{postedBy?.name}
+						</Text>
+						<Text fontSize="sm" color="gray.500">
+							{formatDistanceToNow(new Date(post.createdAt))} ago
+						</Text>
+					</VStack>
+				</HStack>
+				<Menu>
+					<MenuButton>
+						<Icon as={FaEllipsisH} />
+					</MenuButton>
+					<MenuList>
+						<MenuItem>Report</MenuItem>
+						{currentUser?._id === postedBy?._id && (
+							<MenuItem color="red.500">Delete</MenuItem>
+						)}
+					</MenuList>
+				</Menu>
+			</Flex>
 
-    useEffect(() => {
-        const markAsViewed = async () => {
-            try {
-                const res = await fetch(`/api/posts/view/${post._id}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${currentUser.token}`,
-                    },
-                });
-                const data = await res.json();
-                if (data.error) throw new Error(data.error);
+			{/* Post Content */}
+			<Text mb={4}>{post.text}</Text>
+			{post.img && (
+				<Image
+					src={post.img}
+					alt="Post image"
+					borderRadius="lg"
+					w="100%"
+					maxH="500px"
+					objectFit="cover"
+					onClick={() => navigate(`/post/${post._id}`)}
+					cursor="pointer"
+					mb={4}
+				/>
+			)}
 
-                setPosts(prevPosts =>
-                    prevPosts.map(p =>
-                        p._id === post._id ? { ...p, viewCount: data.viewCount, isViewed: true } : p
-                    )
-                );
-            } catch (error) {
-                console.error("Error marking post as viewed:", error);
-                showToast(t("Error"), error.message, "error");
-            }
-        };
+			{/* Post Actions */}
+			<HStack justify="space-between" color="gray.500" mb={4}>
+				<HStack spacing={4}>
+					<Button
+						variant="ghost"
+						leftIcon={liked ? <FaHeart color="red" /> : <FaRegHeart />}
+						onClick={handleLikeAndUnlike}
+					>
+						{likes}
+					</Button>
+					<Button
+						variant="ghost"
+						leftIcon={<FaRegComment />}
+						onClick={() => setIsCommenting(!isCommenting)}
+					>
+						{post.comments.length}
+					</Button>
+					<Button variant="ghost" leftIcon={<FaShare />}>
+						Share
+					</Button>
+				</HStack>
+			</HStack>
 
-        if (!post.isViewed) {
-            viewTimeoutRef.current = setTimeout(() => {
-                markAsViewed();
-            }, 3000);
-        }
+			{/* Comments Section */}
+			{isCommenting && (
+				<VStack align="stretch" spacing={2}>
+					<Divider />
+					<HStack>
+						<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
+						<Input
+							placeholder="Write a comment..."
+							value={comment}
+							onChange={(e) => setComment(e.target.value)}
+							onKeyPress={(e) => {
+								if (e.key === "Enter") {
+									handleComment();
+								}
+							}}
+						/>
+					</HStack>
+					{post.comments.map((comment) => (
+						<HStack key={comment._id} align="start" spacing={2}>
+							<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
+							<VStack align="start" spacing={0}>
+								<Text fontWeight="bold">{comment.postedBy.name}</Text>
+								<Text>{comment.text}</Text>
+							</VStack>
+						</HStack>
+					))}
+				</VStack>
+			)}
 
-        return () => {
-            if (viewTimeoutRef.current) {
-                clearTimeout(viewTimeoutRef.current);
-            }
-        };
-    }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
-
-    const handleDeletePost = async (e) => {
-        try {
-            e.preventDefault();
-            if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
-
-            const res = await fetch(`/api/posts/${post._id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${currentUser.token}`,
-                },
-            });
-            const data = await res.json();
-            if (data.error) {
-                showToast(t("Error deleting post"), data.error, "error");
-                return;
-            }
-            showToast(t("Success"), t("Post deleted"), "success");
-            setPosts(posts.filter((p) => p._id !== post._id));
-        } catch (error) {
-            showToast(t("Error"), error.message, "error");
-        }
-    };
-
-    if (!user) return null;
-    
-    return (
-        <Link 
-            to={`/${user.username}/post/${post._id}`} 
-            style={{ 
-                width: isTV ? "100%" : "auto",
-                display: "block"
-            }}
-        >
-            <Flex
-                direction="column"
-                w="full"
-                maxW={isTV ? "full" : "2xl"}
-                mx="auto"
-                borderBottom="1px"
-                borderColor={borderColor}
-                overflow="hidden"
-                className="post-container"
-            >
-                {/* Author section with delete button only */}
-                <Flex 
-                    alignItems="center" 
-                    justifyContent="space-between" 
-                    px={5}
-                    pt={4}
-                    pb={3}
-                >
-                    <Flex alignItems="center" gap={3}>
-                        <Avatar
-                            size="md"
-                            name={user.name}
-                            src={user?.profilePic}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/${user.username}`);
-                            }}
-                        />
-                        <Flex direction="column">
-                            <Text 
-                                fontSize="sm" 
-                                fontWeight="semibold" 
-                                color={textColor}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate(`/${user.username}`);
-                                }}
-                            >
-                                {user?.username}
-                                {user?.role === "admin" && (
-                                    <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
-                                )}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                                @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
-                            </Text>
-                        </Flex>
-                    </Flex>
-                    <Flex gap={4} alignItems="center">
-                        {(currentUser?._id === user._id || currentUser?.role === "admin") && (
-                            <Flex 
-                                as="button"
-                                p={2} 
-                                borderRadius="full"
-                                _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
-                                transition="all 0.2s"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    handleDeletePost(e);
-                                }}
-                            >
-                                <DeleteIcon boxSize={4} color="gray.500" />
-                            </Flex>
-                        )}
-                    </Flex>
-                </Flex>
-
-                {/* Content section */}
-                <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
-                    {post.text}
-                </Text>
-
-                {/* Target Groups and General Post Indicators */}
-                <Flex gap={2} wrap="wrap" mb={4} px={5}>
-                    {post.targetGroups && post.targetGroups.map(group => (
-                        <Flex key={group._id} align="center" mr={2}>
-                            <Flex
-                                w="10px"
-                                h="10px"
-                                borderRadius="full"
-                                bg={group.color}
-                                mr={1}
-                            />
-                            <Text fontSize="xs">{group.name}</Text>
-                        </Flex>
-                    ))}
-                    {post.isGeneral && (
-                        <Flex align="center">
-                            <Flex
-                                w="10px"
-                                h="10px"
-                                borderRadius="full"
-                                bg="gray.500"
-                                mr={1}
-                            />
-                            <Text fontSize="xs">{t("General Post")}</Text>
-                        </Flex>
-                    )}
-                </Flex>
-
-                {/* Image preview */}
-                {post.img && (
-                    <Flex 
-                        w="full"
-                        justifyContent="center"
-                        px={5}
-                        mb={4}
-                    >
-                        <Image
-                            src={post.img}
-                            w="full"
-                            h={isTV ? "auto" : "full"}
-                            maxH={isTV ? "65vh" : "auto"}
-                            objectFit={isTV ? "contain" : "cover"}
-                            borderRadius="xl"
-                            className="post-image"
-                        />
-                    </Flex>
-                )}
-
-                {/* Engagement section */}
-                <Flex 
-                    alignItems="center" 
-                    justifyContent="space-between" 
-                    px={5}
-                    pb={4}
-                    pt={2}
-                >
-                    {/* Actions component with likes, comments, reposts */}
-                    <Actions post={post} />
-                </Flex>
-            </Flex>
-        </Link>
-    );
+			{/* Image Modal */}
+			<Modal isOpen={isOpen} onClose={onClose} size="xl">
+				<ModalOverlay />
+				<ModalContent>
+					<ModalCloseButton />
+					<ModalBody p={0}>
+						<Image src={post.img} alt="Post image" w="100%" />
+					</ModalBody>
+				</ModalContent>
+			</Modal>
+		</Box>
+	);
 };
 
 export default Post;
