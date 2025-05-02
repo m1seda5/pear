@@ -1,6 +1,6 @@
 // UserPage.jsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 
@@ -10,7 +10,6 @@ const UserPage = () => {
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -150,43 +149,27 @@ const UserPage = () => {
                   </div>
                 ) : (
                   posts.map((post) => (
-                    <div key={post._id} className="card is-post">
-                      <div className="card-heading">
-                        <div className="user-block">
+                    <div key={post._id} className="feed-post box friendkit-feed-post">
+                      <div className="feed-post-header">
+                        <div className="feed-post-header-left">
                           <img src={post.author?.profilePic || "/default-avatar.png"} alt={post.author?.username} />
-                          <div style={{ marginLeft: 12 }}>
-                            <a onClick={() => navigate(`/${post.author?.username}`)} style={{ cursor: 'pointer' }}>{post.author?.username}</a>
-                            <div className="time">{new Date(post.createdAt).toLocaleDateString()}</div>
+                          <div className="feed-post-header-info">
+                            <h4>{post.author?.username}</h4>
+                            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="card-body content-wrap">
-                        <div className="post-text">
-                          <p>{post.text}</p>
-                        </div>
+                      <div className="feed-post-content">
+                        <p>{post.text}</p>
                         {post.images?.length > 0 && (
-                          <div className="post-image">
-                            {post.images.map((img, idx) => (
-                              <img key={idx} src={img} alt="" />
+                          <div className="feed-post-slider">
+                            {post.images.map((image, idx) => (
+                              <div key={idx} className="feed-post-slider-item">
+                                <img src={image} alt="" />
+                              </div>
                             ))}
                           </div>
                         )}
-                      </div>
-                      <div className="card-footer">
-                        <div className="buttons">
-                          <button className="button is-solid">
-                            <i data-feather="heart"></i>
-                            <span>{post.likes?.length || 0}</span>
-                          </button>
-                          <button className="button is-solid">
-                            <i data-feather="message-circle"></i>
-                            <span>{post.comments?.length || 0}</span>
-                          </button>
-                          <button className="button is-solid">
-                            <i data-feather="share-2"></i>
-                            <span>Share</span>
-                          </button>
-                        </div>
                       </div>
                     </div>
                   ))
