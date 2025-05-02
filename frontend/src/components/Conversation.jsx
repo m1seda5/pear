@@ -1,6 +1,23 @@
 import React from 'react';
+import {
+  Avatar,
+  AvatarBadge,
+  AvatarGroup,
+  Badge,
+  Box,
+  Flex,
+  Icon,
+  Image,
+  Stack,
+  Text,
+  WrapItem,
+  useColorMode,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
+import { BsCheck2All, BsFillImageFill } from "react-icons/bs";
+import { FaUsers } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 
@@ -41,7 +58,7 @@ const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
   const getUnreadCount = () => {
     if (!conversation.unreadCount || conversation.unreadCount === 0) return null;
     return (
-      <div className="friendkit-unread-count">
+      <div className="unread-count">
         {conversation.unreadCount}
       </div>
     );
@@ -49,29 +66,29 @@ const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
 
   return (
     <div 
-      className={`friendkit-conversation-item${isOnline ? ' is-online' : ''}${conversation.unreadCount > 0 ? ' has-unread' : ''}`}
+      className={`conversation-item ${isOnline ? 'is-online' : ''} ${conversation.unreadCount > 0 ? 'has-unread' : ''}`}
       onClick={onClick}
     >
-      <div className="friendkit-conversation-avatar">
+      <div className="conversation-avatar">
         <img src={getConversationAvatar()} alt={getConversationName()} />
-        {isOnline && <div className="friendkit-online-indicator"></div>}
+        {isOnline && <div className="online-indicator"></div>}
       </div>
-      <div className="friendkit-conversation-content">
-        <div className="friendkit-conversation-header">
+      <div className="conversation-content">
+        <div className="conversation-header">
           <h3>{getConversationName()}</h3>
           {conversation.lastMessage && (
-            <span className="friendkit-time">
+            <span className="time">
               {formatDistanceToNow(new Date(conversation.lastMessage.createdAt))} {t("ago")}
             </span>
           )}
         </div>
-        <div className="friendkit-conversation-message">
+        <div className="conversation-message">
           <p>{getLastMessage()}</p>
           {getUnreadCount()}
         </div>
       </div>
       {isMonitoring && (
-        <div className="friendkit-monitoring-badge">
+        <div className="monitoring-badge">
           <i data-feather="eye"></i>
         </div>
       )}

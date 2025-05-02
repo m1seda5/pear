@@ -19,49 +19,43 @@ import {
 import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { useTranslation } from 'react-i18next';
+import { useNavigate } from "react-router-dom";
+import { t } from 'i18next';
 import debounce from 'lodash/debounce';
 
-const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeholder, isReviewerOnly = false }) => {
+const HeaderSearch = () => {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const currentUser = useRecoilValue(userAtom);
-  const { t } = useTranslation();
+  const navigate = useNavigate();
   const toast = useToast();
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
-  
+
   // Color mode values
   const bgColor = useColorModeValue("white", "gray.700");
   const hoverBg = useColorModeValue("gray.100", "gray.600");
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const textColor = useColorModeValue("gray.600", "gray.200");
-  
-  // Debounce search function to avoid excessive API calls
+
+  // Debounced backend search
   const debouncedSearch = useRef(
     debounce(async (term) => {
-      if (term.length < 2) {
+      if (term.length < 1) {
         setSearchResults([]);
         setNoResults(false);
         return;
       }
-      
       setIsSearching(true);
       try {
-        const endpoint = isReviewerOnly 
-          ? `/api/users/search-reviewers/${encodeURIComponent(term)}`
-          : `/api/users/search/${encodeURIComponent(term)}`;
-        
-        const res = await fetch(endpoint, {
+        const res = await fetch(`/api/users/search/${encodeURIComponent(term)}`, {
           headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
+            'Authorization': currentUser?.token ? `Bearer ${currentUser.token}` : undefined,
           },
         });
-        
         const data = await res.json();
-        
         if (!res.ok) {
           if (res.status === 404) {
             setSearchResults([]);
@@ -70,22 +64,10 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
           }
           throw new Error(data.error || "Search failed");
         }
-        
-        // Filter out current user, already selected users, and any explicitly excluded users
-        const filtered = Array.isArray(data) 
-          ? data.filter(user => 
-              user._id !== currentUser._id &&
-              !selectedUsers.some(selected => selected._id === user._id) &&
-              !excludeIds.includes(user._id)
-            )
-          : data._id !== currentUser._id && 
-            !selectedUsers.some(selected => selected._id === data._id) &&
-            !excludeIds.includes(data._id)
-            ? [data] 
-            : [];
-            
-        setSearchResults(filtered);
-        setNoResults(filtered.length === 0);
+        // Always return an array
+        const users = Array.isArray(data) ? data : [data];
+        setSearchResults(users);
+        setNoResults(users.length === 0);
       } catch (error) {
         toast({
           title: t("Search Error"),
@@ -99,20 +81,17 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
       } finally {
         setIsSearching(false);
       }
-    }, 500)
+    }, 400)
   ).current;
-  
+
   useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
+    return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
-  
+
   // Handle search text changes
-  const handleSearchChange = (e) => {
+  const handleInputChange = (e) => {
     const value = e.target.value;
     setSearchText(value);
-    
     if (value.trim()) {
       debouncedSearch(value.trim());
     } else {
@@ -121,16 +100,15 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
       setNoResults(false);
     }
   };
-  
+
   // Handle selecting a user from results
   const handleSelectUser = (user) => {
-    onUserSelect(user);
     setSearchText("");
     setSearchResults([]);
     setNoResults(false);
-    inputRef.current?.focus();
+    navigate(`/${user.username}`, { state: { fromSearch: true } });
   };
-  
+
   // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -140,13 +118,12 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
         setNoResults(false);
       }
     };
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
   // Clear search
   const clearSearch = () => {
     setSearchText("");
@@ -154,36 +131,36 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
     setNoResults(false);
     inputRef.current?.focus();
   };
-  
+
   return (
-    <Box position="relative" width="100%">
+    <Box position="fixed" bottom="20px" left="50%" transform="translateX(-50%)" width="400px" zIndex="1400" backdropFilter="blur(12px)" borderRadius="20px" boxShadow="xl">
       <InputGroup>
         <InputLeftElement pointerEvents="none">
           <SearchIcon color="gray.500" />
         </InputLeftElement>
-        
         <Input
           ref={inputRef}
-          placeholder={placeholder || t('Search for users...')}
+          placeholder={t("Search for users")}
           value={searchText}
-          onChange={handleSearchChange}
+          onChange={handleInputChange}
+          onFocus={() => searchText && searchResults.length > 0}
           variant="filled"
-          _focus={{ bg: useColorModeValue("gray.100", "gray.600") }}
-          _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-          pr="4.5rem"
+          borderRadius="full"
+          bg={useColorModeValue('white', 'gray.800')}
+          _focus={{ boxShadow: "none" }}
         />
-        
-        <InputRightElement width="4.5rem">
-          {isSearching ? (
-            <Spinner size="sm" color="blue.500" mr={2} />
-          ) : searchText ? (
-            <Button h="1.75rem" size="sm" onClick={clearSearch}>
-              <CloseIcon boxSize={3} />
-            </Button>
-          ) : null}
-        </InputRightElement>
+        {searchText && (
+          <InputRightElement width="4.5rem">
+            {isSearching ? (
+              <Spinner size="sm" color="blue.500" mr={2} />
+            ) : (
+              <Button h="1.75rem" size="sm" onClick={clearSearch}>
+                <CloseIcon boxSize={3} />
+              </Button>
+            )}
+          </InputRightElement>
+        )}
       </InputGroup>
-      
       {(searchResults.length > 0 || noResults) && (
         <List
           ref={resultsRef}
@@ -196,7 +173,7 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
           overflowY="auto"
           bg={bgColor}
           boxShadow="md"
-          borderRadius="md"
+          borderRadius="xl"
           zIndex={10}
           border="1px solid"
           borderColor={borderColor}
@@ -220,6 +197,8 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
                 _hover={{ bg: hoverBg }}
                 onClick={() => handleSelectUser(user)}
                 transition="background-color 0.2s"
+                borderRadius="md"
+                mb={1}
               >
                 <Flex align="center" justify="space-between">
                   <Flex align="center">
@@ -239,7 +218,6 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
                       )}
                     </Box>
                   </Flex>
-                  
                   <Flex align="center">
                     {user.isActive && (
                       <Badge colorScheme="green" variant="subtle" mr={2} fontSize="xs">
@@ -260,4 +238,4 @@ const UserSearch = ({ onUserSelect, selectedUsers = [], excludeIds = [], placeho
   );
 };
 
-export default UserSearch;
+export default HeaderSearch;

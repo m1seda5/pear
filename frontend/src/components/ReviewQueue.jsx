@@ -1,62 +1,73 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Box,
+  Heading,
+  Badge,
+  Button,
+  Text,
+  useColorModeValue
+} from "@chakra-ui/react";
+import { useRecoilValue } from "recoil";
+import userAtom from "../atoms/userAtom";
 import useFetch from "../hooks/useFetch";
-import useShowToast from "../hooks/useShowToast";
 
 const ReviewQueue = () => {
-  const { get, post } = useFetch();
-  const [reviews, setReviews] = useState([]);
-  const showToast = useShowToast();
-  const { t } = useTranslation();
+  const user = useRecoilValue(userAtom);
+  const [posts, setPosts] = useState([]);
+  const bgColor = useColorModeValue("white", "gray.800");
+  const { get, loading } = useFetch();
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const res = await fetch("/api/reviews/queue");
-        const data = await res.json();
-        if (data.error) {
-          showToast("Error", data.error, "error");
-          return;
-        }
-        setReviews(data);
-      } catch (error) {
-        showToast("Error", error.message, "error");
-      }
+    const loadPosts = async () => {
+      const data = await get("/api/posts/pending-reviews");
+      if (data) setPosts(data);
     };
-
-    fetchReviews();
-  }, [showToast]);
-
-  const handleDecision = async (postId, decision) => {
-    const response = await post(`/api/posts/${postId}/review`, { decision });
-    if (response) {
-      fetchReviews();
-    }
-  };
-
-  if (reviews.length === 0) {
-    return (
-      <div className="box-content">
-        <div className="box-line">
-          <span className="left">{t("No posts pending review")}</span>
-        </div>
-      </div>
-    );
-  }
+    if (user?.reviewerGroups?.length > 0) loadPosts();
+  }, [user]);
 
   return (
-    <div className="review-queue">
-      <h2>Review Queue</h2>
-      <div className="reviews">
-        {reviews.map((review) => (
-          <div key={review._id} className="review-item">
-            <p><strong>User:</strong> {review.user}</p>
-            <p><strong>Content:</strong> {review.content}</p>
-            <p><strong>Status:</strong> {review.status}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Box p={4} bg={bgColor} borderRadius="lg">
+      <Heading size="lg" mb={6}>Pending Reviews</Heading>
+      
+      <Table variant="simple">
+        <Thead>
+          <Tr>
+            <Th>Author</Th>
+            <Th>Content Preview</Th>
+            <Th>Submitted</Th>
+            <Th>Actions</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {posts.map((post) => (
+            <Tr key={post._id}>
+              <Td>{post.postedBy.username}</Td>
+              <Td>
+                <Text noOfLines={1}>{post.text}</Text>
+                {post.img && <Badge ml={2}>Image</Badge>}
+              </Td>
+              <Td>
+                {new Date(post.createdAt).toLocaleDateString()}
+              </Td>
+              <Td>
+                <Button size="sm" colorScheme="green" mr={2}>
+                  Approve
+                </Button>
+                <Button size="sm" colorScheme="red">
+                  Reject
+                </Button>
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+    </Box>
   );
 };
 

@@ -1,17 +1,36 @@
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import {
+  Box,
+  Flex,
+  Heading,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  useColorModeValue,
+  Text,
+  Icon,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Avatar
+} from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
+import { Navigate } from "react-router-dom";
+import { BsShieldLockFill } from "react-icons/bs";
 import userAtom from "../atoms/userAtom";
 import useFetch from "../hooks/useFetch";
-import ReviewQueue from "../components/ReviewQueue";
-import { useTranslation } from "react-i18next";
-import { BsShieldLockFill } from "react-icons/bs";
-import { FiUsers, FiActivity, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import ReviewQueue from"../components/ReviewQueue";
 
+
+// Modified ReviewerGroups to accept onGroupSelect prop
 const ReviewerGroups = ({ onGroupSelect }) => {
   const { get } = useFetch();
   const [groups, setGroups] = useState([]);
-  const { t } = useTranslation();
 
   useEffect(() => {
     const loadGroups = async () => {
@@ -22,30 +41,25 @@ const ReviewerGroups = ({ onGroupSelect }) => {
   }, [get]);
 
   return (
-    <div className="box-content">
+    <Box>
       {groups.map((group) => (
-        <div 
+        <Box 
           key={group._id} 
-          className="box-line is-clickable"
+          p={2} 
+          cursor="pointer" 
           onClick={() => onGroupSelect(group._id)}
+          _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
         >
-          <span className="left">
-            <i data-feather="users"></i>
-            {group.name}
-          </span>
-          <span className="right">
-            <i data-feather="chevron-right"></i>
-          </span>
-        </div>
+          <Text>{group.name}</Text>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 };
 
 const GroupStatistics = ({ groupId }) => {
   const { get } = useFetch();
   const [stats, setStats] = useState([]);
-  const { t } = useTranslation();
 
   useEffect(() => {
     const loadStats = async () => {
@@ -60,57 +74,45 @@ const GroupStatistics = ({ groupId }) => {
   }, [groupId, get]);
 
   return (
-    <div className="box-content">
-      {stats.length > 0 ? (
-        stats.map(reviewer => (
-          <div key={reviewer._id} className="box-line">
-            <div className="left">
-              <div className="media">
-                <figure className="media-left">
-                  <p className="image is-32x32">
-                    <img 
-                      className="is-rounded" 
-                      src={reviewer.profilePic} 
-                      alt={reviewer.username}
-                      onError={(e) => {
-                        e.target.src = "/default-avatar.png";
-                      }}
-                    />
-                  </p>
-                </figure>
-                <div className="media-content">
-                  <span>{reviewer.username}</span>
-                </div>
-              </div>
-            </div>
-            <div className="right">
-              <div className="stats">
-                <span className="stat-item">
-                  <i data-feather="check-circle"></i>
-                  {reviewer.approvals || 0}
-                </span>
-                <span className="stat-item">
-                  <i data-feather="x-circle"></i>
-                  {reviewer.rejections || 0}
-                </span>
-                <span className="stat-item">
-                  <i data-feather="clock"></i>
-                  {reviewer.lastDecision ? 
-                    new Date(reviewer.lastDecision).toLocaleDateString() : 
-                    t('N/A')}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="box-line">
-          <span className="left">
-            {groupId ? t("No statistics available") : t("Select a group to view statistics")}
-          </span>
-        </div>
-      )}
-    </div>
+    <Table variant="simple">
+      <Thead>
+        <Tr>
+          <Th>Reviewer</Th>
+          <Th>Total</Th>
+          <Th>Approved</Th>
+          <Th>Rejected</Th>
+          <Th>Last Activity</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {stats.length > 0 ? (
+          stats.map(reviewer => (
+            <Tr key={reviewer._id}>
+              <Td>
+                <Flex align="center">
+                  <Avatar size="sm" name={reviewer.username} src={reviewer.profilePic} mr={2} />
+                  {reviewer.username}
+                </Flex>
+              </Td>
+              <Td>{reviewer.totalDecisions || 0}</Td>
+              <Td>{reviewer.approvals || 0}</Td>
+              <Td>{reviewer.rejections || 0}</Td>
+              <Td>
+                {reviewer.lastDecision ? 
+                  new Date(reviewer.lastDecision).toLocaleDateString() : 
+                  'N/A'}
+              </Td>
+            </Tr>
+          ))
+        ) : (
+          <Tr>
+            <Td colSpan={5} textAlign="center">
+              {groupId ? "No statistics available" : "Select a group to view statistics"}
+            </Td>
+          </Tr>
+        )}
+      </Tbody>
+    </Table>
   );
 };
 
@@ -118,22 +120,9 @@ const AdminDashboard = () => {
   const user = useRecoilValue(userAtom);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
-  const { t } = useTranslation();
-  const { get } = useFetch();
-  const [summary, setSummary] = useState({
-    totalPosts: 0,
-    pendingReviews: 0,
-    approvedPosts: 0,
-    rejectedPosts: 0
-  });
-
-  useEffect(() => {
-    const loadSummary = async () => {
-      const data = await get("/api/admin/summary");
-      if (data) setSummary(data);
-    };
-    loadSummary();
-  }, [get]);
+  const bgColor = useColorModeValue("white", "gray.800");
+  const tabBgColor = useColorModeValue("gray.100", "gray.700");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
 
   // If user is not admin, redirect to home
   if (!user || user.role !== "admin") {
@@ -141,74 +130,75 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div id="creator-dashboard" className="dashboard-container">
-      {/* Toolbar */}
-      <div className="dashboard-toolbar">
-        <h1 className="title is-4">
-          <i data-feather="shield" className="mr-2"></i>
-          {t("Admin Dashboard")}
-        </h1>
-      </div>
+    <Box 
+      w="full" 
+      p={4} 
+      bg={bgColor} 
+      borderRadius="lg" 
+      boxShadow="sm"
+      maxW={{ base: "100%", md: "800px", lg: "1000px" }}
+      mx="auto"
+    >
+      <Flex align="center" mb={6} gap={3}>
+        <Icon as={BsShieldLockFill} boxSize={6} color="teal.500" />
+        <Heading size="lg">Admin Dashboard</Heading>
+      </Flex>
 
-      {/* Stats Row */}
-      <div className="columns is-multiline">
-        <div className="column is-3">
-          <div className="dashboard-box">
-            <div className="stat-block">
-              <span className="stat-title">{t("Total Posts")}</span>
-              <span className="stat-value">{summary.totalPosts}</span>
-            </div>
-          </div>
-        </div>
-        <div className="column is-3">
-          <div className="dashboard-box">
-            <div className="stat-block">
-              <span className="stat-title">{t("Pending Reviews")}</span>
-              <span className="stat-value">{summary.pendingReviews}</span>
-            </div>
-          </div>
-        </div>
-        <div className="column is-3">
-          <div className="dashboard-box">
-            <div className="stat-block">
-              <span className="stat-title">{t("Approved Posts")}</span>
-              <span className="stat-value positive">{summary.approvedPosts}</span>
-            </div>
-          </div>
-        </div>
-        <div className="column is-3">
-          <div className="dashboard-box">
-            <div className="stat-block">
-              <span className="stat-title">{t("Rejected Posts")}</span>
-              <span className="stat-value negative">{summary.rejectedPosts}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Text mb={6} color={useColorModeValue("gray.600", "gray.400")}>
+        Manage reviewer groups and review pending content
+      </Text>
 
-      {/* Main Content */}
-      <div className="columns">
-        <div className="column is-8">
-          {/* Review Queue */}
-          <div className="dashboard-box">
-            <h3 className="title is-5 is-thin">{t("Review Queue")}</h3>
-            <ReviewQueue />
-          </div>
-        </div>
-        <div className="column is-4">
-          {/* Reviewer Groups */}
-          <div className="dashboard-box">
-            <h3 className="title is-5 is-thin">{t("Reviewer Groups")}</h3>
+      <Tabs 
+        variant="enclosed" 
+        colorScheme="teal" 
+        onChange={(index) => setActiveTab(index)}
+        mb={4}
+      >
+        <TabList>
+          <Tab 
+            bg={activeTab === 0 ? bgColor : tabBgColor}
+            borderTopRadius="md"
+            borderColor={borderColor}
+            _selected={{ borderColor: borderColor, borderBottomColor: bgColor }}
+          >
+            Reviewer Groups
+          </Tab>
+          <Tab 
+            bg={activeTab === 1 ? bgColor : tabBgColor}
+            borderTopRadius="md"
+            borderColor={borderColor}
+            _selected={{ borderColor: borderColor, borderBottomColor: bgColor }}
+          >
+            Review Queue
+          </Tab>
+          <Tab 
+            bg={activeTab === 2 ? bgColor : tabBgColor}
+            borderTopRadius="md"
+            borderColor={borderColor}
+            _selected={{ borderColor: borderColor, borderBottomColor: bgColor }}
+          >
+            Group Statistics
+          </Tab>
+        </TabList>
+
+        <TabPanels 
+          borderWidth="1px" 
+          borderTop="none"
+          borderColor={borderColor}
+          borderBottomRadius="md"
+        >
+          <TabPanel p={0}>
             <ReviewerGroups onGroupSelect={setSelectedGroupId} />
-          </div>
-          {/* Group Statistics */}
-          <div className="dashboard-box">
-            <h3 className="title is-5 is-thin">{t("Group Statistics")}</h3>
+          </TabPanel>
+          <TabPanel p={0}>
+            <ReviewQueue />
+          </TabPanel>
+          <TabPanel p={0}>
             <GroupStatistics groupId={selectedGroupId} />
-          </div>
-        </div>
-      </div>
-    </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   );
 };
 

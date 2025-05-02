@@ -1,4 +1,25 @@
 import { useState, useEffect } from 'react';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Button,
+  Box,
+  Text,
+  Flex,
+  Avatar,
+  Divider,
+  useColorModeValue,
+  Spinner,
+  Badge,
+  IconButton,
+  useToast,
+  Tooltip
+} from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -10,11 +31,20 @@ const GroupDetails = ({ isOpen, onClose, group }) => {
   const [isLeaving, setIsLeaving] = useState(false);
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
+  const toast = useToast();
   const { t } = useTranslation();
-
+  
+  // Theme colors
+  const modalBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
+  const creatorBadgeBg = useColorModeValue("blue.100", "blue.800");
+  const creatorBadgeColor = useColorModeValue("blue.800", "blue.100");
+  
   useEffect(() => {
     const fetchMembers = async () => {
       if (!group?._id) return;
+      
       setIsLoading(true);
       try {
         const res = await fetch(`/api/groups/${group._id}/members`, {
@@ -24,21 +54,34 @@ const GroupDetails = ({ isOpen, onClose, group }) => {
             Authorization: `Bearer ${currentUser.token}`
           }
         });
-        if (!res.ok) throw new Error("Failed to load group members");
+        
+        if (!res.ok) {
+          throw new Error("Failed to load group members");
+        }
+        
         const data = await res.json();
         setMembers(data);
       } catch (error) {
-        // Show error notification (replace with Friendkit notification if available)
-        alert(error.message);
+        toast({
+          title: "Error",
+          description: error.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true
+        });
       } finally {
         setIsLoading(false);
       }
     };
-    if (isOpen) fetchMembers();
-  }, [group?._id, isOpen, currentUser.token]);
-
+    
+    if (isOpen) {
+      fetchMembers();
+    }
+  }, [group?._id, isOpen, currentUser.token, toast]);
+  
   const handleLeaveGroup = async () => {
     if (!group?._id) return;
+    
     setIsLeaving(true);
     try {
       const res = await fetch(`/api/groups/${group._id}/leave`, {
@@ -48,92 +91,137 @@ const GroupDetails = ({ isOpen, onClose, group }) => {
           Authorization: `Bearer ${currentUser.token}`
         }
       });
+      
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to leave group");
       }
-      // Show success notification (replace with Friendkit notification if available)
-      alert(
-        group.creator._id === currentUser._id
-          ? t("Group deleted successfully")
-          : t("Left group successfully")
-      );
-      onClose(true);
+      
+      toast({
+        title: "Success",
+        description: group.creator._id === currentUser._id 
+          ? t("Group deleted successfully") 
+          : t("Left group successfully"),
+        status: "success",
+        duration: 3000,
+        isClosable: true
+      });
+      
+      // Close modal and reload groups in parent component
+      onClose(true); // Pass true to indicate that a refresh is needed
     } catch (error) {
-      alert(error.message);
+      toast({
+        title: "Error",
+        description: error.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true
+      });
     } finally {
       setIsLeaving(false);
     }
   };
-
+  
   const handleProfileClick = (username) => {
     onClose();
     navigate(`/${username}`);
   };
-
-  if (!isOpen || !group) return null;
-
+  
+  if (!group) return null;
+  
   return (
-    <div className="modal is-active friendkit-modal">
-      <div className="modal-background" onClick={() => onClose(false)}></div>
-      <div className="modal-card">
-        <header className="modal-card-head" style={{ background: group?.color || '#00b894' }}>
-          <h3 className="modal-card-title" style={{ color: 'white' }}>{group?.name}</h3>
-          <button className="delete" aria-label="close" onClick={() => onClose(false)}></button>
-        </header>
-        <section className="modal-card-body">
+    <Modal isOpen={isOpen} onClose={() => onClose(false)} size="xs" isCentered>
+      <ModalOverlay />
+      <ModalContent
+        bg={modalBg}
+        borderRadius="xl"
+        overflow="hidden"
+        boxShadow="xl"
+      >
+        <Box bg={group?.color || "blue.500"} py={3} px={4}>
+          <ModalHeader p={0} color="white" fontSize="lg">
+            {group?.name}
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+        </Box>
+        
+        <ModalBody p={4}>
           {group?.description && (
-            <div className="mb-4">
-              <div className="has-text-grey is-size-7 has-text-weight-medium">{t("Description")}</div>
-              <div className="is-size-6">{group.description}</div>
-            </div>
+            <Box mb={4}>
+              <Text fontSize="sm" color="gray.500" fontWeight="medium">
+                {t("Description")}
+              </Text>
+              <Text fontSize="md">{group.description}</Text>
+            </Box>
           )}
-          <div className="mb-4">
-            <div className="is-flex is-justify-content-space-between is-align-items-center mb-2">
-              <span className="has-text-grey is-size-7 has-text-weight-medium">
+          
+          <Box mb={4}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontSize="sm" color="gray.500" fontWeight="medium">
                 {t("Members")} • {members.length}
-              </span>
+              </Text>
               {currentUser._id === group?.creator?._id && (
-                <span className="tag is-info is-light">{t("Creator")}</span>
+                <Badge colorScheme="blue" variant="subtle">
+                  {t("Creator")}
+                </Badge>
               )}
-            </div>
-            <hr className="dropdown-divider" />
+            </Flex>
+            
+            <Divider mb={3} />
+            
             {isLoading ? (
-              <div className="has-text-centered py-4">Loading...</div>
+              <Flex justify="center" py={4}>
+                <Spinner size="sm" />
+              </Flex>
             ) : (
-              <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8 }}>
+              <Box maxH="200px" overflowY="auto" pr={2}>
                 {members.map((member) => (
-                  <div
+                  <Flex
                     key={member._id}
-                    className="friendkit-member-item is-flex is-align-items-center is-justify-content-space-between p-2 mb-1"
-                    style={{ borderRadius: 8, cursor: 'pointer' }}
+                    p={2}
+                    borderRadius="md"
+                    _hover={{ bg: hoverBg }}
+                    cursor="pointer"
+                    align="center"
+                    justify="space-between"
                     onClick={() => handleProfileClick(member.username)}
                   >
-                    <div className="is-flex is-align-items-center">
-                      <img src={member.profilePic} alt={member.username} className="avatar mr-2" style={{ width: 32, height: 32 }} />
-                      <span className="is-size-6">{member.username}</span>
-                    </div>
+                    <Flex align="center">
+                      <Avatar size="sm" src={member.profilePic} name={member.username} mr={2} />
+                      <Text fontSize="md">{member.username}</Text>
+                    </Flex>
+                    
                     {member._id === group?.creator?._id && (
-                      <span className="tag is-info is-light is-size-7">{t("Creator")}</span>
+                      <Badge bg={creatorBadgeBg} color={creatorBadgeColor} fontSize="xs">
+                        {t("Creator")}
+                      </Badge>
                     )}
-                  </div>
+                  </Flex>
                 ))}
-              </div>
+              </Box>
             )}
-          </div>
-          <hr className="dropdown-divider my-3" />
-          <div className="has-text-centered pt-2">
-            <button
-              className={`button is-danger is-outlined is-small${isLeaving ? ' is-loading' : ''}`}
-              onClick={handleLeaveGroup}
-              disabled={isLeaving}
-            >
-              {currentUser._id === group?.creator?._id ? t("Delete Group") : t("Leave Group")}
-            </button>
-          </div>
-        </section>
-      </div>
-    </div>
+          </Box>
+          
+          <Divider my={3} />
+          
+          <Flex justify="center" pt={1}>
+            <Tooltip label={currentUser._id === group?.creator?._id ? t("Delete Group") : t("Leave Group")}>
+              <Button
+                colorScheme="red"
+                variant="outline"
+                size="sm"
+                leftIcon={<CloseIcon />}
+                onClick={handleLeaveGroup}
+                isLoading={isLeaving}
+                loadingText={currentUser._id === group?.creator?._id ? t("Deleting...") : t("Leaving...")}
+              >
+                {currentUser._id === group?.creator?._id ? t("Delete Group") : t("Leave Group")}
+              </Button>
+            </Tooltip>
+          </Flex>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

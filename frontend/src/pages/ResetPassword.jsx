@@ -1,23 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useShowToast from '../hooks/useShowToast';
-import { useTranslation } from 'react-i18next';
+import {
+  Box, Button, FormControl, FormLabel, Input, Text, useToast
+} from '@chakra-ui/react';
 
-const ResetPassword = () => {
+export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { token } = useParams();
   const navigate = useNavigate();
-  const showToast = useShowToast();
-  const { t } = useTranslation();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      showToast({ title: t("Passwords don't match"), status: 'error', duration: 3000 });
+      toast({ title: "Passwords don't match", status: 'error', duration: 3000 });
       return;
     }
 
@@ -31,120 +29,52 @@ const ResetPassword = () => {
       
       const data = await res.json();
       if (data.error) {
-        showToast({ title: data.error, status: 'error', duration: 3000 });
+        toast({ title: data.error, status: 'error', duration: 3000 });
         return;
       }
 
-      showToast({ 
-        title: t("Password reset successfully!"), 
+      toast({ 
+        title: "Password reset successfully!", 
         status: 'success', 
         duration: 3000 
       });
       navigate('/auth');
     } catch (error) {
-      showToast({ title: t("An error occurred"), status: 'error', duration: 3000 });
+      toast({ title: "An error occurred", status: 'error', duration: 3000 });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <>
-      {/* Fake navigation */}
-      <div className="fake-nav">
-        <a href="/" className="logo">
-          <img
-            className="light-image"
-            src="/logo.png"
-            width="112"
-            height="28"
-            alt="Pear Network"
+    <Box p={8} maxWidth="500px" mx="auto">
+      <Text fontSize="2xl" mb={4}>Reset Your Password</Text>
+      <form onSubmit={handleSubmit}>
+        <FormControl isRequired mb={4}>
+          <FormLabel>New Password</FormLabel>
+          <Input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
           />
-          <img
-            className="dark-image"
-            src="/logo-dark.png"
-            width="112"
-            height="28"
-            alt="Pear Network"
+        </FormControl>
+        <FormControl isRequired mb={4}>
+          <FormLabel>Confirm Password</FormLabel>
+          <Input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
-        </a>
-      </div>
-
-      <div className="auth-container">
-        <div className="auth-box">
-          <div className="auth-header">
-            <h2 className="auth-title">{t("Reset Your Password")}</h2>
-            <h3 className="auth-subtitle">{t("Enter your new password below.")}</h3>
-          </div>
-
-          <div className="auth-form">
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>{t("New Password")}</label>
-                <div className="control">
-                  <div className="input-wrapper">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder={t("Enter your new password")}
-                      required
-                    />
-                    <span 
-                      className="icon-wrapper" 
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <i data-feather={showPassword ? "eye-off" : "eye"}></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>{t("Confirm Password")}</label>
-                <div className="control">
-                  <div className="input-wrapper">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder={t("Confirm your new password")}
-                      required
-                    />
-                    <span 
-                      className="icon-wrapper" 
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      <i data-feather={showConfirmPassword ? "eye-off" : "eye"}></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className={`auth-button ${isSubmitting ? 'is-loading' : ''}`}
-                disabled={isSubmitting || !newPassword || !confirmPassword}
-              >
-                {isSubmitting ? t("Resetting...") : t("Reset Password")}
-              </button>
-
-              <div className="auth-footer">
-                <p className="auth-footer-text">
-                  <a 
-                    className="auth-footer-link" 
-                    onClick={() => navigate('/auth')}
-                  >
-                    {t("Back to Login")}
-                  </a>
-                </p>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </>
+        </FormControl>
+        <Button
+          type="submit"
+          isLoading={isSubmitting}
+          colorScheme="blue"
+          width="full"
+        >
+          Reset Password
+        </Button>
+      </form>
+    </Box>
   );
-};
-
-export default ResetPassword;
+}

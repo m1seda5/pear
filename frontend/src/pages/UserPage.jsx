@@ -1,185 +1,204 @@
 // UserPage.jsx
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import UserHeader from "../components/UserHeader";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import useShowToast from "../hooks/useShowToast";
+import { Flex, Spinner, Text, Box, Button } from "@chakra-ui/react";
+import Post from "../components/Post";
+import useGetUserProfile from "../hooks/useGetUserProfile";
+import { useRecoilState, useRecoilValue } from "recoil";
+import postsAtom from "../atoms/postsAtom";
+import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
+import { FaLock } from "react-icons/fa";
 
 const UserPage = () => {
+  const { user, loading } = useGetUserProfile();
   const { username } = useParams();
+  const showToast = useShowToast();
+  const [posts, setPosts] = useRecoilState(postsAtom);
+  const [fetchingPosts, setFetchingPosts] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = useRecoilValue(userAtom);
-  const [user, setUser] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [fromSearch, setFromSearch] = useState(false);
 
+  // Check if the page was accessed via search
   useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/users/profile/${username}`);
-        const data = await res.json();
-        setUser(data);
-      } catch (e) {
-        setUser(null);
-      } finally {
-        setLoading(false);
+    // Only set fromSearch if not viewing own profile
+    if (currentUser?._id === user?._id) {
+      setFromSearch(false);
+      sessionStorage.removeItem(`userPage_${username}_fromSearch`);
+      return;
+    }
+    const isFromSearch = location.state?.fromSearch;
+    if (isFromSearch) {
+      sessionStorage.setItem(`userPage_${username}_fromSearch`, "true");
+      setFromSearch(true);
+    } else {
+      const storedFromSearch = sessionStorage.getItem(`userPage_${username}_fromSearch`);
+      setFromSearch(storedFromSearch === "true");
+    }
+    return () => {
+      if (!window.location.pathname.includes(`/${username}`)) {
+        sessionStorage.removeItem(`userPage_${username}_fromSearch`);
       }
     };
-    fetchUser();
-  }, [username]);
+  }, [location.state, username, currentUser?._id, user?._id]);
+
+  // Updated handleMessage function
+  const handleMessage = () => {
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay();
+    const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+
+    // School hours configuration
+    const schoolStart = 810;  // 8:10 AM
+    const lunchStart = 1250;  // 12:50 PM
+    const lunchEnd = 1340;    // 1:40 PM
+    const schoolEnd = 1535;   // 3:35 PM
+
+    const isStudent = currentUser?.role === "student";
+    const allowedAccess = !isStudent || (
+      (dayOfWeek >= 1 && dayOfWeek <= 5 && (
+        currentTime < schoolStart ||
+        (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+        currentTime > schoolEnd
+      )) || 
+      dayOfWeek === 0 || 
+      dayOfWeek === 6
+    );
+
+    if (!allowedAccess) {
+      let message = "Messaging is only available during breaks";
+      if (currentTime < schoolStart) message = "Please wait until school starts";
+      else if (currentTime <= schoolEnd) message = "Wait until lunch time or school ends";
+      
+      showToast("Error", message, "error");
+      return;
+    }
+
+    navigate(`/chat`, { 
+      state: { 
+        recipient: user,
+        fromSearch: true 
+      } 
+    });
+  };
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const getPosts = async () => {
       if (!user) return;
+      setFetchingPosts(true);
+      setError(null);
+
       try {
-        const res = await fetch(`/api/posts/user/${username}`);
+        const res = await fetch(`/api/posts/user/${username}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Failed to fetch posts: ${res.status} - ${errorText}`);
+        }
         const data = await res.json();
         setPosts(Array.isArray(data) ? data : []);
-      } catch (e) {
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setError(error.message);
+        showToast("Error", error.message, "error");
         setPosts([]);
+      } finally {
+        setFetchingPosts(false);
       }
     };
-    if (user) fetchPosts();
-  }, [user, username]);
 
-  if (loading) {
+    if (user) getPosts();
+  }, [username, showToast, setPosts, user]);
+
+  if (!user && loading) {
     return (
-      <div className="friendkit-loading-wrapper">
-        <div className="friendkit-loader"></div>
-        <div className="loading-text">Loading profile...</div>
-        {/* Friendkit skeleton for profile header */}
-        <div className="friendkit-skeleton profile-header-skeleton"></div>
-        {/* Friendkit skeleton for posts */}
-        <div className="friendkit-skeleton feed-post-skeleton"></div>
-        <div className="friendkit-skeleton feed-post-skeleton"></div>
-      </div>
+      <Flex justifyContent="center" alignItems="center" minH="100vh">
+        <Spinner size="xl" />
+      </Flex>
     );
   }
 
-  if (!user) {
+  if (!user && !loading) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">
-          <i data-feather="user-x"></i>
-        </div>
-        <div className="empty-state-content">
-          <h3>User not found</h3>
-        </div>
-      </div>
+      <Flex justifyContent="center" alignItems="center" minH="100vh">
+        <Text fontSize="2xl" fontWeight="bold">User not found</Text>
+      </Flex>
     );
   }
 
   return (
-    <div id="profile-main" className="navbar-v2-wrapper">
-      <div className="container is-custom">
-        <div className="view-wrap is-headless">
-          <div className="columns is-multiline no-margin">
-            <div className="column is-paddingless">
-              {/* Timeline Header */}
-              <div className="profile-timeline-header box">
-                <div className="profile-header-main">
-                  <div className="profile-header-avatar">
-                    <img src={user.profilePic || "/default-avatar.png"} alt={user.username} />
-                  </div>
-                  <div className="profile-header-info">
-                    <h2>{user.fullName || user.username}</h2>
-                    <span>@{user.username}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <Box>
+      <UserHeader user={user} />
+      {fromSearch && currentUser?._id !== user._id && (
+        <Flex justifyContent="flex-end" px={4} mb={4}>
+          {(() => {
+            // School hours configuration
+            const currentDate = new Date();
+            const dayOfWeek = currentDate.getDay();
+            const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+            const schoolStart = 810;  // 8:10 AM
+            const lunchStart = 1250;  // 12:50 PM
+            const lunchEnd = 1340;    // 1:40 PM
+            const schoolEnd = 1535;   // 3:35 PM
+            const isStudent = currentUser?.role === "student";
+            const allowedAccess = !isStudent || (
+              (dayOfWeek >= 1 && dayOfWeek <= 5 && (
+                currentTime < schoolStart ||
+                (currentTime >= lunchStart && currentTime <= lunchEnd) ||
+                currentTime > schoolEnd
+              )) || 
+              dayOfWeek === 0 || 
+              dayOfWeek === 6
+            );
+            return (
+              <Button
+                onClick={allowedAccess ? handleMessage : undefined}
+                ml={2}
+                size="sm"
+                colorScheme={allowedAccess ? "teal" : "red"}
+                leftIcon={!allowedAccess ? <FaLock /> : undefined}
+                isDisabled={!allowedAccess}
+                variant="solid"
+                fontWeight="medium"
+                borderRadius="full"
+              >
+                {allowedAccess ? "Go to Message" : "Locked"}
+              </Button>
+            );
+          })()}
+        </Flex>
+      )}
 
-          <div className="columns">
-            <div id="profile-timeline-widgets" className="column is-4">
-              {/* Basic Infos widget */}
-              <div className="box">
-                <div className="box-heading">
-                  <h4>Basic Info</h4>
-                </div>
-                <div className="box-content">
-                  <ul>
-                    <li>Email: {user.email}</li>
-                    <li>Location: {user.location || "-"}</li>
-                    <li>Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}</li>
-                  </ul>
-                </div>
-              </div>
-              {/* Photos widget placeholder */}
-              <div className="box">
-                <div className="box-heading">
-                  <h4>Photos</h4>
-                </div>
-                <div className="box-content">
-                  <div className="photos-widget-grid">
-                    {/* Placeholder for user photos */}
-                    <span className="friendkit-placeholder">No photos yet.</span>
-                  </div>
-                </div>
-              </div>
-              {/* Friends widget placeholder */}
-              <div className="box">
-                <div className="box-heading">
-                  <h4>Friends</h4>
-                </div>
-                <div className="box-content">
-                  <div className="friends-widget-grid">
-                    {/* Placeholder for user friends */}
-                    <span className="friendkit-placeholder">No friends to show.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="column is-8">
-              <div id="profile-timeline-posts" className="box-heading">
-                <h4>Posts</h4>
-                <div className="button-wrap">
-                  <button type="button" className="button is-active">Recent</button>
-                  <button type="button" className="button">Popular</button>
-                </div>
-              </div>
-              <div className="profile-timeline">
-                {posts.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-state-icon">
-                      <i data-feather="file-text"></i>
-                    </div>
-                    <div className="empty-state-content">
-                      <h3>User has no posts.</h3>
-                    </div>
-                  </div>
-                ) : (
-                  posts.map((post) => (
-                    <div key={post._id} className="feed-post box friendkit-feed-post">
-                      <div className="feed-post-header">
-                        <div className="feed-post-header-left">
-                          <img src={post.author?.profilePic || "/default-avatar.png"} alt={post.author?.username} />
-                          <div className="feed-post-header-info">
-                            <h4>{post.author?.username}</h4>
-                            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="feed-post-content">
-                        <p>{post.text}</p>
-                        {post.images?.length > 0 && (
-                          <div className="feed-post-slider">
-                            {post.images.map((image, idx) => (
-                              <div key={idx} className="feed-post-slider-item">
-                                <img src={image} alt="" />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      {error && (
+        <Box p={4} bg="red.50" color="red.700" borderRadius="md" my={4}>
+          <Text fontWeight="medium">Error loading posts: {error}</Text>
+        </Box>
+      )}
+
+      {!fetchingPosts && posts.length === 0 && !error && (
+        <Text fontSize="lg" textAlign="center" my={8}>
+          User has no posts.
+        </Text>
+      )}
+
+      {fetchingPosts && (
+        <Flex justifyContent="center" my={12}>
+          <Spinner size="xl" />
+        </Flex>
+      )}
+
+      {posts.map((post) => (
+        <Post key={post._id} post={post} postedBy={post.postedBy} />
+      ))}
+
+      <CreatePost />
+    </Box>
   );
 };
 
