@@ -138,7 +138,7 @@ const HomePage = () => {
 						</HStack>
 					</Box>
 					{/* Posts */}
-					<VStack spacing={6} align="stretch">
+					<VStack spacing={6}>
 						{posts.map((post) => (
 							<Post key={post._id} post={post} postedBy={post.postedBy} />
 						))}
