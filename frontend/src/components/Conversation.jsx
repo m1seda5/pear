@@ -49,29 +49,29 @@ const Conversation = ({ conversation, isOnline, onClick, isMonitoring }) => {
 
   return (
     <div 
-      className={`conversation-item${isOnline ? ' is-online' : ''}${conversation.unreadCount > 0 ? ' has-unread' : ''}`}
+      className={`friendkit-conversation-item${isOnline ? ' is-online' : ''}${conversation.unreadCount > 0 ? ' has-unread' : ''}`}
       onClick={onClick}
     >
-      <div className="conversation-avatar">
+      <div className="friendkit-conversation-avatar">
         <img src={getConversationAvatar()} alt={getConversationName()} />
-        {isOnline && <div className="online-indicator"></div>}
+        {isOnline && <div className="friendkit-online-indicator"></div>}
       </div>
-      <div className="conversation-content">
-        <div className="conversation-header">
+      <div className="friendkit-conversation-content">
+        <div className="friendkit-conversation-header">
           <h3>{getConversationName()}</h3>
           {conversation.lastMessage && (
-            <span className="time">
+            <span className="friendkit-time">
               {formatDistanceToNow(new Date(conversation.lastMessage.createdAt))} {t("ago")}
             </span>
           )}
         </div>
-        <div className="conversation-message">
+        <div className="friendkit-conversation-message">
           <p>{getLastMessage()}</p>
           {getUnreadCount()}
         </div>
       </div>
       {isMonitoring && (
-        <div className="monitoring-badge">
+        <div className="friendkit-monitoring-badge">
           <i data-feather="eye"></i>
         </div>
       )}
