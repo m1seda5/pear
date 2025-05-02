@@ -238,19 +238,22 @@ const Post = ({ post, postedBy }) => {
 	};
 
 	return (
-		<div className="card" style={{ marginBottom: 24 }}>
-			<div className="card-content">
-				<div className="media">
-					<div className="media-left">
-						<figure className="image is-48x48">
-							<img src={postedBy?.profilePic} alt={postedBy?.name} style={{ borderRadius: '50%' }} />
-						</figure>
-					</div>
-					<div className="media-content">
-						<p className="title is-6">{postedBy?.name}</p>
-						<p className="subtitle is-7">{formatDistanceToNow(new Date(post.createdAt))} ago</p>
-					</div>
-					<div className="media-right">
+		<Box className="card is-post" p={0} mb={4} boxShadow="sm" borderRadius="lg" overflow="hidden">
+			<Flex align="flex-start" p={5} pb={2} borderBottom="1px solid" borderColor={borderColor}>
+				<Avatar
+					size="md"
+					name={postedBy?.name}
+					src={postedBy?.profilePic}
+					onClick={() => navigate(`/${postedBy?.username}`)}
+					cursor="pointer"
+					mr={4}
+				/>
+				<Box flex="1">
+					<Flex align="center" justify="space-between">
+						<Box>
+							<Text fontWeight="bold" fontSize="md" cursor="pointer" onClick={() => navigate(`/${postedBy?.username}`)}>{postedBy?.name}</Text>
+							<Text fontSize="xs" color="gray.400">{formatDistanceToNow(new Date(post.createdAt))} ago</Text>
+						</Box>
 						<Menu>
 							<MenuButton>
 								<Icon as={FaEllipsisH} />
@@ -262,36 +265,48 @@ const Post = ({ post, postedBy }) => {
 								)}
 							</MenuList>
 						</Menu>
-					</div>
-				</div>
-				<div className="content" style={{ marginTop: 8 }}>
-					{post.text}
-				</div>
-				{post.img && (
-					<figure className="image" style={{ marginTop: 8 }}>
-						<img src={post.img} alt="Post" style={{ borderRadius: 8, width: '100%' }} />
-					</figure>
-				)}
-				<nav className="level is-mobile" style={{ marginTop: 8 }}>
-					<div className="level-left">
-						<button onClick={handleLikeAndUnlike} className="button is-white is-small">
-							<span className="icon is-small">{liked ? '❤️' : '🤍'}</span>
-							<span>{likes}</span>
-						</button>
-						<button onClick={() => setIsCommenting(!isCommenting)} className="button is-white is-small">
-							<span className="icon is-small">💬</span>
-							<span>{post.comments?.length || 0}</span>
-						</button>
-						<button className="button is-white is-small">Share</button>
-					</div>
-				</nav>
-				{isCommenting && (
-					<div>
-						<div className="field">
-							<div className="control">
-								<input
-									type="text"
-									className="input"
+					</Flex>
+					<Box mt={2} mb={2}>
+						<Text fontSize="md">{post.text}</Text>
+					</Box>
+					{post.img && (
+						<Box borderRadius="lg" overflow="hidden" border="1px solid" borderColor={borderColor} mb={2}>
+							<Image
+								src={post.img}
+								alt="Post image"
+								w="100%"
+								maxH="400px"
+								objectFit="cover"
+								onClick={() => navigate(`/post/${post._id}`)}
+								cursor="pointer"
+							/>
+						</Box>
+					)}
+					<Flex align="center" mt={2} mb={1} gap={2}>
+						<Button
+							variant="ghost"
+							size="sm"
+							leftIcon={liked ? <FaHeart color="red" /> : <FaRegHeart />}
+							onClick={handleLikeAndUnlike}
+						>
+							{likes}
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							leftIcon={<FaRegComment />}
+							onClick={() => setIsCommenting(!isCommenting)}
+						>
+							{post.comments?.length || 0}
+						</Button>
+						<Button variant="ghost" size="sm" leftIcon={<FaShare />}>Share</Button>
+					</Flex>
+					{isCommenting && (
+						<VStack align="stretch" spacing={2} mt={2}>
+							<Divider />
+							<HStack>
+								<Avatar size="sm" src={currentUser?.profilePic} name={currentUser?.name} />
+								<Input
 									placeholder="Write a comment..."
 									value={comment}
 									onChange={(e) => setComment(e.target.value)}
@@ -301,25 +316,21 @@ const Post = ({ post, postedBy }) => {
 										}
 									}}
 								/>
-							</div>
-						</div>
-						{(post.comments || []).map((comment) => (
-							<div key={comment._id} className="media">
-								<div className="media-left">
-									<figure className="image is-48x48">
-										<img src={comment.postedBy.profilePic} alt={comment.postedBy.name} style={{ borderRadius: '50%' }} />
-									</figure>
-								</div>
-								<div className="media-content">
-									<p className="title is-6">{comment.postedBy.name}</p>
-									<p className="subtitle is-7">{comment.text}</p>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
-			</div>
-		</div>
+							</HStack>
+							{(post.comments || []).map((comment) => (
+								<HStack key={comment._id} align="start" spacing={2}>
+									<Avatar size="sm" src={comment.postedBy.profilePic} name={comment.postedBy.name} />
+									<VStack align="start" spacing={0}>
+										<Text fontWeight="bold">{comment.postedBy.name}</Text>
+										<Text>{comment.text}</Text>
+									</VStack>
+								</HStack>
+							))}
+						</VStack>
+					)}
+				</Box>
+			</Flex>
+		</Box>
 	);
 };
 
