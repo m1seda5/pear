@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { selectedConversationAtom, conversationsAtom } from "../atoms/messagesAtom";
+import selectedConversationAtom from "../atoms/selectedConversationAtom";
+import conversationsAtom from "../atoms/conversationsAtom";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useSocket } from "../context/SocketContext";
@@ -16,41 +17,6 @@ const ChatPage = () => {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const [isMonitoring, setIsMonitoring] = useState(false);
-
-	const handleUserSelect = async (recipient) => {
-		try {
-			// Check if conversation already exists
-			const existingConversation = conversations.find(
-				conv => !conv.isGroup && conv.participants.some(p => p._id === recipient._id)
-			);
-
-			if (existingConversation) {
-				setSelectedConversation(existingConversation);
-				return;
-			}
-
-			// Create new conversation
-			const res = await fetch("/api/messages/conversations", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${currentUser.token}`,
-				},
-				body: JSON.stringify({ recipientId: recipient._id }),
-			});
-
-			const data = await res.json();
-			if (data.error) {
-				showToast("Error", data.error, "error");
-				return;
-			}
-
-			setConversations(prev => [...prev, data]);
-			setSelectedConversation(data);
-		} catch (error) {
-			showToast("Error", error.message, "error");
-		}
-	};
 
 	useEffect(() => {
 		const recipient = location.state?.recipient;
@@ -69,32 +35,25 @@ const ChatPage = () => {
 		}
 	}, [socket, conversations]);
 
-	// Fetch conversations on mount
 	useEffect(() => {
-		const fetchConversations = async () => {
+		const getConversations = async () => {
 			try {
-				const res = await fetch("/api/messages/conversations", {
-					headers: {
-						Authorization: `Bearer ${currentUser.token}`,
-					},
+				const endpoint = isMonitoring 
+					? "/api/messages/admin/conversations"
+					: "/api/messages/conversations";
+				const res = await fetch(endpoint, {
+					headers: { 'Authorization': `Bearer ${currentUser.token}` },
 				});
 				const data = await res.json();
-				if (data.error) {
-					showToast("Error", data.error, "error");
-					return;
-				}
-				setConversations(data);
+				setConversations(Array.isArray(data) ? data : []);
 			} catch (error) {
-				showToast("Error", error.message, "error");
+				setConversations([]);
 			} finally {
 				setLoadingConversations(false);
 			}
 		};
-
-		if (currentUser?.token) {
-			fetchConversations();
-		}
-	}, [currentUser?.token]);
+		getConversations();
+	}, [currentUser.token, isMonitoring, setConversations]);
 
 	// Handle selecting a conversation
 	const handleConversationClick = (conversation) => {
