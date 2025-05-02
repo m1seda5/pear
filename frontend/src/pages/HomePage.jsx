@@ -48,20 +48,8 @@ const HomePage = () => {
 	const borderColor = useColorModeValue("#e6e6e6", "#23272f");
 
 	useEffect(() => {
-		const fetchPosts = async () => {
-			try {
-				const res = await fetch("/api/posts/feed");
-				const data = await res.json();
-				if (res.ok) {
-					setPosts(data);
-				} else {
-					setPosts([]);
-				}
-			} catch (error) {
-				setPosts([]);
-			}
-		};
-		fetchPosts();
+		// Fetch posts logic here
+		// setPosts(fetchedPosts);
 	}, []);
 
 	return (
@@ -70,7 +58,7 @@ const HomePage = () => {
 				{/* Left Sidebar */}
 				<VStack spacing={6} align="stretch" flex="1" minW="260px">
 					{/* Weather Widget */}
-					<Box className="card" p={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" fontSize="2xl">{demoWeather.temp}</Text>
 						<Text color="gray.500">{demoWeather.desc}</Text>
 						<Text fontSize="sm" color="gray.400">Real Feel: {demoWeather.realFeel} | Rain Chance: {demoWeather.rainChance}</Text>
@@ -87,7 +75,7 @@ const HomePage = () => {
 						<Text fontSize="sm" color="gray.400">{demoWeather.location}</Text>
 					</Box>
 					{/* Recommended Pages */}
-					<Box className="card" p={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" mb={2}>Recommended Pages</Text>
 						{demoPages.map((p) => (
 							<HStack key={p.name} justify="space-between" py={1}>
@@ -99,9 +87,9 @@ const HomePage = () => {
 				</VStack>
 
 				{/* Center Feed */}
-				<Box flex="2" className="posts-feed-wrapper">
+				<Box flex="2" maxW="600px">
 					{/* Stories (demo) */}
-					<Box className="card" p={6} mb={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md" mb={6}>
 						<Text fontWeight="bold" mb={2}>Stories</Text>
 						<HStack>
 							<Avatar name="Dan Walker" />
@@ -110,7 +98,7 @@ const HomePage = () => {
 						</HStack>
 					</Box>
 					{/* Compose Card */}
-					<Box className="card" p={6} mb={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md" mb={6}>
 						<HStack mb={4}>
 							<Avatar size="md" src={user?.profilePic} name={user?.name} />
 							<Input
@@ -148,7 +136,7 @@ const HomePage = () => {
 				{/* Right Sidebar */}
 				<VStack spacing={6} align="stretch" flex="1" minW="260px">
 					{/* Suggested Friends */}
-					<Box className="card" p={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" mb={2}>Suggested Friends</Text>
 						{demoFriends.map((f) => (
 							<HStack key={f.name} justify="space-between" py={1}>
@@ -162,7 +150,7 @@ const HomePage = () => {
 						))}
 					</Box>
 					{/* Notely Widget */}
-					<Box className="card" p={6}>
+					<Box bg={cardBg} borderRadius="xl" p={6} boxShadow="md">
 						<Text fontWeight="bold" mb={2}>Notely</Text>
 						<Text fontSize="sm" color="gray.400">Your notes and reminders will appear here.</Text>
 					</Box>
