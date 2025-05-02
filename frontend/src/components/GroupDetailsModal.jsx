@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { useTranslation } from "react-i18next";
+import useShowToast from '../hooks/useShowToast';
 
 const GroupDetails = ({ isOpen, onClose, group }) => {
   const [members, setMembers] = useState([]);
@@ -11,6 +12,7 @@ const GroupDetails = ({ isOpen, onClose, group }) => {
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const showToast = useShowToast();
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -52,15 +54,16 @@ const GroupDetails = ({ isOpen, onClose, group }) => {
         const data = await res.json();
         throw new Error(data.error || "Failed to leave group");
       }
-      // Show success notification (replace with Friendkit notification if available)
-      alert(
+      showToast(
+        "Success",
         group.creator._id === currentUser._id
           ? t("Group deleted successfully")
-          : t("Left group successfully")
+          : t("Left group successfully"),
+        "success"
       );
       onClose(true);
     } catch (error) {
-      alert(error.message);
+      showToast("Error", error.message, "error");
     } finally {
       setIsLeaving(false);
     }

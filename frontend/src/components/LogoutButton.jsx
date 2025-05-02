@@ -29,24 +29,7 @@ const LogoutButton = () => {
 		}
 	};
 	return (
-		<div
-			className="friendkit-logout-widget card"
-			style={{
-				position: "fixed",
-				bottom: 32,
-				right: 32,
-				zIndex: 1000,
-				boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
-				borderRadius: 16,
-				padding: 0,
-				width: 72,
-				height: 72,
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				background: "#fff"
-			}}
-		>
+		<div>
 			<button
 				className="button is-danger is-light is-large"
 				onClick={handleLogout}
