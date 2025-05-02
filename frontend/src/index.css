@@ -1,13 +1,4 @@
-@import '../../friendkit-ui/src/assets/css/app.css';
-@import '../../friendkit-ui/src/assets/css/core.css';
-@import '../../friendkit-ui/src/assets/css/utilities.css';
-@import '../../friendkit-ui/src/assets/css/colors.css';
-@import '../../friendkit-ui/src/assets/css/icons.css';
-@import '../../friendkit-ui/src/assets/css/widgets.css';
-@import '../../friendkit-ui/src/assets/css/pages.css';
-@import '../../friendkit-ui/src/assets/css/components.css';
-@import '../../friendkit-ui/src/assets/css/sections.css';
-@import '../../friendkit-ui/src/assets/css/navbar-v2.css';
+/* Removed Friendkit UI @import lines. Use <link rel="stylesheet" href="/friendkit.css" /> in public/index.html instead. */
 
 :root {
 	--fk-bg-light: #f5f6fa;
