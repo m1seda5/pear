@@ -60,170 +60,121 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="view-wrapper">
-      {/* Container */}
-      <div id="main-feed" className="container">
-        {/* Feed page main wrapper */}
-        <div id="activity-feed" className="view-wrap true-dom">
-          <div className="columns">
-            {/* Left side column */}
-            <div className="column is-3 is-hidden-mobile">
-              {/* Weather widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Weather</h4>
-                </div>
-                <div className="card-body">
-                  <div className="weather-card">
-                    <div className="weather-details">
-                      <span>Los Angeles, CA</span>
-                      <span>Sunday, 18th 2018</span>
-                      <div className="weather-icon">
-                        <i data-feather="sun"></i>
-                        <h2>71°</h2>
-                        <div className="details">
-                          <span>Real Feel: 78°</span>
-                          <span>Rain Chance: 5%</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="weather-days">
-                      <div className="day">
-                        <span>MON</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                        <span>69°</span>
-                      </div>
-                      {/* Repeat for other days */}
-                    </div>
+    <div className="container" style={{ minHeight: '100vh', background: '#f5f6fa', paddingTop: 32 }}>
+      <div className="columns">
+        {/* Left Sidebar */}
+        <div className="column is-3 is-hidden-mobile">
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-content">
+              <p className="title is-4">{demoWeather.temp}</p>
+              <p className="subtitle is-6">{demoWeather.desc}</p>
+              <p className="is-size-7">Real Feel: {demoWeather.realFeel} | Rain Chance: {demoWeather.rainChance}</p>
+              <div style={{ display: 'flex', marginTop: 8 }}>
+                {demoWeather.days.map((d) => (
+                  <div key={d.day} style={{ marginRight: 8, textAlign: 'center' }}>
+                    <div className="is-size-7">{d.day}</div>
+                    <div>{d.icon}</div>
+                    <div className="is-size-7">{d.temp}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Recommended pages */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Recommended Pages</h4>
-                </div>
-                <div className="card-body">
-                  <div className="recommended-pages">
-                    {/* Page */}
-                    <div className="page-block">
-                      <div className="page-meta">
-                        <span>Fast Pizza</span>
-                        <span>Pizza & Fast Food</span>
-                      </div>
-                    </div>
-                    {/* More pages */}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Center column */}
-            <div className="column is-6">
-              {/* Publishing Area */}
-              <div className="box is-post-section">
-                <div className="media">
-                  <div className="media-left">
-                    <figure className="image is-48x48">
-                      <img src={user?.profilePic} alt={user?.name} className="is-rounded" />
-                    </figure>
-                  </div>
-                  <div className="media-content">
-                    <div className="control">
-                      <textarea 
-                        className="textarea"
-                        rows="3"
-                        placeholder="Write something about you..."
-                        value={postText}
-                        onChange={(e) => setPostText(e.target.value)}
-                      ></textarea>
-                    </div>
-                    <div className="publisher-tools">
-                      <div className="publisher-actions">
-                        <button className="button is-light">
-                          <i data-feather="image"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="video"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="link-2"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="map-pin"></i>
-                        </button>
-                      </div>
-                      <div className="publisher-submit">
-                        <button 
-                          className="button is-solid primary-button"
-                          disabled={!postText.trim()}
-                        >
-                          Publish
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feed posts */}
-              <div id="feed-posts" className="posts-wrapper">
-                {posts.map((post) => (
-                  <Post key={post._id} post={post} postedBy={post.postedBy} />
                 ))}
               </div>
+              <p className="is-size-7" style={{ marginTop: 12 }}>{demoWeather.date}</p>
+              <p className="is-size-7">{demoWeather.location}</p>
             </div>
-
-            {/* Right side column */}
-            <div className="column is-3">
-              {/* Stories widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Stories</h4>
+          </div>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-content">
+              <p className="title is-6">Recommended Pages</p>
+              {demoPages.map((p) => (
+                <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span>{p.name}</span>
+                  <span className="is-size-7 has-text-grey-light">{p.desc}</span>
                 </div>
-                <div className="card-body">
-                  <div className="story-block">
-                    <div className="img-wrapper">
-                      <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Story" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Center Feed */}
+        <div className="column is-6">
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-content">
+              <div className="media">
+                <div className="media-left">
+                  <figure className="image is-48x48">
+                    <img src={user?.profilePic} alt={user?.name} style={{ borderRadius: '50%' }} />
+                  </figure>
+                </div>
+                <div className="media-content">
+                  <div className="field">
+                    <div className="control">
+                      <input
+                        className="input is-rounded"
+                        type="text"
+                        placeholder="Write something about you..."
+                        value={postText}
+                        onChange={e => setPostText(e.target.value)}
+                      />
                     </div>
                   </div>
-                  {/* More stories */}
                 </div>
               </div>
-
-              {/* Suggested friends */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Suggested Friends</h4>
+              <div className="level" style={{ marginTop: 8 }}>
+                <div className="level-left">
+                  <button className="button is-small is-white">Photo</button>
+                  <button className="button is-small is-white">Video</button>
+                  <button className="button is-small is-white">Tag</button>
+                  <button className="button is-small is-white">Location</button>
                 </div>
-                <div className="card-body">
-                  <div className="suggested-friends">
-                    {/* Friend */}
-                    <div className="friend-block">
-                      <div className="friend-meta">
-                        <img src="https://randomuser.me/api/portraits/women/2.jpg" alt="Friend" />
-                        <div className="meta-info">
-                          <span>Nelly Schwartz</span>
-                          <span>Melbourne</span>
-                        </div>
-                      </div>
-                      <button className="button is-solid primary-button raised">+</button>
-                    </div>
-                    {/* More friends */}
+                <div className="level-right">
+                  <button className="button is-link is-small" disabled={!postText.trim()}>Publish</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Posts */}
+          {posts.map((post) => (
+            <Post key={post._id} post={post} postedBy={post.postedBy} />
+          ))}
+        </div>
+        {/* Right Sidebar */}
+        <div className="column is-3">
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-content">
+              <p className="title is-6">Stories</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <figure className="image is-48x48">
+                  <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Dan Walker" style={{ borderRadius: '50%' }} />
+                </figure>
+                <figure className="image is-48x48">
+                  <img src="https://randomuser.me/api/portraits/men/2.jpg" alt="Bobby Brown" style={{ borderRadius: '50%' }} />
+                </figure>
+                <figure className="image is-48x48">
+                  <img src="https://randomuser.me/api/portraits/women/3.jpg" alt="Elise Walker" style={{ borderRadius: '50%' }} />
+                </figure>
+              </div>
+            </div>
+          </div>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-content">
+              <p className="title is-6">Suggested Friends</p>
+              {demoFriends.map((f) => (
+                <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <figure className="image is-32x32" style={{ marginRight: 8 }}>
+                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.name)}`} alt={f.name} style={{ borderRadius: '50%' }} />
+                  </figure>
+                  <div>
+                    <span>{f.name}</span>
+                    <div className="is-size-7 has-text-grey-light">{f.location}</div>
                   </div>
+                  <button className="button is-link is-light is-small">+</button>
                 </div>
-              </div>
-
-              {/* Notes widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Notes</h4>
-                </div>
-                <div className="card-body">
-                  <p className="has-text-grey">Your notes and reminders will appear here.</p>
-                </div>
-              </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-content">
+              <p className="title is-6">Notely</p>
+              <p className="is-size-7 has-text-grey-light">Your notes and reminders will appear here.</p>
             </div>
           </div>
         </div>

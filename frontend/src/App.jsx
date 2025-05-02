@@ -194,7 +194,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import PostDetailPage from "./pages/PostDetailPage";
-import feather from 'feather-icons';
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -232,11 +231,6 @@ function App() {
     if (pathname === '/chat' && user) {
     }
   }, [pathname, user]);
-
-  useEffect(() => {
-    // Initialize Feather Icons
-    feather.replace();
-  }, []);
 
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
 

@@ -22,10 +22,6 @@ import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
 import GroupMessageHeader from "./GroupMessageHeader";
-import { useTranslation } from "react-i18next";
-import { formatDistanceToNow } from "date-fns";
-import { BsCheck2All } from "react-icons/bs";
-import { FaPaperclip, FaImage, FaVideo, FaMapMarkerAlt } from "react-icons/fa";
 
 const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
@@ -38,12 +34,6 @@ const MessageContainer = ({ isMonitoring }) => {
   const messageEndRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef();
-  const { t } = useTranslation();
-  const [newMessage, setNewMessage] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
-  const fileInputRef = useRef(null);
 
   const messageContainerStyles = {
     '&::-webkit-scrollbar': {
@@ -268,253 +258,94 @@ const MessageContainer = ({ isMonitoring }) => {
     }
   }, [selectedConversation._id, selectedConversation.isGroup, socket]);
 
-  const scrollToBottom = () => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    const getMessages = async () => {
-      if (!selectedConversation._id) return;
-      setLoadingMessages(true);
-      try {
-        const res = await fetch(`/api/messages/${selectedConversation._id}`);
-        const data = await res.json();
-        if (data.error) {
-          showToast(t("Error"), data.error, "error");
-          return;
-        }
-        setMessages(data);
-      } catch (error) {
-        showToast(t("Error"), error.message, "error");
-      } finally {
-        setLoadingMessages(false);
-      }
-    };
-
-    getMessages();
-  }, [selectedConversation._id, showToast, t]);
-
-  useEffect(() => {
-    const handleNewMessage = (newMessage) => {
-      if (selectedConversation._id === newMessage.conversationId) {
-        setMessages((prev) => [...prev, newMessage]);
-      }
-    };
-
-    socket?.on("newMessage", handleNewMessage);
-    return () => socket?.off("newMessage", handleNewMessage);
-  }, [socket, selectedConversation._id]);
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() && !selectedFile) return;
-    setSendingMessage(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("text", newMessage);
-      if (selectedFile) {
-        formData.append("file", selectedFile);
-      }
-
-      const res = await fetch(`/api/messages/${selectedConversation._id}`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (data.error) {
-        showToast(t("Error"), data.error, "error");
-        return;
-      }
-
-      setMessages((prev) => [...prev, data]);
-      setNewMessage("");
-      setSelectedFile(null);
-      setFilePreview(null);
-
-      // Update last message in conversations
-      setConversations((prev) => {
-        return prev.map((conversation) => {
-          if (conversation._id === selectedConversation._id) {
-            return {
-              ...conversation,
-              lastMessage: {
-                text: newMessage,
-                sender: currentUser._id,
-              },
-            };
-          }
-          return conversation;
-        });
-      });
-    } catch (error) {
-      showToast(t("Error"), error.message, "error");
-    } finally {
-      setSendingMessage(false);
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFilePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  };
-
   return (
-    <div className="message-container">
-      {/* Messages header */}
-      <div className="message-header">
-        <div className="message-header-content">
-          <div className="message-header-avatar">
-            <img 
-              src={selectedConversation.isGroup 
-                ? selectedConversation.groupAvatar || "/default-group.png"
-                : selectedConversation.userProfilePic} 
-              alt={selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username} 
+    <Flex
+      flex="70"
+      bg={useColorModeValue("gray.50", "gray.dark")}
+      borderRadius="md"
+      p={2}
+      flexDirection="column"
+    >
+      {isMonitoring && (
+        <Flex bg="yellow.100" p={2} borderRadius="md" mb={2}>
+          <Text fontSize="sm" fontWeight="bold">
+            🔒 Monitoring Mode - Read Only
+          </Text>
+        </Flex>
+      )}
+
+      {selectedConversation.isGroup ? (
+        <GroupMessageHeader conversation={selectedConversation} />
+      ) : (
+        <Flex w="full" h={12} alignItems="center" gap={2}>
+          <Avatar src={selectedConversation.userProfilePic} size="sm" />
+          <Text display="flex" alignItems="center">
+            {selectedConversation.username}
+            {currentUser?.role === "admin" && (
+              <Image src="/verified.png" w={4} h={4} ml={1} />
+            )}
+          </Text>
+        </Flex>
+      )}
+
+      <Divider />
+
+      <Flex
+        flexDir="column"
+        gap={4}
+        my={4}
+        p={2}
+        height="400px"
+        overflowY="auto"
+        sx={messageContainerStyles}
+      >
+        {loadingMessages &&
+          [...Array(5)].map((_, i) => (
+            <Flex
+              key={i}
+              gap={2}
+              alignItems="center"
+              p={1}
+              borderRadius="md"
+              alignSelf={i % 2 === 0 ? "flex-start" : "flex-end"}
+            >
+              {i % 2 === 0 && <SkeletonCircle size={7} />}
+              <Flex flexDir="column" gap={2}>
+                <Skeleton h="8px" w="250px" />
+                <Skeleton h="8px" w="250px" />
+                <Skeleton h="8px" w="250px" />
+              </Flex>
+              {i % 2 !== 0 && <SkeletonCircle size={7} />}
+            </Flex>
+          ))}
+
+        {!loadingMessages && messages && Array.isArray(messages) && messages.map((message) => (
+          <Message
+            key={message._id}
+            message={message}
+            ownMessage={currentUser._id === message.sender?._id}
+            onDelete={isMonitoring ? null : handleDelete}
+          />
+        ))}
+
+        {isTyping && (
+          <Flex gap={2} alignSelf="flex-start" alignItems="center" p={2}>
+            <Avatar 
+              src={selectedConversation.userProfilePic} 
+              size="sm"
             />
-          </div>
-          <div className="message-header-info">
-            <h3>{selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username}</h3>
-            <p>{selectedConversation.isGroup ? t("Group Chat") : t("Direct Message")}</p>
-          </div>
-        </div>
-        <div className="message-header-actions">
-          <button className="button is-icon">
-            <i data-feather="phone"></i>
-          </button>
-          <button className="button is-icon">
-            <i data-feather="video"></i>
-          </button>
-          <button className="button is-icon">
-            <i data-feather="more-vertical"></i>
-          </button>
-        </div>
-      </div>
-
-      {/* Messages body */}
-      <div className="message-body">
-        {loadingMessages ? (
-          <div className="loading-wrapper">
-            {[0, 1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="loading-message">
-                <div className="loading-avatar"></div>
-                <div className="loading-content">
-                  <div className="loading-text"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="messages-list">
-            {messages.map((message) => (
-              <div 
-                key={message._id} 
-                className={`message-item ${message.sender === currentUser._id ? 'is-sent' : 'is-received'}`}
-              >
-                <div className="message-avatar">
-                  <img 
-                    src={message.sender === currentUser._id 
-                      ? currentUser.profilePic 
-                      : selectedConversation.isGroup 
-                        ? message.senderProfilePic 
-                        : selectedConversation.userProfilePic} 
-                    alt={message.sender === currentUser._id ? currentUser.username : message.senderUsername} 
-                  />
-                </div>
-                <div className="message-content">
-                  {message.text && <p>{message.text}</p>}
-                  {message.img && (
-                    <div className="message-image">
-                      <img src={message.img} alt="Message attachment" />
-                    </div>
-                  )}
-                  <div className="message-meta">
-                    <span className="time">
-                      {formatDistanceToNow(new Date(message.createdAt))} {t("ago")}
-                    </span>
-                    {message.sender === currentUser._id && (
-                      <span className="status">
-                        <BsCheck2All className={message.seen ? 'is-seen' : ''} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div ref={messageEndRef} />
-          </div>
+            <Flex gap={1} bg="gray.100" p={2} borderRadius="xl" alignItems="center">
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite"/>
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite 0.2s"/>
+              <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="bounce 0.8s infinite 0.4s"/>
+            </Flex>
+          </Flex>
         )}
-      </div>
+        <div ref={messageEndRef} />
+      </Flex>
 
-      {/* Message input */}
-      <div className="message-input">
-        <form onSubmit={handleSendMessage}>
-          <div className="field">
-            <div className="control">
-              <textarea
-                className="textarea"
-                rows="1"
-                placeholder={t("Type a message...")}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="message-actions">
-            <div className="message-attachments">
-              <button 
-                type="button" 
-                className="button is-icon"
-                onClick={() => fileInputRef.current.click()}
-              >
-                <i data-feather="paperclip"></i>
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="image/*,video/*"
-                style={{ display: 'none' }}
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="button is-solid primary-button"
-              disabled={sendingMessage || (!newMessage.trim() && !selectedFile)}
-            >
-              {sendingMessage ? t("Sending...") : t("Send")}
-            </button>
-          </div>
-        </form>
-        {filePreview && (
-          <div className="file-preview">
-            <img src={filePreview} alt="Preview" />
-            <button 
-              className="button is-icon is-danger"
-              onClick={() => {
-                setSelectedFile(null);
-                setFilePreview(null);
-              }}
-            >
-              <i data-feather="x"></i>
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+      {!isMonitoring && <MessageInput setMessages={setMessages} />}
+    </Flex>
   );
 };
 
