@@ -1,15 +1,23 @@
-import { useContext, useCallback } from "react";
-import { NotificationContext } from "../providers/NotificationProvider";
+import { useToast } from "@chakra-ui/toast";
+import { useCallback } from "react";
 
 const useShowToast = () => {
-	const { showNotification } = useContext(NotificationContext);
-	// Usage: showToast(title, description, status)
-	return useCallback(
+	const toast = useToast();
+
+	const showToast = useCallback(
 		(title, description, status) => {
-			showNotification({ title, description, status });
+			toast({
+				title,
+				description,
+				status,
+				duration: 3000,
+				isClosable: true,
+			});
 		},
-		[showNotification]
+		[toast]
 	);
+
+	return showToast;
 };
 
 export default useShowToast;
