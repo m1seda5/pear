@@ -20,9 +20,7 @@ import {
   VStack,
   HStack,
   Button,
-  useColorModeValue,
-  IconButton,
-  Tooltip
+  useColorModeValue
 } from "@chakra-ui/react";
 import { SunIcon, MoonIcon, SearchIcon, ChatIcon, BellIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -41,7 +39,6 @@ import { PiTelevisionSimpleBold } from "react-icons/pi";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { Children, cloneElement, createContext, useContext, useMemo } from 'react';
 import { MdSportsScore } from "react-icons/md";
-import PearLogo from "../assets/pear.png"; // Use your PNG logo
 
 // Create motion components
 const MotionBox = motion(Box);
@@ -516,88 +513,128 @@ function Header({ unreadCount = 0 }) {
   const iconSize = 20;
 
   return (
-    <Flex
+    <Box
       as="nav"
-      align="center"
-      justify="space-between"
-      px={8}
-      py={3}
-      bg={colorMode === "light" ? "#fff" : "#23272f"}
-      borderBottom="1px solid"
-      borderColor={colorMode === "light" ? "#e6e6e6" : "#23272f"}
       position="sticky"
       top={0}
-      zIndex={10}
+      zIndex="sticky"
+      bg={bgColor}
+      borderBottom="1px"
+      borderColor={borderColor}
+      py={2}
     >
-      {/* Logo */}
-      <Box cursor="pointer" onClick={() => navigate("/")}>
-        <img src={PearLogo} alt="Pear" style={{ height: 36 }} />
-      </Box>
+      <Container maxW="container.xl">
+        <Flex justify="space-between" align="center">
+          {/* Logo and Home */}
+          <Flex align="center" gap={4}>
+            <Box onClick={() => navigate("/")} cursor="pointer">
+              <Image
+                src={colorMode === "dark" ? "/logo-white.svg" : "/logo.svg"}
+                alt="Pear Network"
+                h="28px"
+                w="auto"
+              />
+            </Box>
+          </Flex>
 
-      {/* Search */}
-      <Input
-        placeholder="Search..."
-        maxW="400px"
-        borderRadius="full"
-        bg={colorMode === "light" ? "#f5f6fa" : "#23272f"}
-        border="none"
-        px={6}
-        py={2}
-        fontSize="md"
-        _focus={{ bg: "#fff" }}
-      />
+          {/* Search Bar */}
+          <Box flex="1" maxW="600px" mx={4}>
+            <InputGroup>
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search..."
+                borderRadius="full"
+                bg={useColorModeValue("gray.100", "gray.700")}
+                _focus={{
+                  bg: useColorModeValue("white", "gray.600"),
+                  boxShadow: "md"
+                }}
+              />
+            </InputGroup>
+          </Box>
 
-      {/* Icons */}
-      <Flex align="center" gap={4}>
-        <Tooltip label="Feed" hasArrow>
-          <IconButton
-            icon={<AiFillHome />}
-            aria-label="Feed"
-            variant="ghost"
-            fontSize="xl"
-            onClick={() => navigate("/")}
-          />
-        </Tooltip>
-        <Tooltip label="Notifications" hasArrow>
-          <IconButton
-            icon={<BellIcon />}
-            aria-label="Notifications"
-            variant="ghost"
-            fontSize="xl"
-            onClick={() => navigate("/notifications")}
-          />
-        </Tooltip>
-        <Tooltip label="Messages" hasArrow>
-          <IconButton
-            icon={<ChatIcon />}
-            aria-label="Messages"
-            variant="ghost"
-            fontSize="xl"
-            onClick={() => navigate("/chat")}
-          />
-        </Tooltip>
-        <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
-          <IconButton
-            icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-            aria-label="Toggle color mode"
-            variant="ghost"
-            fontSize="xl"
-            onClick={toggleColorMode}
-          />
-        </Tooltip>
-        {/* Only profile pic opens dropdown */}
-        <Menu>
-          <MenuButton>
-            <Avatar size="sm" src={user?.profilePic} name={user?.name} />
-          </MenuButton>
-          <MenuList>
-            <MenuItem onClick={() => navigate(`/${user.username}`)}>Profile</MenuItem>
-            <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
-            <MenuItem onClick={logout}>Logout</MenuItem>
-          </MenuList>
-        </Menu>
-      </Flex>
-    </Flex>
+          {/* Right Side Icons */}
+          <Flex align="center" gap={4}>
+            <Icon
+              as={colorMode === "dark" ? SunIcon : MoonIcon}
+              cursor="pointer"
+              onClick={toggleColorMode}
+              boxSize={5}
+            />
+
+            {user && (
+              <>
+                <Menu>
+                  <MenuButton>
+                    <Box position="relative">
+                      <BellIcon boxSize={5} />
+                      {unreadCount > 0 && (
+                        <Badge
+                          position="absolute"
+                          top="-1"
+                          right="-1"
+                          colorScheme="red"
+                          borderRadius="full"
+                        >
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </Box>
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem>Notifications</MenuItem>
+                  </MenuList>
+                </Menu>
+
+                <Menu>
+                  <MenuButton>
+                    <Box position="relative">
+                      <ChatIcon boxSize={5} />
+                    </Box>
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={() => navigate("/chat")}>Messages</MenuItem>
+                  </MenuList>
+                </Menu>
+
+                <Menu>
+                  <MenuButton>
+                    <Avatar
+                      size="sm"
+                      name={user.name}
+                      src={user.profilePic}
+                    />
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={() => navigate(`/${user.username}`)}>
+                      Profile
+                    </MenuItem>
+                    <MenuItem onClick={() => navigate("/settings")}>
+                      Settings
+                    </MenuItem>
+                    <MenuItem onClick={logout}>
+                      Logout
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </>
+            )}
+
+            {!user && (
+              <Button
+                colorScheme="green"
+                size="sm"
+                onClick={() => { setAuthScreen("login"); navigate("/auth"); }}
+              >
+                Login
+              </Button>
+            )}
+          </Flex>
+        </Flex>
+      </Container>
+    </Box>
   );
 }
 
