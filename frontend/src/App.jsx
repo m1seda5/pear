@@ -23,6 +23,8 @@ import feather from 'feather-icons';
 import './styles/admin.css';
 import './styles/auth.css';
 import FriendkitNavbar from "./components/FriendkitNavbar";
+import { NotificationProvider } from "./providers/NotificationProvider";
+import Notification from "./components/Notification";
 import Error404Page from "./pages/Error404Page";
 
 function App() {
@@ -37,36 +39,39 @@ function App() {
 
 	return (
 		<I18nextProvider i18n={i18n}>
-			<div className="relative w-full">
-				<FriendkitNavbar />
-				<Routes>
-					<Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
-					<Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
-					<Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
-					<Route 
-						path=":username" 
-						element={user ? (
-							<>
+			<NotificationProvider>
+				<div className="relative w-full">
+					<Notification />
+					<FriendkitNavbar />
+					<Routes>
+						<Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
+						<Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
+						<Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
+						<Route 
+							path=":username" 
+							element={user ? (
+								<>
+									<UserPage />
+									<CreatePost />
+								</>
+							) : (
 								<UserPage />
-								<CreatePost />
-							</>
-						) : (
-							<UserPage />
-						)} 
-					/>
-					<Route path=":username/post/:pid" element={<PostPage />} />
-					<Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
-					<Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
-					<Route path="/verify-email/:id" element={<VerifyEmail />} />
-					<Route path="/tv" element={user && user.role === "admin" ? <TVPage /> : <Navigate to="/" />} />
-					<Route path="/reset-password" element={<ResetPassword />} />
-					<Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
-					<Route path="/post/:postId" element={<PostDetailPage />} />
-					<Route path="*" element={<Error404Page />} />
-				</Routes>
-				{/* Add ReviewModal outside the Container to ensure it can appear over any content */}
-				{user && user.role === "admin" && <ReviewModal />}
-			</div>
+							)} 
+						/>
+						<Route path=":username/post/:pid" element={<PostPage />} />
+						<Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/auth" />} />
+						<Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
+						<Route path="/verify-email/:id" element={<VerifyEmail />} />
+						<Route path="/tv" element={user && user.role === "admin" ? <TVPage /> : <Navigate to="/" />} />
+						<Route path="/reset-password" element={<ResetPassword />} />
+						<Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
+						<Route path="/post/:postId" element={<PostDetailPage />} />
+						<Route path="*" element={<Error404Page />} />
+					</Routes>
+					{/* Add ReviewModal outside the Container to ensure it can appear over any content */}
+					{user && user.role === "admin" && <ReviewModal />}
+				</div>
+			</NotificationProvider>
 		</I18nextProvider>
 	);
 }
