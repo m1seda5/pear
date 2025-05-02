@@ -1,88 +1,134 @@
-import { Box, Flex, Text, Avatar, Button, Input, VStack, HStack, Icon, useColorModeValue } from "@chakra-ui/react";
-import { useState } from "react";
-import { useRecoilValue } from "recoil";
-import userAtom from "../atoms/userAtom";
+import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
 import Post from "../components/Post";
-import { FaImage, FaVideo, FaSmile, FaMapMarkerAlt, FaUserTag, FaEllipsisH } from "react-icons/fa";
+import postsAtom from "../atoms/postsAtom";
+import userAtom from "../atoms/userAtom";
+import TutorialSlider from "../components/TutorialSlider";
+import { useTranslation } from 'react-i18next';
+import '../index.css';
+import _ from 'lodash';
+import NotelyWidget from "../components/NotelyWidget";
 
 const HomePage = () => {
-	const user = useRecoilValue(userAtom);
-	const [posts, setPosts] = useState([]);
+	const [posts, setPosts] = useRecoilState(postsAtom);
 	const [loading, setLoading] = useState(true);
+	const [newPosts, setNewPosts] = useState([]);
 	const showToast = useShowToast();
-	const [postText, setPostText] = useState("");
-	const bgColor = useColorModeValue("white", "gray.800");
-	const borderColor = useColorModeValue("gray.200", "gray.700");
+	const { t, i18n } = useTranslation();
+	const [language, setLanguage] = useState(i18n.language);
+	const [showTutorial, setShowTutorial] = useState(false);
+	const user = useRecoilValue(userAtom);
+	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
+
+	// Handle language change
+	useEffect(() => {
+		const handleLanguageChange = (lng) => {
+			setLanguage(lng);
+		};
+		i18n.on('languageChanged', handleLanguageChange);
+		return () => {
+			i18n.off('languageChanged', handleLanguageChange);
+		};
+	}, [i18n]);
+
+	// Show tutorial on every page load when user is present
+	useEffect(() => {
+		if (user) {
+			setTimeout(() => {
+				setShowTutorial(true);
+			}, 500);
+		}
+	}, []);
+
+	// Fetch feed posts
+	useEffect(() => {
+		const getFeedPosts = async () => {
+			setLoading(true);
+			setPosts([]);
+			try {
+				const res = await fetch("/api/posts/feed");
+				if (!res.ok) {
+					throw new Error(t("Failed to fetch posts"));
+				}
+				const data = await res.json();
+				if (data.error) {
+					if (!data.error.includes("User not found")) {
+						showToast(t("Error"), data.error, "error");
+					}
+					return;
+				}
+				setPosts(data);
+				const now = Date.now();
+				const recentPosts = data.filter(post => {
+					const postAgeInHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
+					return postAgeInHours <= 3;
+				});
+				setNewPosts(recentPosts);
+				setTimeout(() => {
+					setNewPosts([]);
+				}, 30000);
+			} catch (error) {
+				if (!error.message.includes('User not found')) {
+					showToast(t("Error"), error.message, "error");
+				}
+			} finally {
+				setLoading(false);
+			}
+		};
+		getFeedPosts();
+	}, [showToast, setPosts, t]);
+
+	const handleTutorialComplete = () => {
+		setShowTutorial(false);
+	};
+
+	const isNewPost = (postTime) => {
+		const now = Date.now();
+		const postAgeInHours = (now - new Date(postTime).getTime()) / (1000 * 60 * 60);
+		return postAgeInHours <= 3;
+	};
 
 	return (
-		<Flex gap={10} alignItems={"flex-start"} maxW="1200px" mx="auto" px={4} py={8}>
-			{/* Left Sidebar */}
-			<Box flex="1" position="sticky" top="20" display={{ base: "none", md: "block" }}>
-				<VStack spacing={4} align="stretch">
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-						<Text fontWeight="bold" mb={2}>Temperature</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
-					</Box>
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-						<Text fontWeight="bold" mb={2}>Recommended Pages</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
-					</Box>
-				</VStack>
-			</Box>
-
-			{/* Main Content */}
-			<Box flex="2">
-				{/* Compose Card */}
-				<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} mb={4}>
-					<HStack spacing={4} mb={4}>
-						<Avatar size="md" src={user?.profilePic} name={user?.name} />
-						<Input
-							placeholder="Write something about you..."
-							value={postText}
-							onChange={(e) => setPostText(e.target.value)}
-							borderRadius="full"
-						/>
-					</HStack>
-					<HStack justify="space-between" px={4}>
-						<HStack spacing={4}>
-							<Button variant="ghost" leftIcon={<FaImage />} colorScheme="blue">
-								Photo
-							</Button>
-							<Button variant="ghost" leftIcon={<FaVideo />} colorScheme="blue">
-								Video
-							</Button>
-							<Button variant="ghost" leftIcon={<FaUserTag />} colorScheme="blue">
-								Tag
-							</Button>
-							<Button variant="ghost" leftIcon={<FaMapMarkerAlt />} colorScheme="blue">
-								Location
-							</Button>
-						</HStack>
-						<Button colorScheme="blue" size="sm" isDisabled={!postText.trim()}>
-							Publish
-						</Button>
-					</HStack>
+		<>
+			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
+			<Flex gap="10" alignItems={"flex-start"} position="relative">
+				{/* Main Content */}
+				<Box w="100%" maxW={{ base: "100%", md: "600px", xl: "700px" }} mx="auto" minW="0">
+					{!loading && posts.length === 0 && (
+						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+					)}
+					{loading && (
+						<Flex justifyContent="center">
+							<Spinner size="xl" />
+						</Flex>
+					)}
+					{posts.map((post) => {
+						const isNew = isNewPost(post.createdAt);
+						return (
+							<Box
+								key={post._id}
+								className="postContainer"
+								borderWidth="1px"
+								borderRadius="lg"
+								p={4}
+								mb={6}
+								boxShadow="sm"
+								maxW="800px"
+								mx="auto"
+							>
+								<Post post={post} postedBy={post.postedBy} />
+								{isNew && newPosts.includes(post) && (
+									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+								)}
+							</Box>
+						);
+					})}
 				</Box>
-
-				{/* Posts */}
-				<VStack spacing={4}>
-					{posts.map((post) => (
-						<Post key={post._id} post={post} postedBy={post.postedBy} />
-					))}
-				</VStack>
-			</Box>
-
-			{/* Right Sidebar */}
-			<Box flex="1" position="sticky" top="20" display={{ base: "none", md: "block" }}>
-				<VStack spacing={4} align="stretch">
-					<Box bg={bgColor} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-						<Text fontWeight="bold" mb={2}>Notely</Text>
-						<Text fontSize="sm" color="gray.500">Coming soon...</Text>
-					</Box>
-				</VStack>
-			</Box>
-		</Flex>
+				<NotelyWidget />
+			</Flex>
+		</>
 	);
 };
 
