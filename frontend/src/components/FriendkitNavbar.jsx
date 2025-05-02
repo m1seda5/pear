@@ -91,7 +91,6 @@ const FriendkitNavbar = () => {
         <div className="sub-nav-tabs">
           <div className="tabs is-centered">
             <ul>
-              <li className="is-active"><a onClick={() => navigate("/")}>Feed</a></li>
               <li><a onClick={() => navigate("/communities")}>Communities</a></li>
             </ul>
           </div>
