@@ -1,14 +1,3 @@
-import {
-  Avatar,
-  Box,
-  Divider,
-  Flex,
-  Image,
-  Skeleton,
-  SkeletonCircle,
-  Text,
-  useColorModeValue,
-} from "@chakra-ui/react";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
 import { useEffect, useRef, useState } from "react";
@@ -374,145 +363,55 @@ const MessageContainer = ({ isMonitoring }) => {
   };
 
   return (
-    <div className="message-container">
-      {/* Messages header */}
-      <div className="message-header">
-        <div className="message-header-content">
-          <div className="message-header-avatar">
-            <img 
-              src={selectedConversation.isGroup 
-                ? selectedConversation.groupAvatar || "/default-group.png"
-                : selectedConversation.userProfilePic} 
-              alt={selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username} 
-            />
-          </div>
-          <div className="message-header-info">
-            <h3>{selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username}</h3>
-            <p>{selectedConversation.isGroup ? t("Group Chat") : t("Direct Message")}</p>
-          </div>
+    <div className="friendkit-messages-container">
+      {/* Friendkit chat header */}
+      <div className="friendkit-messages-header">
+        <div className="friendkit-messages-header-avatar">
+          <img
+            src={selectedConversation.isGroup
+              ? selectedConversation.groupAvatar || "/default-group.png"
+              : selectedConversation.userProfilePic}
+            alt={selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username}
+          />
         </div>
-        <div className="message-header-actions">
-          <button className="button is-icon">
-            <i data-feather="phone"></i>
-          </button>
-          <button className="button is-icon">
-            <i data-feather="video"></i>
-          </button>
-          <button className="button is-icon">
-            <i data-feather="more-vertical"></i>
-          </button>
+        <div className="friendkit-messages-header-info">
+          <h3>{selectedConversation.isGroup ? selectedConversation.groupName : selectedConversation.username}</h3>
+          <p>{selectedConversation.isGroup ? t("Group Chat") : t("Direct Message")}</p>
+        </div>
+        <div className="friendkit-messages-header-actions">
+          <button className="button is-icon"><i data-feather="phone"></i></button>
+          <button className="button is-icon"><i data-feather="video"></i></button>
+          <button className="button is-icon"><i data-feather="more-vertical"></i></button>
         </div>
       </div>
-
-      {/* Messages body */}
-      <div className="message-body">
+      {/* Friendkit chat body */}
+      <div className="friendkit-messages-body">
         {loadingMessages ? (
-          <div className="loading-wrapper">
-            {[0, 1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="loading-message">
-                <div className="loading-avatar"></div>
-                <div className="loading-content">
-                  <div className="loading-text"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="friendkit-loading-wrapper"><div className="friendkit-loader"></div><div className="loading-text">Loading messages...</div></div>
         ) : (
-          <div className="messages-list">
+          <div className="friendkit-messages-list">
             {messages.map((message) => (
-              <div 
-                key={message._id} 
-                className={`message-item ${message.sender === currentUser._id ? 'is-sent' : 'is-received'}`}
-              >
-                <div className="message-avatar">
-                  <img 
-                    src={message.sender === currentUser._id 
-                      ? currentUser.profilePic 
-                      : selectedConversation.isGroup 
-                        ? message.senderProfilePic 
-                        : selectedConversation.userProfilePic} 
-                    alt={message.sender === currentUser._id ? currentUser.username : message.senderUsername} 
-                  />
-                </div>
-                <div className="message-content">
-                  {message.text && <p>{message.text}</p>}
-                  {message.img && (
-                    <div className="message-image">
-                      <img src={message.img} alt="Message attachment" />
-                    </div>
-                  )}
-                  <div className="message-meta">
-                    <span className="time">
-                      {formatDistanceToNow(new Date(message.createdAt))} {t("ago")}
-                    </span>
-                    {message.sender === currentUser._id && (
-                      <span className="status">
-                        <BsCheck2All className={message.seen ? 'is-seen' : ''} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <Message
+                key={message._id}
+                message={message}
+                ownMessage={message.sender === currentUser._id}
+                onDelete={handleDelete}
+              />
             ))}
-            <div ref={messageEndRef} />
+            <div ref={messageEndRef}></div>
           </div>
         )}
       </div>
-
-      {/* Message input */}
-      <div className="message-input">
-        <form onSubmit={handleSendMessage}>
-          <div className="field">
-            <div className="control">
-              <textarea
-                className="textarea"
-                rows="1"
-                placeholder={t("Type a message...")}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="message-actions">
-            <div className="message-attachments">
-              <button 
-                type="button" 
-                className="button is-icon"
-                onClick={() => fileInputRef.current.click()}
-              >
-                <i data-feather="paperclip"></i>
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="image/*,video/*"
-                style={{ display: 'none' }}
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="button is-solid primary-button"
-              disabled={sendingMessage || (!newMessage.trim() && !selectedFile)}
-            >
-              {sendingMessage ? t("Sending...") : t("Send")}
-            </button>
-          </div>
-        </form>
-        {filePreview && (
-          <div className="file-preview">
-            <img src={filePreview} alt="Preview" />
-            <button 
-              className="button is-icon is-danger"
-              onClick={() => {
-                setSelectedFile(null);
-                setFilePreview(null);
-              }}
-            >
-              <i data-feather="x"></i>
-            </button>
-          </div>
-        )}
+      {/* Friendkit chat input */}
+      <div className="friendkit-messages-input-wrap">
+        <MessageInput
+          value={newMessage}
+          onChange={setNewMessage}
+          onSend={handleSendMessage}
+          sending={sendingMessage}
+          filePreview={filePreview}
+          onFileSelect={handleFileSelect}
+        />
       </div>
     </div>
   );

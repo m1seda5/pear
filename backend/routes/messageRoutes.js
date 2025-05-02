@@ -33,6 +33,9 @@ import {
   getGroupMessages,
   checkExistingGroup,
   getUnreadCount,
+  getSuggestedCommunities,
+  joinCommunity,
+  getAllCommunities,
 } from "../controllers/messageController.js";
 
 const router = express.Router();
@@ -48,11 +51,15 @@ router.get("/unread-count", protectRoute, getUnreadCount);
 router.get("/groups/check", protectRoute, checkExistingGroup);
 router.post("/groups/create", protectRoute, createGroupChat);
 router.get('/groups/:groupId', getGroupMessages);
+// SUGGESTED COMMUNITIES
+router.get("/groups/suggested", protectRoute, getSuggestedCommunities);
+router.post("/groups/:communityId/join", protectRoute, joinCommunity);
 // In your routes file (e.g., messageRoutes.js)
 router.get("/groups/:conversationId/messages", protectRoute, checkChatAccess, getGroupMessages);// Updated to match frontend
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
 router.put("/groups/:conversationId", protectRoute, updateGroup);
+router.get("/groups/all", protectRoute, getAllCommunities);
 
 // Admin Routes
 router.get("/admin/conversations", protectRoute, checkChatAccess, getAllConversations);

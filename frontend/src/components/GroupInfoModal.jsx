@@ -1,23 +1,3 @@
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  Flex,
-  Text,
-  Avatar,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Input,
-  Button,
-  useColorModeValue
-} from "@chakra-ui/react";
-import { HamburgerIcon, EditIcon, DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import useShowToast from "../hooks/useShowToast";
 import { useRecoilValue } from "recoil";
@@ -37,7 +17,6 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
       showToast("Error", "Group name cannot be empty", "error");
       return;
     }
-
     setIsLoading(true);
     try {
       const res = await fetch(`/api/messages/groups/${conversation._id}`, {
@@ -48,10 +27,8 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
         },
         body: JSON.stringify({ groupName })
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
       onGroupUpdate(data);
       setIsEditing(false);
       showToast("Success", "Group updated successfully", "success");
@@ -73,10 +50,8 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
         },
         body: JSON.stringify({ userId })
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
       onGroupUpdate(data);
       showToast("Success", "Member removed successfully", "success");
     } catch (error) {
@@ -91,129 +66,87 @@ const GroupInfoModal = ({ isOpen, onClose, conversation, onGroupUpdate }) => {
     showToast("Success", "Member added successfully", "success");
   };
 
-  if (!conversation) return null;
+  if (!isOpen || !conversation) return null;
 
   return (
-    <>
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent bg={useColorModeValue("white", "gray.800")}>
-          <ModalHeader borderBottom="1px solid" borderColor={useColorModeValue("gray.200", "gray.600")}>
-            {isEditing ? (
-              <Flex gap={2}>
-                <Input
+    <div className="modal is-active friendkit-modal">
+      <div className="modal-background" onClick={onClose}></div>
+      <div className="modal-card">
+        <header className="modal-card-head">
+          {isEditing ? (
+            <div className="field has-addons">
+              <div className="control is-expanded">
+                <input
+                  className="input"
                   value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
+                  onChange={e => setGroupName(e.target.value)}
                   placeholder="Enter group name"
+                  disabled={isLoading}
                 />
-                <Button 
-                  size="sm" 
-                  onClick={handleUpdateGroup}
-                  isLoading={isLoading}
-                  colorScheme="blue"
-                >
-                  Save
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => {
-                    setIsEditing(false);
-                    setGroupName(conversation.groupName);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </Flex>
-            ) : (
-              <Flex align="center" gap={2}>
-                {conversation.groupName}
+              </div>
+              <div className="control">
+                <button className="button is-success" onClick={handleUpdateGroup} disabled={isLoading}>Save</button>
+              </div>
+              <div className="control">
+                <button className="button" onClick={() => { setIsEditing(false); setGroupName(conversation.groupName); }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="level is-mobile w-100">
+              <div className="level-left">
+                <div className="level-item">
+                  <h3 className="modal-card-title">{conversation.groupName}</h3>
+                </div>
                 {currentUser._id === conversation.groupAdmin && (
-                  <IconButton
-                    icon={<EditIcon />}
-                    size="xs"
-                    onClick={() => setIsEditing(true)}
-                    aria-label="Edit group name"
-                  />
+                  <div className="level-item">
+                    <button className="button is-small is-info" onClick={() => setIsEditing(true)}>
+                      <i data-feather="edit-2"></i>
+                    </button>
+                  </div>
                 )}
-              </Flex>
-            )}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6} bg={useColorModeValue("gray.50", "gray.700")}>
-            <Text fontWeight="bold" mb={4}>
-              Members ({conversation.participants.length})
-            </Text>
-            
-            {conversation.participants.map(participant => (
-              <Flex 
-                key={participant._id} 
-                align="center" 
-                justify="space-between" 
-                p={2}
-                borderRadius="md"
-                _hover={{ bg: useColorModeValue("gray.100", "gray.600") }}
-              >
-                <Flex align="center" gap={2}>
-                  <Avatar 
-                    size="sm" 
-                    src={participant.profilePic}
-                    name={participant.username}
-                  />
-                  <Text>
-                    {participant.username}
-                    {participant._id === conversation.groupAdmin && 
-                      <Text as="span" color="blue.500" ml={1}>(Admin)</Text>
-                    }
-                  </Text>
-                </Flex>
-                
-                {currentUser._id === conversation.groupAdmin && 
-                  participant._id !== currentUser._id && (
-                    <Menu>
-                      <MenuButton 
-                        as={IconButton} 
-                        icon={<HamburgerIcon />} 
-                        size="xs"
-                        variant="ghost"
-                      />
-                      <MenuList>
-                        <MenuItem 
-                          icon={<DeleteIcon />} 
-                          onClick={() => handleRemoveMember(participant._id)}
-                          isDisabled={isLoading}
-                          color="red.500"
-                        >
-                          Remove
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
+              </div>
+              <button className="delete" aria-label="close" onClick={onClose}></button>
+            </div>
+          )}
+        </header>
+        <section className="modal-card-body">
+          <div className="content">
+            <h4>Members ({conversation.participants.length})</h4>
+            <ul className="friendkit-member-list">
+              {conversation.participants.map(participant => (
+                <li key={participant._id} className="friendkit-member-item">
+                  <div className="friendkit-member-avatar">
+                    <img src={participant.profilePic} alt={participant.username} className="avatar" />
+                  </div>
+                  <div className="friendkit-member-info">
+                    <span className="username">{participant.username}</span>
+                    {participant._id === conversation.groupAdmin && (
+                      <span className="tag is-info is-light ml-2">Admin</span>
+                    )}
+                  </div>
+                  {currentUser._id === conversation.groupAdmin && participant._id !== currentUser._id && (
+                    <button className="button is-small is-danger ml-2" onClick={() => handleRemoveMember(participant._id)} disabled={isLoading}>
+                      <i data-feather="user-x"></i> Remove
+                    </button>
                   )}
-              </Flex>
-            ))}
-
+                </li>
+              ))}
+            </ul>
             {currentUser._id === conversation.groupAdmin && (
-              <Button
-                leftIcon={<AddIcon />}
-                mt={4}
-                w="full"
-                colorScheme="blue"
-                onClick={() => setIsAddMembersOpen(true)}
-                isDisabled={isLoading}
-              >
-                Add Members
-              </Button>
+              <button className="button is-primary is-fullwidth mt-3" onClick={() => setIsAddMembersOpen(true)} disabled={isLoading}>
+                <i data-feather="user-plus"></i> Add Members
+              </button>
             )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
+          </div>
+        </section>
+      </div>
       <AddMembersModal
         isOpen={isAddMembersOpen}
         onClose={() => setIsAddMembersOpen(false)}
         conversationId={conversation._id}
         onMemberAdded={handleMemberAdded}
       />
-    </>
+    </div>
   );
 };
 

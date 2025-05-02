@@ -43,6 +43,14 @@ const conversationSchema = new mongoose.Schema(
     monitored: {
       type: Boolean,
       default: false,
+    },
+    isCommunity: {
+      type: Boolean,
+      default: false,
+    },
+    groupAvatar: {
+      type: String,
+      default: '',
     }
   },
   { timestamps: true }

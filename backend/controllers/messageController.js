@@ -296,7 +296,7 @@ async function sendMonitoringNotification(req, res) {
 
 async function createGroupChat(req, res) {
   try {
-    const { participants, groupName } = req.body;
+    const { participants, groupName, groupAvatar, isCommunity } = req.body;
     const adminId = req.user._id;
 
     // Validate participants array
@@ -317,7 +317,9 @@ async function createGroupChat(req, res) {
         text: `${req.user.username} created the group`,
         sender: adminId,
         seen: false
-      }
+      },
+      groupAvatar: groupAvatar || '',
+      isCommunity: !!isCommunity
     });
 
     await groupChat.save();
@@ -343,7 +345,7 @@ async function createGroupChat(req, res) {
           from: "pearnet104@gmail.com",
           to: participant.email,
           subject: "New Group Chat Invitation",
-          text: `You have been added to the group "${groupName}" by ${req.user.username}.`
+          text: `You have been added to the group \"${groupName}\" by ${req.user.username}.`
         };
         
         return transporter.sendMail(mailOptions);
@@ -371,7 +373,8 @@ async function createGroupChat(req, res) {
         username: p.username,
         profilePic: p.profilePic,
         email: p.email
-      }))
+      })),
+      groupAvatar: groupChat.groupAvatar
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -549,7 +552,55 @@ async function getUnreadCount(req, res) {
   }
 }
 
+// SUGGESTED COMMUNITIES ENDPOINT
+async function getSuggestedCommunities(req, res) {
+  try {
+    const userId = req.user._id;
+    const communities = await Conversation.find({
+      isGroup: true,
+      isCommunity: true,
+      participants: { $ne: userId }
+    }).select('groupName _id');
+    res.status(200).json(communities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
+// JOIN COMMUNITY ENDPOINT
+async function joinCommunity(req, res) {
+  try {
+    const userId = req.user._id;
+    const { communityId } = req.params;
+    const community = await Conversation.findOne({ _id: communityId, isGroup: true, isCommunity: true });
+    if (!community) {
+      return res.status(404).json({ error: 'Community not found' });
+    }
+    if (community.participants.includes(userId)) {
+      return res.status(400).json({ error: 'Already a member' });
+    }
+    community.participants.push(userId);
+    await community.save();
+    res.status(200).json(community);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// ALL COMMUNITIES ENDPOINT
+async function getAllCommunities(req, res) {
+  try {
+    const communities = await Conversation.find({
+      isGroup: true,
+      isCommunity: true
+    })
+      .populate('participants', 'username profilePic')
+      .select('groupName _id groupAvatar participants');
+    res.status(200).json(communities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 export {
   sendMessage,
@@ -564,5 +615,8 @@ export {
   removeFromGroup,
   getGroupMessages,
   checkExistingGroup,
-  getUnreadCount
+  getUnreadCount,
+  getSuggestedCommunities,
+  joinCommunity,
+  getAllCommunities
 };

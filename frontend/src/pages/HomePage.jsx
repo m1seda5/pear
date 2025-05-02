@@ -1,229 +1,97 @@
 import { useEffect, useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import Post from "../components/Post";
-
-const demoWeather = {
-  temp: "71°",
-  desc: "Sunny",
-  realFeel: "78°",
-  rainChance: "5%",
-  days: [
-    { day: "MON", icon: "☀️", temp: "69°" },
-    { day: "TUE", icon: "🌧️", temp: "74°" },
-    { day: "WED", icon: "🌧️", temp: "73°" },
-    { day: "THU", icon: "☁️", temp: "68°" },
-    { day: "FRI", icon: "🌧️", temp: "55°" },
-    { day: "SAT", icon: "🌧️", temp: "58°" },
-    { day: "SUN", icon: "☀️", temp: "64°" },
-  ],
-  date: "Sunday, 18th 2018",
-  location: "Los Angeles, CA"
-};
-
-const demoPages = [
-  { name: "Fast Pizza", desc: "Pizza & Fast Food" },
-  { name: "Lonely Droid", desc: "Technology" },
-  { name: "Meta Movies", desc: "Movies / Entertainment" },
-  { name: "Nuclearjs", desc: "Technology" },
-  { name: "Slicer", desc: "Web / Design" }
-];
-
-const demoFriends = [
-  { name: "Nelly Schwartz", location: "Melbourne" },
-  { name: "Lana Henrikssen", location: "Helsinki" },
-  { name: "Gaelle Morris", location: "Lyon" },
-  { name: "Mike Lasalle", location: "Toronto" },
-  { name: "Rolf Krupp", location: "Berlin" }
-];
+import CreatePost from "../components/CreatePost";
 
 const HomePage = () => {
-  const user = useRecoilValue(userAtom);
   const [posts, setPosts] = useState([]);
-  const [postText, setPostText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const currentUser = useRecoilValue(userAtom);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("/api/posts/feed");
+        const res = await fetch("/api/posts/feed", {
+          headers: { Authorization: `Bearer ${currentUser.token}` },
+        });
         const data = await res.json();
-        if (res.ok) {
-          setPosts(data);
-        } else {
-          setPosts([]);
-        }
-      } catch (error) {
+        if (res.ok) setPosts(data);
+      } catch (e) {
         setPosts([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchPosts();
-  }, []);
+  }, [currentUser.token]);
 
   return (
-    <div className="view-wrapper">
-      {/* Container */}
-      <div id="main-feed" className="container">
-        {/* Feed page main wrapper */}
+    <div id="main-feed" className="navbar-v2-wrapper">
+      <div className="container">
         <div id="activity-feed" className="view-wrap true-dom">
           <div className="columns">
-            {/* Left side column */}
+            {/* Left column */}
             <div className="column is-3 is-hidden-mobile">
               {/* Weather widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Weather</h4>
-                </div>
-                <div className="card-body">
-                  <div className="weather-card">
-                    <div className="weather-details">
-                      <span>Los Angeles, CA</span>
-                      <span>Sunday, 18th 2018</span>
-                      <div className="weather-icon">
-                        <i data-feather="sun"></i>
-                        <h2>71°</h2>
-                        <div className="details">
-                          <span>Real Feel: 78°</span>
-                          <span>Rain Chance: 5%</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="weather-days">
-                      <div className="day">
-                        <span>MON</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                        <span>69°</span>
-                      </div>
-                      {/* Repeat for other days */}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommended pages */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Recommended Pages</h4>
-                </div>
-                <div className="card-body">
-                  <div className="recommended-pages">
-                    {/* Page */}
-                    <div className="page-block">
-                      <div className="page-meta">
-                        <span>Fast Pizza</span>
-                        <span>Pizza & Fast Food</span>
-                      </div>
-                    </div>
-                    {/* More pages */}
-                  </div>
-                </div>
-              </div>
+              <div className="box"><div className="box-heading"><h4>Weather</h4></div><div className="box-content"><span>Sunny, 25°C</span></div></div>
+              {/* Recommended Pages */}
+              <div className="box"><div className="box-heading"><h4>Recommended Pages</h4></div><div className="box-content"><span>No pages yet.</span></div></div>
+              {/* Fake Ad */}
+              <div className="box"><div className="box-heading"><h4>Ad</h4></div><div className="box-content"><span>Ad placeholder</span></div></div>
+              {/* Latest Activity */}
+              <div className="box"><div className="box-heading"><h4>Latest Activity</h4></div><div className="box-content"><span>No activity yet.</span></div></div>
             </div>
-
-            {/* Center column */}
+            {/* Middle column */}
             <div className="column is-6">
               {/* Publishing Area */}
-              <div className="box is-post-section">
-                <div className="media">
-                  <div className="media-left">
-                    <figure className="image is-48x48">
-                      <img src={user?.profilePic} alt={user?.name} className="is-rounded" />
-                    </figure>
-                  </div>
-                  <div className="media-content">
-                    <div className="control">
-                      <textarea 
-                        className="textarea"
-                        rows="3"
-                        placeholder="Write something about you..."
-                        value={postText}
-                        onChange={(e) => setPostText(e.target.value)}
-                      ></textarea>
-                    </div>
-                    <div className="publisher-tools">
-                      <div className="publisher-actions">
-                        <button className="button is-light">
-                          <i data-feather="image"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="video"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="link-2"></i>
-                        </button>
-                        <button className="button is-light">
-                          <i data-feather="map-pin"></i>
-                        </button>
-                      </div>
-                      <div className="publisher-submit">
-                        <button 
-                          className="button is-solid primary-button"
-                          disabled={!postText.trim()}
-                        >
-                          Publish
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+              <CreatePost />
               {/* Feed posts */}
-              <div id="feed-posts" className="posts-wrapper">
-                {posts.map((post) => (
-                  <Post key={post._id} post={post} postedBy={post.postedBy} />
-                ))}
-              </div>
-            </div>
-
-            {/* Right side column */}
-            <div className="column is-3">
-              {/* Stories widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Stories</h4>
-                </div>
-                <div className="card-body">
-                  <div className="story-block">
-                    <div className="img-wrapper">
-                      <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Story" />
-                    </div>
-                  </div>
-                  {/* More stories */}
-                </div>
-              </div>
-
-              {/* Suggested friends */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Suggested Friends</h4>
-                </div>
-                <div className="card-body">
-                  <div className="suggested-friends">
-                    {/* Friend */}
-                    <div className="friend-block">
-                      <div className="friend-meta">
-                        <img src="https://randomuser.me/api/portraits/women/2.jpg" alt="Friend" />
-                        <div className="meta-info">
-                          <span>Nelly Schwartz</span>
-                          <span>Melbourne</span>
+              {loading ? (
+                <div className="friendkit-loading-wrapper"><div className="friendkit-loader"></div><div className="loading-text">Loading posts...</div></div>
+              ) : posts.length === 0 ? (
+                <div className="empty-state"><div className="empty-state-icon"><i data-feather="file-text"></i></div><div className="empty-state-content"><h3>No posts yet.</h3></div></div>
+              ) : (
+                posts.map((post) => (
+                  <div key={post._id} className="feed-post box">
+                    <div className="feed-post-header">
+                      <div className="feed-post-header-left">
+                        <img src={post.author?.profilePic || '/default-avatar.png'} alt={post.author?.username} />
+                        <div className="feed-post-header-info">
+                          <h4>{post.author?.username}</h4>
+                          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <button className="button is-solid primary-button raised">+</button>
                     </div>
-                    {/* More friends */}
+                    <div className="feed-post-content">
+                      <p>{post.text}</p>
+                      {post.images?.length > 0 && (
+                        <div className="feed-post-slider">
+                          {post.images.map((image, idx) => (
+                            <div key={idx} className="feed-post-slider-item">
+                              <img src={image} alt="" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ))
+              )}
+              {/* Load more */}
+              <div className="load-more-wrap narrow-top has-text-centered">
+                <a href="#" className="load-more-button">Load More</a>
               </div>
-
-              {/* Notes widget */}
-              <div className="card">
-                <div className="card-heading">
-                  <h4>Notes</h4>
-                </div>
-                <div className="card-body">
-                  <p className="has-text-grey">Your notes and reminders will appear here.</p>
-                </div>
-              </div>
+            </div>
+            {/* Right column */}
+            <div className="column is-3">
+              {/* Stories widget */}
+              <div className="box"><div className="box-heading"><h4>Stories</h4></div><div className="box-content"><span>No stories yet.</span></div></div>
+              {/* Birthday widget */}
+              <div className="box"><div className="box-heading"><h4>Birthdays</h4></div><div className="box-content"><span>No birthdays today.</span></div></div>
+              {/* Suggested friends widget */}
+              <div className="box"><div className="box-heading"><h4>Suggested Friends</h4></div><div className="box-content"><span>No suggestions yet.</span></div></div>
+              {/* New job widget */}
+              <div className="box"><div className="box-heading"><h4>New Jobs</h4></div><div className="box-content"><span>No new jobs.</span></div></div>
             </div>
           </div>
         </div>

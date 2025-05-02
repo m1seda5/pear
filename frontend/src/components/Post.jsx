@@ -155,36 +155,73 @@
 // export default Post;
 
 // version 2 with translations working
-import { useState } from "react";
-import { useRecoilValue } from "recoil";
+import { useState, useEffect } from "react";
+import { useRecoilValue, useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
+import postsAtom from "../atoms/postsAtom";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import useShowToast from "../hooks/useShowToast";
 
 const Post = ({ post, postedBy }) => {
+	const [user, setUser] = useState(null);
+	const showToast = useShowToast();
 	const currentUser = useRecoilValue(userAtom);
+	const [posts, setPosts] = useRecoilState(postsAtom);
 	const navigate = useNavigate();
-	const [liked, setLiked] = useState(post.likes.includes(currentUser?._id));
-	const [likes, setLikes] = useState(post.likes.length);
-	const [isCommenting, setIsCommenting] = useState(false);
-	const [comment, setComment] = useState("");
+
+	useEffect(() => {
+		const getUser = async () => {
+			try {
+				const res = await fetch("/api/users/profile/" + postedBy);
+				const data = await res.json();
+				if (data.error) {
+					showToast("Error", data.error, "error");
+					return;
+				}
+				setUser(data);
+			} catch (error) {
+				showToast("Error", error.message, "error");
+				setUser(null);
+			}
+		};
+
+		getUser();
+	}, [postedBy, showToast]);
+
+	const handleDeletePost = async (e) => {
+		try {
+			e.preventDefault();
+			if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+			const res = await fetch(`/api/posts/${post._id}`, {
+				method: "DELETE",
+			});
+			const data = await res.json();
+			if (data.error) {
+				showToast("Error", data.error, "error");
+				return;
+			}
+			showToast("Success", "Post deleted successfully", "success");
+			setPosts(posts.filter((p) => p._id !== post._id));
+		} catch (error) {
+			showToast("Error", error.message, "error");
+		}
+	};
 
 	const handleLikeAndUnlike = async () => {
 		try {
 			const res = await fetch(`/api/posts/like/${post._id}`, {
 				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
 			});
 			const data = await res.json();
 			if (data.error) {
+				showToast("Error", data.error, "error");
 				return;
 			}
-			setLiked(!liked);
-			setLikes(liked ? likes - 1 : likes + 1);
+			setPosts(posts.map((p) => (p._id === post._id ? data : p)));
 		} catch (error) {
-			console.log(error);
+			showToast("Error", error.message, "error");
 		}
 	};
 
@@ -195,149 +232,44 @@ const Post = ({ post, postedBy }) => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ text: comment }),
+				body: JSON.stringify({ text: "New comment" }), // Replace with actual comment text
 			});
 			const data = await res.json();
 			if (data.error) {
+				showToast("Error", data.error, "error");
 				return;
 			}
-			setComment("");
-			setIsCommenting(false);
+			setPosts(posts.map((p) => (p._id === post._id ? data : p)));
 		} catch (error) {
-			console.log(error);
+			showToast("Error", error.message, "error");
 		}
 	};
 
 	return (
-		<div className="card is-post">
-			<div className="card-heading">
-				<div className="user-block">
-					<div className="image">
-						<img src={postedBy?.profilePic} alt={postedBy?.name} data-user-popover="1" />
-					</div>
-					<div className="user-info">
-						<a href={`/${postedBy?.username}`}>{postedBy?.name}</a>
-						<span className="time">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
-					</div>
+		<div className="post">
+			<div className="post-header">
+				<img src={user?.profilePic || "/default-avatar.png"} alt={user?.username} className="avatar" />
+				<div className="post-info">
+					<span className="username">{user?.username}</span>
+					<span className="timestamp">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
 				</div>
-				<div className="dropdown is-spaced is-right is-neutral dropdown-trigger">
-					<div>
-						<div className="button">
-							<i data-feather="more-vertical"></i>
-						</div>
-					</div>
-					<div className="dropdown-menu" role="menu">
-						<div className="dropdown-content">
-							<a href="#" className="dropdown-item">
-								<div className="media">
-									<i data-feather="bookmark"></i>
-									<div className="media-content">
-										<h3>Bookmark</h3>
-										<small>Add this post to your bookmarks.</small>
-									</div>
-								</div>
-							</a>
-							<a className="dropdown-item">
-								<div className="media">
-									<i data-feather="bell"></i>
-									<div className="media-content">
-										<h3>Notify me</h3>
-										<small>Send me notifications for this post.</small>
-									</div>
-								</div>
-							</a>
-							<hr className="dropdown-divider" />
-							<a href="#" className="dropdown-item">
-								<div className="media">
-									<i data-feather="flag"></i>
-									<div className="media-content">
-										<h3>Flag</h3>
-										<small>Report this post for review.</small>
-									</div>
-								</div>
-							</a>
-						</div>
-					</div>
-				</div>
+				{currentUser?._id === user?._id && (
+					<button onClick={handleDeletePost} className="delete-button">
+						<i data-feather="trash-2"></i>
+					</button>
+				)}
 			</div>
-			<div className="card-body">
-				<div className="post-text">
-					<p>{post.text}</p>
-				</div>
-				{post.img && (
-					<div className="post-image">
-						<img src={post.img} alt="Post" />
-					</div>
-				)}
-				<div className="post-actions">
-					<div className="like-wrapper">
-						<button className={`button like-button ${liked ? 'is-active' : ''}`} onClick={handleLikeAndUnlike}>
-							<i data-feather="heart"></i>
-							<span className="like-overlay"></span>
-						</button>
-						<div className="likes-count">
-							{likes} {likes === 1 ? 'like' : 'likes'}
-						</div>
-					</div>
-					<div className="comments-wrapper">
-						<button className="button" onClick={() => setIsCommenting(!isCommenting)}>
-							<i data-feather="message-circle"></i>
-						</button>
-						<div className="comments-count">
-							{post.replies.length} {post.replies.length === 1 ? 'comment' : 'comments'}
-						</div>
-					</div>
-					<div className="share-wrapper">
-						<button className="button">
-							<i data-feather="share-2"></i>
-						</button>
-					</div>
-				</div>
-				{isCommenting && (
-					<div className="comments-box">
-						<div className="media is-comment">
-							<div className="media-left">
-								<div className="image">
-									<img src={currentUser?.profilePic} alt={currentUser?.name} />
-								</div>
-							</div>
-							<div className="media-content">
-								<div className="field">
-									<div className="control">
-										<textarea 
-											className="textarea comment-textarea" 
-											rows="1" 
-											placeholder="Write a comment..."
-											value={comment}
-											onChange={(e) => setComment(e.target.value)}
-										></textarea>
-									</div>
-								</div>
-								<div className="comment-controls">
-									<button className="button is-solid primary-button raised" onClick={handleComment}>
-										Post Comment
-									</button>
-								</div>
-							</div>
-						</div>
-						{post.replies.map((reply, index) => (
-							<div key={index} className="media is-comment">
-								<div className="media-left">
-									<div className="image">
-										<img src={reply.userProfilePic} alt={reply.username} />
-									</div>
-								</div>
-								<div className="media-content">
-									<div className="comment-meta">
-										<a href={`/${reply.username}`}>{reply.username}</a>
-										<span className="time">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
-									</div>
-									<p>{reply.text}</p>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
+			<div className="post-content">
+				<p>{post.text}</p>
+				{post.img && <img src={post.img} alt="Post" className="post-image" />}
+			</div>
+			<div className="post-actions">
+				<button onClick={handleLikeAndUnlike} className="action-button">
+					<i data-feather="heart"></i> {post.likes.length}
+				</button>
+				<button onClick={handleComment} className="action-button">
+					<i data-feather="message-circle"></i> {post.comments.length}
+				</button>
 			</div>
 		</div>
 	);

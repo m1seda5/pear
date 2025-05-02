@@ -1,76 +1,13 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Box, Button, Input, Textarea, Flex, IconButton, useToast, useColorModeValue } from "@chakra-ui/react";
-import { CloseIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useMediaQuery } from "@chakra-ui/react";
-
-const DEFAULT_POSITION = { top: 100, left: window.innerWidth - 340 };
+import React, { useEffect, useState } from "react";
 
 const NotelyWidget = () => {
-  const [isOpen, setIsOpen] = useState(() => {
-    return sessionStorage.getItem("notelyClosed") !== "true";
-  });
+  const [isOpen, setIsOpen] = useState(true);
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const toast = useToast();
-  const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
 
-  // Draggable state
-  const [position, setPosition] = useState(() => {
-    const saved = localStorage.getItem("notelyPosition");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return DEFAULT_POSITION;
-      }
-    }
-    return DEFAULT_POSITION;
-  });
-  const [dragging, setDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-
-  const widgetBg = useColorModeValue("#ffe066", "#232323"); // softer yellow for light, dark card for dark
-  const noteBg = useColorModeValue("white", "#2d2d2d");
-  const noteText = useColorModeValue("#46180f", "#ffe066");
-  const inputBg = useColorModeValue("white", "#232323");
-  const inputText = useColorModeValue("#46180f", "#ffe066");
-
-  useEffect(() => {
-    if (isOpen) fetchNotes();
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!dragging) return;
-    const handleMouseMove = (e) => {
-      setPosition(pos => {
-        const newPos = {
-          left: Math.min(Math.max(0, e.clientX - dragOffset.current.x), window.innerWidth - 380),
-          top: Math.min(Math.max(0, e.clientY - dragOffset.current.y), window.innerHeight - 80)
-        };
-        localStorage.setItem("notelyPosition", JSON.stringify(newPos));
-        return newPos;
-      });
-    };
-    const handleMouseUp = () => setDragging(false);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [dragging]);
-
-  const startDrag = (e) => {
-    setDragging(true);
-    const widget = document.getElementById("notely-widget");
-    const rect = widget.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
+  useEffect(() => { if (isOpen) fetchNotes(); }, [isOpen]);
 
   const fetchNotes = async () => {
     try {
@@ -78,7 +15,7 @@ const NotelyWidget = () => {
       const data = await res.json();
       setNotes(data);
     } catch (e) {
-      toast({ title: "Failed to load notes", status: "error" });
+      // Optionally show error
     }
   };
 
@@ -107,13 +44,8 @@ const NotelyWidget = () => {
         setContent("");
         setEditingId(null);
         fetchNotes();
-        toast({ title: "Note saved", status: "success" });
-      } else {
-        throw new Error(data.error || "Failed to save note");
       }
-    } catch (e) {
-      toast({ title: e.message, status: "error" });
-    }
+    } catch (e) {}
   };
 
   const handleEdit = (note) => {
@@ -135,90 +67,62 @@ const NotelyWidget = () => {
           setContent("");
           setEditingId(null);
         }
-        toast({ title: "Note deleted", status: "info" });
-      } else {
-        throw new Error("Failed to delete note");
       }
-    } catch (e) {
-      toast({ title: e.message, status: "error" });
-    }
+    } catch (e) {}
   };
 
-  const handleClose = () => {
-    setIsOpen(false);
-    sessionStorage.setItem("notelyClosed", "true");
-  };
-
-  useEffect(() => {
-    if (isOpen) sessionStorage.setItem("notelyClosed", "false");
-  }, [isOpen]);
-
-  if (!isLargerThan1024 || !isOpen) return null;
+  if (!isOpen) return null;
 
   return (
-    <Box
-      id="notely-widget"
-      position="fixed"
-      left={position.left + "px"}
-      top={position.top + "px"}
-      zIndex={2000}
-      w="320px"
-      bg={widgetBg}
-      borderRadius="16px"
-      p={4}
-      boxShadow="2xl"
-      border="none"
-      cursor={dragging ? "grabbing" : "default"}
-      userSelect={dragging ? "none" : "auto"}
-    >
-      <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
-        <Box fontWeight="bold" fontSize="xl" color={noteText}>Notely</Box>
-        <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
-      </Flex>
-      <Input
-        placeholder="Title"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        mb={2}
-        bg={inputBg}
-        color={inputText}
-        fontWeight="bold"
-        borderRadius="md"
-      />
-      <Textarea
-        placeholder="Write your note..."
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        mb={2}
-        bg={inputBg}
-        color={inputText}
-        borderRadius="md"
-        minH="80px"
-      />
-      <Flex gap={2} mb={3}>
-        <Button colorScheme="yellow" onClick={handleSave} flex={1}>
-          {editingId ? "Update" : "Save"}
-        </Button>
-        {editingId && (
-          <Button onClick={() => { setTitle(""); setContent(""); setEditingId(null); }} flex={1}>
-            Cancel
-          </Button>
-        )}
-      </Flex>
-      <Box maxH="140px" overflowY="auto">
-        {notes.map(note => (
-          <Box key={note._id} bg={noteBg} borderRadius="md" p={2} mb={2} boxShadow="sm" cursor="pointer" onClick={() => handleEdit(note)}>
-            <Flex justify="space-between" align="center">
-              <Box>
-                <Box fontWeight="bold" color={noteText}>{note.title || "Untitled"}</Box>
-                <Box fontSize="sm" color={noteText}>{note.content?.slice(0, 60)}</Box>
-              </Box>
-              <IconButton icon={<DeleteIcon />} size="sm" colorScheme="red" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(note._id); }} aria-label="Delete" />
-            </Flex>
-          </Box>
-        ))}
-      </Box>
-    </Box>
+    <div className="card notely-widget">
+      <div className="card-heading is-flex is-justify-content-space-between is-align-items-center">
+        <h4>Notely</h4>
+        <button className="delete" aria-label="close" onClick={() => setIsOpen(false)}></button>
+      </div>
+      <div className="card-body">
+        <input
+          className="input mb-2"
+          placeholder="Title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+        />
+        <textarea
+          className="textarea mb-2"
+          placeholder="Write your note..."
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={3}
+        />
+        <div className="is-flex mb-3">
+          <button className="button is-warning is-small mr-2" onClick={handleSave} style={{ flex: 1 }}>
+            {editingId ? "Update" : "Save"}
+          </button>
+          {editingId && (
+            <button className="button is-light is-small" onClick={() => { setTitle(""); setContent(""); setEditingId(null); }}>Cancel</button>
+          )}
+        </div>
+        <div className="notely-notes-list">
+          {notes.length === 0 ? (
+            <div className="has-text-grey is-size-7">No notes yet.</div>
+          ) : (
+            notes.map(note => (
+              <div key={note._id} className="box notely-note mb-2">
+                <div className="is-flex is-justify-content-space-between is-align-items-center">
+                  <div>
+                    <strong>{note.title}</strong>
+                    <div className="is-size-7 has-text-grey">{note.content}</div>
+                  </div>
+                  <div>
+                    <button className="button is-light is-small mr-1" onClick={() => handleEdit(note)} title="Edit"><i data-feather="edit-2"></i></button>
+                    <button className="button is-danger is-small" onClick={() => handleDelete(note._id)} title="Delete"><i data-feather="trash-2"></i></button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

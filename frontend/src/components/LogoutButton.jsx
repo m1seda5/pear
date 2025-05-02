@@ -1,4 +1,3 @@
-import { Button } from "@chakra-ui/button";
 import { useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
@@ -30,9 +29,33 @@ const LogoutButton = () => {
 		}
 	};
 	return (
-		<Button position={"fixed"} top={"30px"} right={"30px"} size={"sm"} onClick={handleLogout}>
-			<FiLogOut size={20} />
-		</Button>
+		<div
+			className="friendkit-logout-widget card"
+			style={{
+				position: "fixed",
+				bottom: 32,
+				right: 32,
+				zIndex: 1000,
+				boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+				borderRadius: 16,
+				padding: 0,
+				width: 72,
+				height: 72,
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				background: "#fff"
+			}}
+		>
+			<button
+				className="button is-danger is-light is-large"
+				onClick={handleLogout}
+				style={{ borderRadius: "50%", width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center" }}
+				title="Logout"
+			>
+				<FiLogOut size={28} />
+			</button>
+		</div>
 	);
 };
 

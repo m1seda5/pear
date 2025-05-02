@@ -1,4 +1,3 @@
-
 // // this is version one working
 // import {
 //   Avatar,
@@ -275,38 +274,10 @@
  
 
 //  version 2 with translations
-import React from 'react';
-import {
-  Avatar,
-  Box,
-  IconButton,
-  Flex,
-  Image,
-  Skeleton,
-  Text,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  useColorModeValue,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalBody,
-  ModalFooter,
-  Button,
-  useDisclosure,
-  Slide,
-  useToast
-} from "@chakra-ui/react";
-import { selectedConversationAtom } from "../atoms/messagesAtom";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { BsCheck2All, BsThreeDotsVertical } from "react-icons/bs";
-import { FiCopy, FiTrash2, FiCornerUpLeft } from "react-icons/fi";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useTranslation } from 'react-i18next';
-import EmojiPicker from "emoji-picker-react";
+import { selectedConversationAtom } from "../atoms/messagesAtom";
 
 const restrictedWords = [
   // Hate Speech & Discriminatory Terms  
@@ -345,225 +316,48 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const user = useRecoilValue(userAtom);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiRef = useRef(null);
-  const { t, i18n } = useTranslation();
-  const [language, setLanguage] = useState(i18n.language);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
-  const [lastTap, setLastTap] = useState(0);
-  const [isDeletable, setIsDeletable] = useState(false);
-
-  const bubbleBg = useColorModeValue(
-    ownMessage ? "#DCF8C6" : "gray.200", // Light mode - WhatsApp green
-    ownMessage ? "#2A9D8F" : "gray.700"  // Dark mode - Teal-ish green
-  );
-  
-  const textColor = useColorModeValue(
-    ownMessage ? "gray.800" : "gray.800", // Light mode text
-    ownMessage ? "white" : "gray.100"     // Dark mode text
-  );
-
-  useEffect(() => {
-    const handleLanguageChange = (lng) => {
-      setLanguage(lng);
-    };
-
-    i18n.on('languageChanged', handleLanguageChange);
-
-    return () => {
-      i18n.off('languageChanged', handleLanguageChange);
-    };
-  }, [i18n]);
-
-  useEffect(() => {
-    const now = new Date();
-    const messageTime = new Date(message.createdAt);
-    const diff = now - messageTime;
-    setIsDeletable(diff < 3600000); // 1 hour in milliseconds
-  }, [message.createdAt]);
-
-  const handleDoubleTap = useCallback(() => {
-    if (!ownMessage || !isDeletable) return;
-    
-    const now = Date.now();
-    const DOUBLE_PRESS_DELAY = 300;
-    if (lastTap && now - lastTap < DOUBLE_PRESS_DELAY) {
-      onOpen();
-    }
-    setLastTap(now);
-  }, [lastTap, ownMessage, isDeletable, onOpen]);
-
-  const handleDelete = () => {
-    onDelete(message._id);
-    onClose();
-    toast({
-      title: "Message deleted",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-  };
 
   if (message.text && isMessageRestricted(message.text)) {
     return (
-      <Flex justifyContent={"center"} p={2}>
-        <Text color={"red.500"}>
-          {t("Message contains inappropriate content and was not sent.")}
-        </Text>
-      </Flex>
+      <div className="friendkit-message-restricted">Message contains inappropriate content and was not sent.</div>
     );
   }
 
   return (
-    <>
-      <Flex 
-        direction="column" 
-        align={ownMessage ? "flex-end" : "flex-start"} 
-        gap={2} 
-        my={2}
-        alignSelf={ownMessage ? "flex-end" : "flex-start"}
-        maxW="80%"
-      >
-        {!ownMessage && selectedConversation.isGroup && (
-          <Text fontSize="xs" color="gray.500" ml={2}>
-            {message.sender?.username}
-          </Text>
-        )}
-
-        <Flex
-          position="relative"
-          bg={bubbleBg}
-          color={textColor}
-          borderRadius="2xl"
-          p={3}
-          boxShadow="sm"
-          _hover={{ transform: "translateY(-2px)" }}
-          transition="all 0.2s ease"
-          onTouchStart={handleDoubleTap}
-          onClick={handleDoubleTap}
-          cursor={ownMessage && isDeletable ? 'pointer' : 'default'}
-        >
-          <Menu placement={ownMessage ? "left-start" : "right-start"}>
-            <MenuButton
-              as={IconButton}
-              icon={<BsThreeDotsVertical />}
-              variant="ghost"
-              size="xs"
-              position="absolute"
-              top={1}
-              right={1}
-              opacity={0}
-              _groupHover={{ opacity: 1 }}
-              aria-label={t("Message actions")}
-            />
-            
-            <MenuList>
-              <MenuItem 
-                icon={<FiCopy />} 
-                onClick={() => navigator.clipboard.writeText(message.text)}
-              >
-                {t("Copy")}
-              </MenuItem>
-              <MenuItem icon={<FiCornerUpLeft />}>
-                {t("Reply")}
-              </MenuItem>
-              <MenuItem 
-                icon={<FiTrash2 />} 
-                color="red.500"
-                onClick={() => onDelete(message._id)}
-              >
-                {t("Delete")}
-              </MenuItem>
-            </MenuList>
-          </Menu>
-
-          {message.text && <Text fontSize="md">{message.text}</Text>}
-          
-          {message.img && !imgLoaded && (
-            <Flex mt={5} w={"200px"}>
-              <Image
+    <div className={`friendkit-message-item${ownMessage ? ' is-sent' : ' is-received'}`}> 
+      {!ownMessage && (
+        <img className="friendkit-message-avatar" src={selectedConversation.userProfilePic || '/default-avatar.png'} alt="avatar" />
+      )}
+      <div className="friendkit-message-bubble-wrap">
+        <div className={`friendkit-message-bubble${ownMessage ? ' is-sent' : ' is-received'}`}> 
+          {message.text && <span className="friendkit-message-text">{message.text}</span>}
+          {message.img && (
+            <span className="friendkit-message-image-wrap">
+              <img
                 src={message.img}
-                hidden
+                alt="Message image"
+                className="friendkit-message-image"
+                style={{ display: imgLoaded ? 'block' : 'none' }}
                 onLoad={() => setImgLoaded(true)}
-                alt={t("Message image")}
-                borderRadius={4}
               />
-              <Skeleton w={"200px"} h={"200px"} />
-            </Flex>
+              {!imgLoaded && <span className="friendkit-message-image-loading">Loading...</span>}
+            </span>
           )}
-
-          {message.img && imgLoaded && (
-            <Flex mt={5} w={"200px"} position="relative">
-              <Image 
-                src={message.img} 
-                alt={t("Message image")} 
-                borderRadius={4} 
-              />
-            </Flex>
+          {ownMessage && (
+            <button className="button is-icon is-danger is-tiny friendkit-message-delete" onClick={() => onDelete(message._id)} title="Delete">
+              <i data-feather="x"></i>
+            </button>
           )}
-
-          <Flex align="center" gap={1} mt={1} ml={2}>
-            <Text fontSize="xs" opacity={0.7}>
-              {new Date(message.createdAt).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}
-            </Text>
-            {ownMessage && (
-              <BsCheck2All 
-                color={message.seen ? "#48BB78" : "currentColor"} 
-                size="14px" 
-              />
-            )}
-          </Flex>
-        </Flex>
-      </Flex>
-
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
-        <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(3px)" />
-        <Slide in={isOpen} direction="bottom">
-          <ModalContent 
-            bg={useColorModeValue('white', 'gray.800')}
-            mx={4}
-            mb={4}
-            borderRadius="xl"
-            boxShadow="xl"
-          >
-            <ModalBody py={4} textAlign="center">
-              <Text fontSize="lg" fontWeight="semibold">
-                Delete this message?
-              </Text>
-              <Text fontSize="sm" color="gray.500" mt={1}>
-                This action cannot be undone
-              </Text>
-            </ModalBody>
-            <ModalFooter borderTopWidth={1} p={0}>
-              <Button 
-                w="full"
-                variant="ghost" 
-                onClick={onClose}
-                borderRadius="0 0 0 xl"
-                _hover={{ bg: 'gray.100' }}
-              >
-                Cancel
-              </Button>
-              <Button
-                w="full"
-                colorScheme="red"
-                variant="solid"
-                borderRadius="0 0 xl 0"
-                onClick={handleDelete}
-                _hover={{ bg: 'red.600' }}
-              >
-                Delete
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Slide>
-      </Modal>
-    </>
+        </div>
+        <div className="friendkit-message-meta">
+          <span className="friendkit-message-time">{new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          {ownMessage && message.seen && <span className="friendkit-message-seen">✓✓</span>}
+        </div>
+      </div>
+      {ownMessage && (
+        <img className="friendkit-message-avatar" src={user.profilePic || '/default-avatar.png'} alt="avatar" />
+      )}
+    </div>
   );
 });
 
