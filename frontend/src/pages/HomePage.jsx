@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import CreatePost from "../components/CreatePost";
+import NotelyWidget from "../components/NotelyWidget";
 
 const HomePage = () => {
   const [posts, setPosts] = useState([]);
@@ -85,13 +86,11 @@ const HomePage = () => {
             {/* Right column */}
             <div className="column is-3">
               {/* Stories widget */}
-              <div className="box"><div className="box-heading"><h4>Stories</h4></div><div className="box-content"><span>No stories yet.</span></div></div>
-              {/* Birthday widget */}
-              <div className="box"><div className="box-heading"><h4>Birthdays</h4></div><div className="box-content"><span>No birthdays today.</span></div></div>
-              {/* Suggested friends widget */}
-              <div className="box"><div className="box-heading"><h4>Suggested Friends</h4></div><div className="box-content"><span>No suggestions yet.</span></div></div>
-              {/* New job widget */}
-              <div className="box"><div className="box-heading"><h4>New Jobs</h4></div><div className="box-content"><span>No new jobs.</span></div></div>
+              <div className="card"><div className="card-heading"><h4>Stories</h4></div><div className="card-body"><span>No stories yet.</span></div></div>
+              {/* Communities widget */}
+              <div className="card"><div className="card-heading"><h4>Communities</h4></div><div className="card-body"><span>No communities yet.</span></div></div>
+              {/* Notely widget */}
+              <NotelyWidget />
             </div>
           </div>
         </div>
