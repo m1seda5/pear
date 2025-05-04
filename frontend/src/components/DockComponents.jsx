@@ -6,10 +6,10 @@ import { Children, cloneElement, createContext, useContext, useEffect, useMemo, 
 import _ from 'lodash';
 
 // Constants for dock component
-const DOCK_HEIGHT = 80; // Reduced from 128
+const DOCK_HEIGHT = 48; // Further reduced for slimmer dock
 const DEFAULT_MAGNIFICATION = 80;
 const DEFAULT_DISTANCE = 150;
-const DEFAULT_PANEL_HEIGHT = 48; // Reduced from 64
+const DEFAULT_PANEL_HEIGHT = 36; // Further reduced for slimmer dock
 
 // Create motion components
 const MotionBox = motion(Box);
@@ -110,8 +110,8 @@ function Dock({
       alignItems="flex-end"
       overflowX="auto"
       justifyContent="center"
-      mt={4} // Reduced from mt={6}
-      mb={6} // Reduced from mb={10}
+      mt={2} // Further reduced margin top
+      mb={3} // Further reduced margin bottom
       sx={{
         scrollbarWidth: 'none',
         '&::-webkit-scrollbar': {
@@ -128,10 +128,10 @@ function Dock({
         onMouseLeave={handleMouseLeave}
         mx="auto"
         width="fit-content"
-        gap={3} // Reduced from gap={4}
-        borderRadius="2xl" // Reduced from 3xl
+        gap={2} // Even smaller gap
+        borderRadius="xl" // Slightly smaller border radius
         bg={colorMode === "dark" ? "gray.800" : "gray.50"}
-        px={3} // Reduced from px={4}
+        px={2} // Even smaller horizontal padding
         style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"

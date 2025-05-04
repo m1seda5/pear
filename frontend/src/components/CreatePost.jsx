@@ -499,8 +499,7 @@ import {
   Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
   ModalCloseButton, FormControl, Textarea, Input, useDisclosure, Progress, Box,
   Text, useColorModeValue, Alert, AlertIcon, Flex, Image, CloseButton, keyframes,
-  Tooltip, Tag, TagLabel, TagCloseButton, Wrap, WrapItem, Menu, MenuButton,
-  MenuList, MenuItem, IconButton, Stack
+  Tooltip, Stack
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
@@ -511,8 +510,8 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { useTranslation } from "react-i18next";
 import CreateGroup from "./CreateGroup";
+import TagsInput from "./TagsInput";
 import _ from 'lodash';
-
 
 const MAX_CHAR = 500;
 
@@ -523,43 +522,58 @@ const pulseKeyframes = keyframes`
 `;
 
 const YEAR_GROUPS = [
-  { value: "all", label: "All Year Groups" },
-  { value: "Year 9", label: "Year 9" },
-  { value: "Year 10", label: "Year 10" },
-  { value: "Year 11", label: "Year 11" },
-  { value: "Year 12", label: "Year 12" },
-  { value: "Year 13", label: "Year 13" }
+  { id: "all", label: "All Year Groups" },
+  { id: "Year 9", label: "Year 9" },
+  { id: "Year 10", label: "Year 10" },
+  { id: "Year 11", label: "Year 11" },
+  { id: "Year 12", label: "Year 12" },
+  { id: "Year 13", label: "Year 13" }
 ];
 
 const DEPARTMENTS = [
-  { value: "Math", label: "Math" },
-  { value: "Physics", label: "Physics" },
-  { value: "Chemistry", label: "Chemistry" },
-  { value: "Biology", label: "Biology" },
-  { value: "Geography", label: "Geography" },
-  { value: "Computer Science", label: "Computer Science" },
-  { value: "Arts", label: "Arts" },
-  { value: "History", label: "History" },
-  { value: "Psychology", label: "Psychology" },
-  { value: "Sociology", label: "Sociology" },
-  { value: "Economics", label: "Economics" },
-  { value: "Business", label: "Business" },
-  { value: "BTEC Business", label: "BTEC Business" },
-  { value: "Physical Education", label: "Physical Education" },
-  { value: "BTEC Sport", label: "BTEC Sport" },
-  { value: "Music", label: "Music" },
-  { value: "BTEC Music", label: "BTEC Music" },
-  { value: "BTEC Art", label: "BTEC Art" },
-  { value: "English", label: "English" },
-  { value: "tv", label: "TV" }
+  { id: "Math", label: "Math" },
+  { id: "Physics", label: "Physics" },
+  { id: "Chemistry", label: "Chemistry" },
+  { id: "Biology", label: "Biology" },
+  { id: "Geography", label: "Geography" },
+  { id: "Computer Science", label: "Computer Science" },
+  { id: "Arts", label: "Arts" },
+  { id: "History", label: "History" },
+  { id: "Psychology", label: "Psychology" },
+  { id: "Sociology", label: "Sociology" },
+  { id: "Economics", label: "Economics" },
+  { id: "Business", label: "Business" },
+  { id: "BTEC Business", label: "BTEC Business" },
+  { id: "Physical Education", label: "Physical Education" },
+  { id: "BTEC Sport", label: "BTEC Sport" },
+  { id: "Music", label: "Music" },
+  { id: "BTEC Music", label: "BTEC Music" },
+  { id: "BTEC Art", label: "BTEC Art" },
+  { id: "English", label: "English" },
+  { id: "tv", label: "TV" }
+];
+
+// Color schemes for different tag types
+const YEAR_GROUP_COLORS = [
+  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+];
+
+const DEPARTMENT_COLORS = [
+  "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+];
+
+const GROUP_COLORS = [
+  "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
 ];
 
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [postText, setPostText] = useState("");
-  const [targetYearGroups, setTargetYearGroups] = useState([]);
-  const [targetDepartments, setTargetDepartments] = useState([]);
-  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [yearGroupTags, setYearGroupTags] = useState([]);
+  const [departmentTags, setDepartmentTags] = useState([]);
+  const [groupTags, setGroupTags] = useState([]);
   const [availableGroups, setAvailableGroups] = useState([]);
   const { handleImageChange, imgUrl, setImgUrl } = usePreviewImg();
   const imageRef = useRef(null);
@@ -573,8 +587,6 @@ const CreatePost = () => {
   const [isPulsing, setIsPulsing] = useState(false);
   const buttonBg = useColorModeValue("blue.500", "blue.200");
   const buttonHoverBg = useColorModeValue("blue.600", "blue.300");
-  const tagBg = useColorModeValue("blue.100", "blue.700");
-  const menuBg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -588,7 +600,14 @@ const CreatePost = () => {
           throw new Error(`Failed to fetch groups: ${res.status} - ${errorText}`);
         }
         const data = await res.json();
-        setAvailableGroups(Array.isArray(data) ? data : []);
+        // Convert groups to tag format
+        const groupsAsTags = Array.isArray(data) ? data.map(group => ({
+          id: group._id,
+          label: group.name,
+          color: group.color,
+          originalData: group // Keep the original data
+        })) : [];
+        setAvailableGroups(groupsAsTags);
       } catch (error) {
         console.error("Fetch groups error:", error);
         showToast("Error", "Failed to load groups", "error");
@@ -612,50 +631,16 @@ const CreatePost = () => {
     setRemainingChar(MAX_CHAR - inputText.length);
   };
 
-  const handleGroupToggle = (groupId) => {
-    setSelectedGroups(prev =>
-      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
-    );
-  };
-
-  const handleGroupDetails = (group) => {
-    // Placeholder for group details functionality
-    console.log("Group details:", group);
-  };
-
-  const handleAddYearGroup = (value) => {
-    if (value === "all") {
-      setTargetYearGroups(["all"]);
-      return;
-    }
-    const newGroups = targetYearGroups.filter(group => group !== "all");
-    if (!newGroups.includes(value)) {
-      setTargetYearGroups([...newGroups, value]);
-    }
-  };
-
-  const handleRemoveYearGroup = (value) => {
-    setTargetYearGroups(targetYearGroups.filter(group => group !== value));
-  };
-
-  const handleAddDepartment = (value) => {
-    if (value === "tv") {
-      setTargetDepartments(["tv"]);
-      return;
-    }
-    const newDepts = targetDepartments.filter(dept => dept !== "tv");
-    if (!newDepts.includes(value)) {
-      setTargetDepartments([...newDepts, value]);
-    }
-  };
-
-  const handleRemoveDepartment = (value) => {
-    setTargetDepartments(targetDepartments.filter(dept => dept !== value));
-  };
-
   const handleGroupCreated = (newGroup) => {
-    setAvailableGroups(prev => [...prev, newGroup]);
-    setSelectedGroups(prev => [...prev, newGroup._id]);
+    // Convert new group to tag format
+    const newGroupTag = {
+      id: newGroup._id,
+      label: newGroup.name,
+      color: newGroup.color,
+      originalData: newGroup
+    };
+    setAvailableGroups(prev => [...prev, newGroupTag]);
+    setGroupTags(prev => [...prev, newGroupTag]);
   };
 
   const handleCreatePost = async () => {
@@ -670,10 +655,10 @@ const CreatePost = () => {
         postedBy: user._id,
         text: postText,
         img: imgUrl || undefined,
-        targetGroups: selectedGroups,
-        isGeneral: selectedGroups.length === 0,
-        targetYearGroups: targetYearGroups.length > 0 ? targetYearGroups : [],
-        targetDepartments: targetDepartments.length > 0 ? targetDepartments : [],
+        targetGroups: groupTags.map(tag => tag.id),
+        isGeneral: groupTags.length === 0,
+        targetYearGroups: yearGroupTags.map(tag => tag.id),
+        targetDepartments: departmentTags.map(tag => tag.id),
       };
 
       switch (user.role) {
@@ -684,21 +669,21 @@ const CreatePost = () => {
           break;
 
         case "teacher":
-          if (!targetYearGroups.length && !selectedGroups.length) {
+          if (!yearGroupTags.length && !groupTags.length) {
             showToast("Error", "Please select at least one year group or posting group", "error");
             return;
           }
-          postData.targetAudience = targetYearGroups.length > 0 ? targetYearGroups[0] : "all";
+          postData.targetAudience = yearGroupTags.length > 0 ? yearGroupTags[0].id : "all";
           break;
 
         case "admin":
-          if (!targetYearGroups.length && !targetDepartments.length && !selectedGroups.length) {
+          if (!yearGroupTags.length && !departmentTags.length && !groupTags.length) {
             showToast("Error", "Please select at least one target audience", "error");
             return;
           }
           postData.targetAudience = 
-            targetYearGroups.length > 0 ? targetYearGroups[0] :
-            targetDepartments.length > 0 ? targetDepartments[0] : "all";
+            yearGroupTags.length > 0 ? yearGroupTags[0].id :
+            departmentTags.length > 0 ? departmentTags[0].id : "all";
           break;
 
         default:
@@ -730,9 +715,9 @@ const CreatePost = () => {
   const resetForm = () => {
     setPostText("");
     setImgUrl("");
-    setTargetYearGroups([]);
-    setTargetDepartments([]);
-    setSelectedGroups([]);
+    setYearGroupTags([]);
+    setDepartmentTags([]);
+    setGroupTags([]);
     setPostStatus(null);
     onClose();
   };
@@ -756,16 +741,6 @@ const CreatePost = () => {
       </Button>
     );
   }
-
-  const availableYearGroupsList = YEAR_GROUPS.filter(
-    group => !targetYearGroups.includes(group.value) || 
-    (targetYearGroups.includes("all") && group.value === "all")
-  );
-
-  const availableDepartmentsList = DEPARTMENTS.filter(
-    dept => !targetDepartments.includes(dept.value) ||
-    (targetDepartments.includes("tv") && dept.value === "tv")
-  );
 
   return (
     <>
@@ -827,105 +802,27 @@ const CreatePost = () => {
                 </Box>
 
                 {(user.role === "teacher" || user.role === "admin") && (
-                  <>
-                    <Box>
-                      <Flex justify="space-between" align="center" mb={2}>
-                        <Text fontWeight="medium">{t("Year Groups")}</Text>
-                        <Menu placement="bottom-end">
-                          <MenuButton
-                            as={IconButton}
-                            size="sm"
-o                            colorScheme="blue"
-                            variant="outline"
-                            icon={<AddIcon />}
-                            isDisabled={availableYearGroupsList.length === 0 || targetYearGroups.includes("all")}
-                          />
-                          <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                            {availableYearGroupsList.map((group) => (
-                              <MenuItem
-                                key={group.value}
-                                onClick={() => handleAddYearGroup(group.value)}
-                              >
-                                {t(group.label)}
-                              </MenuItem>
-                            ))}
-                          </MenuList>
-                        </Menu>
-                      </Flex>
-                      <Wrap spacing={2}>
-                        {targetYearGroups.length === 0 ? (
-                          <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                            {t("No year groups selected")}
-                          </Text>
-                        ) : (
-                          targetYearGroups.map((group) => (
-                            <WrapItem key={group}>
-                              <Tag
-                                size="md"
-                                borderRadius="full"
-                                variant="solid"
-                                colorScheme="blue"
-                                bg={tagBg}
-                              >
-                                <TagLabel>{t(YEAR_GROUPS.find(g => g.value === group)?.label || group)}</TagLabel>
-                                <TagCloseButton onClick={() => handleRemoveYearGroup(group)} />
-                              </Tag>
-                            </WrapItem>
-                          ))
-                        )}
-                      </Wrap>
-                    </Box>
-                  </>
+                  <TagsInput 
+                    label={t("Year Groups")}
+                    suggestions={YEAR_GROUPS}
+                    selectedTags={yearGroupTags}
+                    onTagsChange={setYearGroupTags}
+                    maxTags={yearGroupTags.some(tag => tag.id === "all") ? 1 : 6}
+                    placeholderText={t("No year groups selected")}
+                    colorSchemes={YEAR_GROUP_COLORS}
+                  />
                 )}
 
                 {user.role === "admin" && (
-                  <Box>
-                    <Flex justify="space-between" align="center" mb={2}>
-                      <Text fontWeight="medium">{t("Departments")}</Text>
-                      <Menu placement="bottom-end">
-                        <MenuButton
-                          as={IconButton}
-                          size="sm"
-                          colorScheme="blue"
-                          variant="outline"
-                          icon={<AddIcon />}
-                          isDisabled={availableDepartmentsList.length === 0 || targetDepartments.includes("tv")}
-                        />
-                        <MenuList bg={menuBg} maxH="200px" overflowY="auto">
-                          {availableDepartmentsList.map((dept) => (
-                            <MenuItem
-                              key={dept.value}
-                              onClick={() => handleAddDepartment(dept.value)}
-                            >
-                              {t(dept.label)}
-                            </MenuItem>
-                          ))}
-                        </MenuList>
-                      </Menu>
-                    </Flex>
-                    <Wrap spacing={2}>
-                      {targetDepartments.length === 0 ? (
-                        <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                          {t("No departments selected")}
-                        </Text>
-                      ) : (
-                        targetDepartments.map((dept) => (
-                          <WrapItem key={dept}>
-                            <Tag
-                              size="md"
-                              borderRadius="full"
-                              variant="solid"
-                              colorScheme={dept === "tv" ? "red" : "green"}
-                              bg={tagBg}
-                            >
-                              <TagLabel>{t(DEPARTMENTS.find(d => d.value === dept)?.label || dept)}</TagLabel>
-                              <TagCloseButton onClick={() => handleRemoveDepartment(dept)} />
-                            </Tag>
-                          </WrapItem>
-                        ))
-                      )}
-                    </Wrap>
-                  </Box>
+                  <TagsInput 
+                    label={t("Departments")}
+                    suggestions={DEPARTMENTS}
+                    selectedTags={departmentTags}
+                    onTagsChange={setDepartmentTags}
+                    maxTags={departmentTags.some(tag => tag.id === "tv") ? 1 : 10}
+                    placeholderText={t("No departments selected")}
+                    colorSchemes={DEPARTMENT_COLORS}
+                  />
                 )}
 
                 {imgUrl && (
@@ -957,35 +854,22 @@ o                            colorScheme="blue"
                   </Box>
                 )}
 
-                {availableGroups.length > 0 && (
-                  <Box>
-                    <Flex justify="space-between" align="center" mb={2}>
-                      <Text fontWeight="medium">{t("Post to Group")}</Text>
-                      <CreateGroup onGroupCreated={handleGroupCreated} />
-                    </Flex>
-                    <Wrap spacing={2}>
-                      {availableGroups.map(group => (
-                        <WrapItem key={group._id}>
-                          <Tag
-                            size="md"
-                            variant={selectedGroups.includes(group._id) ? "solid" : "outline"}
-                            colorScheme="blue"
-                            cursor="pointer"
-                            onClick={() => handleGroupToggle(group._id)}
-                            onDoubleClick={() => handleGroupDetails(group)}
-                            bg={selectedGroups.includes(group._id) ? group.color : undefined}
-                            _hover={{ opacity: 0.8 }}
-                          >
-                            <TagLabel>{group.name}</TagLabel>
-                            {selectedGroups.includes(group._id) && (
-                              <TagCloseButton onClick={() => handleGroupToggle(group._id)} />
-                            )}
-                          </Tag>
-                        </WrapItem>
-                      ))}
-                    </Wrap>
-                  </Box>
-                )}
+                <Box>
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Text fontWeight="medium">{t("Post to Group")}</Text>
+                    <CreateGroup onGroupCreated={handleGroupCreated} />
+                  </Flex>
+                  
+                  <TagsInput 
+                    label=""
+                    suggestions={availableGroups}
+                    selectedTags={groupTags}
+                    onTagsChange={setGroupTags}
+                    maxTags={10}
+                    placeholderText={t("No groups selected")}
+                    colorSchemes={GROUP_COLORS}
+                  />
+                </Box>
               </Stack>
             </FormControl>
           </ModalBody>

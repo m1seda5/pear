@@ -17,11 +17,6 @@ import {
   Text,
   Flex,
   Avatar,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  Wrap,
-  WrapItem,
   Stack,
   IconButton,
   InputGroup,
@@ -30,10 +25,11 @@ import {
   Spinner,
   useToast
 } from "@chakra-ui/react";
-import { AddIcon, CloseIcon, SearchIcon } from "@chakra-ui/icons";
+import { AddIcon, SearchIcon } from "@chakra-ui/icons";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { useTranslation } from "react-i18next";
+import TagsInput from "./TagsInput"; // Import the TagsInput component
 
 const CreateGroup = ({ onGroupCreated, groups }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -51,6 +47,23 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
   
   const bgColor = useColorModeValue("white", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
+
+  // Transform selected users into tag format for the TagsInput component
+  const selectedUserTags = selectedUsers.map(user => ({
+    id: user._id,
+    label: user.username,
+    profilePic: user.profilePic // Add profile pic for avatar display
+  }));
+
+  // Handle changes from the TagsInput component
+  const handleUserTagsChange = (newTags) => {
+    // Convert tags back to user objects
+    setSelectedUsers(newTags.map(tag => ({
+      _id: tag.id,
+      username: tag.label,
+      profilePic: tag.profilePic
+    })));
+  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -104,9 +117,12 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
     setSearchQuery("");
   };
 
-  const handleRemoveUser = (userId) => {
-    setSelectedUsers(selectedUsers.filter(u => u._id !== userId));
-  };
+  // Create search results as suggestions for TagsInput
+  const userSuggestions = searchResults.map(user => ({
+    id: user._id,
+    label: user.username,
+    profilePic: user.profilePic
+  }));
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -124,15 +140,6 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
     try {
       const memberIds = [...selectedUsers.map(u => u._id), user._id];
       
-      // Debug logging
-      console.log("User object:", user);
-      console.log("Request payload:", {
-        name: groupName,
-        description,
-        color,
-        members: memberIds
-      });
-      
       const res = await fetch("/api/groups/create", {
         method: "POST",
         headers: {
@@ -147,10 +154,7 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
         })
       });
 
-      // Debug logging
-      console.log("Response status:", res.status);
       const responseText = await res.text();
-      console.log("Response text:", responseText);
 
       if (!res.ok) {
         let errorData;
@@ -199,6 +203,14 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
       setIsCreating(false);
     }
   };
+
+  // Custom render function for user tags to include avatar
+  const renderUserTag = (tag) => (
+    <Flex align="center">
+      <Avatar src={tag.profilePic} size="xs" mr={2} />
+      <Text>{tag.label}</Text>
+    </Flex>
+  );
 
   return (
     <>
@@ -282,6 +294,7 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
                 </InputGroup>
               </FormControl>
               
+              {/* Search results display */}
               {searchResults.length > 0 && (
                 <Box
                   mt={2}
@@ -319,32 +332,21 @@ const CreateGroup = ({ onGroupCreated, groups }) => {
                 </Box>
               )}
               
+              {/* TagsInput for selected members */}
               {selectedUsers.length > 0 && (
                 <Box mt={4}>
-                  <Text fontWeight="medium" mb={2}>{t("Selected Members")}</Text>
-                  <Wrap spacing={2}>
-                    {selectedUsers.map((selectedUser) => (
-                      <WrapItem key={selectedUser._id}>
-                        <Tag
-                          size="md"
-                          borderRadius="full"
-                          variant="solid"
-                          colorScheme="blue"
-                        >
-                          <Avatar
-                            src={selectedUser.profilePic}
-                            size="xs"
-                            ml={-1}
-                            mr={2}
-                          />
-                          <TagLabel>{selectedUser.username}</TagLabel>
-                          <TagCloseButton
-                            onClick={() => handleRemoveUser(selectedUser._id)}
-                          />
-                        </Tag>
-                      </WrapItem>
-                    ))}
-                  </Wrap>
+                  <TagsInput
+                    label={t("Selected Members")}
+                    suggestions={userSuggestions}
+                    selectedTags={selectedUserTags}
+                    onTagsChange={handleUserTagsChange}
+                    maxTags={10}
+                    placeholderText={t("No members selected")}
+                    colorSchemes={[
+                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                    ]}
+                  />
                 </Box>
               )}
 
