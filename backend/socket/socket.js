@@ -10,15 +10,17 @@ export const getRecipientSocketId = (recipientId) => {
 const userSocketMap = {}; // userId: socketId
 const userRooms = new Map(); // Keep track of rooms (conversations) each user is in
 
+let ioInstance = null;
+
 export const initializeSocket = (server) => {
-    const io = new Server(server, {
+    ioInstance = new Server(server, {
         cors: {
             origin: process.env.FRONTEND_URL || "http://localhost:3000",
             methods: ["GET", "POST"],
         },
     });
 
-    io.on("connection", (socket) => {
+    ioInstance.on("connection", (socket) => {
         console.log("user connected", socket.id);
         const userId = socket.handshake.query.userId;
 
@@ -34,7 +36,7 @@ export const initializeSocket = (server) => {
             userRooms.set(userId, new Set());
         }
         
-        io.emit("getOnlineUsers", Object.keys(userSocketMap));
+        ioInstance.emit("getOnlineUsers", Object.keys(userSocketMap));
 
         // Join direct message room
         socket.on("joinChat", (conversationId) => {
@@ -79,7 +81,7 @@ export const initializeSocket = (server) => {
             
             const recipientSocketId = getRecipientSocketId(receiverId);
             if (recipientSocketId) {
-                io.to(recipientSocketId).emit("newMessageNotification", socketPayload);
+                ioInstance.to(recipientSocketId).emit("newMessageNotification", socketPayload);
             }
             
             if (conversation && !conversation.isGroup) {
@@ -91,7 +93,7 @@ export const initializeSocket = (server) => {
                     const recipientId = recipient.toString();
                     const recipientSocket = getRecipientSocketId(recipientId);
                     if (recipientSocket) {
-                        io.to(recipientSocket).emit("newUnreadMessage");
+                        ioInstance.to(recipientSocket).emit("newUnreadMessage");
                     }
                 }
             }
@@ -134,7 +136,7 @@ export const initializeSocket = (server) => {
                 );
 
                 const roomId = isGroup ? `group_${conversationId}` : `chat_${conversationId}`;
-                io.to(roomId).emit("messagesSeen", { conversationId });
+                ioInstance.to(roomId).emit("messagesSeen", { conversationId });
             } catch (error) {
                 console.error("Error marking messages as seen:", error);
             }
@@ -145,7 +147,7 @@ export const initializeSocket = (server) => {
             try {
                 const updatedGroup = await Conversation.findById(groupId)
                     .populate('participants', 'username profilePic');
-                io.to(`group_${groupId}`).emit("groupUpdated", updatedGroup);
+                ioInstance.to(`group_${groupId}`).emit("groupUpdated", updatedGroup);
             } catch (error) {
                 console.error("Error updating group:", error);
             }
@@ -163,9 +165,16 @@ export const initializeSocket = (server) => {
             }
             
             delete userSocketMap[userId];
-            io.emit("getOnlineUsers", Object.keys(userSocketMap));
+            ioInstance.emit("getOnlineUsers", Object.keys(userSocketMap));
         });
     });
 
-    return io;
+    return ioInstance;
+};
+
+export const getIO = () => {
+    if (!ioInstance) {
+        throw new Error("Socket.IO instance not initialized");
+    }
+    return ioInstance;
 };

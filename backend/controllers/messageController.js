@@ -1,6 +1,6 @@
 import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
-import { getRecipientSocketId, io } from "../socket/socket.js";
+import { getRecipientSocketId, getIO } from "../socket/socket.js";
 import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
@@ -98,35 +98,26 @@ async function sendMessage(req, res) {
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender', 'username profilePic');
 
-    // Handle socket notifications
+    // Emit socket event for real-time updates
+    const io = getIO();
+    const socketPayload = {
+      conversationId: conversation._id,
+      receiverId: recipientId,
+      conversation,
+      senderId,
+      message: populatedMessage,
+    };
+
     if (conversation.isGroup) {
-      // For group messages, use a room-based approach
-      const roomId = `group_${conversation._id}`;
-      
-      // Emit the group message to all participants in the group room
-      io.to(roomId).emit("newGroupMessage", {
-        message: populatedMessage,
-        conversation: {
-          _id: conversation._id,
-          isGroup: true,
-          groupName: conversation.groupName,
-        },
-      });
+      io.to(`group_${conversation._id}`).emit("newGroupMessage", socketPayload);
     } else {
-      // For direct messages, we need to be very explicit about the recipient
-      const recipient = recipientId || conversation.participants.find(
-        (p) => p.toString() !== senderId.toString()
-      );
-      
-      // Only emit to the direct message room, not individual sockets
-      const roomId = `chat_${conversation._id}`;
-      io.to(roomId).emit("newMessage", populatedMessage);
+      io.to(`chat_${conversation._id}`).emit("newMessage", socketPayload);
     }
 
     res.status(201).json(populatedMessage);
   } catch (error) {
     console.error("Error in sendMessage:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 }
 // messageController.js - Update getMessages function
