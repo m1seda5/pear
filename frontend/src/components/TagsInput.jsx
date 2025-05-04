@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useTags } from './use-tags';
+import { useTags } from '../hooks/use-tags';
 import {
   Box,
   Flex,
@@ -17,7 +17,7 @@ import {
   Input,
   useColorModeValue
 } from "@chakra-ui/react";
-import { AddIcon, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 /**
  * A reusable tag input component
@@ -84,7 +84,7 @@ const TagsInput = ({
             size="sm"
             colorScheme="blue"
             variant="outline"
-            icon={<AddIcon />}
+            icon={<Plus />}
             isDisabled={availableSuggestions.length === 0 || hasReachedMax}
           />
           <MenuList bg={menuBg} maxH="200px" overflowY="auto">
