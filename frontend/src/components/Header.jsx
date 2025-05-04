@@ -403,7 +403,7 @@ function Header({ unreadCount = 0 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   // User role checks
   const isStudent = user?.role === "student";
   const isTeacher = user?.role === "teacher";
@@ -463,19 +463,19 @@ function Header({ unreadCount = 0 }) {
     : "1px solid rgba(0, 0, 0, 0.05)";
     
   const glassBoxShadow = colorMode === "dark"
-    ? "0 8px 32px rgba(0, 0, 0, 0.3)"
-    : "0 8px 32px rgba(0, 0, 0, 0.08)";
+    ? "0 4px 12px rgba(0, 0, 0, 0.3)"
+    : "0 4px 12px rgba(0, 0, 0, 0.08)";
 
   return (
-    <Box
+    <Box 
       as={motion.div}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      width="100%"
-      display="flex"
+      width="100%" 
+      display="flex" 
       justifyContent="center"
-      py={3}
+      py={2} // Reduced from py={3}
       position="sticky"
       top={0}
       zIndex={100}
@@ -488,8 +488,8 @@ function Header({ unreadCount = 0 }) {
         border={glassBorder}
         boxShadow={glassBoxShadow}
         px={{ base: 3, md: 5 }}
-        py={3}
-        maxWidth={{ base: "95%", md: "90%", lg: "800px" }}
+        py={2} // Reduced from py={3}
+        maxWidth={{ base: "95%", md: "90%", lg: "600px" }} // Reduced from 800px
         mx="auto"
         gap={{ base: 2, md: 4 }}
         justify="center"
@@ -524,8 +524,8 @@ function Header({ unreadCount = 0 }) {
           icon={
             <Icon
               as={colorMode === "dark" ? SunIcon : MoonIcon}
-              w={iconSize - 4}
-              h={iconSize - 4}
+              w={iconSize - 8} // Reduced from iconSize - 4
+              h={iconSize - 8} // Reduced from iconSize - 4
             />
           }
           label={colorMode === "dark" ? "Light Mode" : "Dark Mode"}
@@ -635,9 +635,9 @@ function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
     ? disabledColor 
     : (isActive ? activeColor : normalColor);
 
-  // Animation variants
+  // Animation variants with increased scale
   const iconVariants = {
-    hover: { scale: 1.15 },
+    hover: { scale: 1.3 }, // Increased from 1.15
     tap: { scale: 0.95 },
     rest: { scale: 1 }
   };
@@ -667,35 +667,35 @@ function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
         color={iconColor}
         mx={1.5}
         position="relative"
+    >
+      {/* Icon */}
+      <Box 
+        padding={2} 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center"
       >
-        {/* Icon */}
-        <Box 
-          padding={2} 
-          display="flex" 
-          alignItems="center" 
-          justifyContent="center"
-        >
-          {icon}
-        </Box>
-        
+        {icon}
+      </Box>
+      
         {/* Active indicator */}
         {isActive && !isDisabled && (
-          <Box
+        <Box
             as={motion.div}
             layoutId="activeIndicator"
-            position="absolute"
+          position="absolute"
             bottom="-5px"
-            left="50%"
+          left="50%"
             width="5px"
             height="5px"
-            borderRadius="full"
+        borderRadius="full"
             bg={activeColor}
             initial={{ x: "-50%" }}
             animate={{ x: "-50%" }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
           />
         )}
-      </Box>
+    </Box>
     </Tooltip>
   );
 }
@@ -756,7 +756,6 @@ function useChatAccessCheck(user, isStudent, isTeacher, isAdmin) {
 }
 
 export default Header;
-
 
 
 

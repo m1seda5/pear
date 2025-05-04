@@ -6,10 +6,10 @@ import { Children, cloneElement, createContext, useContext, useEffect, useMemo, 
 import _ from 'lodash';
 
 // Constants for dock component
-const DOCK_HEIGHT = 128;
+const DOCK_HEIGHT = 80; // Reduced from 128
 const DEFAULT_MAGNIFICATION = 80;
 const DEFAULT_DISTANCE = 150;
-const DEFAULT_PANEL_HEIGHT = 64;
+const DEFAULT_PANEL_HEIGHT = 48; // Reduced from 64
 
 // Create motion components
 const MotionBox = motion(Box);
@@ -110,8 +110,8 @@ function Dock({
       alignItems="flex-end"
       overflowX="auto"
       justifyContent="center"
-      mt={6}
-      mb={10}
+      mt={4} // Reduced from mt={6}
+      mb={6} // Reduced from mb={10}
       sx={{
         scrollbarWidth: 'none',
         '&::-webkit-scrollbar': {
@@ -128,10 +128,10 @@ function Dock({
         onMouseLeave={handleMouseLeave}
         mx="auto"
         width="fit-content"
-        gap={4}
-        borderRadius="3xl"
+        gap={3} // Reduced from gap={4}
+        borderRadius="2xl" // Reduced from 3xl
         bg={colorMode === "dark" ? "gray.800" : "gray.50"}
-        px={4}
+        px={3} // Reduced from px={4}
         style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"
@@ -210,7 +210,7 @@ function DockItem({ children, className, onClick, isDisabled }) {
   const widthTransform = useTransform(
     mouseDistance,
     [0, distance],
-    [magnification, 40],
+    [magnification * 1.5, 40], // Increased magnification from 80 to 120
     {
       clamp: true // This ensures values stay within our defined range
     }

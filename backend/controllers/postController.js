@@ -436,7 +436,7 @@
 //     // Retrieve the list of users the current user is following
 //     const following = user.following || [];
 
-//     // Include the current user’s own ID in the list to fetch their posts as well
+//     // Include the current user's own ID in the list to fetch their posts as well
 //     const allUserIds = [...following, userId];
 
 //     // Fetch posts based on target audience and user roles
@@ -1223,6 +1223,7 @@ import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
+import { generateQuickLoginLink } from "./quickLoginController.js";
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -1236,29 +1237,42 @@ const transporter = nodemailer.createTransport({
 
 // Helper function to send notification email
 const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
-  const mailOptions = {
-    from: "pearnet104@gmail.com",
-    to: recipientEmail,
-    subject: "New Post on Pear! 🍐",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
-        <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
-        <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
-           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-          View Post
-        </a>
-        <p style="color: #666; font-size: 12px; margin-top: 20px;">
-          You received this email because you have notifications enabled. 
-          You can disable these in your Pear account settings.
-        </p>
-      </div>
-    `
-  };
-
   try {
+    // Get the recipient user to generate quick login link
+    const recipient = await User.findOne({ email: recipientEmail });
+    if (!recipient) {
+      console.error(`Recipient not found for email: ${recipientEmail}`);
+      return;
+    }
+
+    // Generate quick login link
+    const quickLoginLink = await generateQuickLoginLink(recipient._id);
+
+    const mailOptions = {
+      from: "pearnet104@gmail.com",
+      to: recipientEmail,
+      subject: "New Post on Pear! 🍐",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
+          <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
+          <p style="font-size: 16px;">Don't miss out on the conversation!</p>
+          <a href="${quickLoginLink}" 
+             style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                    color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+            View Post
+          </a>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">
+            You received this email because you have notifications enabled. 
+            You can disable these in your Pear account settings.
+          </p>
+          <p style="color: #666; font-size: 12px;">
+            This link will expire in 1 hour. If you didn't request this notification, you can safely ignore it.
+          </p>
+        </div>
+      `
+    };
+
     await transporter.sendMail(mailOptions);
     console.log(`Notification email sent to ${recipientEmail}`);
   } catch (error) {

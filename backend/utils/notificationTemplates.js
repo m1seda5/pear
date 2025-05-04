@@ -1,42 +1,70 @@
 // utils/notificationTemplates.js
 export const notificationCategories = {
-    FEATURES: [
-      "Did you know you can customize your feed on Pear?",
-      "Check out what's happening in your Connection Hub!"
+    MORNING: [
+      "Good morning! 🌅 Check out what's new on Pear today",
+      "Start your day with Pear - see what your peers are up to!",
+      "Morning update: New posts and activities waiting for you"
     ],
-    ENGAGEMENT: [
-      "You know that business you've been wanting to push? Post it and get feedback!",
-      "Decide who sees your posts with Custom Posting Groups."
+    AFTERNOON: [
+      "Afternoon check-in: Don't miss out on the latest updates!",
+      "Catch up on what's happening during your break",
+      "Your afternoon Pear update is here! 🍐"
     ],
-    UPDATES: [
-      "Get notices, announcements for your year group, form room, and general announcements all in one place."
+    WEEKLY: [
+      "Your weekly Pear digest is here! See what you missed",
+      "Weekly highlights: Top posts and activities on Pear",
+      "Weekend special: Check out what's trending on Pear"
     ]
-  };
+};
+
+export const generateNotification = (currentHour, currentDay) => {
+  let message = "";
   
-  export const generateNotification = () => {
-    const day = new Date().getDay();
-    const isWeekday = day >= 1 && day <= 5; // Monday-Friday
-    
-    // Saturday special notification
-    if (day === 6) {
-      return {
-        subject: "Weekly Pear Update 🍐",
-        message: "Check out what's new on Pear this week!",
-        type: "WEEKLY"
-      };
-    }
-  
-    // Randomly select category for weekdays
-    const categories = isWeekday 
-      ? ['FEATURES', 'ENGAGEMENT', 'UPDATES']
-      : ['FEATURES', 'ENGAGEMENT'];
-    
-    const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-    const messages = notificationCategories[selectedCategory];
-    
-    return {
-      subject: `Pear Update: ${selectedCategory}`,
-      message: messages[Math.floor(Math.random() * messages.length)],
-      type: selectedCategory
-    };
+  if (currentHour >= 7 && currentHour <= 9) {
+    message = "Good morning! 🌅 Start your day with Pear Network. Check out what's new and share your thoughts!";
+  } else if (currentHour >= 13 && currentHour <= 16) {
+    message = "Afternoon boost! ☀️ Take a break and catch up with your Pear Network community.";
+  } else if (currentDay === 6) { // Saturday
+    message = "Weekend special! 🌟 Don't miss out on the latest updates and discussions in Pear Network.";
+  }
+
+  return {
+    message,
+    template: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4CAF50;">Pear Network Update</h2>
+        <p style="font-size: 16px;">${message}</p>
+        <a href="{{quickLoginLink}}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+          Quick Login
+        </a>
+        <p style="font-size: 14px; color: #666;">
+          This link will expire in 1 hour. If you didn't request this notification, you can safely ignore it.
+        </p>
+      </div>
+    `
   };
+};
+
+export const generatePostNotification = (posterUsername, postId) => {
+  return {
+    message: `${posterUsername} just made a new post on Pear. Don't miss out on the conversation!`,
+    template: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
+        <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
+        <p style="font-size: 16px;">Don't miss out on the conversation!</p>
+        <a href="{{quickLoginLink}}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+          View Post
+        </a>
+        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+          You received this email because you have notifications enabled. 
+          You can disable these in your Pear account settings.
+        </p>
+      </div>
+    `
+  };
+};

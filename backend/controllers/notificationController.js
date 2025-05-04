@@ -1,7 +1,8 @@
 import User from "../models/userModel.js";
 import nodemailer from "nodemailer";
-import { generateNotification } from "../utils/notificationTemplates.js";
+import { generateNotification, generatePostNotification } from "../utils/notificationTemplates.js";
 import Post from "../models/postModel.js";
+import { generateQuickLoginLink } from "./quickLoginController.js";
 
 // Create Brevo SMTP transporter directly in this file
 const transporter = nodemailer.createTransport({
@@ -20,44 +21,163 @@ const checkActivityLevel = async () => {
   return recentPosts < 5; // Consider low activity if less than 5 posts in last hour
 };
 
+// Check if user has been active recently
+const checkUserActivity = async (userId) => {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentActivity = await Post.findOne({
+    postedBy: userId,
+    createdAt: { $gte: oneDayAgo }
+  });
+  return !recentActivity;
+};
+
+// Check if user has already received a notification today
+const checkRecentNotification = async (userId) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const recentNotification = await User.findOne({
+    _id: userId,
+    lastNotificationDate: { $gte: today }
+  });
+  
+  return !recentNotification;
+};
+
+// Helper function to send email notification with quick login
+const sendEmailNotification = async (userId, message, quickLoginLink, template) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user || !user.email) {
+      console.error(`No email found for user ${userId}`);
+      return;
+    }
+
+    const mailOptions = {
+      from: "pearnet104@gmail.com",
+      to: user.email,
+      subject: "Pear Network Update",
+      html: template.replace("{{quickLoginLink}}", quickLoginLink)
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Notification email sent to ${user.email}`);
+  } catch (error) {
+    console.error(`Error sending notification email to user ${userId}:`, error);
+  }
+};
+
 export const sendIdleNotifications = async () => {
   try {
+    const currentHour = new Date().getHours();
+    const currentDay = new Date().getDay();
+
+    // Only send notifications during peak hours
+    if (!((currentHour >= 7 && currentHour <= 9) || (currentHour >= 13 && currentHour <= 16))) {
+      return;
+    }
+
+    // Check for low activity
     const isLowActivity = await checkActivityLevel();
-    if (!isLowActivity) return;
+    if (!isLowActivity) {
+      return;
+    }
 
-    const { subject, message } = generateNotification();
-    const users = await User.find({ 
-      notificationPreferences: true,
-      isBanned: false
-    }).select("email");
-
-    const notificationPromises = users.map(user => {
-      const mailOptions = {
-        from: "pearnet104@gmail.com",
-        to: user.email,
-        subject: subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #4CAF50;">${subject}</h2>
-            <p style="font-size: 16px;">${message}</p>
-            <a href="https://pear-tsk2.onrender.com" 
-               style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                      color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-              View What's Going On
-            </a>
-            <p style="color: #666; font-size: 12px; margin-top: 20px;">
-              You received this email because you have notifications enabled. 
-              <a href="https://pear-tsk2.onrender.com/settings">Adjust preferences</a>
-            </p>
-          </div>
-        `
-      };
-      return transporter.sendMail(mailOptions);
+    // Get users who:
+    // 1. Have notifications enabled
+    // 2. Are not banned
+    // 3. Haven't been active in last 24 hours
+    // 4. Haven't received a notification today
+    const users = await User.find({
+      notificationsEnabled: true,
+      isBanned: false,
+      lastNotificationDate: { $ne: new Date().toISOString().split('T')[0] }
     });
 
-    await Promise.allSettled(notificationPromises);
-    console.log(`Sent idle notifications to ${users.length} users`);
+    if (users.length === 0) {
+      return;
+    }
+
+    // Generate notifications for each user
+    const notifications = await Promise.all(
+      users.map(async (user) => {
+        const quickLoginLink = await generateQuickLoginLink(user._id);
+        const notification = generateNotification(currentHour, currentDay);
+        return {
+          userId: user._id,
+          message: notification.message,
+          quickLoginLink,
+          template: notification.template
+        };
+      })
+    );
+
+    // Send notifications
+    for (const notification of notifications) {
+      await sendEmailNotification(
+        notification.userId,
+        notification.message,
+        notification.quickLoginLink,
+        notification.template
+      );
+    }
+
+    console.log(`Sent idle notifications to ${notifications.length} users`);
   } catch (error) {
     console.error("Error sending idle notifications:", error);
+  }
+};
+
+// New function to send post notifications with quick login
+export const sendPostNotification = async (postId, posterId) => {
+  try {
+    const post = await Post.findById(postId).populate("postedBy", "username");
+    if (!post) {
+      console.error(`Post ${postId} not found`);
+      return;
+    }
+
+    // Get users who have notifications enabled
+    const users = await User.find({
+      notificationsEnabled: true,
+      isBanned: false,
+      _id: { $ne: posterId } // Don't notify the poster
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    // Generate notifications for each user
+    const notifications = await Promise.all(
+      users.map(async (user) => {
+        // Generate quick login link with post path
+        const quickLoginLink = await generateQuickLoginLink(
+          user._id,
+          `/posts/${postId}` // Direct path to the post
+        );
+        const notification = generatePostNotification(post.postedBy.username, postId);
+        return {
+          userId: user._id,
+          message: notification.message,
+          quickLoginLink,
+          template: notification.template
+        };
+      })
+    );
+
+    // Send notifications
+    for (const notification of notifications) {
+      await sendEmailNotification(
+        notification.userId,
+        notification.message,
+        notification.quickLoginLink,
+        notification.template
+      );
+    }
+
+    console.log(`Sent post notifications to ${notifications.length} users`);
+  } catch (error) {
+    console.error("Error sending post notifications:", error);
   }
 };
