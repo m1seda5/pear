@@ -1,4 +1,3 @@
-
 // versioon one only works for the settigns page 
 // // src/i18n.js
 
@@ -68,6 +67,10 @@ const resources = {
       "Post deleted": "Post deleted",  // Toast message for successful deletion
       "Error deleting post": "Error deleting post",  // Error message
       "ago": "ago",  // Used for time formatting
+      "General Post": "General Post",
+      "Views": "Views",
+      "Reply to Post": "Reply to Post",
+      "Live comments coming soon, pick a reaction.": "Live comments coming soon, pick a reaction.",
 
       // UserPost Component Translations
       "replies": "replies",
@@ -171,7 +174,24 @@ const resources = {
        "Email notifications are disabled": "Email notifications are disabled",
        "Are you sure you want to freeze your account?": "Are you sure you want to freeze your account?",
        "Your account has been frozen": "Your account has been frozen",
- 
+      // TV Page Translations
+      "Fullscreen Error": "Fullscreen Error",
+      "Network Error": "Network Error",
+      "Using cached content": "Using cached content",
+      "Access Denied": "Access Denied",
+      "Post image": "Post image",
+      "Unknown User": "Unknown User",
+      "Post not found": "Post not found",
+      "Failed to load post": "Failed to load post",
+      "Failed to delete post": "Failed to delete post",
+      "Invalid post ID": "Invalid post ID",
+      "just now": "just now",
+      "recently": "recently",
+      "Web push notifications": "Web push notifications",
+      "Receive web push notifications for new posts": "Receive web push notifications for new posts",
+      "Web push notifications are disabled": "Web push notifications are disabled",
+      "Notification Settings": "Notification Settings",
+      "Language": "Language",
     } 
   },
   zh: {
@@ -196,6 +216,11 @@ const resources = {
       "Post deleted": "帖子已删除",  // Toast message for successful deletion
       "Error deleting post": "删除帖子时出错",  // Error message
       "ago": "前",  // Used for time formatting
+      "General Post": "一般帖子",
+      "Views": "浏览",
+      "Reply to Post": "回复帖子",
+      "Live comments coming soon, pick a reaction.": "实时评论即将推出，请选择一个反应.",
+
       // UserPost Component Translations
       "replies": "回复",
       "likes": "点赞",
@@ -297,6 +322,24 @@ const resources = {
        "Email notifications are disabled": "电子邮件通知已禁用",
        "Are you sure you want to freeze your account?": "您确定要冻结您的帐户吗？",
        "Your account has been frozen": "您的帐户已被冻结",
+      // TV Page Translations
+      "Fullscreen Error": "全屏错误",
+      "Network Error": "网络错误",
+      "Using cached content": "使用缓存内容",
+      "Access Denied": "访问被拒绝",
+      "Post image": "帖子图片",
+      "Unknown User": "未知用户",
+      "Post not found": "未找到帖子",
+      "Failed to load post": "加载帖子失败",
+      "Failed to delete post": "删除帖子失败",
+      "Invalid post ID": "无效的帖子ID",
+      "just now": "刚刚",
+      "recently": "最近",
+      "Web push notifications": "网页推送通知",
+      "Receive web push notifications for new posts": "接收新帖子的网页推送通知",
+      "Web push notifications are disabled": "网页推送通知已禁用",
+      "Notification Settings": "通知设置",
+      "Language": "语言",
     }
   }
 };

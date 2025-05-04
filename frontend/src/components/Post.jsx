@@ -177,11 +177,17 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const { t, i18n } = useTranslation();
     const [language, setLanguage] = useState(i18n.language);
     const viewTimeoutRef = useRef(null);
-    
+    const postRef = useRef(null);
+    const surroundingPostsRef = useRef([]);
+
     // Match colors from HomePage background
     const textColor = useColorModeValue("gray.700", "gray.200");
     const borderColor = useColorModeValue("gray.100", "gray.700");
-    
+    const hoverGlowLight = useColorModeValue("rgba(126, 217, 87, 0.4)", "rgba(126, 217, 87, 0.2)"); // Pear Green
+    const hoverGlowDark = useColorModeValue("rgba(126, 217, 87, 0.6)", "rgba(126, 217, 87, 0.4)"); // Pear Green
+    const newPostGlowLight = "linear-gradient(to right, #a8b8ff, #d6aeff, #ffb3d9, #ffccbc)"; // Apple Siri-like
+    const newPostGlowDark = "linear-gradient(to right, #6c7ddb, #9a79d1, #d17eb8, #e6a891)"; // Apple Siri-like
+
     useEffect(() => {
         const handleLanguageChange = (lng) => {
             setLanguage(lng);
@@ -273,17 +279,94 @@ const Post = ({ post, postedBy, isTV = false }) => {
         }
     };
 
+    const handleMouseEnter = () => {
+        if (postRef.current) {
+            postRef.current.style.transform = 'scale(1.03) rotate(1deg)';
+            postRef.current.style.boxShadow = useColorModeValue(
+                `0 0 10px ${post.isNew ? newPostGlowLight : hoverGlowLight}`,
+                `0 0 10px ${post.isNew ? newPostGlowDark : hoverGlowDark}`
+            );
+            postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out';
+
+            // Apply wavy border glow
+            if (post.isNew) {
+                postRef.current.style.border = `2px solid transparent`;
+                postRef.current.style.backgroundImage = useColorModeValue(newPostGlowLight, newPostGlowDark);
+                postRef.current.style.backgroundOrigin = 'border-box';
+                postRef.current.style.backgroundClip = 'content-box, border-box';
+                postRef.current.style.backgroundSize = '200% 100%';
+                postRef.current.style.animation = 'wavyGlow 2s linear infinite';
+            } else {
+                postRef.current.style.border = `2px solid transparent`;
+                postRef.current.style.backgroundImage = useColorModeValue(
+                    `linear-gradient(to right, transparent, ${hoverGlowLight}, transparent)`,
+                    `linear-gradient(to right, transparent, ${hoverGlowDark}, transparent)`
+                );
+                postRef.current.style.backgroundOrigin = 'border-box';
+                postRef.current.style.backgroundClip = 'content-box, border-box';
+                postRef.current.style.backgroundSize = '200% 100%';
+                postRef.current.style.animation = 'wavyGlowGreen 2s linear infinite';
+            }
+
+            // Slightly blur the title
+            const titleElement = postRef.current.querySelector('.post-author-username');
+            if (titleElement) {
+                titleElement.style.filter = 'blur(1px)';
+                titleElement.style.transition = 'filter 0.2s ease-in-out';
+            }
+
+            // React to surrounding posts (basic implementation - needs refinement)
+            if (postRef.current.parentNode) {
+                Array.from(postRef.current.parentNode.children).forEach(child => {
+                    if (child !== postRef.current) {
+                        child.style.transform = 'scale(0.97) rotate(-0.5deg)';
+                        child.style.filter = 'blur(0.5px)';
+                        child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
+                    }
+                });
+            }
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (postRef.current) {
+            postRef.current.style.transform = 'scale(1) rotate(0deg)';
+            postRef.current.style.boxShadow = 'none';
+            postRef.current.style.border = useColorModeValue(`1px solid ${borderColor}`, `1px solid ${borderColor}`);
+            postRef.current.style.backgroundImage = 'none';
+            postRef.current.style.animation = 'none';
+            postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border 0.2s ease-in-out';
+
+            const titleElement = postRef.current.querySelector('.post-author-username');
+            if (titleElement) {
+                titleElement.style.filter = 'blur(0)';
+                titleElement.style.transition = 'filter 0.2s ease-in-out';
+            }
+
+            if (postRef.current.parentNode) {
+                Array.from(postRef.current.parentNode.children).forEach(child => {
+                    if (child !== postRef.current) {
+                        child.style.transform = 'scale(1) rotate(0deg)';
+                        child.style.filter = 'blur(0)';
+                        child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
+                    }
+                });
+            }
+        }
+    };
+
     if (!user) return null;
-    
+
     return (
-        <Link 
-            to={`/${user.username}/post/${post._id}`} 
-            style={{ 
+        <Link
+            to={`/${user.username}/post/${post._id}`}
+            style={{
                 width: isTV ? "100%" : "auto",
-                display: "block"
+                display: "block",
             }}
         >
             <Flex
+                ref={postRef}
                 direction="column"
                 w="full"
                 maxW={isTV ? "full" : "2xl"}
@@ -292,11 +375,16 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 borderColor={borderColor}
                 overflow="hidden"
                 className="post-container"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                    transition: 'all 0.3s ease-in-out', // Smooth transition for all properties
+                }}
             >
                 {/* Author section with delete button only */}
-                <Flex 
-                    alignItems="center" 
-                    justifyContent="space-between" 
+                <Flex
+                    alignItems="center"
+                    justifyContent="space-between"
                     px={5}
                     pt={4}
                     pb={3}
@@ -312,10 +400,11 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             }}
                         />
                         <Flex direction="column">
-                            <Text 
-                                fontSize="sm" 
-                                fontWeight="semibold" 
+                            <Text
+                                fontSize="sm"
+                                fontWeight="semibold"
                                 color={textColor}
+                                className="post-author-username"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     navigate(`/${user.username}`);
@@ -333,9 +422,9 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     </Flex>
                     <Flex gap={4} alignItems="center">
                         {(currentUser?._id === user._id || currentUser?.role === "admin") && (
-                            <Flex 
+                            <Flex
                                 as="button"
-                                p={2} 
+                                p={2}
                                 borderRadius="full"
                                 _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
                                 transition="all 0.2s"
@@ -385,7 +474,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
                 {/* Image preview */}
                 {post.img && (
-                    <Flex 
+                    <Flex
                         w="full"
                         justifyContent="center"
                         px={5}
@@ -404,9 +493,9 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 )}
 
                 {/* Engagement section */}
-                <Flex 
-                    alignItems="center" 
-                    justifyContent="space-between" 
+                <Flex
+                    alignItems="center"
+                    justifyContent="space-between"
                     px={5}
                     pb={4}
                     pt={2}

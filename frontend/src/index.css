@@ -87,19 +87,16 @@
   
   /* Lock icon animations */
   @keyframes pulse {
-	0% {
+	0%, 100% {
 	  opacity: 0.7;
 	}
 	50% {
 	  opacity: 1;
 	}
-	100% {
-	  opacity: 0.7;
-	}
   }
   
   @keyframes shake {
-	0% {
+	0%, 100% {
 	  transform: translateX(0);
 	}
 	25% {
@@ -111,14 +108,11 @@
 	75% {
 	  transform: translateX(-3px);
 	}
-	100% {
-	  transform: translateX(0);
-	}
   }
   
   /* Settings icon rotation */
   .settings-icon {
-	transition: transform 0.3s ease;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	transform-origin: center;
   }
   
@@ -135,7 +129,7 @@
   
   /* Message bubble hover effect */
   .message-bubble {
-	transition: transform 0.1s ease-in-out;
+	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .message-bubble:hover {
@@ -148,7 +142,7 @@
 	padding: 8px;
 	width: 40px;
 	height: 40px;
-	transition: background-color 0.3s ease-in-out;
+	transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .icon-container:hover {
@@ -167,6 +161,7 @@
   .light-mode ::-webkit-scrollbar-thumb {
 	background-color: #c1c1c1;
 	border-radius: 10px;
+	transition: background-color 0.2s ease;
   }
   
   .light-mode ::-webkit-scrollbar-thumb:hover {
@@ -184,6 +179,7 @@
   .dark-mode ::-webkit-scrollbar-thumb {
 	background-color: #555;
 	border-radius: 10px;
+	transition: background-color 0.2s ease;
   }
   
   .dark-mode ::-webkit-scrollbar-thumb:hover {
@@ -230,7 +226,7 @@
   
   /* New to You text animation */
   @keyframes pulseEffect {
-	0% {
+	0%, 100% {
 	  color: #FF6F61;
 	}
 	20% {
@@ -244,9 +240,6 @@
 	}
 	80% {
 	  color: #FF7043;
-	}
-	100% {
-	  color: #FF6F61;
 	}
   }
   
@@ -454,27 +447,27 @@
 	  font-size: 26px;
 	  margin: 0 0 6px 0;
 	}
-	
+  
 	.text-overlay p {
 	  font-size: 14px;
 	}
-	
+  
 	.card-gradient {
 	  height: 70%;
 	}
-	
+  
 	.status-pill {
 	  padding: 6px 12px;
 	  font-size: 12px;
 	}
-	
+  
 	.done-button {
 	  bottom: 16px;
 	  right: 16px;
 	  padding: 10px 20px;
 	  font-size: 14px;
 	}
-	
+  
 	.close-button {
 	  top: 16px;
 	  right: 16px;
@@ -486,13 +479,13 @@
   .game-card {
 	transition: all 0.3s ease;
 	border-radius: 12px;
-	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	cursor: pointer;
   }
   
   .game-card:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
   
   .mobile-game-card {
@@ -500,7 +493,7 @@
 	  padding: 1rem;
 	  margin: 0.5rem 0;
 	  border-radius: 0.5rem;
-	  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
   }
   
@@ -512,6 +505,35 @@
   }
   
   @keyframes rotate {
-	from { transform: rotate(0deg); }
-	to { transform: rotate(90deg); }
+	from {
+	  transform: rotate(0deg);
+	}
+	to {
+	  transform: rotate(90deg);
+	}
+  }
+  
+  /* Post-specific animations */
+  @keyframes wavyGlow {
+	0% {
+	  background-position: 0% 50%;
+	}
+	50% {
+	  background-position: 100% 50%;
+	}
+	100% {
+	  background-position: 0% 50%;
+	}
+  }
+  
+  @keyframes wavyGlowGreen {
+	0% {
+	  background-position: 0% 50%;
+	}
+	50% {
+	  background-position: 100% 50%;
+	}
+	100% {
+	  background-position: 0% 50%;
+	}
   }

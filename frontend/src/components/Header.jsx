@@ -1,422 +1,442 @@
-import { 
-  Box, 
-  Flex, 
-  Icon,
-  useColorMode,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Collapse,
-  useDisclosure
-} from "@chakra-ui/react";
-import { SunIcon, MoonIcon, SearchIcon } from "@chakra-ui/icons";
+// v1
+// import { Box, Flex, Icon, useColorMode } from "@chakra-ui/react";
+// import { SunIcon, MoonIcon } from "@chakra-ui/icons";
+// import { useRecoilValue, useSetRecoilState } from "recoil";
+// import userAtom from "../atoms/userAtom";
+// import { AiFillHome } from "react-icons/ai";
+// import { RxAvatar } from "react-icons/rx";
+// import { useNavigate } from "react-router-dom";
+// import { FiLogOut } from "react-icons/fi";
+// import useLogout from "../hooks/useLogout";
+// import authScreenAtom from "../atoms/authAtom";
+// import { BsFillChatQuoteFill } from "react-icons/bs";
+// import { MdOutlineSettings } from "react-icons/md";
+// import { useState, useEffect, useRef } from "react";
+// import { FaLock, FaUserShield } from "react-icons/fa";
+// import { PiTelevisionSimpleBold } from "react-icons/pi";
+
+// // Main Header component
+// function Header({ unreadCount = 0 }) {
+//   const { colorMode, toggleColorMode } = useColorMode();
+//   const user = useRecoilValue(userAtom);
+//   const logout = useLogout();
+//   const setAuthScreen = useSetRecoilState(authScreenAtom);
+//   const navigate = useNavigate();
+//   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+//   // State for locked icons
+//   const [showLockIcon, setShowLockIcon] = useState({
+//     chat: false,
+//     tv: false,
+//     admin: false
+//   });
+
+//   // User role checks
+//   const isStudent = user?.role === "student";
+//   const isTeacher = user?.role === "teacher";
+//   const isAdmin = user?.role === "admin";
+
+//   // Update mobile status on resize
+//   useEffect(() => {
+//     const handleResize = () => {
+//       setIsMobile(window.innerWidth < 768);
+//     };
+    
+//     window.addEventListener('resize', handleResize);
+//     return () => window.removeEventListener('resize', handleResize);
+//   }, []);
+
+//   // Time-based access control for chat
+//   const hasChatAccess = useChatAccessCheck(user, isStudent, isTeacher, isAdmin);
+
+//   // Click handlers
+//   const handleChatClick = () => {
+//     if (user && !user.isFrozen && hasChatAccess) {
+//       navigate("/chat");
+//     }
+//   };
+
+//   const handleTVClick = () => {
+//     if (user && isAdmin) {
+//       navigate("/tv");
+//     }
+//   };
+
+//   const handleAdminClick = () => {
+//     if (user && isAdmin) {
+//       navigate("/admin");
+//     }
+//   };
+
+//   const handleLogout = async () => {
+//     try {
+//       navigate("/auth");
+//       await logout();
+//     } catch (error) {
+//       console.error("Logout error:", error);
+//     }
+//   };
+
+//   // Define icon size
+//   const iconSize = 24;
+
+//   return (
+//     <Box 
+//       width="100%" 
+//       display="flex" 
+//       justifyContent="center"
+//       py={2}
+//     >
+//       <Flex
+//         bg={colorMode === "dark" ? "rgba(26, 32, 44, 0.9)" : "rgba(247, 250, 252, 0.9)"}
+//         backdropFilter="blur(10px)"
+//         borderRadius="full"
+//         boxShadow={colorMode === "dark" ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)"}
+//         px={4}
+//         py={3}
+//         maxWidth="100%"
+//         mx="auto"
+//         gap={{ base: 3, md: 5 }}
+//         justify="center"
+//         align="center"
+//         overflow="auto"
+//         css={{
+//           scrollbarWidth: 'none',
+//           '&::-webkit-scrollbar': {
+//             display: 'none',
+//           },
+//         }}
+//       >
+//         {user && (
+//           <NavIcon 
+//             icon={<AiFillHome size={iconSize} />}
+//             label="Home"
+//             onClick={() => navigate("/")}
+//           />
+//         )}
+
+//         {!user && (
+//           <NavIcon 
+//             icon={<Box fontWeight="medium">Login</Box>}
+//             label="Login"
+//             onClick={() => { setAuthScreen("login"); navigate("/auth"); }}
+//           />
+//         )}
+
+//         <NavIcon 
+//           icon={
+//             <Icon
+//               as={colorMode === "dark" ? SunIcon : MoonIcon}
+//               w={iconSize - 4}
+//               h={iconSize - 4}
+//             />
+//           }
+//           label={colorMode === "dark" ? "Light Mode" : "Dark Mode"}
+//           onClick={toggleColorMode}
+//         />
+
+//         {user && (
+//           <>
+//             <NavIcon 
+//               icon={<RxAvatar size={iconSize} />}
+//               label="Profile"
+//               onClick={() => navigate(`/${user.username}`)}
+//             />
+
+//             <NavIcon 
+//               icon={
+//                 <Box position="relative"
+//                   onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
+//                   onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
+//                 >
+//                   {user.isFrozen || showLockIcon.chat ? (
+//                     <FaLock size={iconSize - 4} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
+//                   ) : (
+//                     <BsFillChatQuoteFill size={iconSize - 4} />
+//                   )}
+//                   {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
+//                     <Flex
+//                       position="absolute"
+//                       top="-5px"
+//                       right="-5px"
+//                       bg="purple.500"
+//                       color="white"
+//                       borderRadius="full"
+//                       w="16px"
+//                       h="16px"
+//                       fontSize="xs"
+//                       alignItems="center"
+//                       justifyContent="center"
+//                       fontWeight="bold"
+//                     >
+//                       {unreadCount > 9 ? "9+" : unreadCount}
+//                     </Flex>
+//                   )}
+//                 </Box>
+//               }
+//               label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}
+//               onClick={handleChatClick}
+//               isDisabled={user.isFrozen || !hasChatAccess}
+//             />
+
+//             {isAdmin && !isMobile && (
+//               <NavIcon 
+//                 icon={<FaUserShield size={iconSize - 4} />}
+//                 label="Admin"
+//                 onClick={handleAdminClick}
+//               />
+//             )}
+
+//             {isAdmin && !isMobile && (
+//               <NavIcon 
+//                 icon={
+//                   <Box
+//                     onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
+//                     onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
+//                   >
+//                     {showLockIcon.tv ? (
+//                       <FaLock size={iconSize - 4} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
+//                     ) : (
+//                       <PiTelevisionSimpleBold size={iconSize} />
+//                     )}
+//                   </Box>
+//                 }
+//                 label="TV"
+//                 onClick={handleTVClick}
+//               />
+//             )}
+
+//             <NavIcon 
+//               icon={<MdOutlineSettings size={iconSize} />}
+//               label="Settings"
+//               onClick={() => navigate("/settings")}
+//             />
+
+//             <NavIcon 
+//               icon={<FiLogOut size={iconSize - 4} />}
+//               label="Logout"
+//               onClick={handleLogout}
+//             />
+//           </>
+//         )}
+
+//         {!user && (
+//           <NavIcon 
+//             icon={<Box fontWeight="medium">Sign up</Box>}
+//             label="Sign up"
+//             onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}
+//           />
+//         )}
+//       </Flex>
+//     </Box>
+//   );
+// }
+
+// // Helper component for individual nav icons
+// function NavIcon({ icon, label, onClick, isDisabled }) {
+//   const { colorMode } = useColorMode();
+//   const [showLabel, setShowLabel] = useState(false);
+//   const [isHovered, setIsHovered] = useState(false);
+  
+//   // Colors based on state
+//   const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
+//   const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+//   const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
+  
+//   const iconColor = isDisabled 
+//     ? disabledColor 
+//     : (isHovered ? activeColor : normalColor);
+
+//   return (
+//     <Box
+//       position="relative"
+//       onMouseEnter={() => {
+//         setShowLabel(true);
+//         setIsHovered(true);
+//       }}
+//       onMouseLeave={() => {
+//         setShowLabel(false);
+//         setIsHovered(false);
+//       }}
+//       onClick={isDisabled ? undefined : onClick}
+//       cursor={isDisabled ? "not-allowed" : "pointer"}
+//       transition="all 0.2s ease"
+//       transform={isHovered && !isDisabled ? "scale(1.15)" : "scale(1)"}
+//       color={iconColor}
+//       mx={1}
+//     >
+//       {/* Icon */}
+//       <Box 
+//         padding={2} 
+//         display="flex" 
+//         alignItems="center" 
+//         justifyContent="center"
+//       >
+//         {icon}
+//       </Box>
+      
+//       {/* Label tooltip */}
+//       {showLabel && (
+//         <Box
+//           position="absolute"
+//           top="-8"
+//           left="50%"
+//           transform="translateX(-50%)"
+//           width="max-content"
+//           whiteSpace="nowrap"
+//           borderRadius="md"
+//           border="1px solid"
+//           borderColor={isDisabled ? "red.300" : (colorMode === "dark" ? "whiteAlpha.300" : "gray.200")}
+//           bg={colorMode === "dark" ? "gray.800" : "white"}
+//           px={2}
+//           py={1}
+//           fontSize="xs"
+//           color={isDisabled ? disabledColor : (colorMode === "dark" ? "white" : "gray.800")}
+//           zIndex={10}
+//           pointerEvents="none"
+//           opacity={0.9}
+//           boxShadow="sm"
+//         >
+//           {label}
+//         </Box>
+//       )}
+      
+//       {/* Active indicator dot */}
+//       <Box
+//         position="absolute"
+//         bottom="-2px"
+//         left="50%"
+//         width="4px"
+//         height="4px"
+//         borderRadius="full"
+//         bg={isDisabled ? disabledColor : activeColor}
+//         opacity={isHovered ? 1 : 0}
+//         transform="translateX(-50%)"
+//         transition="opacity 0.2s ease"
+//       />
+//     </Box>
+//   );
+// }
+
+// // Hook for chat access control
+// function useChatAccessCheck(user, isStudent, isTeacher, isAdmin) {
+//   const [hasChatAccess, setHasChatAccess] = useState(false);
+  
+//   useEffect(() => {
+//     if (!user) {
+//       setHasChatAccess(false);
+//       return;
+//     }
+    
+//     if (isTeacher || isAdmin) {
+//       setHasChatAccess(true);
+//       return;
+//     }
+    
+//     if (isStudent) {
+//       const checkAccess = () => {
+//         const currentDate = new Date();
+//         const dayOfWeek = currentDate.getDay();
+//         const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+        
+//         const schoolStart = 810;
+//         const lunchStart = 1250;
+//         const lunchEnd = 1340;
+//         const schoolEnd = 1535;
+        
+//         // Weekend
+//         if (dayOfWeek === 0 || dayOfWeek === 6) {
+//           return true;
+//         }
+        
+//         // Weekday but outside school hours or during lunch
+//         if (currentTime < schoolStart || 
+//             (currentTime >= lunchStart && currentTime <= lunchEnd) || 
+//             currentTime > schoolEnd) {
+//           return true;
+//         }
+        
+//         return false;
+//       };
+      
+//       setHasChatAccess(checkAccess());
+      
+//       // Check every minute for time-based access changes
+//       const intervalId = setInterval(() => {
+//         setHasChatAccess(checkAccess());
+//       }, 60000);
+      
+//       return () => clearInterval(intervalId);
+//     }
+//   }, [user, isStudent, isTeacher, isAdmin]);
+  
+//   return hasChatAccess;
+// }
+
+// export default Header;
+
+
+// v2
+import { Box, Flex, Icon, useColorMode, Tooltip } from "@chakra-ui/react";
+import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { AiFillHome } from "react-icons/ai";
 import { RxAvatar } from "react-icons/rx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
 import { MdOutlineSettings } from "react-icons/md";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FaLock, FaUserShield } from "react-icons/fa";
 import { PiTelevisionSimpleBold } from "react-icons/pi";
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
-import { Children, cloneElement, createContext, useContext, useMemo } from 'react';
-import { MdSportsScore } from "react-icons/md";
+import { motion } from "framer-motion";
 
-// Create motion components
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
-
-// Constants for dock component - Optimized for smooth Apple-like effect
-const DOCK_HEIGHT = 140;
-const DEFAULT_MAGNIFICATION = 120; // Increased for more noticeable effect
-const DEFAULT_DISTANCE = 200; // Better range for magnification
-const DEFAULT_PANEL_HEIGHT = 64;
-
-// Create Dock Context
-const DockContext = createContext(undefined);
-
-function DockProvider({ children, value }) {
-  return <DockContext.Provider value={value}>{children}</DockContext.Provider>;
-}
-
-function useDock() {
-  const context = useContext(DockContext);
-  if (!context) {
-    throw new Error('useDock must be used within a DockProvider');
-  }
-  return context;
-}
-
-// Main Dock component - Enhanced for smoother Apple-like effect
-function Dock({
-  children,
-  className,
-  spring = { mass: 0.6, stiffness: 350, damping: 30 }, // Optimized for smoother animation
-  magnification = DEFAULT_MAGNIFICATION,
-  distance = DEFAULT_DISTANCE,
-  panelHeight = DEFAULT_PANEL_HEIGHT,
-}) {
-  const mouseX = useMotionValue(Infinity);
-  const isHovered = useMotionValue(0);
-  const { colorMode } = useColorMode();
-  const dockRef = useRef(null);
-
-  const maxHeight = useMemo(() => {
-    return Math.max(DOCK_HEIGHT, magnification + 32); // Better spacing for magnified items
-  }, [magnification]);
-
-  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
-  const height = useSpring(heightRow, {
-    ...spring,
-    // Slightly faster animation when entering than leaving for natural feel
-    stiffness: isHovered.get() === 1 ? spring.stiffness * 1.2 : spring.stiffness
-  });
-
-  // Enhanced mouse tracking with debouncing for smoother transitions
-  const handleMouseMove = (e) => {
-    if (!dockRef.current) return;
-    
-    // Get dock position relative to viewport
-    const dockRect = dockRef.current.getBoundingClientRect();
-    
-    // Calculate mouse X position relative to the dock
-    const relativeMouseX = e.clientX - dockRect.left;
-    
-    // Set values for animation
-    isHovered.set(1);
-    mouseX.set(relativeMouseX);
-  };
-
-  const handleMouseLeave = () => {
-    isHovered.set(0);
-    mouseX.set(Infinity);
-  };
-
-  return (
-    <MotionBox
-      style={{
-        height: height,
-      }}
-      mx={2}
-      display="flex"
-      width="100%"
-      alignItems="flex-end"
-      justifyContent="center"
-      mt={6}
-      mb={10}
-      overflow="visible" // Ensure icons can scale outside the container
-    >
-      <MotionFlex
-        ref={dockRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        mx="auto"
-        width="fit-content"
-        maxWidth="100%"
-        gap={4} // Increased gap for better spacing when magnified
-        borderRadius="3xl"
-        bg={colorMode === "dark" ? "rgba(26, 32, 44, 0.85)" : "rgba(247, 250, 252, 0.85)"}
-        backdropFilter="blur(12px)" // Glass effect
-        px={6} // Wider padding for better hover areas
-        style={{ height: panelHeight }}
-        role="toolbar"
-        aria-label="Application dock"
-        alignItems="center"
-        justifyContent="center"
-        boxShadow={colorMode === "dark" ? "0 4px 20px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.15)"}
-        position="relative"
-        overflow="visible" // Ensure no clipping of magnified icons
-      >
-        <DockProvider value={{ mouseX, spring, distance, magnification }}>
-          {children}
-        </DockProvider>
-      </MotionFlex>
-    </MotionBox>
-  );
-}
-
-// DockItem component - Completely revamped for authentic Apple dock effect
-function DockItem({ children, className, onClick, isDisabled }) {
-  const ref = useRef(null);
-  const { mouseX, spring, distance, magnification } = useDock();
-  const itemHovered = useMotionValue(0);
-  const { colorMode } = useColorMode();
-  
-  // Enhanced distance calculation for smoother transitions
-  const mouseDistance = useTransform(mouseX, (val) => {
-    if (!ref.current) return distance;
-    
-    const domRect = ref.current.getBoundingClientRect();
-    const itemCenter = domRect.left + domRect.width / 2;
-    
-    // Calculate absolute distance from mouse to center of item
-    return Math.abs(val - itemCenter);
-  });
-
-  // Enhanced transformation curve for authentic Apple-like scaling
-  const widthTransform = useTransform(
-    mouseDistance,
-    [0, distance * 0.2, distance * 0.5, distance],
-    [magnification, magnification * 0.8, magnification * 0.5, 42],
-    {
-      clamp: true
-    }
-  );
-
-  // Apply optimized springs for smoother animation
-  const width = useSpring(widthTransform, {
-    ...spring,
-    // Slightly more responsive when growing than shrinking
-    stiffness: mouseDistance.get() < distance * 0.3 ? spring.stiffness * 1.2 : spring.stiffness
-  });
-
-  // Enhanced hit area for better usability
-  const hitAreaSize = useTransform(width, (val) => Math.max(val, 60));
-
-  return (
-    <MotionBox
-      ref={ref}
-      style={{ width: hitAreaSize }} // Larger hit area than visual icon
-      onHoverStart={() => itemHovered.set(1)}
-      onHoverEnd={() => itemHovered.set(0)}
-      onFocus={() => itemHovered.set(1)}
-      onBlur={() => itemHovered.set(0)}
-      position="relative"
-      display="inline-flex"
-      alignItems="center"
-      justifyContent="center"
-      onClick={isDisabled ? undefined : onClick}
-      cursor={isDisabled ? "not-allowed" : "pointer"}
-      tabIndex={0}
-      role="button"
-      aria-haspopup="true"
-      className={className}
-      // Center content within the larger hit area
-      sx={{
-        "& > *": {
-          position: "absolute",
-          top: "50%", 
-          left: "50%",
-          transform: "translate(-50%, -50%)"
-        }
-      }}
-    >
-      <MotionBox
-        style={{ width }}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        position="relative"
-      >
-        {Children.map(children, (child) =>
-          cloneElement(child, { width, isHovered: itemHovered, isDisabled })
-        )}
-      </MotionBox>
-    </MotionBox>
-  );
-}
-
-// DockLabel component - Enhanced for smoother fading and better appearance
-function DockLabel({ children, className, ...rest }) {
-  const { isHovered, isDisabled, width } = rest;
-  const [isVisible, setIsVisible] = useState(false);
-  const { colorMode } = useColorMode();
-
-  // Make label respond to icon hover
-  useEffect(() => {
-    if (!isHovered) return;
-    
-    const unsubscribe = isHovered.on('change', (latest) => {
-      setIsVisible(latest === 1);
-    });
-
-    return () => unsubscribe();
-  }, [isHovered]);
-
-  // Use color scheme for better theme integration
-  const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
-  const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
-
-  // Scale label slightly with icon for cohesive animation
-  const labelScale = useTransform(width, [40, 120], [0.95, 1.1]);
-
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <MotionBox
-          initial={{ opacity: 0, y: 0, scale: 0.9 }}
-          animate={{ opacity: 1, y: -14, scale: labelScale }}
-          exit={{ opacity: 0, y: -8, scale: 0.9 }}
-          transition={{ 
-            type: "spring",
-            stiffness: 500,
-            damping: 30,
-            duration: 0.2
-          }}
-          position="absolute"
-          top="-8"
-          left="50%"
-          width="fit-content"
-          whiteSpace="pre"
-          borderRadius="lg"
-          border="1px solid"
-          borderColor={isDisabled ? "red.300" : (colorMode === "dark" ? "whiteAlpha.300" : "gray.200")}
-          bg={colorMode === "dark" ? "rgba(45, 55, 72, 0.95)" : "rgba(255, 255, 255, 0.95)"}
-          backdropFilter="blur(8px)" // Glass effect
-          px={3}
-          py={1}
-          fontSize="sm" // Slightly larger for better readability
-          fontWeight="medium" // Better visibility
-          color={isDisabled ? disabledColor : (colorMode === "dark" ? "white" : "gray.800")}
-          role="tooltip"
-          style={{ x: '-50%' }}
-          className={className}
-          zIndex={10}
-          pointerEvents="none" // Prevent label from interfering with hover
-        >
-          {children}
-        </MotionBox>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// DockIcon component - Enhanced for smoother scaling and highlight effect
-function DockIcon({ children, className, ...rest }) {
-  const { width, isDisabled, isHovered } = rest;
-  const { colorMode } = useColorMode();
-
-  // Scale icon size proportionally with container width
-  const iconScale = useTransform(width, [42, 120], [0.8, 1.5]);
-
-  // Define active state for highlighting effect
-  const [isActive, setIsActive] = useState(false);
-  
-  useEffect(() => {
-    if (!isHovered) return;
-    
-    const unsubscribe = isHovered.on('change', (latest) => {
-      setIsActive(latest === 1);
-    });
-
-    return () => unsubscribe();
-  }, [isHovered]);
-
-  // Colors for different states
-  const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
-  const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
-  const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
-  
-  // Dynamic color based on hover state
-  const iconColor = isDisabled 
-    ? disabledColor 
-    : (isActive ? activeColor : normalColor);
-
-  return (
-    <MotionBox
-      style={{ 
-        scale: iconScale,
-        color: isActive && !isDisabled ? activeColor : iconColor
-      }}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      position="relative"
-      transition="color 0.2s ease"
-      className={className}
-    >
-      {children}
-      
-      {/* Simplified indicator dot that appears when active */}
-      <MotionBox
-        position="absolute"
-        bottom="-14px"
-        left="50%"
-        width="4px"
-        height="4px"
-        borderRadius="full"
-        bg={isDisabled ? disabledColor : activeColor}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ 
-          opacity: isActive ? 1 : 0,
-          scale: isActive ? 1 : 0,
-          x: "-50%" 
-        }}
-        transition={{ duration: 0.2 }}
-      />
-    </MotionBox>
-  );
-}
-
+// Main Header component
 function Header({ unreadCount = 0 }) {
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useRecoilValue(userAtom);
   const logout = useLogout();
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const navigate = useNavigate();
-  const { isOpen, onToggle } = useDisclosure();
+  const location = useLocation();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
-  // State for locked icons
-  const [showLockIcon, setShowLockIcon] = useState({
-    chat: false,
-    tv: false,
-    admin: false
-  });
-
   // User role checks
   const isStudent = user?.role === "student";
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
 
-  // Time-based access control
-  const currentDate = new Date();
-  const dayOfWeek = currentDate.getDay();
-  const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+  // Update mobile status on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const schoolStart = 810;
-  const lunchStart = 1250;
-  const lunchEnd = 1340;
-  const schoolEnd = 1535;
-
-  const hasChatAccess = user && (
-    isTeacher ||
-    isAdmin ||
-    (isStudent &&
-      ((dayOfWeek >= 1 &&
-        dayOfWeek <= 5 &&
-        (currentTime < schoolStart ||
-          (currentTime >= lunchStart && currentTime <= lunchEnd) ||
-          currentTime > schoolEnd)) ||
-        dayOfWeek === 0 ||
-        dayOfWeek === 6))
-  );
+  // Time-based access control for chat
+  const hasChatAccess = useChatAccessCheck(user, isStudent, isTeacher, isAdmin);
 
   // Click handlers
-  const handleChatClick = (e) => {
-    if (!user || user.isFrozen || !hasChatAccess) {
-      e.preventDefault();
-    } else {
+  const handleChatClick = () => {
+    if (user && !user.isFrozen && hasChatAccess) {
       navigate("/chat");
     }
   };
 
-  const handleTVClick = (e) => {
-    if (!user || !isAdmin) {
-      e.preventDefault();
-    } else {
+  const handleTVClick = () => {
+    if (user && isAdmin) {
       navigate("/tv");
     }
   };
 
-  const handleAdminClick = (e) => {
-    if (!user || !isAdmin) {
-      e.preventDefault();
-    } else {
+  const handleAdminClick = () => {
+    if (user && isAdmin) {
       navigate("/admin");
     }
   };
@@ -430,138 +450,104 @@ function Header({ unreadCount = 0 }) {
     }
   };
 
-  // Search component with expandable functionality
-  const ExpandableSearch = () => {
-    const [expanded, setExpanded] = useState(false);
-    const searchRef = useRef(null);
+  // Define icon size based on screen size
+  const iconSize = isMobile ? 22 : 24;
+  
+  // Glass effect styles
+  const glassBg = colorMode === "dark" 
+    ? "rgba(26, 32, 44, 0.85)" 
+    : "rgba(255, 255, 255, 0.85)";
+  
+  const glassBorder = colorMode === "dark"
+    ? "1px solid rgba(255, 255, 255, 0.1)"
+    : "1px solid rgba(0, 0, 0, 0.05)";
     
-    useEffect(() => {
-      function handleClickOutside(event) {
-        if (searchRef.current && !searchRef.current.contains(event.target)) {
-          setExpanded(false);
-        }
-      }
-      
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, []);
-
-    return (
-      <Box ref={searchRef} position="relative" zIndex="3">
-        <DockItem onClick={() => setExpanded(!expanded)}>
-          <DockIcon>
-            <SearchIcon w={5} h={5} />
-          </DockIcon>
-          <DockLabel>Search for users</DockLabel>
-        </DockItem>
-        
-        <Collapse in={expanded} animateOpacity>
-          <Box 
-            position="absolute" 
-            top="110%" 
-            left="50%" 
-            transform="translateX(-50%)" 
-            width="240px"
-            bg={colorMode === "dark" ? "rgba(45, 55, 72, 0.95)" : "rgba(255, 255, 255, 0.95)"}
-            backdropFilter="blur(8px)"
-            borderRadius="xl"
-            boxShadow="lg"
-            p={2}
-          >
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color={colorMode === "dark" ? "gray.300" : "gray.500"} />
-              </InputLeftElement>
-              <Input 
-                placeholder="Search..."
-                variant="filled"
-                autoFocus
-                borderRadius="lg"
-                _focus={{ 
-                  boxShadow: `0 0 0 1px ${colorMode === "dark" ? "teal.300" : "teal.500"}` 
-                }}
-              />
-            </InputGroup>
-          </Box>
-        </Collapse>
-      </Box>
-    );
-  };
-
-  // Define icon sizes for dock
-  const iconSize = 20;
+  const glassBoxShadow = colorMode === "dark"
+    ? "0 8px 32px rgba(0, 0, 0, 0.3)"
+    : "0 8px 32px rgba(0, 0, 0, 0.08)";
 
   return (
-    <Box 
-      width="100%" 
-      display="flex" 
+    <Box
+      as={motion.div}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      width="100%"
+      display="flex"
       justifyContent="center"
-      position="relative"
-      overflow="visible" // Ensure no clipping of magnified icons
+      py={3}
+      position="sticky"
+      top={0}
+      zIndex={100}
     >
-      <Dock 
-        panelHeight={56} 
-        magnification={96} // Better magnification size
-        distance={200} // Wider area for smoother transitions
-        spring={{ mass: 0.5, stiffness: 350, damping: 25 }} // Optimized spring physics
+      <Flex
+        as={motion.div}
+        bg={glassBg}
+        backdropFilter="blur(12px) saturate(180%)"
+        borderRadius="full"
+        border={glassBorder}
+        boxShadow={glassBoxShadow}
+        px={{ base: 3, md: 5 }}
+        py={3}
+        maxWidth={{ base: "95%", md: "90%", lg: "800px" }}
+        mx="auto"
+        gap={{ base: 2, md: 4 }}
+        justify="center"
+        align="center"
+        overflow="auto"
+        css={{
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        }}
       >
         {user && (
-          <DockItem onClick={() => navigate("/")}>
-            <DockIcon>
-              <AiFillHome size={iconSize} />
-            </DockIcon>
-            <DockLabel>Home</DockLabel>
-          </DockItem>
+          <NavIcon 
+            icon={<AiFillHome size={iconSize} />}
+            label="Home"
+            onClick={() => navigate("/")}
+            isActive={location.pathname === "/"}
+          />
         )}
 
         {!user && (
-          <DockItem onClick={() => { setAuthScreen("login"); navigate("/auth"); }}>
-            <DockIcon>
-              <Box fontWeight="medium">Login</Box>
-            </DockIcon>
-            <DockLabel>Login</DockLabel>
-          </DockItem>
+          <NavIcon 
+            icon={<Box fontWeight="medium">Login</Box>}
+            label="Login"
+            onClick={() => { setAuthScreen("login"); navigate("/auth"); }}
+            isActive={location.pathname === "/auth" && !authScreenAtom}
+          />
         )}
 
-        <DockItem onClick={toggleColorMode}>
-          <DockIcon>
+        <NavIcon 
+          icon={
             <Icon
               as={colorMode === "dark" ? SunIcon : MoonIcon}
-              w={iconSize - 2}
-              h={iconSize - 2}
-              transition="all 0.3s ease"
-              transform={colorMode === "dark" ? "rotate(0deg)" : "rotate(-180deg)"}
+              w={iconSize - 4}
+              h={iconSize - 4}
             />
-          </DockIcon>
-          <DockLabel>{colorMode === "dark" ? "Light Mode" : "Dark Mode"}</DockLabel>
-        </DockItem>
-
-        <ExpandableSearch />
+          }
+          label={colorMode === "dark" ? "Light Mode" : "Dark Mode"}
+          onClick={toggleColorMode}
+        />
 
         {user && (
           <>
-            <DockItem onClick={() => navigate(`/${user.username}`)}>
-              <DockIcon>
-                <RxAvatar size={iconSize} />
-              </DockIcon>
-              <DockLabel>Profile</DockLabel>
-            </DockItem>
+            <NavIcon 
+              icon={<RxAvatar size={iconSize} />}
+              label="Profile"
+              onClick={() => navigate(`/${user.username}`)}
+              isActive={location.pathname === `/${user.username}`}
+            />
 
-            <DockItem 
-              onClick={handleChatClick} 
-              isDisabled={user.isFrozen || !hasChatAccess}
-            >
-              <DockIcon>
-                <Box position="relative"
-                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, chat: !hasChatAccess || user.isFrozen })}
-                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, chat: false })}
-                >
-                  {user.isFrozen || showLockIcon.chat ? (
-                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
+            <NavIcon 
+              icon={
+                <Box position="relative">
+                  {user.isFrozen || !hasChatAccess ? (
+                    <FaLock size={iconSize - 4} />
                   ) : (
-                    <BsFillChatQuoteFill size={iconSize - 2} />
+                    <BsFillChatQuoteFill size={iconSize - 4} />
                   )}
                   {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
                     <Flex
@@ -577,79 +563,200 @@ function Header({ unreadCount = 0 }) {
                       alignItems="center"
                       justifyContent="center"
                       fontWeight="bold"
+                      boxShadow="0 2px 5px rgba(0,0,0,0.2)"
                     >
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </Flex>
                   )}
                 </Box>
-              </DockIcon>
-              <DockLabel>{user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}</DockLabel>
-            </DockItem>
+              }
+              label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}
+              onClick={handleChatClick}
+              isDisabled={user.isFrozen || !hasChatAccess}
+              isActive={location.pathname === "/chat"}
+            />
 
-            {isAdmin && (
-              <DockItem onClick={handleAdminClick}>
-                <DockIcon>
-                  <FaUserShield size={iconSize - 2} />
-                </DockIcon>
-                <DockLabel>Admin</DockLabel>
-              </DockItem>
+            {isAdmin && !isMobile && (
+              <NavIcon 
+                icon={<FaUserShield size={iconSize - 4} />}
+                label="Admin"
+                onClick={handleAdminClick}
+                isActive={location.pathname === "/admin"}
+              />
             )}
 
-            <DockItem 
-              onClick={handleTVClick}
-              isDisabled={!isAdmin}
-            >
-              <DockIcon>
-                <Box
-                  onMouseEnter={() => setShowLockIcon({ ...showLockIcon, tv: !isAdmin })}
-                  onMouseLeave={() => setShowLockIcon({ ...showLockIcon, tv: false })}
-                >
-                  {showLockIcon.tv ? (
-                    <FaLock size={iconSize - 2} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
-                  ) : (
-                    <PiTelevisionSimpleBold size={iconSize} />
-                  )}
-                </Box>
-              </DockIcon>
-              <DockLabel>{isAdmin ? "TV" : "Admin Only"}</DockLabel>
-            </DockItem>
-
-            {user && isAdmin && (
-              <DockItem onClick={() => navigate("/games")}> 
-                <DockIcon>
-                  <MdSportsScore size={iconSize} />
-                </DockIcon>
-                <DockLabel>Scores</DockLabel>
-              </DockItem>
+            {isAdmin && !isMobile && (
+              <NavIcon 
+                icon={<PiTelevisionSimpleBold size={iconSize} />}
+                label="TV"
+                onClick={handleTVClick}
+                isActive={location.pathname === "/tv"}
+              />
             )}
 
-            <DockItem onClick={() => navigate("/settings")}>
-              <DockIcon>
-                <MdOutlineSettings size={iconSize} />
-              </DockIcon>
-              <DockLabel>Settings</DockLabel>
-            </DockItem>
+            <NavIcon 
+              icon={<MdOutlineSettings size={iconSize} />}
+              label="Settings"
+              onClick={() => navigate("/settings")}
+              isActive={location.pathname === "/settings"}
+            />
 
-            <DockItem onClick={handleLogout}>
-              <DockIcon>
-                <FiLogOut size={iconSize - 2} />
-              </DockIcon>
-              <DockLabel>Logout</DockLabel>
-            </DockItem>
+            <NavIcon 
+              icon={<FiLogOut size={iconSize - 4} />}
+              label="Logout"
+              onClick={handleLogout}
+            />
           </>
         )}
 
         {!user && (
-          <DockItem onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}>
-            <DockIcon>
-              <Box fontWeight="medium">Sign up</Box>
-            </DockIcon>
-            <DockLabel>Sign up</DockLabel>
-          </DockItem>
+          <NavIcon 
+            icon={<Box fontWeight="medium">Sign up</Box>}
+            label="Sign up"
+            onClick={() => { setAuthScreen("signup"); navigate("/auth"); }}
+            isActive={location.pathname === "/auth" && authScreenAtom === "signup"}
+          />
         )}
-      </Dock>
+      </Flex>
     </Box>
   );
 }
 
+// Modernized NavIcon component with improved animations
+function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
+  const { colorMode } = useColorMode();
+  
+  // Colors based on state
+  const activeColor = colorMode === "dark" ? "teal.300" : "teal.600";
+  const disabledColor = colorMode === "dark" ? "red.400" : "red.500";
+  const normalColor = colorMode === "dark" ? "whiteAlpha.900" : "gray.700";
+  
+  const iconColor = isDisabled 
+    ? disabledColor 
+    : (isActive ? activeColor : normalColor);
+
+  // Animation variants
+  const iconVariants = {
+    hover: { scale: 1.15 },
+    tap: { scale: 0.95 },
+    rest: { scale: 1 }
+  };
+
+  return (
+    <Tooltip 
+      label={label} 
+      placement="top" 
+      hasArrow 
+      bg={colorMode === "dark" ? "gray.700" : "gray.50"}
+      color={colorMode === "dark" ? "white" : "gray.800"}
+      border="1px solid"
+      borderColor={colorMode === "dark" ? "whiteAlpha.300" : "gray.200"}
+      borderRadius="md"
+      fontSize="xs"
+      isDisabled={isDisabled}
+    >
+      <Box
+        as={motion.div}
+        initial="rest"
+        whileHover={isDisabled ? "rest" : "hover"}
+        whileTap={isDisabled ? "rest" : "tap"}
+        variants={iconVariants}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        onClick={isDisabled ? undefined : onClick}
+        cursor={isDisabled ? "not-allowed" : "pointer"}
+        color={iconColor}
+        mx={1.5}
+        position="relative"
+      >
+        {/* Icon */}
+        <Box 
+          padding={2} 
+          display="flex" 
+          alignItems="center" 
+          justifyContent="center"
+        >
+          {icon}
+        </Box>
+        
+        {/* Active indicator */}
+        {isActive && !isDisabled && (
+          <Box
+            as={motion.div}
+            layoutId="activeIndicator"
+            position="absolute"
+            bottom="-5px"
+            left="50%"
+            width="5px"
+            height="5px"
+            borderRadius="full"
+            bg={activeColor}
+            initial={{ x: "-50%" }}
+            animate={{ x: "-50%" }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          />
+        )}
+      </Box>
+    </Tooltip>
+  );
+}
+
+// Hook for chat access control
+function useChatAccessCheck(user, isStudent, isTeacher, isAdmin) {
+  const [hasChatAccess, setHasChatAccess] = useState(false);
+  
+  useEffect(() => {
+    if (!user) {
+      setHasChatAccess(false);
+      return;
+    }
+    
+    if (isTeacher || isAdmin) {
+      setHasChatAccess(true);
+      return;
+    }
+    
+    if (isStudent) {
+      const checkAccess = () => {
+        const currentDate = new Date();
+        const dayOfWeek = currentDate.getDay();
+        const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
+        
+        const schoolStart = 810;
+        const lunchStart = 1250;
+        const lunchEnd = 1340;
+        const schoolEnd = 1535;
+        
+        // Weekend
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          return true;
+        }
+        
+        // Weekday but outside school hours or during lunch
+        if (currentTime < schoolStart || 
+            (currentTime >= lunchStart && currentTime <= lunchEnd) || 
+            currentTime > schoolEnd) {
+          return true;
+        }
+        
+        return false;
+      };
+      
+      setHasChatAccess(checkAccess());
+      
+      // Check every minute for time-based access changes
+      const intervalId = setInterval(() => {
+        setHasChatAccess(checkAccess());
+      }, 60000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [user, isStudent, isTeacher, isAdmin]);
+  
+  return hasChatAccess;
+}
+
 export default Header;
+
+
+
+
