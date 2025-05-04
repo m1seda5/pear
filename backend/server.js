@@ -10,12 +10,13 @@ import reviewerGroupRoutes from "./routes/reviewerGroupRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
-import { app, server } from "./socket/socket.js";
+import { initializeSocket } from "./socket/socket.js";
 import cronJobs from "./cron/cron.js";
 import noteRoutes from "./routes/noteRoutes.js";
 import mongoose from "mongoose";
 import cors from "cors";
 import quickLoginRoutes from "./routes/quickLoginRoutes.js";
+import http from "http";
 
 dotenv.config();
 connectDB();
@@ -33,6 +34,10 @@ cloudinary.config({
 });
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+initializeSocket(server);
 
 // Middleware
 app.use(express.json({ limit: "50mb" }));
@@ -47,7 +52,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/reviewer-groups", reviewerGroupRoutes);
-app.use("/api/groups", groupRoutes); // Changed from "/groups" to "/api/groups" for consistency
+app.use("/api/groups", groupRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api", quickLoginRoutes);
