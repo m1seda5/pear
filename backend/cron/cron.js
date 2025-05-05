@@ -45,8 +45,8 @@ const saturdayJob = new cron.CronJob(
 export default {
   start: () => {
     keepAliveJob.start();
-    // notificationJob.start();
-    // saturdayJob.start();
+    notificationJob.start();
+    saturdayJob.start();
     console.log("All cron jobs started");
   }
 };
