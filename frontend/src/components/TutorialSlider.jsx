@@ -36,7 +36,7 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const viewCount = parseInt(localStorage.getItem("tutorialViewCount") || "0");
-      if (viewCount >= 4) {
+      if (viewCount >= 5) {
         handleComplete();
         return;
       }
@@ -120,10 +120,10 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
       clearInterval(autoSlideIntervalRef.current);
     }
 
-    // Auto-slide after 3 seconds
+    // Auto-slide after 4 seconds
     autoSlideIntervalRef.current = setInterval(() => {
       goToNextSlide();
-    }, 3000);
+    }, 5000);
 
     return () => {
       if (autoSlideIntervalRef.current) {
