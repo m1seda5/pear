@@ -8,6 +8,10 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
+import pearmediaImg from "../assets/images/pearmedia.jpg";
+import screensImg from "../assets/images/screens.jpg";
+import { useRecoilValue } from "recoil";
+import userAtom from "../atoms/userAtom";
 
 // Import images
 import concertImg from "../assets/images/concert.jpg";
@@ -17,7 +21,8 @@ import environmentclubImg from "../assets/images/environmentclub.jpg";
 import liveeventsImg from "../assets/images/liveevents.jpg";
 import pearImg from "../assets/images/pear.png";
 
-const TutorialSlider = ({ onComplete }) => {
+const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
+  const user = useRecoilValue(userAtom);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [textColor, setTextColor] = useState("white"); // Default to white
@@ -29,24 +34,23 @@ const TutorialSlider = ({ onComplete }) => {
   
   // Check view count on component mount
   useEffect(() => {
-    // Check if we're in a browser environment
     if (typeof window !== "undefined") {
-      // Get the current view count from localStorage
       const viewCount = parseInt(localStorage.getItem("tutorialViewCount") || "0");
-      
-      // If the user has already seen the tutorial 3 times, skip it
-      if (viewCount >= 3) {
+      if (viewCount >= 4) {
         handleComplete();
         return;
       }
-      
-      // Increment and save the view count
       localStorage.setItem("tutorialViewCount", (viewCount + 1).toString());
     }
   }, []);
 
-  // Tutorial content with images - Added new slide for Live Events
-  const slides = [
+  // Slides setup
+  let slides = [
+    {
+      title: "Welcome to Pear",
+      image: pearmediaImg,
+      description: "No more boring announcements. Pear lets you get updates, post, and connect — all in one place, made just for students.",
+    },
     {
       title: "Events",
       image: concertImg,
@@ -77,6 +81,17 @@ const TutorialSlider = ({ onComplete }) => {
       description: "All Brookhouse stories documented in one place.",
     },
   ];
+
+  // Add teacher-only card if on profile page and user is teacher
+  if (isProfilePage && user?.role === "teacher") {
+    slides = [
+      {
+        title: "Screens",
+        image: screensImg,
+        description: "We give you the ability to post to your student or for a larger audience post to all or directly to screens.",
+      },
+    ];
+  }
 
   // Set up screen size on client side only
   useEffect(() => {
