@@ -73,7 +73,8 @@ import {
   forgotPassword,
   resetPassword,
   resendOTP,
-  searchHeader
+  searchHeader,
+  getCurrentUser
 } from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -105,5 +106,6 @@ router.put("/update/:id", protectRoute, updateUser);
 router.put("/freeze", protectRoute, freezeAccount);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
+router.get("/me", protectRoute, getCurrentUser);
 
 export default router;

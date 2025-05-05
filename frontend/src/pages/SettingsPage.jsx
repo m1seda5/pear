@@ -283,8 +283,8 @@ export const SettingsPage = () => {
           return;
         }
         setNotifications({
-          email: data.emailNotifications !== undefined ? data.emailNotifications : true,
-          webPush: data.webPushNotifications !== undefined ? data.webPushNotifications : true,
+          email: data.emailNotifications,
+          webPush: data.webPushNotifications,
         });
       } catch (error) {
         console.error('Error fetching notification preferences:', error);

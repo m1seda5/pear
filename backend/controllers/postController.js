@@ -1630,18 +1630,22 @@ const reviewPost = async (req, res) => {
 const toggleNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { emailNotifications, webPushNotifications } = req.body;
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Toggle the notification preferences
-    user.notificationPreferences = !user.notificationPreferences;
+    // Update notification preferences
+    user.notificationPreferences = {
+      email: emailNotifications,
+      webPush: webPushNotifications
+    };
     await user.save();
 
     res.status(200).json({
-      message: `Notifications ${user.notificationPreferences ? 'enabled' : 'disabled'}`,
+      message: "Notification preferences updated",
       notificationPreferences: user.notificationPreferences
     });
   } catch (err) {

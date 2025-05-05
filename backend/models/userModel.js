@@ -425,8 +425,14 @@ const userSchema = mongoose.Schema(
       required: false 
     },
     notificationPreferences: {
-      type: Boolean,
-      default: true, // Enable notifications by default
+      email: {
+        type: Boolean,
+        default: true
+      },
+      webPush: {
+        type: Boolean,
+        default: true
+      }
     },
     resetToken: {
       type: String,

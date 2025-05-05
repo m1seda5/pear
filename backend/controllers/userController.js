@@ -1070,30 +1070,6 @@
 // };
 
 // // New function for awarding verification
-// const awardVerification = async (req, res) => {
-//   const { userId, verificationType } = req.body;
-
-//   // Validate verification type
-//   if (!["blue", "gold"].includes(verificationType)) {
-//     return res.status(400).json({ error: "Invalid verification type" });
-//   }
-
-//   try {
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     // Set the verification type
-//     user.verification = verificationType;
-//     await user.save();
-
-//     res.status(200).json({ message: "Verification awarded", user });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//     console.log("Error in awardVerification: ", error.message);
-//   }
-// };
 // const adminFreezeUser = async (req, res) => {
 //   try {
 //     const { userId } = req.body;
@@ -2358,6 +2334,29 @@ const searchHeader = async (req, res) => {
     });
   }
 };
+
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      profilePic: user.profilePic,
+      bio: user.bio,
+      role: user.role,
+      emailNotifications: user.notificationPreferences?.email ?? true,
+      webPushNotifications: user.notificationPreferences?.webPush ?? true
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export {
   searchHeader,
   signupUser,
@@ -2378,5 +2377,6 @@ export {
   adminDeleteUser,
   deleteUserData,
   searchUsers,
-  searchReviewers, // Exporting the new function
+  searchReviewers,
+  getCurrentUser
 };

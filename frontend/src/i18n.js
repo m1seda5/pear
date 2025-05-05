@@ -110,6 +110,9 @@ const resources = {
       "Message contains inappropriate content and was not sent.": "Message contains inappropriate content and was not sent.",
       "Delete message": "Delete message",
       "Message image": "Message image",
+      "Message actions": "Message actions",
+      "Copy": "Copy",
+      "Delete": "Delete",
 
       // chat page translations
       "Your Conversations": "Your Conversations",
@@ -259,6 +262,9 @@ const resources = {
       "Message contains inappropriate content and was not sent.": "消息包含不适当内容，未发送。",
       "Delete message": "删除消息",
       "Message image": "消息图片",
+      "Message actions": "消息操作",
+      "Copy": "复制",
+      "Delete": "删除",
 
       // chatpage translations
       "Your Conversations": "您的对话",
