@@ -359,7 +359,15 @@ i18n
     interpolation: {
       escapeValue: false
     },
-    debug: true // Enable debug mode
+    react: {
+      useSuspense: false, // This prevents the context error
+      bindI18n: 'languageChanged loaded',
+      bindI18nStore: 'added removed',
+      transEmptyNodeValue: '',
+      transSupportBasicHtmlNodes: true,
+      transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p']
+    },
+    debug: process.env.NODE_ENV === 'development'
   });
 
 export default i18n;

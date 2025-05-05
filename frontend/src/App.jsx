@@ -197,8 +197,15 @@ import axios from "axios";
 function App() {
   const user = useRecoilValue(userAtom);
   const { pathname } = useLocation();
-  const savedLanguage = localStorage.getItem('language') || 'en';
-  i18n.changeLanguage(savedLanguage);
+  const [isI18nReady, setIsI18nReady] = useState(false);
+
+  useEffect(() => {
+    // Initialize i18n
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    i18n.changeLanguage(savedLanguage).then(() => {
+      setIsI18nReady(true);
+    });
+  }, []);
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -232,6 +239,10 @@ function App() {
   }, [pathname, user]);
 
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
+
+  if (!isI18nReady) {
+    return null; // or a loading spinner
+  }
 
   return (
     <I18nextProvider i18n={i18n}>
