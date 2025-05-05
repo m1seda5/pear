@@ -1449,6 +1449,39 @@ const createPost = async (req, res) => {
       await notifyReviewers(newPost); // Now defined above
     }
 
+    // TV/Screen email logic
+    if (Array.isArray(targetDepartments) && targetDepartments.includes("tv")) {
+      try {
+        let html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9f9f9; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #2B6CB0; margin-bottom: 12px;">Screen Display Request</h2>
+            <p style="font-size: 16px; color: #222; margin-bottom: 18px;"><strong>${user.username}</strong> (${user.role}) would like to request a screen display post.</p>
+            <div style="background: #fff; border-radius: 8px; padding: 18px 16px; margin-bottom: 18px; border: 1px solid #e2e8f0;">
+              <h3 style="color: #4CAF50; margin-bottom: 8px;">Post Content</h3>
+              <p style="font-size: 16px; color: #333; margin: 0; white-space: pre-line;">${text}</p>
+            </div>`;
+        if (img) {
+          html += `
+            <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; text-align: center;">
+              <h3 style="color: #4CAF50; margin-bottom: 8px;">Attached Image</h3>
+              <img src="${img}" alt="Post Image" style="max-width: 100%; border-radius: 8px; margin-top: 8px; box-shadow: 0 2px 8px rgba(44,62,80,0.08);" />
+            </div>`;
+        }
+        html += `
+            <p style="color: #666; font-size: 12px; margin-top: 24px;">This post was sent to the TV screen by Pear Network.</p>
+          </div>`;
+        await transporter.sendMail({
+          from: "pearnet104@gmail.com",
+          to: "shannington@brookhouse.ac.ke",
+          subject: "New Post for TV Screen",
+          html
+        });
+        console.log("TV post email sent to shannington@brookhouse.ac.ke");
+      } catch (tvErr) {
+        console.error("Error sending TV post email:", tvErr);
+      }
+    }
+
     const populatedPost = await Post.findById(newPost._id)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");

@@ -503,7 +503,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { BsFillImageFill } from "react-icons/bs";
-import { FaLock } from "react-icons/fa";
+import { FaLock, FaTv } from "react-icons/fa";
 import usePreviewImg from "../hooks/usePreviewImg";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
@@ -567,6 +567,8 @@ const GROUP_COLORS = [
   "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
 ];
+
+const TV_TAG = { id: "tv", label: "TV" };
 
 const CreatePost = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -722,6 +724,18 @@ const CreatePost = () => {
     onClose();
   };
 
+  // Add TV tag toggle handler
+  const toggleTVTag = () => {
+    setDepartmentTags((prev) => {
+      const hasTV = prev.some((tag) => tag.id === TV_TAG.id);
+      if (hasTV) {
+        return prev.filter((tag) => tag.id !== TV_TAG.id);
+      } else {
+        return [...prev, TV_TAG];
+      }
+    });
+  };
+
   if (user?.isFrozen) {
     return (
       <Button
@@ -798,6 +812,23 @@ const CreatePost = () => {
                       ref={imageRef}
                       onChange={handleImageChange}
                     />
+                    {/* TV Icon for teachers/admins */}
+                    {(user.role === "teacher" || user.role === "admin") && (
+                      <Tooltip label="Add tag to screen (TV)" placement="top" hasArrow>
+                        <Box as="span" ml={2}>
+                          <FaTv
+                            size={22}
+                            style={{
+                              cursor: "pointer",
+                              color: departmentTags.some((tag) => tag.id === TV_TAG.id) ? "#3182ce" : "#A0AEC0",
+                              filter: departmentTags.some((tag) => tag.id === TV_TAG.id) ? "drop-shadow(0 0 6px #3182ce)" : "none",
+                              transition: "color 0.2s, filter 0.2s"
+                            }}
+                            onClick={toggleTVTag}
+                          />
+                        </Box>
+                      </Tooltip>
+                    )}
                   </Flex>
                 </Box>
 
