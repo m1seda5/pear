@@ -19,14 +19,23 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
     });
 });
 
-
-
-// twe are back babyy
-
-
-// Idle notification schedule
-const notificationJob = new cron.CronJob(
-  '0 8,12,15 * * 1-5', // At 8am, 12pm, 3pm on weekdays
+// Idle notification schedule (updated times)
+const notificationJob1 = new cron.CronJob(
+  '20 8 * * 1-5', // At 8:20 AM on weekdays
+  sendIdleNotifications,
+  null,
+  true,
+  'Africa/Nairobi'
+);
+const notificationJob2 = new cron.CronJob(
+  '20 12 * * 1-5', // At 12:20 PM on weekdays
+  sendIdleNotifications,
+  null,
+  true,
+  'Africa/Nairobi'
+);
+const notificationJob3 = new cron.CronJob(
+  '45 14 * * 1-5', // At 2:45 PM on weekdays
   sendIdleNotifications,
   null,
   true,
@@ -45,7 +54,9 @@ const saturdayJob = new cron.CronJob(
 export default {
   start: () => {
     keepAliveJob.start();
-    notificationJob.start();
+    notificationJob1.start();
+    notificationJob2.start();
+    notificationJob3.start();
     saturdayJob.start();
     console.log("All cron jobs started");
   }
