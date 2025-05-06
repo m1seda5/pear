@@ -74,33 +74,48 @@ export const sendIdleNotifications = async () => {
 
     // Only send notifications during peak hours
     if (!((currentHour >= 7 && currentHour <= 9) || (currentHour >= 13 && currentHour <= 16))) {
+      console.log("Not sending notifications - outside peak hours");
       return;
     }
 
     // Check for low activity
     const isLowActivity = await checkActivityLevel();
     if (!isLowActivity) {
+      console.log("Not sending notifications - activity level is not low");
       return;
     }
 
     // Get users who:
-    // 1. Have notifications enabled
+    // 1. Have email notifications enabled
     // 2. Are not banned
     // 3. Haven't been active in last 24 hours
-    // 4. Haven't received a notification today
     const users = await User.find({
-      notificationsEnabled: true,
-      isBanned: false,
-      lastNotificationDate: { $ne: new Date().toISOString().split('T')[0] }
+      "notificationPreferences.email": true,
+      isBanned: false
     });
 
     if (users.length === 0) {
+      console.log("No eligible users found for notifications");
       return;
     }
 
-    // Generate notifications for each user
+    // Filter users who haven't been active in the last 24 hours
+    const inactiveUsers = [];
+    for (const user of users) {
+      const isInactive = await checkUserActivity(user._id);
+      if (isInactive) {
+        inactiveUsers.push(user);
+      }
+    }
+
+    if (inactiveUsers.length === 0) {
+      console.log("No inactive users found for notifications");
+      return;
+    }
+
+    // Generate notifications for each inactive user
     const notifications = await Promise.all(
-      users.map(async (user) => {
+      inactiveUsers.map(async (user) => {
         const quickLoginLink = await generateQuickLoginLink(user._id);
         const notification = generateNotification(currentHour, currentDay);
         return {
@@ -112,7 +127,7 @@ export const sendIdleNotifications = async () => {
       })
     );
 
-    // Send notifications
+    // Send notifications and update lastNotificationDate
     for (const notification of notifications) {
       await sendEmailNotification(
         notification.userId,
@@ -120,6 +135,11 @@ export const sendIdleNotifications = async () => {
         notification.quickLoginLink,
         notification.template
       );
+
+      // Update lastNotificationDate for the user
+      await User.findByIdAndUpdate(notification.userId, {
+        lastNotificationDate: new Date()
+      });
     }
 
     console.log(`Sent idle notifications to ${notifications.length} users`);
