@@ -236,38 +236,6 @@ const Actions = ({ post }) => {
                 </Flex>
             </Flex>
 
-            {/* Right section with pear icon instead of view count */}
-            <Flex alignItems="center" gap={2}>
-                <Flex 
-                    _hover={iconHoverStyle}
-                    transition="all 0.2s ease-in-out"
-                >
-                    {/* SVG Pear Icon */}
-                    <svg
-                        aria-label="Pear"
-                        color={pearColor}
-                        fill="currentColor"
-                        height="18"
-                        role="img"
-                        viewBox="0 0 24 24"
-                        width="18"
-                    >
-                        <title>Pear</title>
-                        <path
-                            d="M12.5,2C9.6,2,8.5,3.8,8.1,5.2c-2.5,0.7-4.4,3-4.4,5.8c0,5.3,3.8,11,8.8,11s8.8-5.7,8.8-11c0-2.8-1.9-5.1-4.4-5.8
-                            C16.5,3.8,15.4,2,12.5,2z"
-                        />
-                        <path
-                            d="M12.5,2c0,0-0.5,1.5,1,3c0,0,2-1,3,0c0,0-1-2-2-2.5C13.5,2,12.5,2,12.5,2z"
-                            fill={useColorModeValue("#fff", "#000")}
-                        />
-                    </svg>
-                </Flex>
-                <Text fontSize="sm" fontWeight="medium" color={pearColor}>
-                    {post?.viewCount || 0}
-                </Text>
-            </Flex>
-
             {/* Reply Modal */}
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
