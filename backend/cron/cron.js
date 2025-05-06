@@ -19,7 +19,7 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
     });
 });
 
-// Idle notification schedule (updated times)
+// Notification schedule
 const notificationJob1 = new cron.CronJob(
   '20 8 * * 1-5', // At 8:20 AM on weekdays
   sendIdleNotifications,
@@ -27,6 +27,7 @@ const notificationJob1 = new cron.CronJob(
   true,
   'Africa/Nairobi'
 );
+
 const notificationJob2 = new cron.CronJob(
   '20 12 * * 1-5', // At 12:20 PM on weekdays
   sendIdleNotifications,
@@ -34,6 +35,7 @@ const notificationJob2 = new cron.CronJob(
   true,
   'Africa/Nairobi'
 );
+
 const notificationJob3 = new cron.CronJob(
   '45 14 * * 1-5', // At 2:45 PM on weekdays
   sendIdleNotifications,
