@@ -40,7 +40,7 @@ export const generateNotification = (currentHour, currentDay) => {
           Quick Login
         </a>
         <p style="font-size: 14px; color: #666;">
-          This link will expire in 1 hour. If you didn't request this notification, you can safely ignore it.
+          Check out what's going on on Pear
         </p>
       </div>
     `
