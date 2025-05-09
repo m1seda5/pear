@@ -11,7 +11,8 @@ const useGetUserProfile = () => {
 	useEffect(() => {
 		const getUser = async () => {
 			try {
-				const res = await fetch(`/api/users/profile/${username}`);
+				const encodedUsername = encodeURIComponent(username);
+				const res = await fetch(`/api/users/profile/${encodedUsername}`);
 				const data = await res.json();
 				if (data.error) {
 					showToast("Error", data.error, "error");
