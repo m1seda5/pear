@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Flex, Text, Button, useColorModeValue, IconButton } from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { Box, Flex, Text, Button, useColorModeValue, IconButton, Spinner, useToast } from "@chakra-ui/react";
+import { CloseIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useSocket } from "../context/SocketContext";
 import axios from "axios";
 
@@ -16,7 +16,6 @@ const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? windo
 const HousePointTracker = ({ showTutorial }) => {
   const [progress, setProgress] = useState(initialProgress);
   const [expanded, setExpanded] = useState(false);
-  const lastTap = useRef(0);
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("housePointTrackerPosition");
     if (saved) try { return JSON.parse(saved); } catch { return DEFAULT_POSITION; }
@@ -30,21 +29,29 @@ const HousePointTracker = ({ showTutorial }) => {
   const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem("housePointTrackerClosed") !== "true");
   const isAdmin = true; // Replace with your admin check
   const { socket } = useSocket();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const toast = useToast();
+  const adminRef = useRef();
+  const holdTimers = useRef({});
 
   // Real-time updates
   useEffect(() => {
     const fetchPoints = async () => {
+      setLoading(true);
       try {
         const res = await axios.get("https://pear-tsk2.onrender.com/api/house-points");
         setProgress(res.data);
+        setError("");
       } catch (error) {
-        console.error("Failed to fetch house points:", error);
+        setError("Failed to fetch house points");
+      } finally {
+        setLoading(false);
       }
     };
     fetchPoints();
 
     if (!socket) return;
-
     socket.on("housePointsUpdated", setProgress);
     return () => socket.off("housePointsUpdated");
   }, [socket]);
@@ -52,24 +59,37 @@ const HousePointTracker = ({ showTutorial }) => {
   // Admin update
   const saveProgress = async (newProgress) => {
     if (!socket) return;
+    setLoading(true);
     try {
       await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
       socket.emit("updateHousePoints", newProgress);
+      setError("");
+      toast({ title: "Points updated!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
-      console.error("Failed to update house points:", error);
+      setError("Failed to update house points");
+      toast({ title: "Failed to update house points", status: "error", duration: 2000, isClosable: true });
+    } finally {
+      setLoading(false);
     }
   };
 
   const resetAll = async () => {
     if (!socket) return;
+    setLoading(true);
     try {
       await axios.post("https://pear-tsk2.onrender.com/api/house-points/reset");
       socket.emit("resetHousePoints");
+      setError("");
+      toast({ title: "All points reset!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
-      console.error("Failed to reset house points:", error);
+      setError("Failed to reset house points");
+      toast({ title: "Failed to reset house points", status: "error", duration: 2000, isClosable: true });
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Drag logic
   useEffect(() => {
     if (!dragging) return;
     const handleMouseMove = (e) => {
@@ -101,21 +121,52 @@ const HousePointTracker = ({ showTutorial }) => {
     };
   };
 
-  const handleWidgetTap = () => {
-    if (!isAdmin) return;
-    const now = Date.now();
-    if (now - lastTap.current < 300) setExpanded(e => !e);
-    lastTap.current = now;
-  };
+  // Admin controls: open/close with button, close on outside click or Escape
+  useEffect(() => {
+    if (!expanded) return;
+    const handleClick = (e) => {
+      if (adminRef.current && !adminRef.current.contains(e.target)) {
+        setExpanded(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [expanded]);
 
-  const handleClose = () => {
-    setIsOpen(false);
-    sessionStorage.setItem("housePointTrackerClosed", "true");
-  };
-
+  // Widget open/close persistence
   useEffect(() => {
     if (isOpen) sessionStorage.setItem("housePointTrackerClosed", "false");
+    else sessionStorage.setItem("housePointTrackerClosed", "true");
   }, [isOpen]);
+
+  // Always show widget after login/refresh
+  useEffect(() => {
+    setIsOpen(true);
+  }, []);
+
+  // Hold-to-repeat for increment/decrement
+  const handleHold = (houseKey, delta) => {
+    const repeat = () => {
+      setProgress(prev => {
+        const newVal = Math.max(0, Math.min(100, prev[houseKey] + delta));
+        const newProgress = { ...prev, [houseKey]: newVal };
+        saveProgress(newProgress);
+        return newProgress;
+      });
+      holdTimers.current[houseKey] = setTimeout(repeat, 120);
+    };
+    repeat();
+  };
+  const stopHold = (houseKey) => {
+    clearTimeout(holdTimers.current[houseKey]);
+  };
 
   if (showTutorial || !isOpen) return null;
 
@@ -135,13 +186,14 @@ const HousePointTracker = ({ showTutorial }) => {
       cursor={dragging ? "grabbing" : "default"}
       userSelect={dragging ? "none" : "auto"}
       transition="width 0.2s, padding 0.2s"
-      onClick={handleWidgetTap}
     >
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
         <Text fontWeight="bold" fontSize="xl" color={titleColor}>House Points</Text>
         <Text fontSize="sm" color="gray.500">on Pear Media</Text>
-        <IconButton icon={<CloseIcon />} size="sm" onClick={e => { e.stopPropagation(); handleClose(); }} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
+        <IconButton icon={<CloseIcon />} size="sm" onClick={e => { e.stopPropagation(); setIsOpen(false); }} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
+      {loading && <Flex justify="center" align="center" my={2}><Spinner size="sm" /></Flex>}
+      {error && <Text color="red.500" fontSize="sm" mb={2}>{error}</Text>}
       {HOUSES.map((house) => (
         <Flex key={house.key} align="center" mb={5}>
           <Box w={5} h={5} borderRadius="full" bg={house.color} mr={3} border="2px solid" borderColor={borderCol} />
@@ -160,17 +212,39 @@ const HousePointTracker = ({ showTutorial }) => {
             />
           </Box>
           {expanded && isAdmin && (
-            <Flex direction="column" ml={3} gap={1}>
-              <Button size="xs" onClick={e => { e.stopPropagation(); saveProgress({ ...progress, [house.key]: Math.min(100, progress[house.key] + 10) }); }}>+10%</Button>
-              <Button size="xs" onClick={e => { e.stopPropagation(); saveProgress({ ...progress, [house.key]: Math.max(0, progress[house.key] - 10) }); }}>-10%</Button>
+            <Flex direction="column" ml={3} gap={1} ref={adminRef}>
+              <Button size="xs"
+                onMouseDown={() => handleHold(house.key, 2)}
+                onMouseUp={() => stopHold(house.key)}
+                onMouseLeave={() => stopHold(house.key)}
+                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.min(100, prev[house.key] + 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+              >+2%</Button>
+              <Button size="xs"
+                onMouseDown={() => handleHold(house.key, -2)}
+                onMouseUp={() => stopHold(house.key)}
+                onMouseLeave={() => stopHold(house.key)}
+                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.max(0, prev[house.key] - 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+              >-2%</Button>
             </Flex>
           )}
         </Flex>
       ))}
       {expanded && isAdmin && (
-        <Button size="md" mt={2} onClick={resetAll} w="full" colorScheme="gray">
+        <Button size="md" mt={2} onClick={resetAll} w="full" colorScheme="gray" isLoading={loading}>
           Reset All
         </Button>
+      )}
+      {isAdmin && (
+        <IconButton
+          icon={<SettingsIcon />}
+          aria-label="Admin controls"
+          size="sm"
+          mt={2}
+          ml={2}
+          onClick={() => setExpanded(e => !e)}
+          bg={expanded ? "gray.200" : "transparent"}
+          _hover={{ bg: "gray.100" }}
+        />
       )}
     </Box>
   );
