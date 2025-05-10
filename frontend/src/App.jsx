@@ -202,7 +202,7 @@ function App() {
 
   useEffect(() => {
     // Initialize i18n
-    const savedLanguage = localStorage.getItem('language') || 'en';
+  const savedLanguage = localStorage.getItem('language') || 'en';
     i18n.changeLanguage(savedLanguage).then(() => {
       setIsI18nReady(true);
     });

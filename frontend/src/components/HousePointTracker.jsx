@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Flex, Text, Progress, Button, useColorModeValue, useToast, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, Button, useColorModeValue, IconButton } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { useRecoilValue } from "recoil";
-import userAtom from "../atoms/userAtom";
-import Confetti from "react-confetti";
+import { useSocket } from "../context/SocketContext";
+import axios from "axios";
 
 const HOUSES = [
   { name: "Samburu", color: "#4CAF50", key: "samburu", bg: "#dbeedb" },
@@ -12,38 +11,71 @@ const HOUSES = [
   { name: "Tsavo", color: "#FBBF24", key: "tsavo", bg: "#fdf6e3" },
 ];
 const initialProgress = { samburu: 0, mara: 0, amboseli: 0, tsavo: 0 };
-const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 340 : 100 };
+const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 400 : 100 };
 
 const HousePointTracker = ({ showTutorial }) => {
-  const user = useRecoilValue(userAtom);
-  const isAdmin = user?.role === "admin";
-  const [progress, setProgress] = useState(() => {
-    return JSON.parse(localStorage.getItem("houseProgress")) || initialProgress;
-  });
+  const [progress, setProgress] = useState(initialProgress);
   const [expanded, setExpanded] = useState(false);
   const lastTap = useRef(0);
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("housePointTrackerPosition");
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return DEFAULT_POSITION; }
-    }
+    if (saved) try { return JSON.parse(saved); } catch { return DEFAULT_POSITION; }
     return DEFAULT_POSITION;
   });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const widgetBg = useColorModeValue("white", "gray.800");
+  const widgetBg = useColorModeValue("rgba(255,255,255,0.85)", "rgba(20,20,20,0.95)");
   const borderCol = useColorModeValue("gray.200", "gray.700");
   const titleColor = useColorModeValue("black", "white");
-  const toast = useToast();
-  const [showConfetti, setShowConfetti] = useState(false);
   const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem("housePointTrackerClosed") !== "true");
+  const isAdmin = true; // Replace with your admin check
+  const { socket } = useSocket();
+
+  // Real-time updates
+  useEffect(() => {
+    const fetchPoints = async () => {
+      try {
+        const res = await axios.get("https://pear-tsk2.onrender.com/api/house-points");
+        setProgress(res.data);
+      } catch (error) {
+        console.error("Failed to fetch house points:", error);
+      }
+    };
+    fetchPoints();
+
+    if (!socket) return;
+
+    socket.on("housePointsUpdated", setProgress);
+    return () => socket.off("housePointsUpdated");
+  }, [socket]);
+
+  // Admin update
+  const saveProgress = async (newProgress) => {
+    if (!socket) return;
+    try {
+      await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
+      socket.emit("updateHousePoints", newProgress);
+    } catch (error) {
+      console.error("Failed to update house points:", error);
+    }
+  };
+
+  const resetAll = async () => {
+    if (!socket) return;
+    try {
+      await axios.post("https://pear-tsk2.onrender.com/api/house-points/reset");
+      socket.emit("resetHousePoints");
+    } catch (error) {
+      console.error("Failed to reset house points:", error);
+    }
+  };
 
   useEffect(() => {
     if (!dragging) return;
     const handleMouseMove = (e) => {
       setPosition(pos => {
         const newPos = {
-          left: Math.min(Math.max(0, e.clientX - dragOffset.current.x), window.innerWidth - 380),
+          left: Math.min(Math.max(0, e.clientX - dragOffset.current.x), window.innerWidth - 460),
           top: Math.min(Math.max(0, e.clientY - dragOffset.current.y), window.innerHeight - 80)
         };
         localStorage.setItem("housePointTrackerPosition", JSON.stringify(newPos));
@@ -69,31 +101,11 @@ const HousePointTracker = ({ showTutorial }) => {
     };
   };
 
-  const saveProgress = (newProgress) => {
-    setProgress(newProgress);
-    localStorage.setItem("houseProgress", JSON.stringify(newProgress));
-  };
-
   const handleWidgetTap = () => {
     if (!isAdmin) return;
     const now = Date.now();
     if (now - lastTap.current < 300) setExpanded(e => !e);
     lastTap.current = now;
-  };
-
-  const adjustProgress = (key, delta) => {
-    const newValue = Math.max(0, Math.min(100, progress[key] + delta));
-    const newProgress = { ...progress, [key]: newValue };
-    saveProgress(newProgress);
-    if (newValue === 100) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 2500);
-    }
-  };
-
-  const resetAll = () => {
-    saveProgress(initialProgress);
-    toast({ title: "House points reset", status: "info" });
   };
 
   const handleClose = () => {
@@ -105,7 +117,6 @@ const HousePointTracker = ({ showTutorial }) => {
     if (isOpen) sessionStorage.setItem("housePointTrackerClosed", "false");
   }, [isOpen]);
 
-  // Hide during tutorial
   if (showTutorial || !isOpen) return null;
 
   return (
@@ -115,7 +126,7 @@ const HousePointTracker = ({ showTutorial }) => {
       left={position.left + "px"}
       top={position.top + "px"}
       zIndex={2000}
-      w="320px"
+      w="380px"
       bg={widgetBg}
       borderRadius="16px"
       p={4}
@@ -126,7 +137,6 @@ const HousePointTracker = ({ showTutorial }) => {
       transition="width 0.2s, padding 0.2s"
       onClick={handleWidgetTap}
     >
-      {showConfetti && <Confetti width={420} height={220} recycle={false} numberOfPieces={180} />} 
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
         <Text fontWeight="bold" fontSize="xl" color={titleColor}>House Points</Text>
         <Text fontSize="sm" color="gray.500">on Pear Media</Text>
@@ -134,49 +144,25 @@ const HousePointTracker = ({ showTutorial }) => {
       </Flex>
       {HOUSES.map((house) => (
         <Flex key={house.key} align="center" mb={5}>
-          <Box
-            w={5}
-            h={5}
-            borderRadius="full"
-            bg={house.color}
-            mr={3}
-            border="2px solid"
-            borderColor={borderCol}
-          />
+          <Box w={5} h={5} borderRadius="full" bg={house.color} mr={3} border="2px solid" borderColor={borderCol} />
           <Text w="90px" fontSize="md" fontWeight="medium">{house.name}</Text>
           <Box flex={1} mx={2} position="relative">
             <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
             <Box
-              w={`${progress[house.key]}%`}
+              w={`calc(${progress[house.key]}% + 40px)`}
+              minW="40px"
               h="28px"
               bg={house.color}
               borderRadius="full"
               position="relative"
               zIndex={1}
               transition="width 0.4s cubic-bezier(.4,2,.6,1)"
-              sx={progress[house.key] >= 90 ? { animation: "pulse 1s infinite alternate" } : {}}
             />
-            {/* Pulse animation for 90%+ */}
-            {progress[house.key] >= 90 && (
-              <Box
-                position="absolute"
-                top={0}
-                left={0}
-                w="100%"
-                h="28px"
-                borderRadius="full"
-                pointerEvents="none"
-                sx={{
-                  boxShadow: `0 0 16px 4px ${house.color}`,
-                  animation: "pulseGlow 1s infinite alternate"
-                }}
-              />
-            )}
           </Box>
           {expanded && isAdmin && (
             <Flex direction="column" ml={3} gap={1}>
-              <Button size="xs" onClick={e => { e.stopPropagation(); adjustProgress(house.key, 10); }}>+10%</Button>
-              <Button size="xs" onClick={e => { e.stopPropagation(); adjustProgress(house.key, -10); }}>-10%</Button>
+              <Button size="xs" onClick={e => { e.stopPropagation(); saveProgress({ ...progress, [house.key]: Math.min(100, progress[house.key] + 10) }); }}>+10%</Button>
+              <Button size="xs" onClick={e => { e.stopPropagation(); saveProgress({ ...progress, [house.key]: Math.max(0, progress[house.key] - 10) }); }}>-10%</Button>
             </Flex>
           )}
         </Flex>
@@ -186,16 +172,6 @@ const HousePointTracker = ({ showTutorial }) => {
           Reset All
         </Button>
       )}
-      <style>{`
-        @keyframes pulse {
-          0% { filter: brightness(1); }
-          100% { filter: brightness(1.2); }
-        }
-        @keyframes pulseGlow {
-          0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.1); }
-          100% { box-shadow: 0 0 16px 8px rgba(0,0,0,0.2); }
-        }
-      `}</style>
     </Box>
   );
 };

@@ -15,8 +15,8 @@ export const notificationCategories = {
       "Weekly highlights: Top posts and activities on Pear",
       "Weekend special: Check out what's trending on Pear"
     ]
-};
-
+  };
+  
 export const generateNotification = (currentHour, currentDay) => {
   let message = "";
   
@@ -48,7 +48,7 @@ export const generateNotification = (currentHour, currentDay) => {
 };
 
 export const generatePostNotification = (posterUsername, postId) => {
-  return {
+    return {
     message: `${posterUsername} just made a new post on Pear. Don't miss out on the conversation!`,
     template: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -66,5 +66,5 @@ export const generatePostNotification = (posterUsername, postId) => {
         </p>
       </div>
     `
+    };
   };
-};

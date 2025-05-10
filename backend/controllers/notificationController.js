@@ -70,7 +70,7 @@ const sendEmailNotification = async (userId, message, quickLoginLink, template) 
 export const sendIdleNotifications = async () => {
   try {
     // Get all users with email notifications enabled
-    const users = await User.find({
+    const users = await User.find({ 
       "notificationPreferences.email": true,
       isBanned: false
     });

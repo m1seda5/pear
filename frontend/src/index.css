@@ -71,18 +71,18 @@
   @keyframes bounceIn {
 	0% {
 	  transform: scale(0);
-	  opacity: 0;
-	}
-	50% {
-	  transform: scale(1.2);
-	}
-	70% {
-	  transform: scale(0.9);
-	}
-	100% {
-	  transform: scale(1);
-	  opacity: 1;
-	}
+	opacity: 0;
+  }
+  50% {
+	transform: scale(1.2);
+  }
+  70% {
+	transform: scale(0.9);
+  }
+  100% {
+	transform: scale(1);
+	opacity: 1;
+  }
   }
   
   /* Lock icon animations */

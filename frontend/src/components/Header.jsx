@@ -662,9 +662,9 @@ function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
         whileTap={isDisabled ? "rest" : "tap"}
         variants={iconVariants}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        onClick={isDisabled ? undefined : onClick}
-        cursor={isDisabled ? "not-allowed" : "pointer"}
-        color={iconColor}
+      onClick={isDisabled ? undefined : onClick}
+      cursor={isDisabled ? "not-allowed" : "pointer"}
+      color={iconColor}
         mx={1.5}
         position="relative"
     >
