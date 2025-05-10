@@ -151,13 +151,12 @@ const HousePointTracker = ({ showTutorial }) => {
     setIsOpen(true);
   }, []);
 
-  // Hold-to-repeat for increment/decrement
+  // Hold-to-repeat for increment/decrement (only update backend on release)
   const handleHold = (houseKey, delta) => {
     const repeat = () => {
       setProgress(prev => {
         const newVal = Math.max(0, Math.min(100, prev[houseKey] + delta));
         const newProgress = { ...prev, [houseKey]: newVal };
-        saveProgress(newProgress);
         return newProgress;
       });
       holdTimers.current[houseKey] = setTimeout(repeat, 120);
@@ -166,6 +165,8 @@ const HousePointTracker = ({ showTutorial }) => {
   };
   const stopHold = (houseKey) => {
     clearTimeout(holdTimers.current[houseKey]);
+    // Only save to backend on release
+    saveProgress(progress);
   };
 
   if (showTutorial || !isOpen) return null;
@@ -201,8 +202,9 @@ const HousePointTracker = ({ showTutorial }) => {
           <Box flex={1} mx={2} position="relative">
             <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
             <Box
-              w={`calc(${progress[house.key]}% + 40px)`}
+              w={`calc(min(${progress[house.key]}, 100)% + 40px)`}
               minW="40px"
+              maxW="calc(100% + 40px)"
               h="28px"
               bg={house.color}
               borderRadius="full"
