@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text, useMediaQuery, Grid, useBreakpointValue } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
@@ -11,6 +11,7 @@ import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
+import GameWidget from "../components/GameWidget";
 
 const WidgetPlaceholder = ({ title }) => (
 	<Box
@@ -39,7 +40,6 @@ const HomePage = () => {
 	const [showTutorial, setShowTutorial] = useState(false);
 	const user = useRecoilValue(userAtom);
 	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
-	const isMobile = useBreakpointValue({ base: true, lg: false });
 
 	// Handle language change
 	useEffect(() => {
@@ -112,69 +112,42 @@ const HomePage = () => {
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			<Grid
-				templateColumns={{ base: "1fr", lg: "1fr 2fr 1fr" }}
-				gap={6}
-				maxW="7xl"
-				mx="auto"
-				p={{ base: 2, md: 6 }}
-			>
-				{/* Left Widgets */}
-				<Box display={{ base: "none", lg: "block" }}>
-					<Box position="sticky" top="100px">
-						<HousePointTracker showTutorial={false} />
-						<WidgetPlaceholder title="Game Score" />
-					</Box>
-				</Box>
-
-				{/* Main Posts */}
-				<Box>
-					{/* On mobile, show widgets above posts */}
-					{isMobile && (
-						<>
-							<HousePointTracker showTutorial={false} />
-							<WidgetPlaceholder title="Game Score" />
-						</>
-					)}
-					{!loading && posts.length === 0 && (
-						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-					)}
-					{loading && (
-						<Flex justifyContent="center">
-							<Spinner size="xl" />
-						</Flex>
-					)}
-					{posts.map((post) => {
-						const isNew = isNewPost(post.createdAt);
-						return (
-							<Box
-								key={post._id}
-								className="postContainer"
-								borderWidth="1px"
-								borderRadius="lg"
-								p={4}
-								mb={6}
-								boxShadow="sm"
-								maxW="800px"
-								mx="auto"
-							>
-								<Post post={post} postedBy={post.postedBy} />
-								{isNew && newPosts.includes(post) && (
-									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-								)}
-							</Box>
-						);
-					})}
-				</Box>
-
-				{/* Right Widgets */}
-				<Box display={{ base: "none", lg: "block" }}>
-					<Box position="sticky" top="100px">
-						<NotelyWidget />
-						<WidgetPlaceholder title="Shop" />
-					</Box>
-				</Box>
-			</Grid>
+			{/* Floating widgets (draggable, same size, hidden on small screens) */}
+			{isLargerThan1024 && <NotelyWidget />}
+			{isLargerThan1024 && <HousePointTracker showTutorial={false} />}
+			{isLargerThan1024 && <GameWidget />}
+			{/* Main posts (original layout) */}
+			<Box w="100%" maxW="600px" mx="auto" minW="0">
+				{!loading && posts.length === 0 && (
+					<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+				)}
+				{loading && (
+					<Flex justifyContent="center">
+						<Spinner size="xl" />
+					</Flex>
+				)}
+				{posts.map((post) => {
+					const isNew = isNewPost(post.createdAt);
+					return (
+						<Box
+							key={post._id}
+							className="postContainer"
+							borderWidth="1px"
+							borderRadius="lg"
+							p={4}
+							mb={6}
+							boxShadow="sm"
+							maxW="800px"
+							mx="auto"
+						>
+							<Post post={post} postedBy={post.postedBy} />
+							{isNew && newPosts.includes(post) && (
+								<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+							)}
+						</Box>
+					);
+				})}
+			</Box>
 		</>
 	);
 };

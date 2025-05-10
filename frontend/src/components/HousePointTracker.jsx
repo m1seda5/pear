@@ -12,7 +12,7 @@ const HOUSES = [
   { name: "Tsavo", color: "#FBBF24", key: "tsavo", bg: "#fdf6e3" },
 ];
 const initialProgress = { samburu: 0, mara: 0, amboseli: 0, tsavo: 0 };
-const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 420 : 100 };
+const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 340 : 100 };
 
 const HousePointTracker = ({ showTutorial }) => {
   const user = useRecoilValue(userAtom);
@@ -33,6 +33,7 @@ const HousePointTracker = ({ showTutorial }) => {
   const dragOffset = useRef({ x: 0, y: 0 });
   const widgetBg = useColorModeValue("white", "gray.800");
   const borderCol = useColorModeValue("gray.200", "gray.700");
+  const titleColor = useColorModeValue("black", "white");
   const toast = useToast();
   const [showConfetti, setShowConfetti] = useState(false);
   const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem("housePointTrackerClosed") !== "true");
@@ -42,8 +43,8 @@ const HousePointTracker = ({ showTutorial }) => {
     const handleMouseMove = (e) => {
       setPosition(pos => {
         const newPos = {
-          left: Math.min(Math.max(0, e.clientX - dragOffset.current.x), window.innerWidth - 480),
-          top: Math.min(Math.max(0, e.clientY - dragOffset.current.y), window.innerHeight - 120)
+          left: Math.min(Math.max(0, e.clientX - dragOffset.current.x), window.innerWidth - 380),
+          top: Math.min(Math.max(0, e.clientY - dragOffset.current.y), window.innerHeight - 80)
         };
         localStorage.setItem("housePointTrackerPosition", JSON.stringify(newPos));
         return newPos;
@@ -114,10 +115,10 @@ const HousePointTracker = ({ showTutorial }) => {
       left={position.left + "px"}
       top={position.top + "px"}
       zIndex={2000}
-      w={expanded ? "420px" : "340px"}
+      w="320px"
       bg={widgetBg}
-      borderRadius="24px"
-      p={expanded ? 6 : 4}
+      borderRadius="16px"
+      p={4}
       boxShadow="2xl"
       border={`1.5px solid ${borderCol}`}
       cursor={dragging ? "grabbing" : "default"}
@@ -126,11 +127,9 @@ const HousePointTracker = ({ showTutorial }) => {
       onClick={handleWidgetTap}
     >
       {showConfetti && <Confetti width={420} height={220} recycle={false} numberOfPieces={180} />} 
-      <Flex justify="space-between" align="center" mb={4} onMouseDown={startDrag} style={{ cursor: "grab" }}>
-        <Box>
-          <Text fontWeight="bold" fontSize="xl" color="orange.700">House Points</Text>
-          <Text fontSize="md" color="gray.500">on Pear Media</Text>
-        </Box>
+      <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
+        <Text fontWeight="bold" fontSize="xl" color={titleColor}>House Points</Text>
+        <Text fontSize="sm" color="gray.500">on Pear Media</Text>
         <IconButton icon={<CloseIcon />} size="sm" onClick={e => { e.stopPropagation(); handleClose(); }} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
       {HOUSES.map((house) => (
