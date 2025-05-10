@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const housePointsSchema = new mongoose.Schema({
   house: {
@@ -17,4 +17,4 @@ const housePointsSchema = new mongoose.Schema({
 // Ensure only one document per house
 housePointsSchema.index({ house: 1 }, { unique: true });
 
-module.exports = mongoose.model('HousePoints', housePointsSchema); 
+export default mongoose.model('HousePoints', housePointsSchema); 

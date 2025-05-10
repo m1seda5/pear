@@ -1,4 +1,4 @@
-const housePointsController = require('../controllers/housePointsController');
+import housePointsController from '../controllers/housePointsController.js';
 
 function initializeHousePointsHandler(io) {
   // Handle house points updates
@@ -25,4 +25,4 @@ function initializeHousePointsHandler(io) {
   });
 }
 
-module.exports = initializeHousePointsHandler; 
+export default initializeHousePointsHandler; 

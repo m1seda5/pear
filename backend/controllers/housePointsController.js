@@ -1,4 +1,4 @@
-const HousePoints = require('../models/HousePoints');
+import HousePoints from '../models/HousePoints.js';
 
 class HousePointsController {
   async getAllPoints() {
@@ -37,4 +37,4 @@ class HousePointsController {
   }
 }
 
-module.exports = new HousePointsController(); 
+export default new HousePointsController(); 

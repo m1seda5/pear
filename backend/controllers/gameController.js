@@ -1,4 +1,4 @@
-const Game = require('../models/Game');
+import Game from '../models/Game.js';
 
 class GameController {
   async getAllGames() {
@@ -44,4 +44,4 @@ class GameController {
   }
 }
 
-module.exports = new GameController(); 
+export default new GameController(); 
