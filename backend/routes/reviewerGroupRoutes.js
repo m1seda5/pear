@@ -14,8 +14,6 @@ import { getReviewerDecisions, getGroupReviewStats } from "../controllers/auditC
 
 const router = express.Router();
 
-
-
 router.post("/", protectRoute, adminMiddleware, createReviewerGroup);
 router.get("/", protectRoute, adminMiddleware, getReviewerGroups);
 router.put("/:id", protectRoute, adminMiddleware, updateReviewerGroup);

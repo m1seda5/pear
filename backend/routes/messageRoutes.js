@@ -64,6 +64,4 @@ router.get("/:otherUserId", protectRoute, checkChatAccess, getMessages); // This
 router.post("/", protectRoute, checkChatAccess, sendMessage);
 router.delete("/:messageId", protectRoute, checkChatAccess, deleteMessage);
 
-
-
 export default router;
