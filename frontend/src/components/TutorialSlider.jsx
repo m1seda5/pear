@@ -20,6 +20,8 @@ import noticesImg from "../assets/images/notices.jpg";
 import environmentclubImg from "../assets/images/environmentclub.jpg";
 import liveeventsImg from "../assets/images/liveevents.jpg";
 import pearImg from "../assets/images/pear.png";
+import housepointsImg from "../assets/images/housepoints.png";
+import Confetti from "react-confetti";
 
 const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
   const user = useRecoilValue(userAtom);
@@ -50,6 +52,12 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
       title: "Welcome to Pear",
       image: pearmediaImg,
       description: "No more boring announcements. Pear lets you get updates, post, and connect — all in one place, made just for students.",
+    },
+    {
+      title: "Track House Points",
+      image: housepointsImg,
+      description: "Track your house's progress and compete on Pear Media! House Points are updated live. Admins can manage points directly.",
+      isHousePoints: true,
     },
     {
       title: "Events",
@@ -130,6 +138,17 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
         clearInterval(autoSlideIntervalRef.current);
       }
     };
+  }, [currentIndex]);
+
+  // Custom: Show confetti and longer display for house points card
+  useEffect(() => {
+    if (slides[currentIndex]?.isHousePoints) {
+      // Show confetti and extend time
+      if (autoSlideIntervalRef.current) clearInterval(autoSlideIntervalRef.current);
+      autoSlideIntervalRef.current = setInterval(() => {
+        goToNextSlide();
+      }, 8000); // 8 seconds for house points card
+    }
   }, [currentIndex]);
 
   // Function to go to the next slide
@@ -251,177 +270,91 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
 
           switch (position) {
             case "left":
-              transform = `translateX(-${
-                cardWidth * offsetMultiplier
-              }px) rotateY(30deg) scale(0.9)`;
+              transform = `translateX(-${cardWidth * offsetMultiplier}px) rotateY(30deg) scale(0.9)`;
               opacity = 0.7;
               zIndex = 1;
               break;
             case "center":
-              transform = "translateX(0) rotateY(0deg) scale(1)";
+              transform = "none";
               opacity = 1;
               zIndex = 2;
               break;
             case "right":
-              transform = `translateX(${
-                cardWidth * offsetMultiplier
-              }px) rotateY(-30deg) scale(0.9)`;
+              transform = `translateX(${cardWidth * offsetMultiplier}px) rotateY(-30deg) scale(0.9)`;
               opacity = 0.7;
               zIndex = 1;
               break;
             default:
-              transform = `translateX(${
-                cardWidth * 1.1
-              }px) rotateY(-30deg) scale(0.9)`;
+              transform = "scale(0.8)";
               opacity = 0;
               zIndex = 0;
-              break;
           }
 
+          // House Points card: custom rendering
+          if (slide.isHousePoints && position === "center") {
+            return (
+              <Box
+                key={index}
+                position="absolute"
+                left="50%"
+                top="50%"
+                style={{
+                  width: cardWidth,
+                  height: cardHeight,
+                  transform: `translate(-50%, -50%) ${transform}`,
+                  opacity,
+                  zIndex,
+                  background: useColorModeValue("#fff", "#232323"),
+                  borderRadius: 24,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 32,
+                  textAlign: "center",
+                  border: `2px solid ${useColorModeValue('#e2e8f0', '#444')}`,
+                }}
+              >
+                <Confetti width={cardWidth} height={cardHeight} recycle={false} numberOfPieces={180} />
+                <Image src={slide.image} alt={slide.title} mb={4} borderRadius={16} w="80%" mx="auto" />
+                <Box mt={2} mb={2}>
+                  <Box fontWeight="bold" fontSize="2xl" color={useColorModeValue("orange.700", "yellow.300")}>{slide.title}</Box>
+                  <Box fontSize="md" color={useColorModeValue("gray.700", "gray.200")}>{slide.description}</Box>
+                </Box>
+              </Box>
+            );
+          }
+
+          // Default slide rendering
           return (
             <Box
               key={index}
               position="absolute"
-              width={`${cardWidth}px`}
-              height={`${cardHeight}px`}
-              borderRadius="20px"
-              boxShadow="0 8px 16px rgba(0, 0, 0, 0.3)"
-              display="flex"
-              flexDirection="column"
-              overflow="hidden"
-              transition="transform 0.5s ease, opacity 0.5s ease"
-              cursor="pointer"
-              transform={transform}
-              opacity={opacity}
-              zIndex={zIndex}
-              onClick={() => {
-                if (position === "center") goToNextSlide();
-                else if (position === "left") goToPreviousSlide();
+              left="50%"
+              top="50%"
+              style={{
+                width: cardWidth,
+                height: cardHeight,
+                transform: `translate(-50%, -50%) ${transform}`,
+                opacity,
+                zIndex,
+                background: useColorModeValue("#fff", "#232323"),
+                borderRadius: 24,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 32,
+                textAlign: "center",
+                border: `2px solid ${useColorModeValue('#e2e8f0', '#444')}`,
               }}
-              _hover={
-                position === "center"
-                  ? {
-                      transform: "translateX(0) rotateY(0deg) scale(1.03)",
-                    }
-                  : {}
-              }
             >
-              {/* Full image container */}
-              <Box
-                position="relative"
-                width="100%"
-                height="100%"
-                overflow="hidden"
-                borderRadius="20px"
-              >
-                <Image
-                  src={slide.image}
-                  alt={slide.title}
-                  w="100%"
-                  h="100%"
-                  objectFit="cover"
-                  objectPosition="center"
-                  fallbackSrc={pearImg}
-                  onError={(e) => {
-                    console.error(`Failed to load image: ${slide.image}`);
-                    e.target.src = pearImg;
-                  }}
-                />
-
-                {/* Strong dark gradient overlay for better text visibility */}
-                <Box
-                  position="absolute"
-                  bottom="0"
-                  left="0"
-                  width="100%"
-                  height="70%"
-                  background="linear-gradient(
-                    to top,
-                    rgba(0, 0, 0, 0.85) 0%,
-                    rgba(0, 0, 0, 0.75) 15%,
-                    rgba(0, 0, 0, 0.6) 30%,
-                    rgba(0, 0, 0, 0.4) 50%,
-                    rgba(0, 0, 0, 0.2) 75%,
-                    rgba(0, 0, 0, 0) 100%
-                  )"
-                  zIndex="1"
-                  pointerEvents="none"
-                />
-
-                {/* Status indicator pill - show "New" for Live Events */}
-                {index === currentIndex && (
-                  <Box
-                    position="absolute"
-                    top="20px"
-                    left="20px"
-                    bg="rgba(0, 0, 0, 0.5)"
-                    color="white"
-                    padding={isMobile ? "6px 12px" : "8px 16px"}
-                    borderRadius="20px"
-                    fontSize={isMobile ? "12px" : "14px"}
-                    zIndex="3"
-                    display="flex"
-                    alignItems="center"
-                    gap="5px"
-                  >
-                    <span>New</span>
-                  </Box>
-                )}
-
-                {/* Text overlay with improved visibility */}
-                <Box
-                  position="absolute"
-                  bottom="0"
-                  left="0"
-                  width="100%"
-                  height="50%" 
-                  display="flex"
-                  flexDirection="column"
-                  justifyContent="flex-end"
-                  padding={isMobile ? "20px 16px" : "30px 20px"}
-                  color={textColor}
-                  zIndex="2"
-                >
-                  <Box
-                    as="h2"
-                    fontSize={isMobile ? "26px" : "32px"}
-                    margin={`0 0 ${isMobile ? "6px" : "10px"} 0`}
-                    fontWeight="700" // Increased from 600 to 700 for better visibility
-                    textShadow="0 2px 4px rgba(0, 0, 0, 0.8)" // Enhanced text shadow
-                    letterSpacing="0.5px" // Slightly increased letter spacing
-                  >
-                    {slide.title}
-                    {/* Add "COMING SOON" badge to Live Events */}
-                    {slide.title === "Live Events" && (
-                      <Box
-                        as="span"
-                        fontSize={isMobile ? "12px" : "14px"}
-                        bg="rgba(255, 59, 48, 0.8)"
-                        color="white"
-                        ml="2"
-                        py="1"
-                        px="2"
-                        borderRadius="full"
-                        verticalAlign="middle"
-                        fontWeight="600"
-                        display="inline-block"
-                      >
-                        COMING SOON
-                      </Box>
-                    )}
-                  </Box>
-                  <Box
-                    as="p"
-                    fontSize={isMobile ? "14px" : "16px"}
-                    margin="0"
-                    opacity="1" // Changed from 0.9 to 1 for full opacity
-                    textShadow="0 1px 3px rgba(0, 0, 0, 0.9)" // Enhanced text shadow
-                    lineHeight="1.6" // Improved line height for readability
-                    fontWeight="500" // Slightly bolder
-                  >
-                    {slide.description}
-                  </Box>
-                </Box>
+              <Image src={slide.image} alt={slide.title} mb={4} borderRadius={16} w="80%" mx="auto" />
+              <Box mt={2} mb={2}>
+                <Box fontWeight="bold" fontSize="2xl" color={useColorModeValue("orange.700", "yellow.300")}>{slide.title}</Box>
+                <Box fontSize="md" color={useColorModeValue("gray.700", "gray.200")}>{slide.description}</Box>
               </Box>
             </Box>
           );

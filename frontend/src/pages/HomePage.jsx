@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useMediaQuery, Grid, useBreakpointValue } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
@@ -10,6 +10,24 @@ import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
+import HousePointTracker from "../components/HousePointTracker";
+
+const WidgetPlaceholder = ({ title }) => (
+	<Box
+		bg="gray.700"
+		color="white"
+		borderRadius="lg"
+		p={6}
+		mb={4}
+		textAlign="center"
+		fontWeight="bold"
+		fontSize="lg"
+		boxShadow="md"
+	>
+		{title} <br />
+		<Box as="span" fontSize="sm" color="gray.300">Coming Soon</Box>
+	</Box>
+);
 
 const HomePage = () => {
 	const [posts, setPosts] = useRecoilState(postsAtom);
@@ -21,6 +39,7 @@ const HomePage = () => {
 	const [showTutorial, setShowTutorial] = useState(false);
 	const user = useRecoilValue(userAtom);
 	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
+	const isMobile = useBreakpointValue({ base: true, lg: false });
 
 	// Handle language change
 	useEffect(() => {
@@ -93,9 +112,30 @@ const HomePage = () => {
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			<Flex gap="10" alignItems={"flex-start"} position="relative">
-				{/* Main Content */}
-				<Box w="100%" maxW={{ base: "100%", md: "600px", xl: "700px" }} mx="auto" minW="0">
+			<Grid
+				templateColumns={{ base: "1fr", lg: "1fr 2fr 1fr" }}
+				gap={6}
+				maxW="7xl"
+				mx="auto"
+				p={{ base: 2, md: 6 }}
+			>
+				{/* Left Widgets */}
+				<Box display={{ base: "none", lg: "block" }}>
+					<Box position="sticky" top="100px">
+						<HousePointTracker showTutorial={false} />
+						<WidgetPlaceholder title="Game Score" />
+					</Box>
+				</Box>
+
+				{/* Main Posts */}
+				<Box>
+					{/* On mobile, show widgets above posts */}
+					{isMobile && (
+						<>
+							<HousePointTracker showTutorial={false} />
+							<WidgetPlaceholder title="Game Score" />
+						</>
+					)}
 					{!loading && posts.length === 0 && (
 						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
 					)}
@@ -126,8 +166,15 @@ const HomePage = () => {
 						);
 					})}
 				</Box>
-				<NotelyWidget />
-			</Flex>
+
+				{/* Right Widgets */}
+				<Box display={{ base: "none", lg: "block" }}>
+					<Box position="sticky" top="100px">
+						<NotelyWidget />
+						<WidgetPlaceholder title="Shop" />
+					</Box>
+				</Box>
+			</Grid>
 		</>
 	);
 };
