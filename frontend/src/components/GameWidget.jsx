@@ -163,16 +163,14 @@ const GameWidget = ({ isAdmin }) => {
     sessionStorage.setItem("gameWidgetClosed", "true");
   };
 
-  // Double-tap to open admin modal for admins (robust)
+  // Double-tap to open admin modal for admins (robust, always works)
   const handleTitleTap = () => {
     if (!isAdmin) return;
-    if (tapTimeout) {
-      clearTimeout(tapTimeout);
-      setTapTimeout(null);
+    const now = Date.now();
+    if (now - lastTap.current < 350) {
       setAdminModalOpen(true);
-    } else {
-      setTapTimeout(setTimeout(() => setTapTimeout(null), 300));
     }
+    lastTap.current = now;
   };
 
   const getGameState = (game) => {

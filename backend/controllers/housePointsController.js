@@ -2,11 +2,14 @@ import HousePoints from '../models/HousePoints.js';
 
 class HousePointsController {
   async getAllPoints() {
+    const houses = ['samburu', 'mara', 'amboseli', 'tsavo'];
     const points = await HousePoints.find();
-    return points.reduce((acc, curr) => {
-      acc[curr.house] = curr.points;
+    const result = houses.reduce((acc, house) => {
+      const found = points.find(p => p.house === house);
+      acc[house] = found ? found.points : 0;
       return acc;
     }, {});
+    return result;
   }
 
   async updatePoints(updates) {
