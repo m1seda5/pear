@@ -32,4 +32,4 @@ router.post('/reset', async (req, res) => {
   }
 });
 
-export default router; 
+module.exports = router; 
