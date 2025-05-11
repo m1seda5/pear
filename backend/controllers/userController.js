@@ -1672,40 +1672,34 @@ const resendOTP = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    
-    // First find the user by username
-    const user = await User.findOne({ username });
-    
+    const { usernameOrEmail, password } = req.body;
+    // Find user by username or email
+    const user = await User.findOne({
+      $or: [
+        { username: usernameOrEmail },
+        { email: usernameOrEmail }
+      ]
+    });
     // Check credentials before checking ban status
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user?.password || ""
     );
-
     if (!user || !isPasswordCorrect) {
-      return res.status(400).json({ error: "Invalid username or password" });
+      return res.status(400).json({ error: "Invalid username/email or password" });
     }
-
-    // Now check if the user is banned
     if (user.isBanned) {
       return res.status(403).json({ error: "Account permanently banned" });
     }
-
-    // Rest of the login logic remains the same
     if (user.isFrozen) {
       user.isFrozen = false;
       await user.save();
     }
-
-    // Auto-follow logic
     const allUsers = await User.find({});
     const allUserIds = allUsers.map((u) => u._id.toString());
     user.following = allUserIds;
     await user.save();
-
     generateTokenAndSetCookie(user._id, res);
-
     res.status(200).json({
       _id: user._id,
       name: user.name,
