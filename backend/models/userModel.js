@@ -430,7 +430,7 @@ const userSchema = mongoose.Schema(
         default: true
       },
       webPush: {
-      type: Boolean,
+        type: Boolean,
         default: true
       }
     },

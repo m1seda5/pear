@@ -17,10 +17,6 @@ import mongoose from "mongoose";
 import cors from "cors";
 import quickLoginRoutes from "./routes/quickLoginRoutes.js";
 import http from "http";
-import housePointsRoutes from "./routes/housePoints.js";
-import gamesRoutes from "./routes/games.js";
-import initializeHousePointsHandler from "./socket/housePointsHandler.js";
-import initializeGameHandler from "./socket/gameHandler.js";
 
 dotenv.config();
 connectDB();
@@ -41,9 +37,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize Socket.IO
-const io = initializeSocket(server);
-initializeHousePointsHandler(io);
-initializeGameHandler(io);
+initializeSocket(server);
 
 // Middleware
 app.use(express.json({ limit: "50mb" }));
@@ -61,8 +55,6 @@ app.use("/api/reviewer-groups", reviewerGroupRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notes", noteRoutes);
-app.use("/api/house-points", housePointsRoutes);
-app.use("/api/games", gamesRoutes);
 app.use("/api", quickLoginRoutes);
 
 if (process.env.NODE_ENV === "production") {
