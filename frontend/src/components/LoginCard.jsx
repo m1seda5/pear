@@ -48,10 +48,18 @@ export default function LoginCard() {
 				showToast("Error", data.error, "error");
 				return;
 			}
+			
+			// Store the user's role in localStorage
+			localStorage.setItem("user-role", data.role); // Store the role for future use
+			
+			// Store the entire user data
 			localStorage.setItem("user-threads", JSON.stringify(data));
-			setUser(data);
+			setUser(data); // Update the Recoil state or wherever the user state is managed
+	
+			// Show success toast
 			showToast("Success", "Login successful", "success");
 			navigate("/"); // Navigate to home page after login
+			
 		} catch (error) {
 			showToast("Error", error.message || "Login failed", "error");
 		} finally {
@@ -79,9 +87,10 @@ export default function LoginCard() {
 				>
 					<Stack spacing={4}>
 						<FormControl isRequired>
-							<FormLabel>Username or Email</FormLabel>
+							<FormLabel>Username or Email Address</FormLabel>
 							<Input
 								type='text'
+								placeholder='Enter your username or email address'
 								value={inputs.usernameOrEmail}
 								onChange={(e) => setInputs((inputs) => ({ ...inputs, usernameOrEmail: e.target.value }))}
 								onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
@@ -118,14 +127,19 @@ export default function LoginCard() {
 								onClick={handleLogin}
 								isLoading={loading}
 							>
-								Login
+								Login with Username or Email
 							</Button>
 						</Stack>
 						<Stack pt={6}>
 							<Text align={"center"}>
 								Don&apos;t have an account?{" "}
 								<Link color={"blue.400"} onClick={() => setAuthScreen("signup")}>
-								Sign up
+								Create a Brookhouse Account
+								</Link>
+							</Text>
+							<Text align={"center"}>
+								<Link color={"blue.400"} onClick={() => setAuthScreen("forgot")}>
+									Forgot Password?
 								</Link>
 							</Text>
 						</Stack>
