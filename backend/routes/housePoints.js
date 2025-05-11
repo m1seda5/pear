@@ -1,7 +1,6 @@
-import express from 'express';
-import housePointsController from '../controllers/housePointsController.js';
-
+const express = require('express');
 const router = express.Router();
+const housePointsController = require('../controllers/housePointsController');
 
 // Get all house points
 router.get('/', async (req, res) => {
