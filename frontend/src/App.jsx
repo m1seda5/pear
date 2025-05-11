@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ChakraProvider, Box, Text, VStack, Button, useToast } from '@chakra-ui/react';
+import { ChakraProvider, Box, Text, VStack, Button, useToast, Container } from '@chakra-ui/react';
 import { RecoilRoot } from 'recoil';
 import { SocketContextProvider } from './context/SocketContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
-import { Box, Container } from "@chakra-ui/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
