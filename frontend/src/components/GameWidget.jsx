@@ -54,6 +54,12 @@ const IndividualGameWidget = ({ game, onSave, isAdminEditing, onToggleEdit }) =>
   const [editData, setEditData] = useState(game || {});
   const toast = useToast();
 
+  const handleDoubleClick = () => {
+    if (currentUser?.role === 'admin') {
+      onToggleEdit();
+    }
+  };
+
   const handleFieldChange = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }));
   };
@@ -74,6 +80,7 @@ const IndividualGameWidget = ({ game, onSave, isAdminEditing, onToggleEdit }) =>
       bg="white"
       borderRadius="lg"
       boxShadow="md"
+      onDoubleClick={handleDoubleClick}
       animate={isAdminEditing ? { scale: 1.05 } : {}}
       transition={{ duration: 0.2 }}
     >
@@ -318,6 +325,7 @@ const GameWidget = ({ isAdmin }) => {
       cursor={dragging ? "grabbing" : "default"}
       userSelect={dragging ? "none" : "auto"}
       display={{ base: "none", md: "block" }}
+      onDoubleClick={() => { if (isAdmin) setAdminModalOpen(true); }}
     >
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
         <Text fontWeight="bold" fontSize="xl" color={titleColor} style={{ userSelect: "none" }}>Games</Text>
