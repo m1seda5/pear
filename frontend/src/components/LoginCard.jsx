@@ -29,7 +29,7 @@ export default function LoginCard() {
 	const navigate = useNavigate();
 
 	const [inputs, setInputs] = useState({
-		usernameOrEmail: "",
+		username: "",
 		password: "",
 	});
 	const showToast = useShowToast();
@@ -51,14 +51,13 @@ export default function LoginCard() {
 			localStorage.setItem("user-threads", JSON.stringify(data));
 			setUser(data);
 			showToast("Success", "Login successful", "success");
-			navigate("/"); // Navigate to home page after login
+			navigate(`/${data.username}`); // Navigate to user profile page after login
 		} catch (error) {
 			showToast("Error", error.message || "Login failed", "error");
 		} finally {
 			setLoading(false);
 		}
 	};
-	
 	return (
 		<Flex align={"center"} justify={"center"}>
 			<Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
@@ -79,11 +78,11 @@ export default function LoginCard() {
 				>
 					<Stack spacing={4}>
 						<FormControl isRequired>
-							<FormLabel>Username or Email</FormLabel>
+							<FormLabel>Username</FormLabel>
 							<Input
 								type='text'
-								value={inputs.usernameOrEmail}
-								onChange={(e) => setInputs((inputs) => ({ ...inputs, usernameOrEmail: e.target.value }))}
+								value={inputs.username}
+								onChange={(e) => setInputs((inputs) => ({ ...inputs, username: e.target.value }))}
 								onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
 							/>
 						</FormControl>
@@ -124,9 +123,7 @@ export default function LoginCard() {
 						<Stack pt={6}>
 							<Text align={"center"}>
 								Don&apos;t have an account?{" "}
-								<Link color={"blue.400"} onClick={() => setAuthScreen("signup")}>
-								Sign up
-								</Link>
+								<Link color={"blue.400"} onClick={() => setAuthScreen("signup")}>Create a Brookhouse Account</Link>
 							</Text>
 						</Stack>
 					</Stack>
@@ -135,5 +132,4 @@ export default function LoginCard() {
 		</Flex>
 	);
 }
-
 
