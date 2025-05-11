@@ -1,4 +1,3 @@
-// UserPage.jsx
 import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -15,6 +14,16 @@ import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import GameWidget from "../components/GameWidget";
 
+const GameWidgetList = ({ games }) => {
+  return (
+    <Box>
+      {games.map((game) => (
+        <GameWidget key={game._id} game={game} />
+      ))}
+    </Box>
+  );
+};
+
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
   const { username } = useParams();
@@ -26,10 +35,25 @@ const UserPage = () => {
   const location = useLocation();
   const currentUser = useRecoilValue(userAtom);
   const [fromSearch, setFromSearch] = useState(false);
+  const [games, setGames] = useState([]);
+  const [loadingGames, setLoadingGames] = useState(true);
 
-  // Check if the page was accessed via search
   useEffect(() => {
-    // Only set fromSearch if not viewing own profile
+    const fetchGames = async () => {
+      try {
+        const res = await fetch('/api/games');
+        const data = await res.json();
+        setGames(data);
+      } catch (error) {
+        console.error('Error fetching games:', error);
+      } finally {
+        setLoadingGames(false);
+      }
+    };
+    fetchGames();
+  }, []);
+
+  useEffect(() => {
     if (currentUser?._id === user?._id) {
       setFromSearch(false);
       sessionStorage.removeItem(`userPage_${username}_fromSearch`);
@@ -50,17 +74,15 @@ const UserPage = () => {
     };
   }, [location.state, username, currentUser?._id, user?._id]);
 
-  // Updated handleMessage function
   const handleMessage = () => {
     const currentDate = new Date();
     const dayOfWeek = currentDate.getDay();
     const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
 
-    // School hours configuration
-    const schoolStart = 810;  // 8:10 AM
-    const lunchStart = 1250;  // 12:50 PM
-    const lunchEnd = 1340;    // 1:40 PM
-    const schoolEnd = 1535;   // 3:35 PM
+    const schoolStart = 810;
+    const lunchStart = 1250;
+    const lunchEnd = 1340;
+    const schoolEnd = 1535;
 
     const isStudent = currentUser?.role === "student";
     const allowedAccess = !isStudent || (
@@ -137,22 +159,24 @@ const UserPage = () => {
 
   return (
     <Box>
-      {/* Floating widgets (hidden on small screens) */}
       <NotelyWidget />
       <HousePointTracker showTutorial={false} />
-      <GameWidget />
+      {loadingGames ? (
+        <Spinner />
+      ) : (
+        <GameWidgetList games={games} />
+      )}
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
           {(() => {
-            // School hours configuration
             const currentDate = new Date();
             const dayOfWeek = currentDate.getDay();
             const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
-            const schoolStart = 810;  // 8:10 AM
-            const lunchStart = 1250;  // 12:50 PM
-            const lunchEnd = 1340;    // 1:40 PM
-            const schoolEnd = 1535;   // 3:35 PM
+            const schoolStart = 810;
+            const lunchStart = 1250;
+            const lunchEnd = 1340;
+            const schoolEnd = 1535;
             const isStudent = currentUser?.role === "student";
             const allowedAccess = !isStudent || (
               (dayOfWeek >= 1 && dayOfWeek <= 5 && (

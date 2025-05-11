@@ -22,11 +22,17 @@ import {
   Select,
   Image,
   useToast,
-  Spinner
+  Spinner,
+  Avatar
 } from "@chakra-ui/react";
 import { CloseIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useSocket } from "../context/SocketContext";
 import axios from "axios";
+import { useRecoilValue } from 'recoil';
+import userAtom from '../atoms/userAtom';
+import { motion } from 'framer-motion';
+
+const MotionBox = motion(Box);
 
 const DEFAULT_POSITION = { top: 280, left: typeof window !== 'undefined' ? window.innerWidth - 400 : 100 };
 
@@ -41,6 +47,92 @@ const emptyGame = {
   endTime: "",
   background: "",
   confettiTeam: ""
+};
+
+const IndividualGameWidget = ({ game, onSave, isAdminEditing, onToggleEdit }) => {
+  const currentUser = useRecoilValue(userAtom);
+  const [editData, setEditData] = useState(game || {});
+  const toast = useToast();
+
+  const handleDoubleClick = () => {
+    if (currentUser?.role === 'admin') {
+      onToggleEdit();
+    }
+  };
+
+  const handleFieldChange = (field, value) => {
+    setEditData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await onSave(editData);
+      toast({ title: 'Game saved!', status: 'success' });
+    } catch (error) {
+      toast({ title: 'Error saving game', status: 'error' });
+    }
+  };
+
+  return (
+    <MotionBox
+      p={4}
+      m={2}
+      bg="white"
+      borderRadius="lg"
+      boxShadow="md"
+      onDoubleClick={handleDoubleClick}
+      animate={isAdminEditing ? { scale: 1.05 } : {}}
+      transition={{ duration: 0.2 }}
+    >
+      {isAdminEditing ? (
+        <Flex direction="column" gap={3}>
+          <Input
+            placeholder="Sport Type"
+            value={editData.sport}
+            onChange={(e) => handleFieldChange('sport', e.target.value)}
+          />
+          <Input
+            type="datetime-local"
+            value={editData.startTime}
+            onChange={(e) => handleFieldChange('startTime', e.target.value)}
+          />
+          {game?.teams?.map((team, index) => (
+            <Flex key={index} gap={2}>
+              <Avatar src={team.logo} />
+              <Input
+                value={team.name}
+                onChange={(e) => handleFieldChange(`teams[${index}].name`, e.target.value)}
+              />
+              <Input
+                type="number"
+                value={team.score}
+                onChange={(e) => handleFieldChange(`teams[${index}].score`, e.target.value)}
+              />
+            </Flex>
+          ))}
+          <Button colorScheme="blue" onClick={handleSave}>
+            Save Game
+          </Button>
+        </Flex>
+      ) : (
+        <Flex direction="column">
+          <Text fontSize="xl" fontWeight="bold">{game?.sport}</Text>
+          <Flex justify="space-around">
+            {game?.teams?.map((team, index) => (
+              <Flex key={index} align="center" gap={2}>
+                <Avatar src={team.logo} />
+                <Text>{team.name}</Text>
+                <Text fontSize="2xl">{team.score}</Text>
+              </Flex>
+            ))}
+          </Flex>
+          <Text color="gray.500">
+            {new Date(game?.startTime).toLocaleString()}
+          </Text>
+        </Flex>
+      )}
+    </MotionBox>
+  );
 };
 
 const GameWidget = ({ isAdmin }) => {
@@ -59,15 +151,14 @@ const GameWidget = ({ isAdmin }) => {
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editGame, setEditGame] = useState(emptyGame);
+  const [editingGameId, setEditingGameId] = useState(null);
   const lastTap = useRef(0);
   const toast = useToast();
   const widgetBg = useColorModeValue("rgba(255,255,255,0.85)", "rgba(20,20,20,0.95)");
   const borderCol = useColorModeValue("gray.200", "gray.700");
   const titleColor = useColorModeValue("black", "white");
-  const [tapTimeout, setTapTimeout] = useState(null);
 
   useEffect(() => {
-    // Fetch initial games
     const fetchGames = async () => {
       setLoading(true);
       try {
@@ -84,7 +175,6 @@ const GameWidget = ({ isAdmin }) => {
 
     if (!socket) return;
 
-    // Socket.IO listeners
     socket.on("gameUpdated", updatedGame => {
       setGames(prev => prev.map(g => g._id === updatedGame._id ? updatedGame : g));
       setAdminGames(prev => prev.map(g => g._id === updatedGame._id ? updatedGame : g));
@@ -163,7 +253,6 @@ const GameWidget = ({ isAdmin }) => {
     sessionStorage.setItem("gameWidgetClosed", "true");
   };
 
-  // Double-tap to open admin modal for admins (robust, always works)
   const handleTitleTap = () => {
     if (!isAdmin) return;
     const now = Date.now();
@@ -258,43 +347,13 @@ const GameWidget = ({ isAdmin }) => {
         <Box mt={4}><Text>No games upcoming</Text></Box>
       ) : (
         visibleGames.map(game => (
-          <Box key={game._id} my={3} p={2} borderRadius="md" bg="gray.50">
-            <Flex justify="space-between" align="center">
-              <Text fontWeight="bold">{game.teams.map(t => t.name).join(" vs ")}</Text>
-              <Badge colorScheme={
-                game.state === "upcoming" ? "yellow" :
-                game.state === "live" ? "green" : "gray"
-              }>
-                {game.state}
-              </Badge>
-            </Flex>
-            <Text fontSize="sm">{game.sport} | {game.category}</Text>
-            <Text fontSize="sm">
-              {new Date(game.startTime).toLocaleString()} - {new Date(game.endTime).toLocaleString()}
-            </Text>
-            {isAdmin && (
-              <Menu>
-                <MenuButton as={IconButton} icon={<SettingsIcon />} size="sm" mt={2} />
-                <MenuList>
-                  <MenuItem onClick={() => {
-                    const newScore = prompt("Enter new score for " + game.teams[0].name);
-                    if (newScore !== null) {
-                      updateScore(game._id, 0, parseInt(newScore));
-                    }
-                  }}>
-                    Update Score
-                  </MenuItem>
-                  <MenuItem onClick={() => {
-                    if (window.confirm("Are you sure you want to delete this game?")) {
-                      handleGameDelete(game._id);
-                    }
-                  }}>
-                    Delete Game
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            )}
-          </Box>
+          <IndividualGameWidget
+            key={game._id}
+            game={game}
+            onSave={handleGameUpdate}
+            isAdminEditing={editingGameId === game._id}
+            onToggleEdit={() => setEditingGameId(editingGameId === game._id ? null : game._id)}
+          />
         ))
       )}
 
@@ -302,7 +361,6 @@ const GameWidget = ({ isAdmin }) => {
         <Button size="sm" mt={2} w="full">+{moreCount} more</Button>
       )}
 
-      {/* Admin Modal */}
       <Modal isOpen={adminModalOpen} onClose={() => setAdminModalOpen(false)} size="2xl" closeOnOverlayClick>
         <ModalOverlay />
         <ModalContent>
@@ -332,7 +390,6 @@ const GameWidget = ({ isAdmin }) => {
                 setEditGame(emptyGame);
               }}>Add New Game</Button>
             )}
-            {/* Edit/Add Form */}
             {(editingIndex !== null || editGame !== emptyGame) && (
               <Box borderWidth="1px" borderRadius="md" p={3} mt={2}>
                 <Text fontWeight="bold" mb={2}>{editingIndex === null ? "Add New Game" : "Edit Game"}</Text>
@@ -377,4 +434,4 @@ const GameWidget = ({ isAdmin }) => {
   );
 };
 
-export default GameWidget; 
+export default GameWidget;
