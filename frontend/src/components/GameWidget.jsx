@@ -325,9 +325,10 @@ const GameWidget = ({ isAdmin }) => {
       cursor={dragging ? "grabbing" : "default"}
       userSelect={dragging ? "none" : "auto"}
       display={{ base: "none", md: "block" }}
+      onDoubleClick={() => { if (isAdmin) setAdminModalOpen(true); }}
     >
       <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
-        <Text fontWeight="bold" fontSize="xl" color={titleColor} onClick={handleTitleTap} style={{ userSelect: "none" }}>Games</Text>
+        <Text fontWeight="bold" fontSize="xl" color={titleColor} style={{ userSelect: "none" }}>Games</Text>
         <Text fontSize="sm" color="gray.500">on Pear Media</Text>
         <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
         {isAdmin && (
