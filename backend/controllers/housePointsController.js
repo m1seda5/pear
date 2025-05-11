@@ -40,7 +40,7 @@ const resetPoints = async () => {
   return allPoints;
 };
 
-export {
+export default {
   getAllPoints,
   updatePoints,
   resetPoints
