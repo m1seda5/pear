@@ -202,9 +202,9 @@ const HousePointTracker = ({ showTutorial }) => {
           <Box flex={1} mx={2} position="relative">
             <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
             <Box
-              w={`${progress[house.key]}%`}
-              minW="0"
-              maxW="100%"
+              w={`calc(min(${progress[house.key]}, 100)% + 40px)`}
+              minW="40px"
+              maxW="calc(100% + 40px)"
               h="28px"
               bg={house.color}
               borderRadius="full"
@@ -252,4 +252,4 @@ const HousePointTracker = ({ showTutorial }) => {
   );
 };
 
-export default HousePointTracker;
+export default HousePointTracker; 
