@@ -34,6 +34,8 @@ const HousePointTracker = ({ showTutorial }) => {
   const toast = useToast();
   const adminRef = useRef();
   const holdTimers = useRef({});
+  const updateTimeout = useRef(null);
+  const [localProgress, setLocalProgress] = useState(initialProgress);
 
   // Real-time updates
   useEffect(() => {
@@ -42,6 +44,7 @@ const HousePointTracker = ({ showTutorial }) => {
       try {
         const res = await axios.get("https://pear-tsk2.onrender.com/api/house-points");
         setProgress(res.data);
+        setLocalProgress(res.data);
         setError("");
       } catch (error) {
         setError("Failed to fetch house points");
@@ -52,25 +55,43 @@ const HousePointTracker = ({ showTutorial }) => {
     fetchPoints();
 
     if (!socket) return;
-    socket.on("housePointsUpdated", setProgress);
+    socket.on("housePointsUpdated", (data) => {
+      setProgress(data);
+      setLocalProgress(data);
+    });
     return () => socket.off("housePointsUpdated");
   }, [socket]);
 
-  // Admin update
+  // Debounced save function
   const saveProgress = async (newProgress) => {
     if (!socket) return;
-    setLoading(true);
-    try {
-      await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
-      socket.emit("updateHousePoints", newProgress);
-      setError("");
-      toast({ title: "Points updated!", status: "success", duration: 1200, isClosable: true });
-    } catch (error) {
-      setError("Failed to update house points");
-      toast({ title: "Failed to update house points", status: "error", duration: 2000, isClosable: true });
-    } finally {
-      setLoading(false);
+    
+    // Clear any pending updates
+    if (updateTimeout.current) {
+      clearTimeout(updateTimeout.current);
     }
+
+    // Set local state immediately
+    setLocalProgress(newProgress);
+
+    // Debounce the actual save
+    updateTimeout.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
+        socket.emit("updateHousePoints", newProgress);
+        setProgress(newProgress);
+        setError("");
+        toast({ title: "Points updated!", status: "success", duration: 1200, isClosable: true });
+      } catch (error) {
+        setError("Failed to update house points");
+        toast({ title: "Failed to update house points", status: "error", duration: 2000, isClosable: true });
+        // Revert to last known good state
+        setLocalProgress(progress);
+      } finally {
+        setLoading(false);
+      }
+    }, 500); // 500ms debounce
   };
 
   const resetAll = async () => {
@@ -79,6 +100,8 @@ const HousePointTracker = ({ showTutorial }) => {
     try {
       await axios.post("https://pear-tsk2.onrender.com/api/house-points/reset");
       socket.emit("resetHousePoints");
+      setProgress(initialProgress);
+      setLocalProgress(initialProgress);
       setError("");
       toast({ title: "All points reset!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
@@ -154,19 +177,19 @@ const HousePointTracker = ({ showTutorial }) => {
   // Hold-to-repeat for increment/decrement (only update backend on release)
   const handleHold = (houseKey, delta) => {
     const repeat = () => {
-      setProgress(prev => {
+      setLocalProgress(prev => {
         const newVal = Math.max(0, Math.min(100, prev[houseKey] + delta));
-        const newProgress = { ...prev, [houseKey]: newVal };
-        return newProgress;
+        return { ...prev, [houseKey]: newVal };
       });
       holdTimers.current[houseKey] = setTimeout(repeat, 120);
     };
     repeat();
   };
+
   const stopHold = (houseKey) => {
     clearTimeout(holdTimers.current[houseKey]);
     // Only save to backend on release
-    saveProgress(progress);
+    saveProgress(localProgress);
   };
 
   if (showTutorial || !isOpen) return null;
@@ -202,7 +225,7 @@ const HousePointTracker = ({ showTutorial }) => {
           <Box flex={1} mx={2} position="relative">
             <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
             <Box
-              w={`${progress[house.key]}%`}
+              w={`${localProgress[house.key]}%`}
               minW="0"
               maxW="100%"
               h="28px"
@@ -219,13 +242,23 @@ const HousePointTracker = ({ showTutorial }) => {
                 onMouseDown={() => handleHold(house.key, 2)}
                 onMouseUp={() => stopHold(house.key)}
                 onMouseLeave={() => stopHold(house.key)}
-                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.min(100, prev[house.key] + 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  const newVal = Math.min(100, localProgress[house.key] + 2);
+                  const newProgress = { ...localProgress, [house.key]: newVal };
+                  saveProgress(newProgress);
+                }}
               >+2%</Button>
               <Button size="xs"
                 onMouseDown={() => handleHold(house.key, -2)}
                 onMouseUp={() => stopHold(house.key)}
                 onMouseLeave={() => stopHold(house.key)}
-                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.max(0, prev[house.key] - 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  const newVal = Math.max(0, localProgress[house.key] - 2);
+                  const newProgress = { ...localProgress, [house.key]: newVal };
+                  saveProgress(newProgress);
+                }}
               >-2%</Button>
             </Flex>
           )}
