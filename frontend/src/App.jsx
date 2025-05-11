@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { ChakraProvider, Box, Text, VStack, Button, useToast, Container } from '@chakra-ui/react';
-import { RecoilRoot } from 'recoil';
+import { RecoilRoot, useRecoilValue } from 'recoil';
 import { SocketContextProvider } from './context/SocketContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
-import { useRecoilValue } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
 import CreatePost from "./components/CreatePost";
@@ -109,6 +108,7 @@ function ServerStatus() {
 function App() {
   const user = useRecoilValue(userAtom);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [isI18nReady, setIsI18nReady] = useState(false);
 
   useEffect(() => {
@@ -118,6 +118,13 @@ function App() {
       setIsI18nReady(true);
     });
   }, []);
+
+  // Redirect to home after login
+  useEffect(() => {
+    if (user && pathname === '/auth') {
+      navigate('/');
+    }
+  }, [user, pathname, navigate]);
 
   const [unreadCount, setUnreadCount] = useState(0);
 

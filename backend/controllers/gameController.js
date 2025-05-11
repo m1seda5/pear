@@ -1,13 +1,11 @@
 import Game from '../models/Game.js';
 
-async function getAllGames(req, res) {
+async function getAllGames() {
   try {
-    const games = await Game.find()
-      .sort({ startTime: 1 })
-      .limit(10);
-    res.status(200).json(games);
+    const games = await Game.find().sort({ startTime: 1 }).limit(10);
+    return Array.isArray(games) ? games : [];
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return [];
   }
 }
 

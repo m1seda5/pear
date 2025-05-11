@@ -15,14 +15,13 @@ export const SocketContextProvider = ({ children }) => {
 	const user = useRecoilValue(userAtom);
 
 	useEffect(() => {
+		if (!user || !user._id) return;
 		const socket = io("https://pear-tsk2.onrender.com/", {
 			query: {
-				userId: user?._id,
+				userId: user._id,
 			},
 		});
-
 		setSocket(socket);
-
 		socket.on("getOnlineUsers", (users) => {
 			setOnlineUsers(users);
 		});
