@@ -220,6 +220,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
     }, [postedBy, showToast, t]);
 
     useEffect(() => {
+        if (!currentUser || !currentUser.token) return;
         const markAsViewed = async () => {
             try {
                 const res = await fetch(`/api/posts/view/${post._id}`, {
@@ -254,7 +255,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 clearTimeout(viewTimeoutRef.current);
             }
         };
-    }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
+    }, [post._id, post.isViewed, setPosts, currentUser, showToast, t]);
 
     const handleDeletePost = async (e) => {
         try {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Flex, Spinner, Text, useToast, IconButton } from "@chakra-ui/react";
 import { useRecoilValue } from "recoil";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import userAtom from "../atoms/userAtom";
 import Post from "../components/Post";
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,11 @@ const TVPage = () => {
 
     const SLIDE_DURATION = 11000;
     const MAX_FEATURED_POSTS = 4;
+
+    // Add authentication check
+    if (!user || !user.token) {
+        return <Navigate to="/auth" />;
+    }
 
     // Handle fullscreen toggling with better error handling
     const toggleFullscreen = useCallback(() => {
@@ -119,91 +124,25 @@ const TVPage = () => {
     }, [handleKeyDown, handleFullscreenChange]);
 
     useEffect(() => {
-        const loadCachedPosts = () => {
-            const cached = localStorage.getItem('tvPagePosts');
-            if (cached) {
-                try {
-                    const parsedPosts = JSON.parse(cached);
-                    setCachedPosts(parsedPosts);
-                    setPosts(parsedPosts);
-                    setLoading(false);
-                } catch (e) {
-                    console.error("Error parsing cached posts:", e);
-                    // Clear invalid cache
-                    localStorage.removeItem('tvPagePosts');
-                }
-            }
-        };
-
+        if (!user || !user.token) return;
         const fetchPosts = async () => {
             setLoading(true);
+            setError(null);
             try {
-                const res = await fetch("/api/posts/feed");
+                const res = await fetch('/api/posts/tv');
+                if (!res.ok) throw new Error('Failed to fetch posts');
                 const data = await res.json();
-
-                if (data.error) {
-                    setError(data.error);
-                    toast({
-                        title: t("Error"),
-                        description: data.error,
-                        status: "error",
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                    return;
-                }
-
-                const sortedPosts = data.sort((a, b) => {
-                    const aEngagement = (a.likes?.length || 0) + (a.replies?.length || 0);
-                    const bEngagement = (b.likes?.length || 0) + (b.replies?.length || 0);
-                    return bEngagement - aEngagement;
-                });
-
-                const featuredPosts = sortedPosts.slice(0, MAX_FEATURED_POSTS);
-                setPosts(featuredPosts);
-                localStorage.setItem('tvPagePosts', JSON.stringify(featuredPosts));
-                setCachedPosts(featuredPosts);
-            } catch (error) {
-                setError(error.message);
-                loadCachedPosts();
-                toast({
-                    title: t("Network Error"),
-                    description: t("Using cached content"),
-                    status: "warning",
-                    duration: 3000,
-                    isClosable: true,
-                });
+                setPosts(data);
+                setCachedPosts(data);
+            } catch (err) {
+                setError(err.message);
+                toast({ title: t('Error'), description: err.message, status: 'error', duration: 5000, isClosable: true });
             } finally {
                 setLoading(false);
             }
         };
-
-        if (user?.role !== 'admin') {
-            toast({
-                title: t("Access Denied"),
-                description: t("You don't have permission to view this page"),
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
         fetchPosts();
-
-        // Set up slideshow interval
-        const interval = setInterval(() => {
-            if (!isPaused && posts.length > 0) {
-                setCurrentPostIndex((prevIndex) => {
-                    const nextIndex = prevIndex === posts.length - 1 ? 0 : prevIndex + 1;
-                    setKey(prev => prev + 1);
-                    return nextIndex;
-                });
-            }
-        }, SLIDE_DURATION);
-
-        return () => clearInterval(interval);
-    }, [user, t, toast, isPaused, posts.length]);
+    }, [t, toast, user]);
 
     const Progress = ({ index }) => (
         <Box

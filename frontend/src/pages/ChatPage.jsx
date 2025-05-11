@@ -752,6 +752,7 @@ const ChatPage = () => {
   }, [socket, setConversations, selectedConversation._id, setSelectedConversation]);
 
   useEffect(() => {
+    if (!currentUser || !currentUser.token) return;
     const getConversations = async () => {
       try {
         const endpoint = isMonitoring 
@@ -781,7 +782,11 @@ const ChatPage = () => {
     };
 
     getConversations();
-  }, [showToast, setConversations, t, currentUser.token, isMonitoring]);
+  }, [showToast, setConversations, t, currentUser, isMonitoring]);
+
+  if (!currentUser || !currentUser.token) {
+    return null;
+  }
 
   // Handle selecting a user from search results
   const handleUserSelect = async (selectedUser) => {

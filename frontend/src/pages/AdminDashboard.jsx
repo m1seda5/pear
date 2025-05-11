@@ -125,7 +125,7 @@ const AdminDashboard = () => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
 
   // If user is not admin, redirect to home
-  if (!user || user.role !== "admin") {
+  if (!user || !user.token || user.role !== "admin") {
     return <Navigate to="/" />;
   }
 

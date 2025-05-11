@@ -12,6 +12,7 @@ import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import GameWidget from "../components/GameWidget";
+import { Navigate } from "react-router-dom";
 
 const WidgetPlaceholder = ({ title }) => (
 	<Box
@@ -41,6 +42,11 @@ const HomePage = () => {
 	const user = useRecoilValue(userAtom);
 	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
 
+	// Add authentication check
+	if (!user || !user.token) {
+		return <Navigate to="/auth" />;
+	}
+
 	// Handle language change
 	useEffect(() => {
 		const handleLanguageChange = (lng) => {
@@ -63,6 +69,7 @@ const HomePage = () => {
 
 	// Fetch feed posts
 	useEffect(() => {
+		if (!user || !user.token) return;
 		const getFeedPosts = async () => {
 			setLoading(true);
 			setPosts([]);
@@ -97,7 +104,7 @@ const HomePage = () => {
 			}
 		};
 		getFeedPosts();
-	}, [showToast, setPosts, t]);
+	}, [showToast, setPosts, t, user]);
 
 	const handleTutorialComplete = () => {
 		setShowTutorial(false);

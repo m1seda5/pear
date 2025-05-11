@@ -41,11 +41,13 @@
 // 	}, [showToast, pid, setPosts]);
 
 // 	const handleDeletePost = async () => {
+// 		if (!currentUser || !currentUser.token) return;
 // 		try {
 // 			if (!window.confirm("Are you sure you want to delete this post?")) return;
 
 // 			const res = await fetch(`/api/posts/${currentPost._id}`, {
 // 				method: "DELETE",
+// 				headers: { 'Authorization': `Bearer ${currentUser.token}` },
 // 			});
 // 			const data = await res.json();
 // 			if (data.error) {
@@ -152,6 +154,7 @@ import userAtom from "../atoms/userAtom";
 import { DeleteIcon } from "@chakra-ui/icons";
 import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 
 const PostPage = () => {
   const { t } = useTranslation();
@@ -162,6 +165,11 @@ const PostPage = () => {
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
   const [loadingPost, setLoadingPost] = useState(true);
+
+  // Add authentication check
+  if (!currentUser || !currentUser.token) {
+    return <Navigate to="/auth" />;
+  }
 
   const formatSafeDate = (dateString) => {
     if (!dateString) return t("just now");
@@ -179,39 +187,24 @@ const PostPage = () => {
     }
   };
 
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = async () => {
+    if (!currentUser || !currentUser.token) return;
     try {
-      if (!postId) {
-        showToast(t("Error"), t("Invalid post ID"), "error");
-        return;
-      }
+      if (!window.confirm("Are you sure you want to delete this post?")) return;
 
-      const res = await fetch(`/api/posts/${postId}`, {
+      const res = await fetch(`/api/posts/${currentPost._id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${currentUser?.token || ""}`,
-        },
+        headers: { 'Authorization': `Bearer ${currentUser.token}` },
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        showToast(
-          t("Error"),
-          data.error || t("Failed to delete post"),
-          "error"
-        );
+      if (data.error) {
+        showToast("Error", data.error, "error");
         return;
       }
-
-      navigate("/");
-      showToast(t("Success"), t("Post deleted successfully"), "success");
+      showToast("Success", "Post deleted", "success");
+      navigate(`/${user.username}`);
     } catch (error) {
-      console.error("Delete post error:", error);
-      showToast(
-        t("Error"),
-        error.message || t("Failed to delete post"),
-        "error"
-      );
+      showToast("Error", error.message, "error");
     }
   };
 
@@ -336,7 +329,7 @@ const PostPage = () => {
             <DeleteIcon
               size={20}
               cursor={"pointer"}
-              onClick={() => handleDeletePost(currentPost._id)}
+              onClick={handleDeletePost}
             />
           )}
         </Flex>
