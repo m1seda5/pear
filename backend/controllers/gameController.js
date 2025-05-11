@@ -88,7 +88,7 @@ async function getGameState(req, res) {
   }
 }
 
-export default {
+export {
   getAllGames,
   createGame,
   updateGame,
