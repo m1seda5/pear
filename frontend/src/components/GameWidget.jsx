@@ -393,27 +393,9 @@ const GameWidget = ({ isAdmin }) => {
             {(editingIndex !== null || editGame !== emptyGame) && (
               <Box borderWidth="1px" borderRadius="md" p={3} mt={2}>
                 <Text fontWeight="bold" mb={2}>{editingIndex === null ? "Add New Game" : "Edit Game"}</Text>
-                <Flex gap={2} mb={2} align="center">
+                <Flex gap={2} mb={2}>
                   <Input placeholder="Team 1 Name" value={editGame.teams[0].name} onChange={e => setEditGame(g => ({ ...g, teams: [{ ...g.teams[0], name: e.target.value }, g.teams[1]] }))} />
-                  <Button size="sm" onClick={() => setEditGame(g => ({ ...g, teams: [{ ...g.teams[0], score: Math.max(0, g.teams[0].score - 1) }, g.teams[1]] }))}>-</Button>
-                  <Input type="number" min={0} max={999} value={editGame.teams[0].score} onChange={e => {
-                    let val = parseInt(e.target.value, 10);
-                    if (isNaN(val)) val = 0;
-                    val = Math.max(0, Math.min(999, val));
-                    setEditGame(g => ({ ...g, teams: [{ ...g.teams[0], score: val }, g.teams[1]] }));
-                  }} w="60px" textAlign="center" />
-                  <Button size="sm" onClick={() => setEditGame(g => ({ ...g, teams: [{ ...g.teams[0], score: Math.min(999, g.teams[0].score + 1) }, g.teams[1]] }))}>+</Button>
-                </Flex>
-                <Flex gap={2} mb={2} align="center">
                   <Input placeholder="Team 2 Name" value={editGame.teams[1].name} onChange={e => setEditGame(g => ({ ...g, teams: [g.teams[0], { ...g.teams[1], name: e.target.value }] }))} />
-                  <Button size="sm" onClick={() => setEditGame(g => ({ ...g, teams: [g.teams[0], { ...g.teams[1], score: Math.max(0, g.teams[1].score - 1) }] }))}>-</Button>
-                  <Input type="number" min={0} max={999} value={editGame.teams[1].score} onChange={e => {
-                    let val = parseInt(e.target.value, 10);
-                    if (isNaN(val)) val = 0;
-                    val = Math.max(0, Math.min(999, val));
-                    setEditGame(g => ({ ...g, teams: [g.teams[0], { ...g.teams[1], score: val }] }));
-                  }} w="60px" textAlign="center" />
-                  <Button size="sm" onClick={() => setEditGame(g => ({ ...g, teams: [g.teams[0], { ...g.teams[1], score: Math.min(999, g.teams[1].score + 1) }] }))}>+</Button>
                 </Flex>
                 <Flex gap={2} mb={2}>
                   <Input placeholder="Team 1 Logo URL" value={editGame.teams[0].logo} onChange={e => setEditGame(g => ({ ...g, teams: [{ ...g.teams[0], logo: e.target.value }, g.teams[1]] }))} />
