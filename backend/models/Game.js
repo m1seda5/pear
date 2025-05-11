@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const gameSchema = new mongoose.Schema({
   teams: [{
@@ -40,4 +40,4 @@ const gameSchema = new mongoose.Schema({
 // Index for efficient querying of upcoming games
 gameSchema.index({ startTime: 1, state: 1 });
 
-export default mongoose.model('Game', gameSchema); 
+module.exports = mongoose.model('Game', gameSchema); 

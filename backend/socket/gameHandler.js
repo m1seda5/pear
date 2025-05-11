@@ -1,4 +1,4 @@
-import gameController from '../controllers/gameController.js';
+const gameController = require('../controllers/gameController');
 
 function initializeGameHandler(io) {
   io.on('connection', (socket) => {
@@ -48,4 +48,4 @@ function initializeGameHandler(io) {
   });
 }
 
-export default initializeGameHandler; 
+module.exports = initializeGameHandler; 
