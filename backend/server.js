@@ -19,7 +19,7 @@ import quickLoginRoutes from "./routes/quickLoginRoutes.js";
 import http from "http";
 import housePointsRoutes from "./routes/housePoints.js";
 import gamesRoutes from "./routes/games.js";
-import initializeHousePointsHandler from "./socket/housePointsHandler.js";
+import { initializeSocket as initializeHousePointsHandler } from "./socket/housePointsHandler.js";
 import initializeGameHandler from "./socket/gameHandler.js";
 
 dotenv.config();
@@ -42,7 +42,7 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 const io = initializeSocket(server);
-initializeHousePointsHandler(io);
+initializeHousePointsHandler(server);
 initializeGameHandler(io);
 
 // Middleware
