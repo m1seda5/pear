@@ -1,5 +1,5 @@
-import { Server } from "socket.io";
-import { updatePoints, resetPoints } from '../controllers/housePointsController.js';
+import { Server } from "socket.io"; 
+import * as housePointsController from '../controllers/housePointsController.js';
 
 let ioInstance = null;
 
@@ -10,36 +10,36 @@ export const initializeSocket = (server) => {
             methods: ["GET", "POST"],
         },
     });
-
+    
     ioInstance.on("connection", (socket) => {
         console.log("user connected", socket.id);
-
+        
         // In initializeHousePointsHandler.js
         socket.on('updateHousePoints', async (data) => {
             try {
-                const updates = await updatePoints(data);
+                const updates = await housePointsController.updatePoints(data);
                 ioInstance.emit('housePointsUpdated', updates); // Emits full state
             } catch (error) {
                 console.error('Error updating house points:', error);
                 socket.emit('error', 'Failed to update house points');
             }
         });
-
+        
         socket.on('resetHousePoints', async () => {
             try {
-                const updates = await resetPoints();
+                const updates = await housePointsController.resetPoints();
                 ioInstance.emit('housePointsUpdated', updates); // Emits full state
             } catch (error) {
                 console.error('Error resetting house points:', error);
                 socket.emit('error', 'Failed to reset house points');
             }
         });
-
+        
         socket.on("disconnect", () => {
             console.log("user disconnected", socket.id);
         });
     });
-
+    
     return ioInstance;
 };
 
