@@ -13,6 +13,23 @@ const HOUSES = [
 const initialProgress = { samburu: 0, mara: 0, amboseli: 0, tsavo: 0 };
 const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 400 : 100 };
 
+const API_BASE_URL = "https://pear-tsk2.onrender.com/api";
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+const fetchWithRetry = async (url, options = {}, retries = MAX_RETRIES) => {
+    try {
+        const response = await axios(url, options);
+        return response.data;
+    } catch (error) {
+        if (retries > 0 && (error.response?.status === 502 || error.response?.status === 503)) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return fetchWithRetry(url, options, retries - 1);
+        }
+        throw error;
+    }
+};
+
 const HousePointTracker = ({ showTutorial }) => {
   const [progress, setProgress] = useState(initialProgress);
   const [expanded, setExpanded] = useState(false);
@@ -42,12 +59,15 @@ const HousePointTracker = ({ showTutorial }) => {
     const fetchPoints = async () => {
       setLoading(true);
       try {
-        const res = await axios.get("https://pear-tsk2.onrender.com/api/house-points");
-        setProgress(res.data);
-        setLocalProgress(res.data);
+        const data = await fetchWithRetry(`${API_BASE_URL}/house-points`);
+        setProgress(data);
+        setLocalProgress(data);
         setError("");
       } catch (error) {
-        setError("Failed to fetch house points");
+        console.error("Failed to fetch house points:", error);
+        setError(error.response?.status === 502 ? 
+          "Server is temporarily unavailable. Please try again in a few moments." : 
+          "Failed to fetch house points");
       } finally {
         setLoading(false);
       }
@@ -78,14 +98,28 @@ const HousePointTracker = ({ showTutorial }) => {
     updateTimeout.current = setTimeout(async () => {
       setLoading(true);
       try {
-        await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
+        await fetchWithRetry(`${API_BASE_URL}/house-points`, {
+          method: 'PUT',
+          data: newProgress
+        });
         socket.emit("updateHousePoints", newProgress);
         setProgress(newProgress);
         setError("");
         toast({ title: "Points updated!", status: "success", duration: 1200, isClosable: true });
       } catch (error) {
-        setError("Failed to update house points");
-        toast({ title: "Failed to update house points", status: "error", duration: 2000, isClosable: true });
+        console.error("Failed to update house points:", error);
+        setError(error.response?.status === 502 ? 
+          "Server is temporarily unavailable. Please try again in a few moments." : 
+          "Failed to update house points");
+        toast({ 
+          title: "Failed to update house points", 
+          description: error.response?.status === 502 ? 
+            "Server is temporarily unavailable. Please try again in a few moments." : 
+            "Please try again",
+          status: "error", 
+          duration: 2000, 
+          isClosable: true 
+        });
         // Revert to last known good state
         setLocalProgress(progress);
       } finally {
@@ -98,15 +132,28 @@ const HousePointTracker = ({ showTutorial }) => {
     if (!socket) return;
     setLoading(true);
     try {
-      await axios.post("https://pear-tsk2.onrender.com/api/house-points/reset");
+      await fetchWithRetry(`${API_BASE_URL}/house-points/reset`, {
+        method: 'POST'
+      });
       socket.emit("resetHousePoints");
       setProgress(initialProgress);
       setLocalProgress(initialProgress);
       setError("");
       toast({ title: "All points reset!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
-      setError("Failed to reset house points");
-      toast({ title: "Failed to reset house points", status: "error", duration: 2000, isClosable: true });
+      console.error("Failed to reset house points:", error);
+      setError(error.response?.status === 502 ? 
+        "Server is temporarily unavailable. Please try again in a few moments." : 
+        "Failed to reset house points");
+      toast({ 
+        title: "Failed to reset house points", 
+        description: error.response?.status === 502 ? 
+          "Server is temporarily unavailable. Please try again in a few moments." : 
+          "Please try again",
+        status: "error", 
+        duration: 2000, 
+        isClosable: true 
+      });
     } finally {
       setLoading(false);
     }
