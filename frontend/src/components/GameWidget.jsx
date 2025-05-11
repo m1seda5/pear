@@ -64,7 +64,6 @@ const GameWidget = ({ isAdmin }) => {
   const widgetBg = useColorModeValue("rgba(255,255,255,0.85)", "rgba(20,20,20,0.95)");
   const borderCol = useColorModeValue("gray.200", "gray.700");
   const titleColor = useColorModeValue("black", "white");
-  const [tapTimeout, setTapTimeout] = useState(null);
 
   useEffect(() => {
     // Fetch initial games
@@ -163,16 +162,12 @@ const GameWidget = ({ isAdmin }) => {
     sessionStorage.setItem("gameWidgetClosed", "true");
   };
 
-  // Double-tap to open admin modal for admins (robust)
+  // Double-tap to open admin modal for admins
   const handleTitleTap = () => {
     if (!isAdmin) return;
-    if (tapTimeout) {
-      clearTimeout(tapTimeout);
-      setTapTimeout(null);
-      setAdminModalOpen(true);
-    } else {
-      setTapTimeout(setTimeout(() => setTapTimeout(null), 300));
-    }
+    const now = Date.now();
+    if (now - lastTap.current < 300) setAdminModalOpen(true);
+    lastTap.current = now;
   };
 
   const getGameState = (game) => {
@@ -287,17 +282,6 @@ const GameWidget = ({ isAdmin }) => {
         <Text fontWeight="bold" fontSize="xl" color={titleColor} onClick={handleTitleTap} style={{ userSelect: "none" }}>Games</Text>
         <Text fontSize="sm" color="gray.500">on Pear Media</Text>
         <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
-        {isAdmin && (
-          <IconButton
-            icon={<SettingsIcon />}
-            aria-label="Admin controls"
-            size="sm"
-            ml={2}
-            onClick={() => setAdminModalOpen(true)}
-            bg={adminModalOpen ? "gray.200" : "transparent"}
-            _hover={{ bg: "gray.100" }}
-          />
-        )}
       </Flex>
 
       {visibleGames.length === 0 ? (
