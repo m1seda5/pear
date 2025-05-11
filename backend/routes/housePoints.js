@@ -1,12 +1,12 @@
 import express from 'express';
-import housePointsController from '../controllers/housePointsController.js';
+import { getAllPoints, updatePoints, resetPoints } from '../controllers/housePointsController.js';
 
 const router = express.Router();
 
 // Get all house points
 router.get('/', async (req, res) => {
   try {
-    const points = await housePointsController.getAllPoints();
+    const points = await getAllPoints();
     res.json(points);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch house points' });
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 // Update house points (admin only)
 router.put('/', async (req, res) => {
   try {
-    const updates = await housePointsController.updatePoints(req.body);
+    const updates = await updatePoints(req.body);
     res.json(updates);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update house points' });
@@ -26,11 +26,11 @@ router.put('/', async (req, res) => {
 // Reset all house points (admin only)
 router.post('/reset', async (req, res) => {
   try {
-    const updates = await housePointsController.resetPoints();
+    const updates = await resetPoints();
     res.json(updates);
   } catch (error) {
     res.status(500).json({ error: 'Failed to reset house points' });
   }
 });
 
-export default router; 
+export default router;
