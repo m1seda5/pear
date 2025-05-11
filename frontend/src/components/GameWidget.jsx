@@ -210,50 +210,6 @@ const GameWidget = ({ isAdmin }) => {
     }
   };
 
-  // Admin modal logic
-  const handleEditGame = (idx) => {
-    setEditingIndex(idx);
-    setEditGame(adminGames[idx]);
-  };
-  const handleAddGame = () => {
-    setEditingIndex(null);
-    setEditGame(emptyGame);
-  };
-  const handleSaveGame = async () => {
-    setLoading(true);
-    try {
-      if (editingIndex === null) {
-        // Add new game
-        const res = await axios.post("https://pear-tsk2.onrender.com/api/games", editGame);
-        socket.emit("createGame", res.data);
-        setAdminGames(prev => [...prev, res.data].slice(0, 10));
-      } else {
-        // Update existing game
-        await handleGameUpdate(editGame);
-      }
-      setAdminModalOpen(false);
-      setEditingIndex(null);
-      setEditGame(emptyGame);
-    } catch (error) {
-      toast({ title: "Failed to save game", status: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleDeleteGame = async (idx) => {
-    const game = adminGames[idx];
-    await handleGameDelete(game._id);
-    setAdminGames(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  // Modal close on outside click or Escape
-  useEffect(() => {
-    if (!adminModalOpen) return;
-    const handleKey = (e) => { if (e.key === "Escape") setAdminModalOpen(false); };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [adminModalOpen]);
-
   const visibleGames = games
     .map(g => ({ ...g, state: getGameState(g) }))
     .filter(g => g.state !== "expired")
@@ -358,8 +314,11 @@ const GameWidget = ({ isAdmin }) => {
               <Box key={game._id || idx} borderWidth="1px" borderRadius="md" p={3} mb={3}>
                 <Flex justify="space-between" align="center">
                   <Text fontWeight="bold">{game.teams.map(t => t.name).join(" vs ")}</Text>
-                  <Button size="xs" colorScheme="blue" mr={2} onClick={() => handleEditGame(idx)}>Edit</Button>
-                  <Button size="xs" colorScheme="red" onClick={() => handleDeleteGame(idx)}>Delete</Button>
+                  <Button size="xs" colorScheme="blue" mr={2} onClick={() => {
+                    setEditingIndex(idx);
+                    setEditGame(game);
+                  }}>Edit</Button>
+                  <Button size="xs" colorScheme="red" onClick={() => handleGameDelete(game._id)}>Delete</Button>
                 </Flex>
                 <Text fontSize="sm">{game.sport} | {game.category}</Text>
                 <Text fontSize="sm">
@@ -368,7 +327,10 @@ const GameWidget = ({ isAdmin }) => {
               </Box>
             ))}
             {adminGames.length < 10 && (
-              <Button colorScheme="green" size="sm" onClick={handleAddGame} mb={2}>Add New Game</Button>
+              <Button colorScheme="green" size="sm" onClick={() => {
+                setEditingIndex(null);
+                setEditGame(emptyGame);
+              }}>Add New Game</Button>
             )}
             {/* Edit/Add Form */}
             {(editingIndex !== null || editGame !== emptyGame) && (
@@ -393,8 +355,15 @@ const GameWidget = ({ isAdmin }) => {
                 <Input placeholder="Background Image URL" value={editGame.background} onChange={e => setEditGame(g => ({ ...g, background: e.target.value }))} mb={2} />
                 <Input placeholder="Confetti Team (name)" value={editGame.confettiTeam} onChange={e => setEditGame(g => ({ ...g, confettiTeam: e.target.value }))} mb={2} />
                 <Flex gap={2}>
-                  <Button colorScheme="blue" size="sm" onClick={handleSaveGame} isLoading={loading}>Save</Button>
-                  <Button size="sm" onClick={() => { setEditingIndex(null); setEditGame(emptyGame); }}>Cancel</Button>
+                  <Button colorScheme="blue" size="sm" onClick={() => {
+                    setLoading(true);
+                    handleGameUpdate(editGame);
+                    setAdminModalOpen(false);
+                  }} isLoading={loading}>Save</Button>
+                  <Button size="sm" onClick={() => {
+                    setEditingIndex(null);
+                    setEditGame(emptyGame);
+                  }}>Cancel</Button>
                 </Flex>
               </Box>
             )}
