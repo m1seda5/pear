@@ -50,9 +50,10 @@ export default function LoginCard() {
 			}
 			localStorage.setItem("user-threads", JSON.stringify(data));
 			setUser(data);
-			navigate(`/${data.username}`); // Restore navigation after login
+			showToast("Success", "Login successful", "success");
+			navigate(`/${data.username}`); // Navigate to user profile page after login
 		} catch (error) {
-			showToast("Error", error, "error");
+			showToast("Error", error.message || "Login failed", "error");
 		} finally {
 			setLoading(false);
 		}
