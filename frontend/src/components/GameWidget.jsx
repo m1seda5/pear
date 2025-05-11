@@ -128,7 +128,9 @@ const IndividualGameWidget = ({ game, onSave, isAdminEditing, onToggleEdit }) =>
   );
 };
 
-const GameWidget = ({ isAdmin }) => {
+const GameWidget = () => {
+  const currentUser = useRecoilValue(userAtom);
+  const isAdmin = currentUser?.role === 'admin';
   const [games, setGames] = useState([]);
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("gameWidgetPosition");

@@ -3,6 +3,8 @@ import { Box, Flex, Text, Button, useColorModeValue, IconButton, Spinner, useToa
 import { CloseIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useSocket } from "../context/SocketContext";
 import axios from "axios";
+import { useRecoilValue } from 'recoil';
+import userAtom from '../atoms/userAtom';
 
 const HOUSES = [
   { name: "Samburu", color: "#4CAF50", key: "samburu", bg: "#dbeedb" },
@@ -27,7 +29,8 @@ const HousePointTracker = ({ showTutorial }) => {
   const borderCol = useColorModeValue("gray.200", "gray.700");
   const titleColor = useColorModeValue("black", "white");
   const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem("housePointTrackerClosed") !== "true");
-  const isAdmin = true; // Replace with your admin check
+  const currentUser = useRecoilValue(userAtom);
+  const isAdmin = currentUser?.role === 'admin';
   const { socket } = useSocket();
   const [error, setError] = useState("");
   const toast = useToast();
@@ -139,7 +142,12 @@ const HousePointTracker = ({ showTutorial }) => {
 
   const handleIncrement = (houseKey, delta) => {
     if (!progress) return;
-    const newVal = Math.max(0, Math.min(100, progress[houseKey] + delta));
+    // Clamp between 2 and 98, unless reset
+    let newVal = progress[houseKey] + delta;
+    if (delta > 0) newVal = Math.min(98, newVal);
+    if (delta < 0) newVal = Math.max(2, newVal);
+    // If reset, allow 0
+    if (delta === 0) newVal = 0;
     const newProgress = { ...progress, [houseKey]: newVal };
     saveProgress(newProgress);
   };
@@ -179,8 +187,8 @@ const HousePointTracker = ({ showTutorial }) => {
             <Box flex={1} mx={2} position="relative">
               <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
               <Box
-                w={`${progress[house.key]}%`}
-                minW="0"
+                w={progress[house.key] === 0 ? "0%" : `max(16px, ${progress[house.key]}%)`}
+                minW={progress[house.key] === 0 ? "0" : "16px"}
                 maxW="100%"
                 h="28px"
                 bg={house.color}
