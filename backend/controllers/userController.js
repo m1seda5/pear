@@ -1672,16 +1672,21 @@ const resendOTP = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    // Find user by username only
-    const user = await User.findOne({ username });
+    const { usernameOrEmail, password } = req.body;
+    // Find user by username or email
+    const user = await User.findOne({
+      $or: [
+        { username: usernameOrEmail },
+        { email: usernameOrEmail }
+      ]
+    });
     // Check credentials before checking ban status
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user?.password || ""
     );
     if (!user || !isPasswordCorrect) {
-      return res.status(400).json({ error: "Invalid username or password" });
+      return res.status(400).json({ error: "Invalid username/email or password" });
     }
     if (user.isBanned) {
       return res.status(403).json({ error: "Account permanently banned" });
