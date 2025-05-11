@@ -65,11 +65,6 @@ app.use("/api/house-points", housePointsRoutes);
 app.use("/api/games", gamesRoutes);
 app.use("/api", quickLoginRoutes);
 
-// Add health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
   app.get("*", (req, res) => {
