@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const games = await gameController.getAllGames();
-    res.json(Array.isArray(games) ? games : []);
+    res.json(games);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch games' });
   }
