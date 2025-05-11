@@ -27,7 +27,7 @@ export default function LoginCard() {
 	const [loading, setLoading] = useState(false);
 
 	const [inputs, setInputs] = useState({
-		usernameOrEmail: "",
+		username: "",
 		password: "",
 	});
 	const showToast = useShowToast();
@@ -84,12 +84,11 @@ export default function LoginCard() {
 				>
 					<Stack spacing={4}>
 						<FormControl isRequired>
-							<FormLabel>Username or Email Address</FormLabel>
+							<FormLabel>Username</FormLabel>
 							<Input
 								type='text'
-								placeholder='Enter your username or email address'
-								value={inputs.usernameOrEmail}
-								onChange={(e) => setInputs((inputs) => ({ ...inputs, usernameOrEmail: e.target.value }))}
+								value={inputs.username}
+								onChange={(e) => setInputs((inputs) => ({ ...inputs, username: e.target.value }))}
 							/>
 						</FormControl>
 						<FormControl isRequired>
@@ -122,7 +121,7 @@ export default function LoginCard() {
 								onClick={handleLogin}
 								isLoading={loading}
 							>
-								Login with Username or Email
+								Login
 							</Button>
 						</Stack>
 						<Stack pt={6}>

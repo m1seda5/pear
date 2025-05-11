@@ -14,7 +14,7 @@ const initialProgress = { samburu: 0, mara: 0, amboseli: 0, tsavo: 0 };
 const DEFAULT_POSITION = { top: 180, left: typeof window !== 'undefined' ? window.innerWidth - 400 : 100 };
 
 const HousePointTracker = ({ showTutorial }) => {
-  const [progress, setProgress] = useState(null);
+  const [progress, setProgress] = useState(initialProgress);
   const [expanded, setExpanded] = useState(false);
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("housePointTrackerPosition");
@@ -40,7 +40,7 @@ const HousePointTracker = ({ showTutorial }) => {
     const fetchPoints = async () => {
       setLoading(true);
       try {
-        const res = await axios.get("/api/house-points");
+        const res = await axios.get("https://pear-tsk2.onrender.com/api/house-points");
         setProgress(res.data);
         setError("");
       } catch (error) {
@@ -61,24 +61,29 @@ const HousePointTracker = ({ showTutorial }) => {
     if (!socket) return;
     setLoading(true);
     try {
-      await axios.put("/api/house-points", newProgress);
-      // Removed socket.emit
-      toast({ title: "Points updated!", status: "success", duration: 1200 });
+      await axios.put("https://pear-tsk2.onrender.com/api/house-points", newProgress);
+      socket.emit("updateHousePoints", newProgress);
+      setError("");
+      toast({ title: "Points updated!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
-      toast({ title: "Failed to update points", status: "error", duration: 2000 });
+      setError("Failed to update house points");
+      toast({ title: "Failed to update house points", status: "error", duration: 2000, isClosable: true });
     } finally {
       setLoading(false);
     }
   };
 
   const resetAll = async () => {
+    if (!socket) return;
     setLoading(true);
     try {
-      await axios.post("/api/house-points/reset");
-      setProgress(initialProgress); // Optimistic update
-      toast({ title: "Points reset!", status: "success", duration: 1200 });
+      await axios.post("https://pear-tsk2.onrender.com/api/house-points/reset");
+      socket.emit("resetHousePoints");
+      setError("");
+      toast({ title: "All points reset!", status: "success", duration: 1200, isClosable: true });
     } catch (error) {
-      toast({ title: "Failed to reset", status: "error", duration: 2000 });
+      setError("Failed to reset house points");
+      toast({ title: "Failed to reset house points", status: "error", duration: 2000, isClosable: true });
     } finally {
       setLoading(false);
     }
@@ -190,64 +195,42 @@ const HousePointTracker = ({ showTutorial }) => {
       </Flex>
       {loading && <Flex justify="center" align="center" my={2}><Spinner size="sm" /></Flex>}
       {error && <Text color="red.500" fontSize="sm" mb={2}>{error}</Text>}
-      
-      {!progress ? (
-        <Flex justify="center"><Spinner /></Flex>
-      ) : (
-        HOUSES.map((house) => (
-          <Flex key={house.key} align="center" mb={5}>
-            <Box w={5} h={5} borderRadius="full" bg={house.color} mr={3} border="2px solid" borderColor={borderCol} />
-            <Text w="90px" fontSize="md" fontWeight="medium">{house.name}</Text>
-            <Box flex={1} mx={2} position="relative">
-              <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
-              <Box
-                w={`${progress[house.key]}%`}
-                minW="0"
-                maxW="100%"
-                h="28px"
-                bg={house.color}
-                borderRadius="full"
-                position="relative"
-                zIndex={1}
-                transition="width 0.4s cubic-bezier(.4,2,.6,1)"
-              />
-            </Box>
-            {expanded && isAdmin && (
-              <Flex direction="column" ml={3} gap={1} ref={adminRef}>
-                <Button 
-                  size="xs"
-                  onMouseDown={() => handleHold(house.key, 2)}
-                  onMouseUp={() => stopHold(house.key)}
-                  onMouseLeave={() => stopHold(house.key)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newVal = Math.min(100, progress[house.key] + 2);
-                    const newProgress = { ...progress, [house.key]: newVal };
-                    saveProgress(newProgress);
-                  }}
-                >
-                  +2%
-                </Button>
-                <Button 
-                  size="xs"
-                  onMouseDown={() => handleHold(house.key, -2)}
-                  onMouseUp={() => stopHold(house.key)}
-                  onMouseLeave={() => stopHold(house.key)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newVal = Math.max(0, progress[house.key] - 2);
-                    const newProgress = { ...progress, [house.key]: newVal };
-                    saveProgress(newProgress);
-                  }}
-                >
-                  -2%
-                </Button>
-              </Flex>
-            )}
-          </Flex>
-        ))
-      )}
-      
+      {HOUSES.map((house) => (
+        <Flex key={house.key} align="center" mb={5}>
+          <Box w={5} h={5} borderRadius="full" bg={house.color} mr={3} border="2px solid" borderColor={borderCol} />
+          <Text w="90px" fontSize="md" fontWeight="medium">{house.name}</Text>
+          <Box flex={1} mx={2} position="relative">
+            <Box w="100%" h="28px" bg={house.bg} borderRadius="full" position="absolute" top={0} left={0} zIndex={0} />
+            <Box
+              w={`${progress[house.key]}%`}
+              minW="0"
+              maxW="100%"
+              h="28px"
+              bg={house.color}
+              borderRadius="full"
+              position="relative"
+              zIndex={1}
+              transition="width 0.4s cubic-bezier(.4,2,.6,1)"
+            />
+          </Box>
+          {expanded && isAdmin && (
+            <Flex direction="column" ml={3} gap={1} ref={adminRef}>
+              <Button size="xs"
+                onMouseDown={() => handleHold(house.key, 2)}
+                onMouseUp={() => stopHold(house.key)}
+                onMouseLeave={() => stopHold(house.key)}
+                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.min(100, prev[house.key] + 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+              >+2%</Button>
+              <Button size="xs"
+                onMouseDown={() => handleHold(house.key, -2)}
+                onMouseUp={() => stopHold(house.key)}
+                onMouseLeave={() => stopHold(house.key)}
+                onClick={e => { e.stopPropagation(); setProgress(prev => { const newVal = Math.max(0, prev[house.key] - 2); const newProgress = { ...prev, [house.key]: newVal }; saveProgress(newProgress); return newProgress; }); }}
+              >-2%</Button>
+            </Flex>
+          )}
+        </Flex>
+      ))}
       {expanded && isAdmin && (
         <Button size="md" mt={2} onClick={resetAll} w="full" colorScheme="gray" isLoading={loading}>
           Reset All
