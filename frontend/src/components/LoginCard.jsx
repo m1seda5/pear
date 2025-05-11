@@ -19,14 +19,12 @@ import { useSetRecoilState } from "recoil";
 import authScreenAtom from "../atoms/authAtom";
 import useShowToast from "../hooks/useShowToast";
 import userAtom from "../atoms/userAtom";
-import { useNavigate } from "react-router-dom";
 
 export default function LoginCard() {
 	const [showPassword, setShowPassword] = useState(false);
 	const setAuthScreen = useSetRecoilState(authScreenAtom);
 	const setUser = useSetRecoilState(userAtom);
 	const [loading, setLoading] = useState(false);
-	const navigate = useNavigate();
 
 	const [inputs, setInputs] = useState({
 		usernameOrEmail: "",
@@ -58,7 +56,6 @@ export default function LoginCard() {
 	
 			// Show success toast
 			showToast("Success", "Login successful", "success");
-			navigate("/"); // Navigate to home page after login
 			
 		} catch (error) {
 			showToast("Error", error.message || "Login failed", "error");
@@ -93,7 +90,6 @@ export default function LoginCard() {
 								placeholder='Enter your username or email address'
 								value={inputs.usernameOrEmail}
 								onChange={(e) => setInputs((inputs) => ({ ...inputs, usernameOrEmail: e.target.value }))}
-								onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
 							/>
 						</FormControl>
 						<FormControl isRequired>
@@ -103,7 +99,6 @@ export default function LoginCard() {
 									type={showPassword ? "text" : "password"}
 									value={inputs.password}
 									onChange={(e) => setInputs((inputs) => ({ ...inputs, password: e.target.value }))}
-									onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
 								/>
 								<InputRightElement h={"full"}>
 									<Button
