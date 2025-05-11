@@ -10,9 +10,6 @@ import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
-import NotelyWidget from "../components/NotelyWidget";
-import HousePointTracker from "../components/HousePointTracker";
-import GameWidget from "../components/GameWidget";
 
 const GameWidgetList = ({ games }) => {
   return (
@@ -159,13 +156,6 @@ const UserPage = () => {
 
   return (
     <Box>
-      <NotelyWidget />
-      <HousePointTracker showTutorial={false} />
-      {loadingGames ? (
-        <Spinner />
-      ) : (
-        <GameWidgetList games={games} />
-      )}
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
