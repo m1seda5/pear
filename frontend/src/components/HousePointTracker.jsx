@@ -29,58 +29,49 @@ const HousePointTracker = ({ showTutorial }) => {
   const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem("housePointTrackerClosed") !== "true");
   const isAdmin = true; // Replace with your admin check
   const { socket } = useSocket();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const toast = useToast();
   const adminRef = useRef();
-  const holdTimers = useRef({});
 
-  // Real-time updates
+  // Only fetch once on mount (on refresh)
   useEffect(() => {
-    const fetchPoints = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get("/api/house-points");
-        setProgress(res.data);
-        setError("");
-      } catch (error) {
-        setError("Failed to fetch house points");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPoints();
+    axios.get("/api/house-points").then(res => {
+      setProgress(res.data);
+      setError("");
+    }).catch(() => {
+      setError("Failed to fetch house points");
+    });
+  }, []);
 
+  // Real-time updates (no toast)
+  useEffect(() => {
     if (!socket) return;
-    socket.on("housePointsUpdated", setProgress);
-    return () => socket.off("housePointsUpdated");
+    const update = (data) => setProgress(data);
+    socket.on("housePointsUpdated", update);
+    return () => socket.off("housePointsUpdated", update);
   }, [socket]);
 
   // Admin update
   const saveProgress = async (newProgress) => {
     if (!socket) return;
-    setLoading(true);
     try {
       await axios.put("/api/house-points", newProgress);
-      // Removed socket.emit
+      socket.emit("updateHousePoints", newProgress);
+      setProgress(newProgress);
       toast({ title: "Points updated!", status: "success", duration: 1200 });
     } catch (error) {
       toast({ title: "Failed to update points", status: "error", duration: 2000 });
-    } finally {
-      setLoading(false);
     }
   };
 
   const resetAll = async () => {
-    setLoading(true);
     try {
       await axios.post("/api/house-points/reset");
+      socket.emit("resetHousePoints");
       setProgress(initialProgress); // Optimistic update
       toast({ title: "Points reset!", status: "success", duration: 1200 });
     } catch (error) {
       toast({ title: "Failed to reset", status: "error", duration: 2000 });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -146,22 +137,11 @@ const HousePointTracker = ({ showTutorial }) => {
     setIsOpen(true);
   }, []);
 
-  // Hold-to-repeat for increment/decrement (only update backend on release)
-  const handleHold = (houseKey, delta) => {
-    const repeat = () => {
-      setProgress(prev => {
-        const newVal = Math.max(0, Math.min(100, prev[houseKey] + delta));
-        const newProgress = { ...prev, [houseKey]: newVal };
-        return newProgress;
-      });
-      holdTimers.current[houseKey] = setTimeout(repeat, 120);
-    };
-    repeat();
-  };
-  const stopHold = (houseKey) => {
-    clearTimeout(holdTimers.current[houseKey]);
-    // Only save to backend on release
-    saveProgress(progress);
+  const handleIncrement = (houseKey, delta) => {
+    if (!progress) return;
+    const newVal = Math.max(0, Math.min(100, progress[houseKey] + delta));
+    const newProgress = { ...progress, [houseKey]: newVal };
+    saveProgress(newProgress);
   };
 
   if (showTutorial || !isOpen) return null;
@@ -188,11 +168,9 @@ const HousePointTracker = ({ showTutorial }) => {
         <Text fontSize="sm" color="gray.500">on Pear Media</Text>
         <IconButton icon={<CloseIcon />} size="sm" onClick={e => { e.stopPropagation(); setIsOpen(false); }} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
-      {loading && <Flex justify="center" align="center" my={2}><Spinner size="sm" /></Flex>}
       {error && <Text color="red.500" fontSize="sm" mb={2}>{error}</Text>}
-      
       {!progress ? (
-        <Flex justify="center"><Spinner /></Flex>
+        <Flex justify="center"><Text>Loading...</Text></Flex>
       ) : (
         HOUSES.map((house) => (
           <Flex key={house.key} align="center" mb={5}>
@@ -214,42 +192,15 @@ const HousePointTracker = ({ showTutorial }) => {
             </Box>
             {expanded && isAdmin && (
               <Flex direction="column" ml={3} gap={1} ref={adminRef}>
-                <Button 
-                  size="xs"
-                  onMouseDown={() => handleHold(house.key, 2)}
-                  onMouseUp={() => stopHold(house.key)}
-                  onMouseLeave={() => stopHold(house.key)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newVal = Math.min(100, progress[house.key] + 2);
-                    const newProgress = { ...progress, [house.key]: newVal };
-                    saveProgress(newProgress);
-                  }}
-                >
-                  +2%
-                </Button>
-                <Button 
-                  size="xs"
-                  onMouseDown={() => handleHold(house.key, -2)}
-                  onMouseUp={() => stopHold(house.key)}
-                  onMouseLeave={() => stopHold(house.key)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newVal = Math.max(0, progress[house.key] - 2);
-                    const newProgress = { ...progress, [house.key]: newVal };
-                    saveProgress(newProgress);
-                  }}
-                >
-                  -2%
-                </Button>
+                <Button size="xs" onClick={() => handleIncrement(house.key, 2)}>+2%</Button>
+                <Button size="xs" onClick={() => handleIncrement(house.key, -2)}>-2%</Button>
               </Flex>
             )}
           </Flex>
         ))
       )}
-      
       {expanded && isAdmin && (
-        <Button size="md" mt={2} onClick={resetAll} w="full" colorScheme="gray" isLoading={loading}>
+        <Button size="md" mt={2} onClick={resetAll} w="full" colorScheme="gray">
           Reset All
         </Button>
       )}
