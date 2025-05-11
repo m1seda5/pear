@@ -10,7 +10,6 @@ import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
-import { Navigate } from "react-router-dom";
 
 const GameWidgetList = ({ games }) => {
   return (
@@ -36,41 +35,7 @@ const UserPage = () => {
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
 
-  if (!currentUser || !currentUser.token) {
-    return <Navigate to="/auth" />;
-  }
-
   useEffect(() => {
-    if (!currentUser || !currentUser.token || !user) return;
-    const getPosts = async () => {
-      setFetchingPosts(true);
-      setError(null);
-
-      try {
-        const res = await fetch(`/api/posts/user/${username}`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Failed to fetch posts: ${res.status} - ${errorText}`);
-        }
-        const data = await res.json();
-        setPosts(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setError(error.message);
-        showToast("Error", error.message, "error");
-        setPosts([]);
-      } finally {
-        setFetchingPosts(false);
-      }
-    };
-
-    getPosts();
-  }, [username, showToast, setPosts, user, currentUser]);
-
-  useEffect(() => {
-    if (!currentUser || !currentUser.token) return;
     const fetchGames = async () => {
       try {
         const res = await fetch('/api/games');
@@ -83,7 +48,7 @@ const UserPage = () => {
       }
     };
     fetchGames();
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
     if (currentUser?._id === user?._id) {
@@ -143,6 +108,35 @@ const UserPage = () => {
       } 
     });
   };
+
+  useEffect(() => {
+    const getPosts = async () => {
+      if (!user) return;
+      setFetchingPosts(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`/api/posts/user/${username}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Failed to fetch posts: ${res.status} - ${errorText}`);
+        }
+        const data = await res.json();
+        setPosts(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setError(error.message);
+        showToast("Error", error.message, "error");
+        setPosts([]);
+      } finally {
+        setFetchingPosts(false);
+      }
+    };
+
+    if (user) getPosts();
+  }, [username, showToast, setPosts, user]);
 
   if (!user && loading) {
     return (

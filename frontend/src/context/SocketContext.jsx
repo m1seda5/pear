@@ -6,8 +6,7 @@ import userAtom from "../atoms/userAtom";
 const SocketContext = createContext();
 
 export const useSocket = () => {
-	const ctx = useContext(SocketContext);
-	return ctx || { socket: null, onlineUsers: [] };
+	return useContext(SocketContext);
 };
 
 export const SocketContextProvider = ({ children }) => {
@@ -16,11 +15,7 @@ export const SocketContextProvider = ({ children }) => {
 	const user = useRecoilValue(userAtom);
 
 	useEffect(() => {
-		if (!user || !user._id) {
-			setSocket(null);
-			setOnlineUsers([]);
-			return;
-		}
+		if (!user || !user._id) return;
 		const socket = io("https://pear-tsk2.onrender.com/", {
 			query: {
 				userId: user._id,
