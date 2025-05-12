@@ -403,6 +403,7 @@ function Header({ unreadCount = 0 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showLockIcon, setShowLockIcon] = useState(false);
 
   // User role checks
   const isStudent = user?.role === "student";
@@ -545,7 +546,7 @@ function Header({ unreadCount = 0 }) {
               icon={
                 <Box position="relative">
                   {user.isFrozen || !hasChatAccess ? (
-                    <FaLock size={iconSize - 4} />
+                    <FaLock size={iconSize - 4} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
                   ) : (
                     <BsFillChatQuoteFill size={iconSize - 4} />
                   )}
@@ -570,7 +571,7 @@ function Header({ unreadCount = 0 }) {
                   )}
                 </Box>
               }
-              label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access")}
+              label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access During School Hours")}
               onClick={handleChatClick}
               isDisabled={user.isFrozen || !hasChatAccess}
               isActive={location.pathname === "/chat"}
@@ -721,10 +722,10 @@ function useChatAccessCheck(user, isStudent, isTeacher, isAdmin) {
         const dayOfWeek = currentDate.getDay();
         const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
         
-        const schoolStart = 810;
-        const lunchStart = 1250;
-        const lunchEnd = 1340;
-        const schoolEnd = 1535;
+        const schoolStart = 810; // 8:10 AM
+        const lunchStart = 1250; // 12:50 PM
+        const lunchEnd = 1340; // 1:40 PM
+        const schoolEnd = 1535; // 3:35 PM
         
         // Weekend
         if (dayOfWeek === 0 || dayOfWeek === 6) {

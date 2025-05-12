@@ -63,9 +63,6 @@ app.use("/api", quickLoginRoutes);
 // Initialize socket.io
 initializeSocket(server);
 
-// Start cron jobs
-cronJobs();
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
