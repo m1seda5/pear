@@ -68,16 +68,26 @@ export const processQuickLogin = async (req, res) => {
     user.quickLoginRedirect = null;
     await user.save();
 
-    // Set cookie and redirect
+    // Set cookie with more permissive settings
     res.cookie("token", authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax" // Allow cross-site requests
+      sameSite: "none", // Allow cross-site requests
+      path: "/" // Ensure cookie is available for all paths
     });
 
-    // Redirect to the stored path or home
-    res.redirect(redirectPath);
+    // Send user data along with redirect
+    res.json({
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+        role: user.role
+      },
+      redirectPath
+    });
   } catch (error) {
     console.error("Error in quick login:", error);
     res.status(500).json({ error: "Internal server error" });

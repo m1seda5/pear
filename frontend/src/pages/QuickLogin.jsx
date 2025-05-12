@@ -30,30 +30,33 @@ const QuickLogin = () => {
           credentials: 'include',
         });
 
-        const data = await res.json();
-        
-        if (data.error) {
-          toast({
-            title: data.error,
-            status: "error",
-            duration: 3000,
-          });
-          navigate('/auth');
-          return;
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Failed to process quick login');
         }
 
-        // If successful, the backend will have set the cookie
-        // and redirected to the appropriate page
-        localStorage.setItem("user-threads", JSON.stringify(data));
-        setUser(data);
+        const data = await res.json();
         
-        // The backend will handle the redirect to the appropriate page
-        // We don't need to navigate here as the backend response will include
-        // the redirect
+        // Store user data in localStorage and state
+        localStorage.setItem("user-threads", JSON.stringify(data.user));
+        setUser(data.user);
+        
+        // Navigate to the redirect path
+        if (data.redirectPath) {
+          navigate(data.redirectPath);
+        } else {
+          navigate('/');
+        }
+
+        toast({
+          title: "Successfully logged in",
+          status: "success",
+          duration: 3000,
+        });
       } catch (error) {
         console.error('Quick login error:', error);
         toast({
-          title: "Failed to process quick login",
+          title: error.message || "Failed to process quick login",
           status: "error",
           duration: 3000,
         });
@@ -66,23 +69,18 @@ const QuickLogin = () => {
     processQuickLogin();
   }, [token, navigate, setUser, toast]);
 
-  return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-    >
-      <VStack spacing={4}>
-        {isLoading ? (
-          <>
-            <Spinner size="xl" />
-            <Text>Logging you in...</Text>
-          </>
-        ) : null}
-      </VStack>
-    </Box>
-  );
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minH="100vh">
+        <VStack spacing={4}>
+          <Spinner size="xl" />
+          <Text>Processing login...</Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  return null;
 };
 
 export default QuickLogin; 

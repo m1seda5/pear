@@ -172,13 +172,13 @@
 
 // post review 
 import { Box } from "@chakra-ui/react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
-import { useRecoilValue } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
 import CreatePost from "./components/CreatePost";
@@ -198,6 +198,8 @@ import QuickLogin from "./pages/QuickLogin";
 function App() {
   const user = useRecoilValue(userAtom);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const setUser = useSetRecoilState(userAtom);
   const [isI18nReady, setIsI18nReady] = useState(false);
 
   useEffect(() => {
@@ -238,6 +240,42 @@ function App() {
     if (pathname === '/chat' && user) {
     }
   }, [pathname, user]);
+
+  useEffect(() => {
+    // Global error handler for fetch requests
+    const handleFetchError = async (error) => {
+      if (error.response) {
+        const data = await error.response.json();
+        
+        // Handle authentication errors
+        if (error.response.status === 401) {
+          // Clear user data
+          localStorage.removeItem("user-threads");
+          setUser(null);
+          
+          // Redirect to login
+          navigate('/auth');
+          
+          // Show error message if available
+          if (data.message) {
+            // You can use your preferred toast/notification system here
+            console.error(data.message);
+          }
+        }
+      }
+    };
+
+    // Add global fetch error handler
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason instanceof Response) {
+        handleFetchError(event.reason);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleFetchError);
+    };
+  }, [navigate, setUser]);
 
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
 
