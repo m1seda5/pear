@@ -17,6 +17,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import quickLoginRoutes from "./routes/quickLoginRoutes.js";
 import http from "http";
+import housePointsRoutes from "./routes/housePointsRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -59,6 +60,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api", quickLoginRoutes);
+app.use("/api/house-points", housePointsRoutes);
 
 // Initialize socket.io
 initializeSocket(server);
