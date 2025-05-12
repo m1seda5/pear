@@ -21,6 +21,7 @@ const HousePointTracker = () => {
   const isAdmin = currentUser?.role === 'admin';
   const toast = useToast();
   const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
+  const [dragging, setDragging] = useState(false);
 
   const fetchPoints = useCallback(async () => {
     try {
@@ -73,7 +74,7 @@ const HousePointTracker = () => {
       borderWidth="1px"
       onDoubleClick={() => isAdmin && setEditMode(!editMode)}
     >
-      <Flex justify="space-between" align="center" mb={4} onMouseDown={startDrag} cursor="move">
+      <Flex justify="space-between" align="center" mb={4} onMouseDown={e => { startDrag(e); setDragging(true); }} onMouseUp={() => setDragging(false)} cursor={dragging ? 'grabbing' : 'grab'}>
         <Text fontSize="xl" fontWeight="bold">House Points</Text>
         <IconButton
           icon={<CloseIcon />}
@@ -90,20 +91,22 @@ const HousePointTracker = () => {
           <Text flex={1} fontSize="md" fontWeight="medium">{house.name}</Text>
           
           <Box flex={2} position="relative" h="28px">
-            <Box
-              w={`${points[house.key]}%`}
-              h="full"
-              bg={house.color}
-              borderRadius="full"
-              transition="width 0.3s ease"
-              _before={{
-                content: '""',
-                position: 'absolute',
-                inset: 0,
-                bg: house.bg,
-                borderRadius: 'full'
-              }}
-            />
+            {points[house.key] > 0 && (
+              <Box
+                w={`${points[house.key]}%`}
+                h="full"
+                bg={house.color}
+                borderRadius="full"
+                transition="width 0.3s ease"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  bg: house.bg,
+                  borderRadius: 'full'
+                }}
+              />
+            )}
           </Box>
 
           {editMode && isAdmin && (

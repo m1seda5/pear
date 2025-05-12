@@ -1,6 +1,7 @@
 import express from 'express';
 import { getAllPoints, updatePoints, resetPoints } from '../controllers/housePointsController.js';
 import adminMiddleware from '../middlewares/adminMiddleware.js';
+import protectRoute from '../middlewares/protectRoute.js';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/', adminMiddleware, async (req, res) => { // Admin-only
+router.put('/', protectRoute, adminMiddleware, async (req, res) => { // Admin-only
   try {
     const updates = await updatePoints(req.body);
     res.json(updates);
@@ -22,7 +23,7 @@ router.put('/', adminMiddleware, async (req, res) => { // Admin-only
   }
 });
 
-router.post('/reset', adminMiddleware, async (req, res) => { // Admin-only
+router.post('/reset', protectRoute, adminMiddleware, async (req, res) => { // Admin-only
   try {
     const updates = await resetPoints();
     res.json(updates);
