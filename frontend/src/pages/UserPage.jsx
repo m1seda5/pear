@@ -13,7 +13,7 @@ import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
 import NotelyWidget from "../components/NotelyWidget";
 // import HousePointTracker from "../components/HousePointTracker";
-import GameWidget from "../components/GameWidget";
+// import GameWidget from "../components/GameWidget";
 
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
@@ -140,7 +140,7 @@ const UserPage = () => {
       {/* Floating widgets (hidden on small screens) */}
       <NotelyWidget />
       {/* <HousePointTracker showTutorial={false} /> */}
-      <GameWidget />
+      {/* <GameWidget /> */}
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
