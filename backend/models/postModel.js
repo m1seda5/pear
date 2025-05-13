@@ -250,13 +250,10 @@ const postSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
-    views: {
-      type: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-      }],
-      default: []
-    },
+    views: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
     viewCount: {
       type: Number,
       default: 0,
@@ -271,6 +268,17 @@ const postSchema = mongoose.Schema(
     toObject: { virtuals: true } // Enable virtuals in object output
   }
 );
+
+// Add indexes to improve query performance
+postSchema.index({ postedBy: 1 });
+postSchema.index({ targetGroups: 1 });
+postSchema.index({ createdAt: -1 });
+postSchema.index({ reviewStatus: 1 });
+postSchema.index({ "reviewers.userId": 1 });
+postSchema.index({ "reviewers.decision": 1 });
+postSchema.index({ targetAudience: 1 });
+postSchema.index({ targetYearGroups: 1 });
+postSchema.index({ targetDepartments: 1 });
 
 const Post = mongoose.model("Post", postSchema);
 

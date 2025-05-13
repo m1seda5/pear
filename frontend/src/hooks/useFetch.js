@@ -7,9 +7,11 @@ const useFetch = () => {
   const showToast = useShowToast();
 
   const fetchData = useCallback(async (url, options = {}) => {
+    const token = localStorage.getItem('token');
     const defaultOptions = {
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
       },
     };
     

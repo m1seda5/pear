@@ -1879,149 +1879,86 @@ const addViewToPost = async (req, res) => {
 
 const getFeedPosts = async (req, res) => {
   try {
-    const userId = req.user && req.user._id;
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized, user not authenticated" });
-    }
-    
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const user = await User.findById(userId)
       .populate("groups")
-      .select("role following yearGroup department groups");
-      
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
+      .select("following yearGroup department role groups");
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
     const userGroupIds = user.groups.map(g => g._id);
-    const allUserIds = await User.find().distinct("_id");
-    
-    // Base filter for following, groups, etc.
-    const baseFilter = {
-      $or: [
-        { postedBy: { $in: user.following || [] } },
-        { reposts: userId },
-        { isGeneral: true },
-        {
-          targetGroups: {
-            $in: userGroupIds,
-            $exists: true,
-            $not: { $size: 0 }
+    const followingIds = user.following || [];
+
+    // Construct aggregation pipeline
+    const pipeline = [
+      // Initial match to filter approved posts or those from staff
+      { $match: { 
+        $or: [
+          { reviewStatus: "approved" },
+          { "postedBy.role": { $in: ["admin", "teacher"] } }
+        ]
+      }},
+      // Populate postedBy information
+      { $lookup: {
+          from: "users",
+          localField: "postedBy",
+          foreignField: "_id",
+          as: "postedBy",
+          pipeline: [{ $project: { username: 1, profilePic: 1, role: 1 } }]
+      }},
+      { $unwind: "$postedBy" },
+      // Add audience matching
+      { $addFields: {
+        matchesAudience: {
+          $cond: {
+            if: { $eq: [user.role, "student"] },
+            then: { $or: [
+              { $eq: ["$targetAudience", "all"] },
+              { $in: [user.yearGroup, "$targetYearGroups"] },
+              { $eq: ["$targetAudience", user.yearGroup] }
+            ]},
+            else: { $or: [
+              { $eq: ["$targetAudience", "all"] },
+              { $in: [user.department, "$targetDepartments"] },
+              { $eq: ["$targetAudience", user.department] }
+            ]}
           }
         },
-        { groups: { $size: 0 } },
-        { groups: { $in: userGroupIds } }
-      ]
-    };
-    
-    if (!user.following || user.following.length === 0) {
-      baseFilter.$or.push({ postedBy: { $in: allUserIds } });
-    }
-    
-    // Audience filter
-    let audienceFilter = { $or: [{ targetAudience: "all" }] };
-    if (user.role === "student" && user.yearGroup) {
-      audienceFilter.$or.push(
-        { targetYearGroups: { $in: [user.yearGroup] } },
-        { targetAudience: user.yearGroup }
-      );
-    } else if (user.role === "teacher" && user.department) {
-      audienceFilter.$or.push(
-        { targetDepartments: { $in: [user.department] } },
-        { targetAudience: user.department }
-      );
-    }
-    
-    // SIMPLIFIED FILTER LOGIC:
-    // 1. For posts created by students: must be approved
-    // 2. For posts created by teachers/admins: automatically visible
-    
-    const finalFilter = {
-      $and: [
-        // Posts must either be:
-        {
+        matchesBase: {
           $or: [
-            // 1. Created by non-students (teachers/admins)
-            {
-              $and: [
-                { postedBy: { $nin: [] } }, // Placeholder to keep structure
-                {
-                  $or: [
-                    { "postedBy.role": "admin" },
-                    { "postedBy.role": "teacher" }
-                  ]
-                }
-              ]
-            },
-            // 2. OR be approved (for student posts)
-            { reviewStatus: "approved" }
+            { $eq: ["$postedBy._id", userId] },
+            { $in: ["$postedBy._id", followingIds] },
+            { $in: [userId, "$reposts"] },
+            { $eq: ["$isGeneral", true] },
+            { $gt: [{ $size: { $setIntersection: ["$targetGroups", userGroupIds] } }, 0] }
           ]
-        },
-        // AND must match base filters (following, audience, etc)
-        {
-          $or: [
-            { postedBy: userId },
-            { ...baseFilter.$or },
-          ]
-        },
-        audienceFilter
-      ]
-    };
-    
-    // Since we need to know the poster's role, we must include it in the lookup
-    const feedPosts = await Post.find({})
-      .populate({
-        path: "postedBy",
-        select: "username profilePic role" // Include role for filtering
-      })
-      .populate("targetGroups", "name color")
-      .sort({ createdAt: -1 })
-      .limit(100)
-      // Apply the complex filter in-memory after population
-      .then(posts => posts.filter(post => {
-        // If post is by a student, it must be approved
-        if (post.postedBy && post.postedBy.role === "student") {
-          if (post.reviewStatus !== "approved") {
-            return false;
-          }
         }
-        
-        // Apply the rest of the filters
-        // Check if it matches audience
-        const matchesAudience = 
-          post.targetAudience === "all" ||
-          (user.role === "student" && user.yearGroup && 
-            (post.targetYearGroups.includes(user.yearGroup) || 
-             post.targetAudience === user.yearGroup)) ||
-          (user.role === "teacher" && user.department && 
-            (post.targetDepartments.includes(user.department) || 
-             post.targetAudience === user.department));
-        
-        // Check if it matches following, groups, etc.
-        const matchesBase = 
-          post.postedBy._id.toString() === userId.toString() ||
-          (user.following && user.following.includes(post.postedBy._id)) ||
-          post.reposts.includes(userId) ||
-          post.isGeneral ||
-          (post.targetGroups && post.targetGroups.some(g => userGroupIds.includes(g._id.toString()))) ||
-          (!post.groups || post.groups.length === 0) ||
-          (post.groups && post.groups.some(g => userGroupIds.includes(g)));
-        
-        return matchesAudience && matchesBase;
-      }))
-      .then(posts => posts.slice(0, 50)); // Limit to 50 posts
-    
-    // Return posts with viewCount and view status
-    const postsWithViewStatus = feedPosts.map(post => {
-      const postObject = post.toObject();
-      postObject.viewCount = post.views.length;
-      postObject.isViewed = post.views.includes(userId);
-      return postObject;
-    });
-    
-    res.status(200).json(postsWithViewStatus);
+      }},
+      // Final matching
+      { $match: {
+        $and: [
+          { matchesAudience: true },
+          { matchesBase: true }
+        ]
+      }},
+      // Add view status
+      { $addFields: {
+        viewCount: { $size: "$views" },
+        isViewed: { $in: [userId, "$views"] }
+      }},
+      // Sorting and limiting
+      { $sort: { createdAt: -1 } },
+      { $limit: 50 }
+    ];
+
+    const feedPosts = await Post.aggregate(pipeline);
+    res.status(200).json(feedPosts);
+
   } catch (err) {
     console.error("Error fetching feed posts:", err);
-    res.status(500).json({ error: "Could not fetch posts" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 // Ensure this is exported if part of a larger module

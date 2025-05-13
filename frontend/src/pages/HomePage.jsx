@@ -126,7 +126,7 @@ const HomePage = () => {
 						<Spinner size="xl" />
 					</Flex>
 				)}
-				{posts.map((post) => {
+				{Array.isArray(posts) && posts.map((post) => {
 					const isNew = isNewPost(post.createdAt);
 					return (
 						<Box

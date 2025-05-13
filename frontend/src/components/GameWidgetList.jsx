@@ -17,7 +17,7 @@ export const GameWidgetList = ({ games, onWidgetClick, onMoreClick }) => {
     return (
       <Flex gap={4} flexWrap="wrap" justify="center">
         <AnimatePresence>
-          {games.map(game => (
+          {Array.isArray(games) && games.map(game => (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, y: 20 }}
@@ -35,7 +35,7 @@ export const GameWidgetList = ({ games, onWidgetClick, onMoreClick }) => {
   return (
     <Flex gap={4} flexWrap="wrap" justify="center" align="center">
       <AnimatePresence>
-        {games.slice(0, 2).map(game => (
+        {Array.isArray(games) && games.slice(0, 2).map(game => (
           <motion.div
             key={game.id}
             initial={{ opacity: 0, y: 20 }}

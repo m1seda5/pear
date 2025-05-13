@@ -361,7 +361,7 @@ const PostPage = () => {
 
       <Divider my={4} />
 
-      {currentPost.replies?.map((reply, index) => {
+      {Array.isArray(currentPost.replies) && currentPost.replies.map((reply, index) => {
         // Additional validation for each reply
         if (!reply || typeof reply !== 'object' || !reply._id) {
           return null;

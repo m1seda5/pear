@@ -272,7 +272,7 @@ const TVPage = () => {
             ) : (
                 <Box height="100%" width="100%">
                     <Flex mb={4} gap={2} position="absolute" top="0" left="0" right="0" zIndex="10" p={4}>
-                        {posts.map((_, index) => (
+                        {Array.isArray(posts) && posts.map((_, index) => (
                             <Box key={`progress-${index}-${key}`} flex={1}>
                                 <Progress index={index} />
                             </Box>

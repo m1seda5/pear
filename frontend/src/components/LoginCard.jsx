@@ -42,6 +42,10 @@ export default function LoginCard() {
 				body: JSON.stringify(inputs),
 			});
 			const data = await res.json();
+			if (data.token) {
+				localStorage.setItem("token", data.token);
+				localStorage.setItem("user-threads", JSON.stringify(data));
+			}
 			if (data.error) {
 				showToast("Error", data.error, "error");
 				return;

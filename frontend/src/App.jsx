@@ -216,16 +216,18 @@ function App() {
   const isAdminDashboard = pathname === '/admin';
 
   const fetchUnreadCount = async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
+    if (!user) return;
 
     try {
-      const { data } = await axios.get("/api/messages/unread-count");
-      setUnreadCount(data.count);
+      const { data } = await axios.get("/api/messages/unread-count", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setUnreadCount(data.count || 0);
     } catch (error) {
       console.error("Error fetching unread count:", error);
+      setUnreadCount(0);
     }
   };
 
@@ -243,24 +245,12 @@ function App() {
   useEffect(() => {
     // Global error handler for fetch requests
     const handleFetchError = async (error) => {
-      if (error.response) {
-        const data = await error.response.json();
-        
-        // Handle authentication errors
-        if (error.response.status === 401) {
-          // Clear user data
-          localStorage.removeItem("user-threads");
-          setUser(null);
-          
-          // Redirect to login
-          navigate('/auth');
-          
-          // Show error message if available
-          if (data.message) {
-            // You can use your preferred toast/notification system here
-            console.error(data.message);
-          }
-        }
+      if (error.response?.status === 401 && 
+         !error.config?.url?.includes('/messages/unread-count')) {
+        // Only handle auth errors for non-background requests
+        localStorage.removeItem("user-threads");
+        setUser(null);
+        navigate('/auth');
       }
     };
 
