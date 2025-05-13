@@ -12,21 +12,15 @@ const getAllPoints = async () => {
 
 const updatePoints = async (updates) => {
   const results = {};
-  try {
-    console.log('HousePoints updatePoints called with:', updates);
-    for (const [house, points] of Object.entries(updates)) {
-      const updated = await HousePoints.findOneAndUpdate(
-        { house },
-        { points: Math.min(100, Math.max(0, points)) }, // Clamp values 0-100
-        { upsert: true, new: true }
-      );
-      results[house] = updated.points;
-    }
-    return await getAllPoints();
-  } catch (error) {
-    console.error('Error in updatePoints:', error);
-    throw error;
+  for (const [house, points] of Object.entries(updates)) {
+    const updated = await HousePoints.findOneAndUpdate(
+      { house },
+      { points: Math.min(100, Math.max(0, points)) }, // Clamp values 0-100
+      { upsert: true, new: true }
+    );
+    results[house] = updated.points;
   }
+  return await getAllPoints();
 };
 
 const resetPoints = async () => {

@@ -13,15 +13,15 @@
 //   { name: "Tsavo", color: "#FBBF24", key: "tsavo", bg: "#fdf6e3" },
 // ];
 
-// const HousePointTracker = () => {
-//   const [points, setPoints] = useState(null);
-//   const [editMode, setEditMode] = useState(false);
-//   const [isOpen, setIsOpen] = useState(true);
-//   const currentUser = useRecoilValue(userAtom);
-//   const isAdmin = currentUser?.role === 'admin';
-//   const toast = useToast();
-//   const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
-//   const [dragging, setDragging] = useState(false);
+const HousePointTracker = () => {
+  const [points, setPoints] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+  const currentUser = useRecoilValue(userAtom);
+  const isAdmin = currentUser?.role === 'admin';
+  const toast = useToast();
+  const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
+  const [dragging, setDragging] = useState(false);
 
 //   const fetchPoints = useCallback(async () => {
 //     try {
@@ -60,29 +60,29 @@
 
 //   if (!isOpen || !points) return null;
 
-//   return (
-//     <Box
-//       position="fixed"
-//       left={`${position.x}px`}
-//       top={`${position.y}px`}
-//       zIndex="overlay"
-//       w="380px"
-//       bg={useColorModeValue("whiteAlpha.900", "gray.800")}
-//       borderRadius="lg"
-//       p={4}
-//       boxShadow="2xl"
-//       borderWidth="1px"
-//       onDoubleClick={() => isAdmin && setEditMode(!editMode)}
-//     >
-//       <Flex justify="space-between" align="center" mb={4} onMouseDown={e => { startDrag(e); setDragging(true); }} onMouseUp={() => setDragging(false)} cursor={dragging ? 'grabbing' : 'grab'}>
-//         <Text fontSize="xl" fontWeight="bold">House Points</Text>
-//         <IconButton
-//           icon={<CloseIcon />}
-//           size="sm"
-//           onClick={() => setIsOpen(false)}
-//           aria-label="Close tracker"
-//         />
-//       </Flex>
+  return (
+    <Box
+      position="fixed"
+      left={`${position.x}px`}
+      top={`${position.y}px`}
+      zIndex="overlay"
+      w="380px"
+      bg={useColorModeValue("whiteAlpha.900", "gray.800")}
+      borderRadius="lg"
+      p={4}
+      boxShadow="2xl"
+      borderWidth="1px"
+      onDoubleClick={() => isAdmin && setEditMode(!editMode)}
+    >
+      <Flex justify="space-between" align="center" mb={4} onMouseDown={e => { startDrag(e); setDragging(true); }} onMouseUp={() => setDragging(false)} cursor={dragging ? 'grabbing' : 'grab'}>
+        <Text fontSize="xl" fontWeight="bold">House Points</Text>
+        <IconButton
+          icon={<CloseIcon />}
+          size="sm"
+          onClick={() => setIsOpen(false)}
+          aria-label="Close tracker"
+        />
+      </Flex>
 
 //       {HOUSES.map((house) => (
 //         <Flex key={house.key} align="center" mb={4} gap={3}>
@@ -90,24 +90,24 @@
           
 //           <Text flex={1} fontSize="md" fontWeight="medium">{house.name}</Text>
           
-//           <Box flex={2} position="relative" h="28px">
-//             {points[house.key] > 0 && (
-//               <Box
-//                 w={`${points[house.key]}%`}
-//                 h="full"
-//                 bg={house.color}
-//                 borderRadius="full"
-//                 transition="width 0.3s ease"
-//                 _before={{
-//                   content: '""',
-//                   position: 'absolute',
-//                   inset: 0,
-//                   bg: house.bg,
-//                   borderRadius: 'full'
-//                 }}
-//               />
-//             )}
-//           </Box>
+          <Box flex={2} position="relative" h="28px">
+            {points[house.key] > 0 && (
+              <Box
+                w={`${points[house.key]}%`}
+                h="full"
+                bg={house.color}
+                borderRadius="full"
+                transition="width 0.3s ease"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  bg: house.bg,
+                  borderRadius: 'full'
+                }}
+              />
+            )}
+          </Box>
 
 //           {editMode && isAdmin && (
 //             <Flex gap={2}>

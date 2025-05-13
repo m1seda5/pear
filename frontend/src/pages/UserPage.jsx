@@ -12,7 +12,7 @@ import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
 import NotelyWidget from "../components/NotelyWidget";
-import HousePointTracker from "../components/HousePointTracker";
+// import HousePointTracker from "../components/HousePointTracker";
 import GameWidget from "../components/GameWidget";
 
 const UserPage = () => {
@@ -139,7 +139,7 @@ const UserPage = () => {
     <Box>
       {/* Floating widgets (hidden on small screens) */}
       <NotelyWidget />
-      <HousePointTracker showTutorial={false} />
+      {/* <HousePointTracker showTutorial={false} /> */}
       <GameWidget />
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
