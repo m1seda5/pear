@@ -11,7 +11,7 @@ import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 // import HousePointTracker from "../components/HousePointTracker";
-// import GameWidget from "../components/GameWidget";
+import GameWidget from "../components/GameWidget";
 
 const WidgetPlaceholder = ({ title }) => (
 	<Box
@@ -115,7 +115,7 @@ const HomePage = () => {
 			{/* Floating widgets (draggable, same size, hidden on small screens) */}
 			{isLargerThan1024 && <NotelyWidget />}
 			{/* {isLargerThan1024 && <HousePointTracker showTutorial={false} />} */}
-			{/* {isLargerThan1024 && <GameWidget />} */}
+			{isLargerThan1024 && <GameWidget />}
 			{/* Main posts (original layout) */}
 			<Box w="100%" maxW="600px" mx="auto" minW="0">
 				{!loading && posts.length === 0 && (
