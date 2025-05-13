@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
-import HousePointTracker from "../components/HousePointTracker";
+// import HousePointTracker from "../components/HousePointTracker";
 import GameWidget from "../components/GameWidget";
 
 const WidgetPlaceholder = ({ title }) => (
@@ -114,7 +114,7 @@ const HomePage = () => {
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
 			{/* Floating widgets (draggable, same size, hidden on small screens) */}
 			{isLargerThan1024 && <NotelyWidget />}
-			{isLargerThan1024 && <HousePointTracker showTutorial={false} />}
+			{/* {isLargerThan1024 && <HousePointTracker showTutorial={false} />} */}
 			{isLargerThan1024 && <GameWidget />}
 			{/* Main posts (original layout) */}
 			<Box w="100%" maxW="600px" mx="auto" minW="0">
