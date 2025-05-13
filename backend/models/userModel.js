@@ -457,14 +457,6 @@ const userSchema = mongoose.Schema(
         ref: "ReviewerGroup",
       },
     ], // Field for reviewer groups
-    quickLoginToken: {
-      type: String,
-      default: null
-    },
-    quickLoginTokenExpiry: {
-      type: Date,
-      default: null
-    },
     lastNotificationDate: {
       type: Date,
       default: null

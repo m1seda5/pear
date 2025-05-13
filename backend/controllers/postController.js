@@ -1223,7 +1223,6 @@ import { v2 as cloudinary } from "cloudinary";
 import nodemailer from 'nodemailer';
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
-import { generateQuickLoginLink } from "./quickLoginController.js";
 
 // Email configuration
 const transporter = nodemailer.createTransport({

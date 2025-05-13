@@ -1,6 +1,6 @@
 import cron from "cron";
 import https from "https";
-import { sendIdleNotifications } from "../controllers/notificationController.js";
+import { sendSmartNotifications, sendNoPostsTodayNotification } from "../controllers/notificationController.js";
 
 const URL = "https://pear-tsk2.onrender.com";
 
@@ -19,47 +19,21 @@ const keepAliveJob = new cron.CronJob("*/14 * * * *", function() {
     });
 });
 
-// Notification schedule
-const notificationJob1 = new cron.CronJob(
-  '20 8 * * 1-5', // At 8:20 AM on weekdays
-  sendIdleNotifications,
-  null,
-  true,
-  'Africa/Nairobi'
-);
-
-const notificationJob2 = new cron.CronJob(
-  '20 12 * * 1-5', // At 12:20 PM on weekdays
-  sendIdleNotifications,
-  null,
-  true,
-  'Africa/Nairobi'
-);
-
-const notificationJob3 = new cron.CronJob(
-  '45 14 * * 1-5', // At 2:45 PM on weekdays
-  sendIdleNotifications,
-  null,
-  true,
-  'Africa/Nairobi'
-);
-
-// Saturday special notification
-const saturdayJob = new cron.CronJob(
-  '30 12 * * 6', // Saturday at 12:30 PM
-  () => sendIdleNotifications(),
-  null,
-  true,
-  'Africa/Nairobi'
-);
+// Schedule smart notifications for inactive users at 7:30 AM and 7:30 PM
+cron.schedule('30 7 * * *', () => {
+  sendSmartNotifications();
+});
+cron.schedule('30 19 * * *', () => {
+  sendSmartNotifications();
+});
+// Schedule no-posts-today notification for 8:30 PM
+cron.schedule('30 20 * * *', () => {
+  sendNoPostsTodayNotification();
+});
 
 export default {
   start: () => {
     keepAliveJob.start();
-    notificationJob1.start();
-    notificationJob2.start();
-    notificationJob3.start();
-    saturdayJob.start();
     console.log("All cron jobs started");
   }
 };

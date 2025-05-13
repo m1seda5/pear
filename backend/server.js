@@ -15,7 +15,6 @@ import cronJobs from "./cron/cron.js";
 import noteRoutes from "./routes/noteRoutes.js";
 import mongoose from "mongoose";
 import cors from "cors";
-import quickLoginRoutes from "./routes/quickLoginRoutes.js";
 import http from "http";
 import housePointsRoutes from "./routes/housePointsRoutes.js";
 
@@ -59,7 +58,6 @@ app.use("/api/reviewer-groups", reviewerGroupRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notes", noteRoutes);
-app.use("/api", quickLoginRoutes);
 app.use("/api/house-points", housePointsRoutes);
 
 // Initialize socket.io

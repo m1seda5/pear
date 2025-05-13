@@ -1,8 +1,7 @@
 import User from "../models/userModel.js";
 import nodemailer from "nodemailer";
-import { generateNotification, generatePostNotification } from "../utils/notificationTemplates.js";
+import { generateNotification, generatePostNotification, generateSmartNotification, generateNoPostNotification } from "../utils/notificationTemplates.js";
 import Post from "../models/postModel.js";
-import { generateQuickLoginLink } from "./quickLoginController.js";
 
 // Create Brevo SMTP transporter directly in this file
 const transporter = nodemailer.createTransport({
@@ -44,8 +43,8 @@ const checkRecentNotification = async (userId) => {
   return !recentNotification;
 };
 
-// Helper function to send email notification with quick login
-const sendEmailNotification = async (userId, message, quickLoginLink, template) => {
+// Helper function to send email notification
+const sendEmailNotification = async (userId, message, template) => {
   try {
     const user = await User.findById(userId);
     if (!user || !user.email) {
@@ -57,7 +56,7 @@ const sendEmailNotification = async (userId, message, quickLoginLink, template) 
       from: "pearnet104@gmail.com",
       to: user.email,
       subject: "Pear Network Update",
-      html: template.replace("{{quickLoginLink}}", quickLoginLink)
+      html: template.replace("{{quickLoginLink}}", "")
     };
 
     await transporter.sendMail(mailOptions);
@@ -67,50 +66,48 @@ const sendEmailNotification = async (userId, message, quickLoginLink, template) 
   }
 };
 
-export const sendIdleNotifications = async () => {
-  try {
-    // Get all users with email notifications enabled
-    const users = await User.find({
-      "notificationPreferences.email": true,
-      isBanned: false
-    });
+// Comment out or remove the sendIdleNotifications function and any code related to idle notifications
+// export const sendIdleNotifications = async () => {
+//   try {
+//     // Get all users with email notifications enabled
+//     const users = await User.find({
+//       "notificationPreferences.email": true,
+//       isBanned: false
+//     });
 
-    if (users.length === 0) {
-      console.log("No users with email notifications enabled");
-      return;
-    }
+//     if (users.length === 0) {
+//       console.log("No users with email notifications enabled");
+//       return;
+//     }
 
-    // Generate notifications for each user
-    const notifications = await Promise.all(
-      users.map(async (user) => {
-        const quickLoginLink = await generateQuickLoginLink(user._id);
-        const notification = generateNotification(new Date().getHours(), new Date().getDay());
-        return {
-          userId: user._id,
-          message: notification.message,
-          quickLoginLink,
-          template: notification.template
-        };
-      })
-    );
+//     // Generate notifications for each user
+//     const notifications = await Promise.all(
+//       users.map(async (user) => {
+//         const notification = generateNotification(new Date().getHours(), new Date().getDay());
+//         return {
+//           userId: user._id,
+//           message: notification.message,
+//           template: notification.template
+//         };
+//       })
+//     );
 
-    // Send notifications
-    for (const notification of notifications) {
-      await sendEmailNotification(
-        notification.userId,
-        notification.message,
-        notification.quickLoginLink,
-        notification.template
-      );
-    }
+//     // Send notifications
+//     for (const notification of notifications) {
+//       await sendEmailNotification(
+//         notification.userId,
+//         notification.message,
+//         notification.template
+//       );
+//     }
 
-    console.log(`Sent notifications to ${notifications.length} users`);
-  } catch (error) {
-    console.error("Error sending notifications:", error);
-  }
-};
+//     console.log(`Sent notifications to ${notifications.length} users`);
+//   } catch (error) {
+//     console.error("Error sending notifications:", error);
+//   }
+// };
 
-// New function to send post notifications with quick login
+// New function to send post notifications
 export const sendPostNotification = async (postId, posterId) => {
   try {
     const post = await Post.findById(postId).populate("postedBy", "username");
@@ -133,16 +130,10 @@ export const sendPostNotification = async (postId, posterId) => {
     // Generate notifications for each user
     const notifications = await Promise.all(
       users.map(async (user) => {
-        // Generate quick login link with post path
-        const quickLoginLink = await generateQuickLoginLink(
-          user._id,
-          `/posts/${postId}` // Direct path to the post
-        );
         const notification = generatePostNotification(post.postedBy.username, postId);
         return {
           userId: user._id,
           message: notification.message,
-          quickLoginLink,
           template: notification.template
         };
       })
@@ -153,7 +144,6 @@ export const sendPostNotification = async (postId, posterId) => {
       await sendEmailNotification(
         notification.userId,
         notification.message,
-        notification.quickLoginLink,
         notification.template
       );
     }
@@ -161,5 +151,69 @@ export const sendPostNotification = async (postId, posterId) => {
     console.log(`Sent post notifications to ${notifications.length} users`);
   } catch (error) {
     console.error("Error sending post notifications:", error);
+  }
+};
+
+export const sendSmartNotifications = async () => {
+  try {
+    // Find users who have not logged in for 2-3 days
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const users = await User.find({
+      "notificationPreferences.email": true,
+      isBanned: false,
+      $or: [
+        { lastActive: { $lte: twoDaysAgo } },
+        { lastActive: { $exists: false } }
+      ]
+    });
+
+    if (users.length === 0) {
+      console.log("No inactive users to notify");
+      return;
+    }
+
+    // Generate and send smart notifications
+    for (const user of users) {
+      const notification = generateSmartNotification();
+      await sendEmailNotification(user._id, notification.message, notification.template);
+    }
+
+    console.log(`Sent smart notifications to ${users.length} inactive users`);
+  } catch (error) {
+    console.error("Error sending smart notifications:", error);
+  }
+};
+
+export const sendNoPostsTodayNotification = async () => {
+  try {
+    // Check for posts between 7:00 and 15:35 today
+    const start = new Date();
+    start.setHours(7, 0, 0, 0);
+    const end = new Date();
+    end.setHours(15, 35, 0, 0);
+    const postCount = await Post.countDocuments({
+      createdAt: { $gte: start, $lte: end }
+    });
+    if (postCount > 0) {
+      console.log("There were posts during school hours, not sending no-post notification.");
+      return;
+    }
+    // Get all users with email notifications enabled and not banned
+    const users = await User.find({
+      "notificationPreferences.email": true,
+      isBanned: false
+    });
+    if (users.length === 0) {
+      console.log("No users to notify for no-posts-today.");
+      return;
+    }
+    const notification = generateNoPostNotification();
+    for (const user of users) {
+      await sendEmailNotification(user._id, notification.message, notification.template);
+    }
+    console.log(`Sent no-posts-today notification to ${users.length} users`);
+  } catch (error) {
+    console.error("Error sending no-posts-today notification:", error);
   }
 };
