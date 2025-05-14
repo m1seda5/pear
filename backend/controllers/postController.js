@@ -1406,7 +1406,12 @@ const createPost = async (req, res) => {
         img = uploadedResponse.secure_url;
       } catch (uploadError) {
         console.error("Error uploading image:", uploadError);
-        return res.status(500).json({ error: "Failed to upload image" });
+        // Check if the error is due to a Cloudinary subscription limit
+        if (uploadError.message && (uploadError.message.includes('quota') || uploadError.message.includes('limit'))) {
+          return res.status(500).json({ error: "Cloudinary subscription limit reached. Please upgrade your plan." });
+        }
+        // Return a more descriptive error message to the frontend
+        return res.status(500).json({ error: uploadError.message || "Failed to upload image" });
       }
     }
 
