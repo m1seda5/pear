@@ -806,7 +806,6 @@
 //   getUserPosts,
 // };
 
-
 // post notis(working)
 // import Post from "../models/postModel.js";
 // import User from "../models/userModel.js";
@@ -1345,10 +1344,12 @@ const createPost = async (req, res) => {
 
     let { img } = req.body;
 
+    // Basic validation
     if (!postedBy || !text) {
       return res.status(400).json({ error: "PostedBy and text fields are required" });
     }
 
+    // User validation
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -1358,17 +1359,17 @@ const createPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized to create post" });
     }
 
-    // Get user's groups correctly
+    // Get user's groups
     const userWithGroups = await User.findById(user._id).populate("groups");
     const hasGroups = userWithGroups.groups && userWithGroups.groups.length > 0;
 
     // Handle group selection logic
-    let postIsGeneral = isGeneral;
+    let postIsGeneral = isGeneral || false;
     let postTargetGroups = targetGroups || [];
 
     if (user.role === "student") {
       // Students can only post to groups they belong to or 'all'
-      if (targetGroups.length > 0) {
+      if (targetGroups && targetGroups.length > 0) {
         const validGroups = await Group.find({
           _id: { $in: targetGroups },
           members: user._id 
@@ -1388,6 +1389,7 @@ const createPost = async (req, res) => {
       return res.status(400).json({ error: "Must select at least one group" });
     }
 
+    // Role-based validation and defaults
     switch (user.role) {
       case "student":
         req.body.targetAudience = "all";
@@ -1410,11 +1412,18 @@ const createPost = async (req, res) => {
         return res.status(403).json({ error: "Unauthorized to create posts" });
     }
 
+    // Handle image upload if present
     if (img) {
-      const uploadedResponse = await cloudinary.uploader.upload(img);
-      img = uploadedResponse.secure_url;
+      try {
+        const uploadedResponse = await cloudinary.uploader.upload(img);
+        img = uploadedResponse.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
     }
 
+    // Set up reviewers
     const adminUsers = await User.find({ role: "admin" });
     let reviewers = user.role === "student" ? adminUsers.map(admin => ({ userId: admin._id, role: "admin", decision: "pending" })) : [];
 
@@ -1430,10 +1439,11 @@ const createPost = async (req, res) => {
       }
     }
 
+    // Create and save the post
     const newPost = new Post({
       postedBy,
       text,
-      img,
+      img: img || "",
       targetYearGroups: targetYearGroups || [],
       targetDepartments: targetDepartments || [],
       reviewStatus: user.role === "student" ? "pending" : "approved",
@@ -1444,11 +1454,13 @@ const createPost = async (req, res) => {
     });
 
     await newPost.save();
+
+    // Notify reviewers if needed
     if (user.role === "student") {
-      await notifyReviewers(newPost); // Now defined above
+      await notifyReviewers(newPost);
     }
 
-    // TV/Screen email logic
+    // Handle TV/Screen notifications
     if (Array.isArray(targetDepartments) && targetDepartments.includes("tv")) {
       try {
         let html = `
@@ -1481,11 +1493,12 @@ const createPost = async (req, res) => {
       }
     }
 
+    // Populate post data for response
     const populatedPost = await Post.findById(newPost._id)
       .populate("postedBy", "username profilePic")
       .populate("targetGroups", "name color");
 
-    // Added notification code here as requested
+    // Send notifications if post is approved
     if (user.role !== "student" || newPost.reviewStatus === "approved") {
       try {
         const usersToNotify = await User.find({ notificationPreferences: true, _id: { $ne: postedBy } });
