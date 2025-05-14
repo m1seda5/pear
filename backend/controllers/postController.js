@@ -1402,6 +1402,18 @@ const createPost = async (req, res) => {
     // Handle image upload if present
     if (img) {
       try {
+        // Check image size (base64 string length)
+        const base64Data = img.split(',')[1];
+        const sizeInBytes = Math.ceil((base64Data.length * 3) / 4);
+        const sizeInMB = sizeInBytes / (1024 * 1024);
+        
+        if (sizeInMB > 5) {
+          return res.status(400).json({ 
+            error: "Image size too large. Maximum size is 5MB.",
+            details: `Current size: ${sizeInMB.toFixed(2)}MB`
+          });
+        }
+
         // Validate image format
         const validFormats = ["image/jpeg", "image/png", "image/webp"];
         const fileFormat = img.split(";")[0].split("/")[0];
