@@ -1402,16 +1402,45 @@ const createPost = async (req, res) => {
     // Handle image upload if present
     if (img) {
       try {
-        const uploadedResponse = await cloudinary.uploader.upload(img);
-        img = uploadedResponse.secure_url;
-      } catch (uploadError) {
-        console.error("Error uploading image:", uploadError);
-        // Check if the error is due to a Cloudinary subscription limit
-        if (uploadError.message && (uploadError.message.includes('quota') || uploadError.message.includes('limit'))) {
-          return res.status(500).json({ error: "Cloudinary subscription limit reached. Please upgrade your plan." });
+        // Validate image format
+        const validFormats = ["image/jpeg", "image/png", "image/webp"];
+        const fileFormat = img.split(";")[0].split("/")[0];
+        if (!validFormats.includes(fileFormat)) {
+          return res.status(400).json({ error: "Invalid image format. Please use JPEG, PNG, or WebP." });
         }
-        // Return a more descriptive error message to the frontend
-        return res.status(500).json({ error: uploadError.message || "Failed to upload image" });
+
+        console.log("Attempting Cloudinary upload...");
+        const uploadedResponse = await cloudinary.uploader.upload(img, {
+          resource_type: "auto",
+          folder: "pear_posts",
+          max_file_size: 5 * 1024 * 1024 // 5MB limit
+        });
+        
+        img = uploadedResponse.secure_url;
+        console.log("Upload successful:", img);
+      } catch (uploadError) {
+        console.error("Cloudinary upload error:", uploadError);
+        
+        // Check for specific error types
+        if (uploadError.message && (uploadError.message.includes('quota') || uploadError.message.includes('limit'))) {
+          return res.status(500).json({ 
+            error: "Cloudinary subscription limit reached. Please upgrade your plan.",
+            details: uploadError.message
+          });
+        }
+        
+        if (uploadError.message && uploadError.message.includes('File size too large')) {
+          return res.status(400).json({ 
+            error: "Image size too large. Maximum size is 5MB.",
+            details: uploadError.message
+          });
+        }
+
+        // Return detailed error message for other cases
+        return res.status(500).json({ 
+          error: uploadError.message || "Failed to upload image",
+          details: uploadError
+        });
       }
     }
 

@@ -38,12 +38,15 @@ const server = http.createServer(app);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === "production" 
-    ? "https://pear-tsk2.onrender.com" 
-    : "http://localhost:3000",
+  origin: [
+    process.env.NODE_ENV === "production" 
+      ? "https://pear-tsk2.onrender.com" 
+      : "http://localhost:3000",
+    "https://res.cloudinary.com"
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // Middleware
