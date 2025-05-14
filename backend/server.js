@@ -27,11 +27,24 @@ cronJobs.start();
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
 
+// Cloudinary configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Log Cloudinary configuration status
+console.log('Cloudinary configuration:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Not set',
+  api_key: process.env.CLOUDINARY_API_KEY ? 'Set' : 'Not set',
+  api_secret: process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set'
+});
+
+// Test Cloudinary connection
+cloudinary.api.ping()
+  .then(() => console.log('Cloudinary connection successful'))
+  .catch(err => console.error('Cloudinary connection error:', err));
 
 const app = express();
 const server = http.createServer(app);
@@ -68,8 +81,33 @@ initializeSocket(server);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    name: err.name,
+    code: err.code
+  });
+  
+  // Handle specific error types
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ 
+      error: 'Validation Error',
+      details: err.message 
+    });
+  }
+  
+  if (err.name === 'CloudinaryError') {
+    return res.status(500).json({ 
+      error: 'Cloudinary Error',
+      details: err.message 
+    });
+  }
+
+  // Default error response
+  res.status(500).json({ 
+    error: err.message || 'Something went wrong',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 if (process.env.NODE_ENV === "production") {
