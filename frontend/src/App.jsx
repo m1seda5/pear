@@ -220,9 +220,7 @@ function App() {
 
     try {
       const { data } = await axios.get("/api/messages/unread-count", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+        withCredentials: true
       });
       setUnreadCount(data.count || 0);
     } catch (error) {
