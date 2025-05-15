@@ -215,6 +215,56 @@ function App() {
   const isTVPage = pathname === '/tv';
   const isAdminDashboard = pathname === '/admin';
 
+  useEffect(() => {
+    // Global error handler for fetch requests
+    const handleFetchError = async (error) => {
+      if (error.response?.status === 401) {
+        // Clear all auth data
+        localStorage.removeItem("user-threads");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user-role");
+        setUser(null);
+        
+        // Only redirect if not already on auth page
+        if (pathname !== '/auth') {
+          navigate('/auth');
+        }
+      }
+    };
+
+    // Add global fetch error handler
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason?.response) {
+        handleFetchError(event.reason);
+      }
+    });
+
+    // Add axios interceptor for 401 errors
+    const interceptor = axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          // Clear all auth data
+          localStorage.removeItem("user-threads");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user-role");
+          setUser(null);
+          
+          // Only redirect if not already on auth page
+          if (pathname !== '/auth') {
+            navigate('/auth');
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleFetchError);
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [navigate, setUser, pathname]);
+
   const fetchUnreadCount = async () => {
     if (!user) return;
 
@@ -225,7 +275,9 @@ function App() {
       setUnreadCount(data.count || 0);
     } catch (error) {
       console.error("Error fetching unread count:", error);
-      setUnreadCount(0);
+      if (error.response?.status === 401) {
+        setUnreadCount(0);
+      }
     }
   };
 
@@ -239,30 +291,6 @@ function App() {
     if (pathname === '/chat' && user) {
     }
   }, [pathname, user]);
-
-  useEffect(() => {
-    // Global error handler for fetch requests
-    const handleFetchError = async (error) => {
-      if (error.response?.status === 401 && 
-         !error.config?.url?.includes('/messages/unread-count')) {
-        // Only handle auth errors for non-background requests
-        localStorage.removeItem("user-threads");
-        setUser(null);
-        navigate('/auth');
-      }
-    };
-
-    // Add global fetch error handler
-    window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason instanceof Response) {
-        handleFetchError(event.reason);
-      }
-    });
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleFetchError);
-    };
-  }, [navigate, setUser]);
 
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
 

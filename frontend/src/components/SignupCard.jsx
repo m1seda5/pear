@@ -596,9 +596,7 @@
 //                   <FormLabel>Full name</FormLabel>
 //                   <Input
 //                     type="text"
-//                     onChange={(e) =>
-//                       setInputs({ ...inputs, name: e.target.value })
-//                     }
+//                     onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
 //                     value={inputs.name}
 //                   />
 //                 </FormControl>
@@ -608,9 +606,7 @@
 //                   <FormLabel>Username</FormLabel>
 //                   <Input
 //                     type="text"
-//                     onChange={(e) =>
-//                       setInputs({ ...inputs, username: e.target.value })
-//                     }
+//                     onChange={(e) => setInputs({ ...inputs, username: e.target.value })}
 //                     value={inputs.username}
 //                   />
 //                 </FormControl>
@@ -620,9 +616,7 @@
 //               <FormLabel>Email address</FormLabel>
 //               <Input
 //                 type="email"
-//                 onChange={(e) =>
-//                   setInputs({ ...inputs, email: e.target.value })
-//                 }
+//                 onChange={(e) => setInputs({ ...inputs, email: e.target.value })}
 //                 value={inputs.email}
 //               />
 //             </FormControl>
@@ -631,17 +625,13 @@
 //               <InputGroup>
 //                 <Input
 //                   type={showPassword ? "text" : "password"}
-//                   onChange={(e) =>
-//                     setInputs({ ...inputs, password: e.target.value })
-//                   }
+//                   onChange={(e) => setInputs({ ...inputs, password: e.target.value })}
 //                   value={inputs.password}
 //                 />
 //                 <InputRightElement h={"full"}>
 //                   <Button
 //                     variant={"ghost"}
-//                     onClick={() =>
-//                       setShowPassword((showPassword) => !showPassword)
-//                     }
+//                     onClick={() => setShowPassword((showPassword) => !showPassword)}
 //                   >
 //                     {showPassword ? <ViewIcon /> : <ViewOffIcon />}
 //                   </Button>
@@ -938,7 +928,9 @@ const SignupCard = () => {
       // Automatically log user in after successful verification
       localStorage.setItem("user-threads", JSON.stringify(response.data));
       setUser(response.data);
-      window.location.href = "/"; // Force refresh to trigger feed load
+      // No token logic, no Authorization header, no extra localStorage keys
+      // Use only cookie-based auth
+      // Optionally: window.location.reload();
     }
   }, [isOtpVerified, response, setUser]);
 

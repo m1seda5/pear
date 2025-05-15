@@ -40,29 +40,17 @@ export default function LoginCard() {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(inputs),
+				credentials: "include",
 			});
 			const data = await res.json();
-			if (data.token) {
-				localStorage.setItem("token", data.token);
-				localStorage.setItem("user-threads", JSON.stringify(data));
-			}
 			if (data.error) {
 				showToast("Error", data.error, "error");
 				return;
 			}
-			
-			// Store the user's role in localStorage
-			localStorage.setItem("user-role", data.role); // Store the role for future use
-			
-			// Store the entire user data
 			localStorage.setItem("user-threads", JSON.stringify(data));
-			setUser(data); // Update the Recoil state or wherever the user state is managed
-	
-			// Show success toast
-			showToast("Success", "Login successful", "success");
-			
+			setUser(data);
 		} catch (error) {
-			showToast("Error", error.message || "Login failed", "error");
+			showToast("Error", error, "error");
 		} finally {
 			setLoading(false);
 		}
