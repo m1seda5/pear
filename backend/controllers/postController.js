@@ -1414,13 +1414,6 @@ const createPost = async (req, res) => {
           });
         }
 
-        // Validate image format
-        const validFormats = ["image/jpeg", "image/png", "image/webp"];
-        const fileFormat = img.split(";")[0].split("/")[0];
-        if (!validFormats.includes(fileFormat)) {
-          return res.status(400).json({ error: "Invalid image format. Please use JPEG, PNG, or WebP." });
-        }
-
         console.log("Attempting Cloudinary upload...");
         const uploadedResponse = await cloudinary.uploader.upload(img, {
           resource_type: "auto",
