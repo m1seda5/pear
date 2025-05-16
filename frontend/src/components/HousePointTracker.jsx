@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Flex, Text, Button, useColorModeValue, IconButton, useToast } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, useColorModeValue, IconButton, useToast, useColorMode } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import { useRecoilValue } from 'recoil';
@@ -22,6 +22,8 @@ const HousePointTracker = () => {
   const toast = useToast();
   const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
   const [dragging, setDragging] = useState(false);
+  const { colorMode } = useColorMode();
+  const pinkMode = typeof window !== 'undefined' && localStorage.getItem('pinkMode') === 'true';
 
   const fetchPoints = useCallback(async () => {
     try {
@@ -67,7 +69,7 @@ const HousePointTracker = () => {
       top={`${position.y}px`}
       zIndex="overlay"
       w="380px"
-      bg={useColorModeValue("whiteAlpha.900", "gray.800")}
+      bg={pinkMode && colorMode === 'light' ? 'rgba(233,161,186,0.85)' : useColorModeValue("whiteAlpha.900", "gray.800")}
       borderRadius="lg"
       p={4}
       boxShadow="2xl"

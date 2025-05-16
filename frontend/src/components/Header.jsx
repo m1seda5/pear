@@ -470,9 +470,11 @@ function Header({ unreadCount = 0 }) {
   const iconSize = isMobile ? 22 : 24;
   
   // Glass effect styles
-  const glassBg = colorMode === "dark" 
-    ? "rgba(26, 32, 44, 0.85)" 
-    : "rgba(255, 255, 255, 0.85)";
+  const glassBg = isPinkMode && colorMode === 'light'
+    ? 'rgba(233,161,186,0.7)'
+    : (colorMode === "dark" 
+      ? "rgba(26, 32, 44, 0.85)" 
+      : "rgba(255, 255, 255, 0.85)");
   
   const glassBorder = colorMode === "dark"
     ? "1px solid rgba(255, 255, 255, 0.1)"
@@ -499,7 +501,7 @@ function Header({ unreadCount = 0 }) {
       <Flex
         as={motion.div}
         bg={glassBg}
-        backdropFilter="blur(12px) saturate(180%)"
+        backdropFilter={isPinkMode && colorMode === 'light' ? 'blur(18px) saturate(180%)' : 'blur(12px) saturate(180%)'}
         borderRadius="full"
         border={glassBorder}
         boxShadow={glassBoxShadow}
