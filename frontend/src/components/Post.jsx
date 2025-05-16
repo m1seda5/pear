@@ -203,7 +203,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
         const getUser = async () => {
             try {
                 const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
-                const res = await fetch("/api/users/profile/" + userId);
+                const res = await fetch("/api/users/profile/" + userId, { credentials: 'include' });
                 const data = await res.json();
                 if (data.error) {
                     showToast(t("Error"), data.error, "error");
@@ -226,8 +226,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${currentUser.token}`,
                     },
+                    credentials: 'include',
                 });
                 const data = await res.json();
                 if (data.error) throw new Error(data.error);
@@ -263,9 +263,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
 
             const res = await fetch(`/api/posts/${post._id}`, {
                 method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${currentUser.token}`,
-                },
+                credentials: 'include',
             });
             const data = await res.json();
             if (data.error) {

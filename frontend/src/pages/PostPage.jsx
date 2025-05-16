@@ -188,9 +188,7 @@ const PostPage = () => {
 
       const res = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${currentUser?.token || ""}`,
-        },
+        credentials: 'include',
       });
 
       const data = await res.json();
@@ -241,7 +239,7 @@ const PostPage = () => {
           return;
         }
 
-        const res = await fetch(`/api/posts/${pid}`);
+        const res = await fetch(`/api/posts/${pid}`, { credentials: 'include' });
         const data = await res.json();
 
         if (!res.ok || data.error) {
@@ -281,8 +279,9 @@ const PostPage = () => {
 
   if (!user && loading) {
     return (
-      <Flex justifyContent={"center"}>
+      <Flex justifyContent={"center"} alignItems="center" minH="200px">
         <Spinner size={"xl"} />
+        <Text ml={4}>{t("Loading user...")}</Text>
       </Flex>
     );
   }
@@ -291,6 +290,7 @@ const PostPage = () => {
     return (
       <Flex justifyContent="center" minH="200px" alignItems="center">
         <Spinner size="xl" />
+        <Text ml={4}>{t("Loading post...")}</Text>
       </Flex>
     );
   }
@@ -299,8 +299,8 @@ const PostPage = () => {
 
   if (!currentPost) {
     return (
-      <Flex justifyContent="center" mt={10}>
-        <Text>{t("Post not found")}</Text>
+      <Flex justifyContent="center" mt={10} alignItems="center" minH="200px">
+        <Text color="red.400" fontWeight="bold">{t("Post not found or you are not authorized to view this post.")}</Text>
       </Flex>
     );
   }

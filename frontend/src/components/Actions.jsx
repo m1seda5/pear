@@ -47,6 +47,7 @@ const Actions = ({ post }) => {
                 headers: {
                     "Content-Type": "application/json",
                 },
+                credentials: 'include',
             });
             const data = await res.json();
             if (data.error) return showToast("Error", data.error, "error");
@@ -90,6 +91,7 @@ const Actions = ({ post }) => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ text: reply }),
+                credentials: 'include',
             });
             const data = await res.json();
             if (data.error) return showToast("Error", data.error, "error");
@@ -122,6 +124,7 @@ const Actions = ({ post }) => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ text: emoji }),
+                credentials: 'include',
             });
             const data = await res.json();
             if (data.error) return showToast("Error", data.error, "error");
