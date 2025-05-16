@@ -22,7 +22,6 @@ const HousePointTracker = () => {
   const toast = useToast();
   const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
   const [dragging, setDragging] = useState(false);
-  const pinkMode = typeof window !== 'undefined' && localStorage.getItem('pinkMode') === 'true';
 
   const fetchPoints = useCallback(async () => {
     try {
@@ -68,7 +67,7 @@ const HousePointTracker = () => {
       top={`${position.y}px`}
       zIndex="overlay"
       w="380px"
-      bg={pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '#e9a1ba' : useColorModeValue("whiteAlpha.900", "gray.800")}
+      bg={useColorModeValue("whiteAlpha.900", "gray.800")}
       borderRadius="lg"
       p={4}
       boxShadow="2xl"
@@ -82,9 +81,6 @@ const HousePointTracker = () => {
           size="sm"
           onClick={() => setIsOpen(false)}
           aria-label="Close tracker"
-          bg={pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '#cc2279' : undefined}
-          color={pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? 'white' : undefined}
-          _hover={{ bg: pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '#e9a1ba' : undefined }}
         />
       </Flex>
 

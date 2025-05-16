@@ -275,7 +275,9 @@ export const SettingsPage = () => {
     webPush: true,
   });
   const [isToggling, setIsToggling] = React.useState(false);
-  const [isPinkMode, setIsPinkMode] = useState(() => localStorage.getItem('pinkMode') === 'true');
+  const [isPinkMode, setIsPinkMode] = useState(() => {
+    return localStorage.getItem('pinkMode') === 'true';
+  });
   
   // Check if user is admin or the specific user
   const canChangeColorMode = currentUser?.role === 'admin' || 
@@ -389,34 +391,21 @@ export const SettingsPage = () => {
     }
   };
 
-  const handlePinkModeToggle = () => {
-    const newValue = !isPinkMode;
-    setIsPinkMode(newValue);
-    localStorage.setItem('pinkMode', newValue ? 'true' : 'false');
-    // Optionally force a reload to ensure theme is applied everywhere
-    window.location.reload();
-  };
-
   return (
     <VStack spacing={6} align="stretch" maxW="600px" mx="auto" p={4}>
       {/* Color Mode Section */}
       {canChangeColorMode && (
         <Box p={4} borderWidth="1px" borderRadius="lg" bg={useColorModeValue('pink.baby', 'gray.700')}>
           <VStack spacing={4} align="stretch">
-            <HStack justify="space-between">
-              <Text fontWeight="bold">{i18n.t('Pink Mode')}</Text>
-              <Switch
-                isChecked={isPinkMode}
-                onChange={handlePinkModeToggle}
-                colorScheme="pink"
-                size="lg"
-              />
-            </HStack>
-            <Text fontSize="sm" color={useColorModeValue('gray.700', 'gray.300')}>
-              {isPinkMode
-                ? 'Light mode is now pink! The header, widgets, and modals will use pink.'
-                : 'Light/dark mode is normal. Toggle to enable pink mode.'}
-            </Text>
+            <Text fontWeight="bold">{i18n.t('Color Mode')}</Text>
+            <Button
+              onClick={handleColorModeChange}
+              colorScheme={colorMode === 'light' ? 'pink' : 'gray'}
+              size="lg"
+              width="full"
+            >
+              {colorMode === 'light' ? i18n.t('Switch to Dark Mode') : i18n.t('Switch to Pink Mode')}
+            </Button>
           </VStack>
         </Box>
       )}

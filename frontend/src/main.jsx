@@ -10,19 +10,17 @@ import { BrowserRouter } from "react-router-dom";
 import { RecoilRoot } from "recoil";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
 
-const pinkMode = localStorage.getItem('pinkMode') === 'true';
-
 const styles = {
 	global: (props) => ({
 		body: {
 			color: mode("gray.800", "whiteAlpha.900")(props),
-			bg: pinkMode && props.colorMode === 'light' ? '#e9a1ba' : mode("gray.100", "#101010")(props),
+			bg: mode("gray.100", "#101010")(props),
 		},
 	}),
 };
 
 const config = {
-	initialColorMode: pinkMode ? 'light' : 'dark',
+	initialColorMode: localStorage.getItem('pinkMode') === 'true' ? 'light' : 'dark',
 	useSystemColorMode: false,
 };
 
@@ -44,7 +42,7 @@ const theme = extendTheme({
 	semanticTokens: {
 		colors: {
 			'chakra-body-bg': {
-				_light: pinkMode ? 'pink.baby' : 'gray.100',
+				_light: 'pink.main',
 				_dark: '#101010',
 			},
 			'chakra-body-text': {
@@ -57,7 +55,7 @@ const theme = extendTheme({
 		Modal: {
 			baseStyle: (props) => ({
 				dialog: {
-					bg: pinkMode && props.colorMode === 'light' ? '#e9a1ba' : mode('white', 'gray.800')(props),
+					bg: mode('pink.baby', 'gray.800')(props),
 					color: mode('gray.800', 'whiteAlpha.900')(props),
 				},
 			}),
@@ -65,10 +63,10 @@ const theme = extendTheme({
 		Button: {
 			variants: {
 				solid: (props) => ({
-					bg: pinkMode && props.colorMode === 'light' ? '#cc2279' : mode('blue.500', 'gray.700')(props),
-					color: 'white',
+					bg: mode('pink.main', 'gray.700')(props),
+					color: mode('white', 'white')(props),
 					_hover: {
-						bg: pinkMode && props.colorMode === 'light' ? '#e9a1ba' : mode('blue.600', 'gray.600')(props),
+						bg: mode('pink.baby', 'gray.600')(props),
 					},
 				}),
 			},
@@ -76,14 +74,14 @@ const theme = extendTheme({
 		Card: {
 			baseStyle: (props) => ({
 				container: {
-					bg: pinkMode && props.colorMode === 'light' ? '#e9a1ba' : mode('white', 'gray.800')(props),
+					bg: mode('pink.baby', 'gray.800')(props),
 					color: mode('gray.800', 'whiteAlpha.900')(props),
 				},
 			}),
 		},
 		Box: {
 			baseStyle: (props) => ({
-				bg: pinkMode && props.colorMode === 'light' ? '#e9a1ba' : undefined,
+				bg: mode('pink.baby', 'gray.800')(props),
 				color: mode('gray.800', 'whiteAlpha.900')(props),
 			}),
 		},

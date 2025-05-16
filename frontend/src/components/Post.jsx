@@ -188,8 +188,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const newPostGlowLight = "linear-gradient(to right, #a8b8ff, #d6aeff, #ffb3d9, #ffccbc)"; // Apple Siri-like
     const newPostGlowDark = "linear-gradient(to right, #6c7ddb, #9a79d1, #d17eb8, #e6a891)"; // Apple Siri-like
 
-    const pinkMode = typeof window !== 'undefined' && localStorage.getItem('pinkMode') === 'true';
-
     useEffect(() => {
         const handleLanguageChange = (lng) => {
             setLanguage(lng);
@@ -360,148 +358,145 @@ const Post = ({ post, postedBy, isTV = false }) => {
     return (
         <>
             <a href="/" style={{ display: 'none' }}>Hidden Website Link</a>
-            <Link to={`/${user.username}/post/${post._id}`}>
+            <Flex
+                ref={postRef}
+                direction="column"
+                w="full"
+                maxW={isTV ? "full" : "2xl"}
+                mx="auto"
+                borderBottom="1px"
+                borderColor={borderColor}
+                overflow="hidden"
+                className="post-container"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                    transition: 'all 0.3s ease-in-out',
+                }}
+            >
+                {/* Author section with delete button only */}
                 <Flex
-                    gap={3}
-                    mb={4}
-                    py={5}
-                    bg={pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '#e9a1ba' : useColorModeValue('white', 'gray.900')}
-                    borderRadius={8}
-                    boxShadow="md"
-                    border="1px solid"
-                    borderColor={borderColor}
-                    ref={postRef}
-                    _hover={{ boxShadow: pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '0 0 0 4px #cc2279' : hoverGlowLight }}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    style={{
-                        transition: 'all 0.3s ease-in-out',
-                    }}
+                    alignItems="center"
+                    justifyContent="space-between"
+                    px={5}
+                    pt={4}
+                    pb={3}
                 >
-                    {/* Author section with delete button only */}
-                    <Flex
-                        alignItems="center"
-                        justifyContent="space-between"
-                        px={5}
-                        pt={4}
-                        pb={3}
-                    >
-                        <Flex alignItems="center" gap={3}>
-                            <Avatar
-                                size="md"
-                                name={user.name}
-                                src={user?.profilePic}
+                    <Flex alignItems="center" gap={3}>
+                        <Avatar
+                            size="md"
+                            name={user.name}
+                            src={user?.profilePic}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigate(`/${user.username}`);
+                            }}
+                        />
+                        <Flex direction="column">
+                            <Text
+                                fontSize="sm"
+                                fontWeight="semibold"
+                                color={textColor}
+                                className="post-author-username"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     navigate(`/${user.username}`);
                                 }}
-                            />
-                            <Flex direction="column">
-                                <Text
-                                    fontSize="sm"
-                                    fontWeight="semibold"
-                                    color={textColor}
-                                    className="post-author-username"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        navigate(`/${user.username}`);
-                                    }}
-                                >
-                                    {user?.username}
-                                    {user?.role === "admin" && (
-                                        <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
-                                    )}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                    @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
-                                </Text>
-                            </Flex>
-                        </Flex>
-                        <Flex gap={4} alignItems="center">
-                            {(currentUser?._id === user._id || currentUser?.role === "admin") && (
-                                <Flex
-                                    as="button"
-                                    p={2}
-                                    borderRadius="full"
-                                    _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
-                                    transition="all 0.2s"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleDeletePost(e);
-                                    }}
-                                >
-                                    <DeleteIcon boxSize={4} color="gray.500" />
-                                </Flex>
-                            )}
+                            >
+                                {user?.username}
+                                {user?.role === "admin" && (
+                                    <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
+                                )}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500">
+                                @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
+                            </Text>
                         </Flex>
                     </Flex>
-
-                    {/* Content section */}
-                    <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
-                        {post.text}
-                    </Text>
-
-                    {/* Target Groups and General Post Indicators */}
-                    <Flex gap={2} wrap="wrap" mb={4} px={5}>
-                        {post.targetGroups && post.targetGroups.map(group => (
-                            <Flex key={group._id} align="center" mr={2}>
-                                <Flex
-                                    w="10px"
-                                    h="10px"
-                                    borderRadius="full"
-                                    bg={group.color}
-                                    mr={1}
-                                />
-                                <Text fontSize="xs">{group.name}</Text>
-                            </Flex>
-                        ))}
-                        {post.isGeneral && (
-                            <Flex align="center">
-                                <Flex
-                                    w="10px"
-                                    h="10px"
-                                    borderRadius="full"
-                                    bg="gray.500"
-                                    mr={1}
-                                />
-                                <Text fontSize="xs">{t("General Post")}</Text>
+                    <Flex gap={4} alignItems="center">
+                        {(currentUser?._id === user._id || currentUser?.role === "admin") && (
+                            <Flex
+                                as="button"
+                                p={2}
+                                borderRadius="full"
+                                _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                                transition="all 0.2s"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDeletePost(e);
+                                }}
+                            >
+                                <DeleteIcon boxSize={4} color="gray.500" />
                             </Flex>
                         )}
                     </Flex>
+                </Flex>
 
-                    {/* Image preview */}
-                    {post.img && (
-                        <Flex
-                            w="full"
-                            justifyContent="center"
-                            px={5}
-                            mb={4}
-                        >
-                            <Image
-                                src={post.img}
-                                w="full"
-                                h={isTV ? "auto" : "full"}
-                                maxH={isTV ? "65vh" : "auto"}
-                                objectFit={isTV ? "contain" : "cover"}
-                                borderRadius="xl"
-                                className="post-image"
+                {/* Content section */}
+                <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
+                    {post.text}
+                </Text>
+
+                {/* Target Groups and General Post Indicators */}
+                <Flex gap={2} wrap="wrap" mb={4} px={5}>
+                    {post.targetGroups && post.targetGroups.map(group => (
+                        <Flex key={group._id} align="center" mr={2}>
+                            <Flex
+                                w="10px"
+                                h="10px"
+                                borderRadius="full"
+                                bg={group.color}
+                                mr={1}
                             />
+                            <Text fontSize="xs">{group.name}</Text>
+                        </Flex>
+                    ))}
+                    {post.isGeneral && (
+                        <Flex align="center">
+                            <Flex
+                                w="10px"
+                                h="10px"
+                                borderRadius="full"
+                                bg="gray.500"
+                                mr={1}
+                            />
+                            <Text fontSize="xs">{t("General Post")}</Text>
                         </Flex>
                     )}
-
-                    {/* Engagement section */}
-                    <Flex
-                        alignItems="center"
-                        justifyContent="space-between"
-                        px={5}
-                        pb={4}
-                        pt={2}
-                    >
-                        {/* Actions component with likes, comments, reposts */}
-                        <Actions post={post} />
-                    </Flex>
                 </Flex>
-            </Link>
+
+                {/* Image preview */}
+                {post.img && (
+                    <Flex
+                        w="full"
+                        justifyContent="center"
+                        px={5}
+                        mb={4}
+                    >
+                        <Image
+                            src={post.img}
+                            w="full"
+                            h={isTV ? "auto" : "full"}
+                            maxH={isTV ? "65vh" : "auto"}
+                            objectFit={isTV ? "contain" : "cover"}
+                            borderRadius="xl"
+                            className="post-image"
+                        />
+                    </Flex>
+                )}
+
+                {/* Engagement section */}
+                <Flex
+                    alignItems="center"
+                    justifyContent="space-between"
+                    px={5}
+                    pb={4}
+                    pt={2}
+                >
+                    {/* Actions component with likes, comments, reposts */}
+                    <Actions post={post} />
+                </Flex>
+            </Flex>
         </>
     );
 };
