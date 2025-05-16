@@ -315,6 +315,7 @@ function App() {
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
+            <Route path="/posts/:id" element={<PostPage />} />
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}

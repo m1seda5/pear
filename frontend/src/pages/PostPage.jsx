@@ -158,7 +158,7 @@ const PostPage = () => {
   const { user, loading } = useGetUserProfile();
   const [posts, setPosts] = useRecoilState(postsAtom);
   const showToast = useShowToast();
-  const { pid } = useParams();
+  const { pid, id } = useParams();
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
   const [loadingPost, setLoadingPost] = useState(true);
@@ -233,13 +233,14 @@ const PostPage = () => {
     const getPost = async () => {
       setLoadingPost(true);
       try {
-        if (!pid) {
+        const postId = pid || id;
+        if (!postId) {
           showToast(t("Error"), t("Invalid post ID"), "error");
           navigate("/");
           return;
         }
 
-        const res = await fetch(`/api/posts/${pid}`, { credentials: 'include' });
+        const res = await fetch(`/api/posts/${postId}`, { credentials: 'include' });
         const data = await res.json();
 
         if (!res.ok || data.error) {
@@ -275,7 +276,7 @@ const PostPage = () => {
       }
     };
     getPost();
-  }, [pid, setPosts, showToast, t, navigate]);
+  }, [pid, id, setPosts, showToast, t, navigate]);
 
   if (!user && loading) {
     return (

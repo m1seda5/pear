@@ -27,12 +27,15 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
   const user = useRecoilValue(userAtom);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [textColor, setTextColor] = useState("white"); // Default to white
   const [screenSize, setScreenSize] = useState({
     width: 0,
     height: 0,
   });
   const autoSlideIntervalRef = useRef(null);
+  
+  const bgColor = useColorModeValue("pink.baby", "gray.800");
+  const textColor = useColorModeValue("gray.800", "white");
+  const borderColor = useColorModeValue("pink.main", "gray.700");
   
   // Check view count on component mount
   useEffect(() => {
@@ -208,18 +211,18 @@ const TutorialSlider = ({ onComplete, isProfilePage = false }) => {
         width="100%"
         height="100%"
         backdropFilter="blur(8px)"
-        bgColor="rgba(0, 0, 0, 0.4)"
+        bgColor={useColorModeValue("rgba(204, 34, 121, 0.4)", "rgba(0, 0, 0, 0.4)")}
         zIndex="1001"
         animation="blurIn 0.5s forwards"
         sx={{
           "@keyframes blurIn": {
             from: {
               backdropFilter: "blur(0)",
-              backgroundColor: "rgba(0, 0, 0, 0)",
+              backgroundColor: useColorModeValue("rgba(204, 34, 121, 0)", "rgba(0, 0, 0, 0)"),
             },
             to: {
               backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              backgroundColor: useColorModeValue("rgba(204, 34, 121, 0.4)", "rgba(0, 0, 0, 0.4)"),
             },
           },
         }}

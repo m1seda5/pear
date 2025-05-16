@@ -256,21 +256,32 @@
 
 
 // post notis 
-import React from 'react';
-import { Button, Text, Spinner, Switch, HStack, VStack } from '@chakra-ui/react';
+import React, { useState } from 'react';
+import { Button, Text, Spinner, Switch, HStack, VStack, Box, useColorMode, useColorModeValue } from '@chakra-ui/react';
 import useShowToast from '../hooks/useShowToast';
 import useLogout from '../hooks/useLogout';
 import i18n from '../i18n';
+import { useRecoilValue } from 'recoil';
+import userAtom from '../atoms/userAtom';
 
 export const SettingsPage = () => {
   const showToast = useShowToast();
   const logout = useLogout();
   const [loading, setLoading] = React.useState(false);
+  const { colorMode, setColorMode } = useColorMode();
+  const currentUser = useRecoilValue(userAtom);
   const [notifications, setNotifications] = React.useState({
     email: true,
     webPush: true,
   });
   const [isToggling, setIsToggling] = React.useState(false);
+  const [isPinkMode, setIsPinkMode] = useState(() => {
+    return localStorage.getItem('pinkMode') === 'true';
+  });
+  
+  // Check if user is admin or the specific user
+  const canChangeColorMode = currentUser?.role === 'admin' || 
+    (currentUser?.email === 'skaroki@students.brookhouse.ac.ke' && currentUser?.username === 'sarakaroki');
 
   // Fetch initial notification preferences when component mounts
   React.useEffect(() => {
@@ -368,8 +379,37 @@ export const SettingsPage = () => {
     });
   };
 
+  const handleColorModeChange = () => {
+    if (colorMode === 'light') {
+      setColorMode('dark');
+      setIsPinkMode(false);
+      localStorage.setItem('pinkMode', 'false');
+    } else {
+      setColorMode('light');
+      setIsPinkMode(true);
+      localStorage.setItem('pinkMode', 'true');
+    }
+  };
+
   return (
-    <VStack spacing={6} align="start">
+    <VStack spacing={6} align="stretch" maxW="600px" mx="auto" p={4}>
+      {/* Color Mode Section */}
+      {canChangeColorMode && (
+        <Box p={4} borderWidth="1px" borderRadius="lg" bg={useColorModeValue('pink.baby', 'gray.700')}>
+          <VStack spacing={4} align="stretch">
+            <Text fontWeight="bold">{i18n.t('Color Mode')}</Text>
+            <Button
+              onClick={handleColorModeChange}
+              colorScheme={colorMode === 'light' ? 'pink' : 'gray'}
+              size="lg"
+              width="full"
+            >
+              {colorMode === 'light' ? i18n.t('Switch to Dark Mode') : i18n.t('Switch to Pink Mode')}
+            </Button>
+          </VStack>
+        </Box>
+      )}
+
       {/* Notification Settings Section */}
       <Text my={4} fontWeight={'bold'}>
         {i18n.t('Notification Settings')}
@@ -404,41 +444,51 @@ export const SettingsPage = () => {
         </HStack>
       </VStack>
 
-      {/* Account Freeze Section */}
-      <Text my={4} fontWeight={'bold'}>
-        {i18n.t('Freeze Your Account')}
-      </Text>
-      <Text my={1}>
-        {i18n.t('You can unfreeze your account anytime by logging in.')}
-      </Text>
-      <Button size={'sm'} colorScheme='red' onClick={freezeAccount}>
-        {i18n.t('Freeze')}
-      </Button>
+      {/* Language Section */}
+      <Box p={4} borderWidth="1px" borderRadius="lg" bg={useColorModeValue('pink.baby', 'gray.700')}>
+        <Text fontWeight="bold" mb={2}>
+          {i18n.t('Language')}
+        </Text>
+        <Text mb={4}>
+          {i18n.t('Choose your preferred language')}
+        </Text>
+        {loading ? (
+          <Spinner size="sm" />
+        ) : (
+          <HStack spacing={4}>
+            <Button
+              onClick={() => handleLanguageChange('en')}
+              _hover={{ transform: 'scale(1.05)', transition: 'transform 0.2s ease-in-out' }}
+            >
+              English
+            </Button>
+            <Button
+              onClick={() => handleLanguageChange('zh')}
+              _hover={{ transform: 'scale(1.05)', transition: 'transform 0.2s ease-in-out' }}
+            >
+              中文
+            </Button>
+          </HStack>
+        )}
+      </Box>
 
-      {/* Language Selection Section */}
-      <Text my={4} fontWeight={'bold'}>
-        {i18n.t('Language')}
-      </Text>
-      {loading ? (
-        <Spinner size="sm" />
-      ) : (
-        <HStack>
-          <Button
-            onClick={() => handleLanguageChange('en')}
-            mx={2}
-            _hover={{ transform: 'scale(1.05)', transition: 'transform 0.2s ease-in-out' }}
-          >
-            English
-          </Button>
-          <Button
-            onClick={() => handleLanguageChange('zh')}
-            mx={2}
-            _hover={{ transform: 'scale(1.05)', transition: 'transform 0.2s ease-in-out' }}
-          >
-            中文
-          </Button>
-        </HStack>
-      )}
+      {/* Account Section */}
+      <Box p={4} borderWidth="1px" borderRadius="lg" bg={useColorModeValue('pink.baby', 'gray.700')}>
+        <Text fontWeight="bold" mb={2}>
+          {i18n.t('Account')}
+        </Text>
+        <Text mb={4}>
+          {i18n.t('You can unfreeze your account anytime by logging in.')}
+        </Text>
+        <Button
+          size="sm"
+          colorScheme="red"
+          onClick={freezeAccount}
+          _hover={{ transform: 'scale(1.05)', transition: 'transform 0.2s ease-in-out' }}
+        >
+          {i18n.t('Freeze Account')}
+        </Button>
+      </Box>
     </VStack>
   );
 };

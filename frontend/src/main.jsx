@@ -20,8 +20,8 @@ const styles = {
 };
 
 const config = {
-	initialColorMode: "dark",
-	useSystemColorMode: true,
+	initialColorMode: localStorage.getItem('pinkMode') === 'true' ? 'light' : 'dark',
+	useSystemColorMode: false,
 };
 
 const colors = {
@@ -29,9 +29,69 @@ const colors = {
 		light: "#616161",
 		dark: "#1e1e1e",
 	},
+	pink: {
+		main: "#cc2279",
+		baby: "#e9a1ba",
+	},
 };
 
-const theme = extendTheme({ config, styles, colors });
+const theme = extendTheme({ 
+	config, 
+	styles, 
+	colors,
+	semanticTokens: {
+		colors: {
+			'chakra-body-bg': {
+				_light: 'pink.main',
+				_dark: '#101010',
+			},
+			'chakra-body-text': {
+				_light: 'gray.800',
+				_dark: 'whiteAlpha.900',
+			},
+		},
+	},
+	components: {
+		Modal: {
+			baseStyle: (props) => ({
+				dialog: {
+					bg: mode('pink.baby', 'gray.800')(props),
+					color: mode('gray.800', 'whiteAlpha.900')(props),
+				},
+			}),
+		},
+		Button: {
+			variants: {
+				solid: (props) => ({
+					bg: mode('pink.main', 'gray.700')(props),
+					color: mode('white', 'white')(props),
+					_hover: {
+						bg: mode('pink.baby', 'gray.600')(props),
+					},
+				}),
+			},
+		},
+		Card: {
+			baseStyle: (props) => ({
+				container: {
+					bg: mode('pink.baby', 'gray.800')(props),
+					color: mode('gray.800', 'whiteAlpha.900')(props),
+				},
+			}),
+		},
+		Box: {
+			baseStyle: (props) => ({
+				bg: mode('pink.baby', 'gray.800')(props),
+				color: mode('gray.800', 'whiteAlpha.900')(props),
+			}),
+		},
+		Text: {
+			baseStyle: (props) => ({
+				color: mode('gray.800', 'whiteAlpha.900')(props),
+			}),
+		},
+	},
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(
 	// React.StrictMode renders every component twice (in the initial render), only in development.

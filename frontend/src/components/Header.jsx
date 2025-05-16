@@ -397,6 +397,7 @@ import { motion } from "framer-motion";
 // Main Header component
 function Header({ unreadCount = 0 }) {
   const { colorMode, toggleColorMode } = useColorMode();
+  const isPinkMode = localStorage.getItem('pinkMode') === 'true';
   const user = useRecoilValue(userAtom);
   const logout = useLogout();
   const setAuthScreen = useSetRecoilState(authScreenAtom);
@@ -448,6 +449,20 @@ function Header({ unreadCount = 0 }) {
       await logout();
     } catch (error) {
       console.error("Logout error:", error);
+    }
+  };
+
+  const handleColorModeToggle = () => {
+    if (isPinkMode) {
+      // If pink mode is enabled, toggle between dark and pink
+      if (colorMode === 'light') {
+        setColorMode('dark');
+      } else {
+        setColorMode('light');
+      }
+    } else {
+      // If pink mode is disabled, use regular light/dark toggle
+      toggleColorMode();
     }
   };
 
@@ -530,7 +545,7 @@ function Header({ unreadCount = 0 }) {
             />
           }
           label={colorMode === "dark" ? "Light Mode" : "Dark Mode"}
-          onClick={toggleColorMode}
+          onClick={handleColorModeToggle}
         />
 
         {user && (

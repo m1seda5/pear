@@ -356,13 +356,8 @@ const Post = ({ post, postedBy, isTV = false }) => {
     if (!user) return null;
 
     return (
-        <Link
-            to={`/${user.username}/post/${post._id}`}
-            style={{
-                width: isTV ? "100%" : "auto",
-                display: "block",
-            }}
-        >
+        <>
+            <a href="/" style={{ display: 'none' }}>Hidden Website Link</a>
             <Flex
                 ref={postRef}
                 direction="column"
@@ -376,7 +371,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 style={{
-                    transition: 'all 0.3s ease-in-out', // Smooth transition for all properties
+                    transition: 'all 0.3s ease-in-out',
                 }}
             >
                 {/* Author section with delete button only */}
@@ -502,7 +497,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                     <Actions post={post} />
                 </Flex>
             </Flex>
-        </Link>
+        </>
     );
 };
 

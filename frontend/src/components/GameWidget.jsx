@@ -30,8 +30,8 @@ const GameWidget = ({ game = mockGame }) => {
   const dragOffset = useRef({ x: 0, y: 0 });
   const [expanded, setExpanded] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const widgetBg = useColorModeValue("rgba(255,255,255,0.85)", "rgba(20,20,20,0.95)");
-  const borderCol = useColorModeValue("gray.200", "gray.700");
+  const widgetBg = useColorModeValue("pink.baby", "rgba(20,20,20,0.95)");
+  const borderCol = useColorModeValue("pink.main", "gray.700");
 
   // Confetti logic: show if user team won and confettiTeam matches winner
   useEffect(() => {

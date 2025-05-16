@@ -31,11 +31,11 @@ const NotelyWidget = () => {
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
-  const widgetBg = useColorModeValue("#ffe066", "#232323"); // softer yellow for light, dark card for dark
+  const widgetBg = useColorModeValue("pink.baby", "#232323"); // baby pink for light, dark card for dark
   const noteBg = useColorModeValue("white", "#2d2d2d");
-  const noteText = useColorModeValue("#46180f", "#ffe066");
+  const noteText = useColorModeValue("gray.800", "#ffe066");
   const inputBg = useColorModeValue("white", "#232323");
-  const inputText = useColorModeValue("#46180f", "#ffe066");
+  const inputText = useColorModeValue("gray.800", "#ffe066");
 
   useEffect(() => {
     if (isOpen) fetchNotes();
