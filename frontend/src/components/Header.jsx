@@ -470,9 +470,11 @@ function Header({ unreadCount = 0 }) {
   const iconSize = isMobile ? 22 : 24;
   
   // Glass effect styles
-  const glassBg = colorMode === "dark" 
-    ? "rgba(26, 32, 44, 0.85)" 
-    : "rgba(255, 255, 255, 0.85)";
+  const glassBg = isPinkMode && colorMode === 'light'
+    ? '#e9a1ba'
+    : (colorMode === "dark" 
+      ? "rgba(26, 32, 44, 0.85)" 
+      : "rgba(255, 255, 255, 0.85)");
   
   const glassBorder = colorMode === "dark"
     ? "1px solid rgba(255, 255, 255, 0.1)"
@@ -653,7 +655,7 @@ function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
 
   // Animation variants with increased scale
   const iconVariants = {
-    hover: { scale: 1.3 }, // Increased from 1.15
+    hover: { scale: 1.3, backgroundColor: colorMode === 'dark' ? 'gray.700' : 'gray.100' },
     tap: { scale: 0.95 },
     rest: { scale: 1 }
   };
