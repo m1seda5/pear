@@ -1,5 +1,6 @@
 import React from 'react';
 import { Flex, Box, Button, useColorModeValue } from '@chakra-ui/react';
+import { GameWidget } from './GameWidget';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const GameWidgetList = ({ games, onWidgetClick, onMoreClick }) => {
@@ -24,7 +25,7 @@ export const GameWidgetList = ({ games, onWidgetClick, onMoreClick }) => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {/* GameWidget component usage removed */}
+              <GameWidget {...game} onClick={() => onWidgetClick && onWidgetClick(game)} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -42,7 +43,7 @@ export const GameWidgetList = ({ games, onWidgetClick, onMoreClick }) => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {/* GameWidget component usage removed */}
+            <GameWidget {...game} onClick={() => onWidgetClick && onWidgetClick(game)} />
           </motion.div>
         ))}
       </AnimatePresence>

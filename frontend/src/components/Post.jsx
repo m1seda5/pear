@@ -169,339 +169,341 @@ import useShowToast from "../hooks/useShowToast";
 import Actions from "./Actions";
 
 const Post = ({ post, postedBy, isTV = false }) => {
-	const [user, setUser] = useState(null);
-	const showToast = useShowToast();
-	const currentUser = useRecoilValue(userAtom);
-	const [posts, setPosts] = useRecoilState(postsAtom);
-	const navigate = useNavigate();
-	const { t, i18n } = useTranslation();
-	const [language, setLanguage] = useState(i18n.language);
-	const viewTimeoutRef = useRef(null);
-	const postRef = useRef(null);
-	const surroundingPostsRef = useRef([]);
+    const [user, setUser] = useState(null);
+    const showToast = useShowToast();
+    const currentUser = useRecoilValue(userAtom);
+    const [posts, setPosts] = useRecoilState(postsAtom);
+    const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
+    const [language, setLanguage] = useState(i18n.language);
+    const viewTimeoutRef = useRef(null);
+    const postRef = useRef(null);
+    const surroundingPostsRef = useRef([]);
 
-	// Match colors from HomePage background
-	const textColor = useColorModeValue("gray.700", "gray.200");
-	const borderColor = useColorModeValue("gray.100", "gray.700");
-	const hoverGlowLight = useColorModeValue("rgba(126, 217, 87, 0.4)", "rgba(126, 217, 87, 0.2)"); // Pear Green
-	const hoverGlowDark = useColorModeValue("rgba(126, 217, 87, 0.6)", "rgba(126, 217, 87, 0.4)"); // Pear Green
-	const newPostGlowLight = "linear-gradient(to right, #a8b8ff, #d6aeff, #ffb3d9, #ffccbc)"; // Apple Siri-like
-	const newPostGlowDark = "linear-gradient(to right, #6c7ddb, #9a79d1, #d17eb8, #e6a891)"; // Apple Siri-like
+    // Match colors from HomePage background
+    const textColor = useColorModeValue("gray.700", "gray.200");
+    const borderColor = useColorModeValue("gray.100", "gray.700");
+    const hoverGlowLight = useColorModeValue("rgba(126, 217, 87, 0.4)", "rgba(126, 217, 87, 0.2)"); // Pear Green
+    const hoverGlowDark = useColorModeValue("rgba(126, 217, 87, 0.6)", "rgba(126, 217, 87, 0.4)"); // Pear Green
+    const newPostGlowLight = "linear-gradient(to right, #a8b8ff, #d6aeff, #ffb3d9, #ffccbc)"; // Apple Siri-like
+    const newPostGlowDark = "linear-gradient(to right, #6c7ddb, #9a79d1, #d17eb8, #e6a891)"; // Apple Siri-like
 
-	useEffect(() => {
-		const handleLanguageChange = (lng) => {
-			setLanguage(lng);
-		};
+    const pinkMode = typeof window !== 'undefined' && localStorage.getItem('pinkMode') === 'true';
 
-		i18n.on("languageChanged", handleLanguageChange);
-		return () => {
-			i18n.off("languageChanged", handleLanguageChange);
-		};
-	}, [i18n]);
+    useEffect(() => {
+        const handleLanguageChange = (lng) => {
+            setLanguage(lng);
+        };
 
-	useEffect(() => {
-		const getUser = async () => {
-			try {
-				const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
-				const res = await fetch("/api/users/profile/" + userId, { credentials: 'include' });
-				const data = await res.json();
-				if (data.error) {
-					showToast(t("Error"), data.error, "error");
-					return;
-				}
-				setUser(data);
-			} catch (error) {
-				showToast(t("Error"), error.message, "error");
-				setUser(null);
-			}
-		};
+        i18n.on("languageChanged", handleLanguageChange);
+        return () => {
+            i18n.off("languageChanged", handleLanguageChange);
+        };
+    }, [i18n]);
 
-		getUser();
-	}, [postedBy, showToast, t]);
+    useEffect(() => {
+        const getUser = async () => {
+            try {
+                const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
+                const res = await fetch("/api/users/profile/" + userId, { credentials: 'include' });
+                const data = await res.json();
+                if (data.error) {
+                    showToast(t("Error"), data.error, "error");
+                    return;
+                }
+                setUser(data);
+            } catch (error) {
+                showToast(t("Error"), error.message, "error");
+                setUser(null);
+            }
+        };
 
-	useEffect(() => {
-		const markAsViewed = async () => {
-			try {
-				const res = await fetch(`/api/posts/view/${post._id}`, {
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					credentials: 'include',
-				});
-				const data = await res.json();
-				if (data.error) throw new Error(data.error);
+        getUser();
+    }, [postedBy, showToast, t]);
 
-				setPosts(prevPosts =>
-					prevPosts.map(p =>
-						p._id === post._id ? { ...p, viewCount: data.viewCount, isViewed: true } : p
-					)
-				);
-			} catch (error) {
-				console.error("Error marking post as viewed:", error);
-				showToast(t("Error"), error.message, "error");
-			}
-		};
+    useEffect(() => {
+        const markAsViewed = async () => {
+            try {
+                const res = await fetch(`/api/posts/view/${post._id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: 'include',
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
 
-		if (!post.isViewed) {
-			viewTimeoutRef.current = setTimeout(() => {
-				markAsViewed();
-			}, 3000);
-		}
+                setPosts(prevPosts =>
+                    prevPosts.map(p =>
+                        p._id === post._id ? { ...p, viewCount: data.viewCount, isViewed: true } : p
+                    )
+                );
+            } catch (error) {
+                console.error("Error marking post as viewed:", error);
+                showToast(t("Error"), error.message, "error");
+            }
+        };
 
-		return () => {
-			if (viewTimeoutRef.current) {
-				clearTimeout(viewTimeoutRef.current);
-			}
-		};
-	}, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
+        if (!post.isViewed) {
+            viewTimeoutRef.current = setTimeout(() => {
+                markAsViewed();
+            }, 3000);
+        }
 
-	const handleDeletePost = async (e) => {
-		try {
-			e.preventDefault();
-			if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
+        return () => {
+            if (viewTimeoutRef.current) {
+                clearTimeout(viewTimeoutRef.current);
+            }
+        };
+    }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
 
-			const res = await fetch(`/api/posts/${post._id}`, {
-				method: "DELETE",
-				credentials: 'include',
-			});
-			const data = await res.json();
-			if (data.error) {
-				showToast(t("Error deleting post"), data.error, "error");
-				return;
-			}
-			showToast(t("Success"), t("Post deleted"), "success");
-			setPosts(posts.filter((p) => p._id !== post._id));
-		} catch (error) {
-			showToast(t("Error"), error.message, "error");
-		}
-	};
+    const handleDeletePost = async (e) => {
+        try {
+            e.preventDefault();
+            if (!window.confirm(t("Are you sure you want to delete this post?"))) return;
 
-	const handleMouseEnter = () => {
-		if (postRef.current) {
-			postRef.current.style.transform = 'scale(1.03) rotate(1deg)';
-			postRef.current.style.boxShadow = useColorModeValue(
-				`0 0 10px ${post.isNew ? newPostGlowLight : hoverGlowLight}`,
-				`0 0 10px ${post.isNew ? newPostGlowDark : hoverGlowDark}`
-			);
-			postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out';
+            const res = await fetch(`/api/posts/${post._id}`, {
+                method: "DELETE",
+                credentials: 'include',
+            });
+            const data = await res.json();
+            if (data.error) {
+                showToast(t("Error deleting post"), data.error, "error");
+                return;
+            }
+            showToast(t("Success"), t("Post deleted"), "success");
+            setPosts(posts.filter((p) => p._id !== post._id));
+        } catch (error) {
+            showToast(t("Error"), error.message, "error");
+        }
+    };
 
-			// Apply wavy border glow
-			if (post.isNew) {
-				postRef.current.style.border = `2px solid transparent`;
-				postRef.current.style.backgroundImage = useColorModeValue(newPostGlowLight, newPostGlowDark);
-				postRef.current.style.backgroundOrigin = 'border-box';
-				postRef.current.style.backgroundClip = 'content-box, border-box';
-				postRef.current.style.backgroundSize = '200% 100%';
-				postRef.current.style.animation = 'wavyGlow 2s linear infinite';
-			} else {
-				postRef.current.style.border = `2px solid transparent`;
-				postRef.current.style.backgroundImage = useColorModeValue(
-					`linear-gradient(to right, transparent, ${hoverGlowLight}, transparent)`,
-					`linear-gradient(to right, transparent, ${hoverGlowDark}, transparent)`
-				);
-				postRef.current.style.backgroundOrigin = 'border-box';
-				postRef.current.style.backgroundClip = 'content-box, border-box';
-				postRef.current.style.backgroundSize = '200% 100%';
-				postRef.current.style.animation = 'wavyGlowGreen 2s linear infinite';
-			}
+    const handleMouseEnter = () => {
+        if (postRef.current) {
+            postRef.current.style.transform = 'scale(1.03) rotate(1deg)';
+            postRef.current.style.boxShadow = useColorModeValue(
+                `0 0 10px ${post.isNew ? newPostGlowLight : hoverGlowLight}`,
+                `0 0 10px ${post.isNew ? newPostGlowDark : hoverGlowDark}`
+            );
+            postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out';
 
-			// Slightly blur the title
-			const titleElement = postRef.current.querySelector('.post-author-username');
-			if (titleElement) {
-				titleElement.style.filter = 'blur(1px)';
-				titleElement.style.transition = 'filter 0.2s ease-in-out';
-			}
+            // Apply wavy border glow
+            if (post.isNew) {
+                postRef.current.style.border = `2px solid transparent`;
+                postRef.current.style.backgroundImage = useColorModeValue(newPostGlowLight, newPostGlowDark);
+                postRef.current.style.backgroundOrigin = 'border-box';
+                postRef.current.style.backgroundClip = 'content-box, border-box';
+                postRef.current.style.backgroundSize = '200% 100%';
+                postRef.current.style.animation = 'wavyGlow 2s linear infinite';
+            } else {
+                postRef.current.style.border = `2px solid transparent`;
+                postRef.current.style.backgroundImage = useColorModeValue(
+                    `linear-gradient(to right, transparent, ${hoverGlowLight}, transparent)`,
+                    `linear-gradient(to right, transparent, ${hoverGlowDark}, transparent)`
+                );
+                postRef.current.style.backgroundOrigin = 'border-box';
+                postRef.current.style.backgroundClip = 'content-box, border-box';
+                postRef.current.style.backgroundSize = '200% 100%';
+                postRef.current.style.animation = 'wavyGlowGreen 2s linear infinite';
+            }
 
-			// React to surrounding posts (basic implementation - needs refinement)
-			if (postRef.current.parentNode) {
-				Array.from(postRef.current.parentNode.children).forEach(child => {
-					if (child !== postRef.current) {
-						child.style.transform = 'scale(0.97) rotate(-0.5deg)';
-						child.style.filter = 'blur(0.5px)';
-						child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
-					}
-				});
-			}
-		}
-	};
+            // Slightly blur the title
+            const titleElement = postRef.current.querySelector('.post-author-username');
+            if (titleElement) {
+                titleElement.style.filter = 'blur(1px)';
+                titleElement.style.transition = 'filter 0.2s ease-in-out';
+            }
 
-	const handleMouseLeave = () => {
-		if (postRef.current) {
-			postRef.current.style.transform = 'scale(1) rotate(0deg)';
-			postRef.current.style.boxShadow = 'none';
-			postRef.current.style.border = useColorModeValue(`1px solid ${borderColor}`, `1px solid ${borderColor}`);
-			postRef.current.style.backgroundImage = 'none';
-			postRef.current.style.animation = 'none';
-			postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border 0.2s ease-in-out';
+            // React to surrounding posts (basic implementation - needs refinement)
+            if (postRef.current.parentNode) {
+                Array.from(postRef.current.parentNode.children).forEach(child => {
+                    if (child !== postRef.current) {
+                        child.style.transform = 'scale(0.97) rotate(-0.5deg)';
+                        child.style.filter = 'blur(0.5px)';
+                        child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
+                    }
+                });
+            }
+        }
+    };
 
-			const titleElement = postRef.current.querySelector('.post-author-username');
-			if (titleElement) {
-				titleElement.style.filter = 'blur(0)';
-				titleElement.style.transition = 'filter 0.2s ease-in-out';
-			}
+    const handleMouseLeave = () => {
+        if (postRef.current) {
+            postRef.current.style.transform = 'scale(1) rotate(0deg)';
+            postRef.current.style.boxShadow = 'none';
+            postRef.current.style.border = useColorModeValue(`1px solid ${borderColor}`, `1px solid ${borderColor}`);
+            postRef.current.style.backgroundImage = 'none';
+            postRef.current.style.animation = 'none';
+            postRef.current.style.transition = 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border 0.2s ease-in-out';
 
-			if (postRef.current.parentNode) {
-				Array.from(postRef.current.parentNode.children).forEach(child => {
-					if (child !== postRef.current) {
-						child.style.transform = 'scale(1) rotate(0deg)';
-						child.style.filter = 'blur(0)';
-						child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
-					}
-				});
-			}
-		}
-	};
+            const titleElement = postRef.current.querySelector('.post-author-username');
+            if (titleElement) {
+                titleElement.style.filter = 'blur(0)';
+                titleElement.style.transition = 'filter 0.2s ease-in-out';
+            }
 
-	if (!user) return null;
+            if (postRef.current.parentNode) {
+                Array.from(postRef.current.parentNode.children).forEach(child => {
+                    if (child !== postRef.current) {
+                        child.style.transform = 'scale(1) rotate(0deg)';
+                        child.style.filter = 'blur(0)';
+                        child.style.transition = 'transform 0.2s ease-in-out, filter 0.2s ease-in-out';
+                    }
+                });
+            }
+        }
+    };
 
-	return (
-		<>
-			<a href="/" style={{ display: 'none' }}>Hidden Website Link</a>
-			<Link to={`/${user.username}/post/${post._id}`}>
-				<Flex
-					gap={3}
-					mb={4}
-					py={5}
-					bg={useColorModeValue('white', 'gray.900')}
-					borderRadius={8}
-					boxShadow="md"
-					border="1px solid"
-					borderColor={borderColor}
-					ref={postRef}
-					_hover={{ boxShadow: hoverGlowLight }}
-					onMouseEnter={handleMouseEnter}
-					onMouseLeave={handleMouseLeave}
-					style={{
-						transition: 'all 0.3s ease-in-out',
-					}}
-				>
-					{/* Author section with delete button only */}
-					<Flex
-						alignItems="center"
-						justifyContent="space-between"
-						px={5}
-						pt={4}
-						pb={3}
-					>
-						<Flex alignItems="center" gap={3}>
-							<Avatar
-								size="md"
-								name={user.name}
-								src={user?.profilePic}
-								onClick={(e) => {
-									e.preventDefault();
-									navigate(`/${user.username}`);
-								}}
-							/>
-							<Flex direction="column">
-								<Text
-									fontSize="sm"
-									fontWeight="semibold"
-									color={textColor}
-									className="post-author-username"
-									onClick={(e) => {
-										e.preventDefault();
-										navigate(`/${user.username}`);
-									}}
-								>
-									{user?.username}
-									{user?.role === "admin" && (
-										<Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
-									)}
-								</Text>
-								<Text fontSize="xs" color="gray.500">
-									@{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
-								</Text>
-							</Flex>
-						</Flex>
-						<Flex gap={4} alignItems="center">
-							{(currentUser?._id === user._id || currentUser?.role === "admin") && (
-								<Flex
-									as="button"
-									p={2}
-									borderRadius="full"
-									_hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
-									transition="all 0.2s"
-									onClick={(e) => {
-										e.preventDefault();
-										handleDeletePost(e);
-									}}
-								>
-									<DeleteIcon boxSize={4} color="gray.500" />
-								</Flex>
-							)}
-						</Flex>
-					</Flex>
+    if (!user) return null;
 
-					{/* Content section */}
-					<Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
-						{post.text}
-					</Text>
+    return (
+        <>
+            <a href="/" style={{ display: 'none' }}>Hidden Website Link</a>
+            <Link to={`/${user.username}/post/${post._id}`}>
+                <Flex
+                    gap={3}
+                    mb={4}
+                    py={5}
+                    bg={pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '#e9a1ba' : useColorModeValue('white', 'gray.900')}
+                    borderRadius={8}
+                    boxShadow="md"
+                    border="1px solid"
+                    borderColor={borderColor}
+                    ref={postRef}
+                    _hover={{ boxShadow: pinkMode && window.matchMedia('(prefers-color-scheme: light)').matches ? '0 0 0 4px #cc2279' : hoverGlowLight }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    style={{
+                        transition: 'all 0.3s ease-in-out',
+                    }}
+                >
+                    {/* Author section with delete button only */}
+                    <Flex
+                        alignItems="center"
+                        justifyContent="space-between"
+                        px={5}
+                        pt={4}
+                        pb={3}
+                    >
+                        <Flex alignItems="center" gap={3}>
+                            <Avatar
+                                size="md"
+                                name={user.name}
+                                src={user?.profilePic}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate(`/${user.username}`);
+                                }}
+                            />
+                            <Flex direction="column">
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="semibold"
+                                    color={textColor}
+                                    className="post-author-username"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/${user.username}`);
+                                    }}
+                                >
+                                    {user?.username}
+                                    {user?.role === "admin" && (
+                                        <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
+                                    )}
+                                </Text>
+                                <Text fontSize="xs" color="gray.500">
+                                    @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
+                                </Text>
+                            </Flex>
+                        </Flex>
+                        <Flex gap={4} alignItems="center">
+                            {(currentUser?._id === user._id || currentUser?.role === "admin") && (
+                                <Flex
+                                    as="button"
+                                    p={2}
+                                    borderRadius="full"
+                                    _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                                    transition="all 0.2s"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleDeletePost(e);
+                                    }}
+                                >
+                                    <DeleteIcon boxSize={4} color="gray.500" />
+                                </Flex>
+                            )}
+                        </Flex>
+                    </Flex>
 
-					{/* Target Groups and General Post Indicators */}
-					<Flex gap={2} wrap="wrap" mb={4} px={5}>
-						{post.targetGroups && post.targetGroups.map(group => (
-							<Flex key={group._id} align="center" mr={2}>
-								<Flex
-									w="10px"
-									h="10px"
-									borderRadius="full"
-									bg={group.color}
-									mr={1}
-								/>
-								<Text fontSize="xs">{group.name}</Text>
-							</Flex>
-						))}
-						{post.isGeneral && (
-							<Flex align="center">
-								<Flex
-									w="10px"
-									h="10px"
-									borderRadius="full"
-									bg="gray.500"
-									mr={1}
-								/>
-								<Text fontSize="xs">{t("General Post")}</Text>
-							</Flex>
-						)}
-					</Flex>
+                    {/* Content section */}
+                    <Text px={5} mb={4} fontSize="sm" color={textColor} className="post-text">
+                        {post.text}
+                    </Text>
 
-					{/* Image preview */}
-					{post.img && (
-						<Flex
-							w="full"
-							justifyContent="center"
-							px={5}
-							mb={4}
-						>
-							<Image
-								src={post.img}
-								w="full"
-								h={isTV ? "auto" : "full"}
-								maxH={isTV ? "65vh" : "auto"}
-								objectFit={isTV ? "contain" : "cover"}
-								borderRadius="xl"
-								className="post-image"
-							/>
-						</Flex>
-					)}
+                    {/* Target Groups and General Post Indicators */}
+                    <Flex gap={2} wrap="wrap" mb={4} px={5}>
+                        {post.targetGroups && post.targetGroups.map(group => (
+                            <Flex key={group._id} align="center" mr={2}>
+                                <Flex
+                                    w="10px"
+                                    h="10px"
+                                    borderRadius="full"
+                                    bg={group.color}
+                                    mr={1}
+                                />
+                                <Text fontSize="xs">{group.name}</Text>
+                            </Flex>
+                        ))}
+                        {post.isGeneral && (
+                            <Flex align="center">
+                                <Flex
+                                    w="10px"
+                                    h="10px"
+                                    borderRadius="full"
+                                    bg="gray.500"
+                                    mr={1}
+                                />
+                                <Text fontSize="xs">{t("General Post")}</Text>
+                            </Flex>
+                        )}
+                    </Flex>
 
-					{/* Engagement section */}
-					<Flex
-						alignItems="center"
-						justifyContent="space-between"
-						px={5}
-						pb={4}
-						pt={2}
-					>
-						{/* Actions component with likes, comments, reposts */}
-						<Actions post={post} />
-					</Flex>
-				</Flex>
-			</Link>
-		</>
-	);
+                    {/* Image preview */}
+                    {post.img && (
+                        <Flex
+                            w="full"
+                            justifyContent="center"
+                            px={5}
+                            mb={4}
+                        >
+                            <Image
+                                src={post.img}
+                                w="full"
+                                h={isTV ? "auto" : "full"}
+                                maxH={isTV ? "65vh" : "auto"}
+                                objectFit={isTV ? "contain" : "cover"}
+                                borderRadius="xl"
+                                className="post-image"
+                            />
+                        </Flex>
+                    )}
+
+                    {/* Engagement section */}
+                    <Flex
+                        alignItems="center"
+                        justifyContent="space-between"
+                        px={5}
+                        pb={4}
+                        pt={2}
+                    >
+                        {/* Actions component with likes, comments, reposts */}
+                        <Actions post={post} />
+                    </Flex>
+                </Flex>
+            </Link>
+        </>
+    );
 };
 
 export default Post;
