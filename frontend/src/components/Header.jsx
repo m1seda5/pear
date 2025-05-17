@@ -421,12 +421,9 @@ function Header({ unreadCount = 0 }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Time-based access control for chat
-  const hasChatAccess = useChatAccessCheck(user, isStudent, isTeacher, isAdmin);
-
   // Click handlers
   const handleChatClick = () => {
-    if (user && !user.isFrozen && hasChatAccess) {
+    if (user && !user.isFrozen) {
       navigate("/chat");
     }
   };
@@ -562,35 +559,16 @@ function Header({ unreadCount = 0 }) {
             <NavIcon 
               icon={
                 <Box position="relative">
-                  {user.isFrozen || !hasChatAccess ? (
+                  {user.isFrozen ? (
                     <FaLock size={iconSize - 4} color={colorMode === "dark" ? "#F56565" : "#E53E3E"} />
                   ) : (
                     <BsFillChatQuoteFill size={iconSize - 4} />
                   )}
-                  {unreadCount > 0 && !user.isFrozen && hasChatAccess && (
-                    <Flex
-                      position="absolute"
-                      top="-5px"
-                      right="-5px"
-                      bg="purple.500"
-                      color="white"
-                      borderRadius="full"
-                      w="16px"
-                      h="16px"
-                      fontSize="xs"
-                      alignItems="center"
-                      justifyContent="center"
-                      fontWeight="bold"
-                      boxShadow="0 2px 5px rgba(0,0,0,0.2)"
-                    >
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </Flex>
-                  )}
                 </Box>
               }
-              label={user.isFrozen ? "Account Frozen" : (hasChatAccess ? "Chat" : "No Access During School Hours")}
+              label={user.isFrozen ? "Account Frozen" : "Chat"}
               onClick={handleChatClick}
-              isDisabled={user.isFrozen || !hasChatAccess}
+              isDisabled={user.isFrozen}
               isActive={location.pathname === "/chat"}
             />
 
@@ -716,61 +694,6 @@ function NavIcon({ icon, label, onClick, isDisabled, isActive }) {
     </Box>
     </Tooltip>
   );
-}
-
-// Hook for chat access control
-function useChatAccessCheck(user, isStudent, isTeacher, isAdmin) {
-  const [hasChatAccess, setHasChatAccess] = useState(false);
-  
-  useEffect(() => {
-    if (!user) {
-      setHasChatAccess(false);
-      return;
-    }
-    
-    if (isTeacher || isAdmin) {
-      setHasChatAccess(true);
-      return;
-    }
-    
-    if (isStudent) {
-      const checkAccess = () => {
-        const currentDate = new Date();
-        const dayOfWeek = currentDate.getDay();
-        const currentTime = currentDate.getHours() * 100 + currentDate.getMinutes();
-        
-        const schoolStart = 810; // 8:10 AM
-        const lunchStart = 1250; // 12:50 PM
-        const lunchEnd = 1340; // 1:40 PM
-        const schoolEnd = 1535; // 3:35 PM
-        
-        // Weekend
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-          return true;
-        }
-        
-        // Weekday but outside school hours or during lunch
-        if (currentTime < schoolStart || 
-            (currentTime >= lunchStart && currentTime <= lunchEnd) || 
-            currentTime > schoolEnd) {
-          return true;
-        }
-        
-        return false;
-      };
-      
-      setHasChatAccess(checkAccess());
-      
-      // Check every minute for time-based access changes
-      const intervalId = setInterval(() => {
-        setHasChatAccess(checkAccess());
-      }, 60000);
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [user, isStudent, isTeacher, isAdmin]);
-  
-  return hasChatAccess;
 }
 
 export default Header;

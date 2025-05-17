@@ -18,7 +18,6 @@
 // messageController.js
 import express from "express";
 import protectRoute from "../middlewares/protectRoute.js";
-import checkChatAccess from "../middlewares/checkChatAccess.js";
 import {
   getMessages,
   sendMessage,
@@ -49,21 +48,19 @@ router.get("/groups/check", protectRoute, checkExistingGroup);
 router.post("/groups/create", protectRoute, createGroupChat);
 router.get('/groups/:groupId', getGroupMessages);
 // In your routes file (e.g., messageRoutes.js)
-router.get("/groups/:conversationId/messages", protectRoute, checkChatAccess, getGroupMessages);// Updated to match frontend
+router.get("/groups/:conversationId/messages", protectRoute, getGroupMessages);
 router.patch("/groups/:conversationId/add", protectRoute, addToGroup);
 router.patch("/groups/:conversationId/remove", protectRoute, removeFromGroup);
 router.put("/groups/:conversationId", protectRoute, updateGroup);
 
 // Admin Routes
-router.get("/admin/conversations", protectRoute, checkChatAccess, getAllConversations);
-router.post("/notify-monitoring/:conversationId", protectRoute, checkChatAccess, sendMonitoringNotification);
+router.get("/admin/conversations", protectRoute, getAllConversations);
+router.post("/notify-monitoring/:conversationId", protectRoute, sendMonitoringNotification);
 
 // Regular Chat Routes
-router.get("/conversations", protectRoute, checkChatAccess, getConversations);
-router.get("/:otherUserId", protectRoute, checkChatAccess, getMessages); // This already matches frontend
-router.post("/", protectRoute, checkChatAccess, sendMessage);
-router.delete("/:messageId", protectRoute, checkChatAccess, deleteMessage);
-
-
+router.get("/conversations", protectRoute, getConversations);
+router.get("/:otherUserId", protectRoute, getMessages);
+router.post("/", protectRoute, sendMessage);
+router.delete("/:messageId", protectRoute, deleteMessage);
 
 export default router;

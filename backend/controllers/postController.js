@@ -1244,7 +1244,7 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
         <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
         <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
         <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <a href="https://pear-tsk2.onrender.com" 
+        <a href="https://pear-tsk2.onrender.com/auth/login" 
            style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
                   color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
           Visit Pear

@@ -1,4 +1,3 @@
-
 // // this is version one working
 // import {
 //   Avatar,
@@ -309,32 +308,22 @@ import { useTranslation } from 'react-i18next';
 import EmojiPicker from "emoji-picker-react";
 
 const restrictedWords = [
-  // Hate Speech & Discriminatory Terms  
-  "nigger", "nigga", "faggot", "retard", "spic", "kike", "chink", "gook", "towelhead", 
-  "sandnigger", "tranny", "heeb", "wetback", "beaner", "cracker", "white trash",
-  "coon", "porch monkey", "jungle bunny", "slant eye", "yellow monkey", 
-  "gypsy", "pikey", "dago", "wop", "zipperhead", "muzzie", "infidel",
-
-  // Violent Threats  
-  "kill yourself", "kys", "go die", "die in a fire", "an hero", "i will kill you", 
-  "i'm going to kill you", "shoot up", "massacre", "school shooter", "columbine",
-  "sandy hook", "uvalde", "bomb", "terrorist", "isis", "al qaeda", "9/11", 
-  "behead", "decapitate", "lynch", "genocide", "rape", "r4pe", "rapist",
-  "pedophile", "grooming", "child molester", "child predator", "hit list",
-  "kill list", "manifesto", "dox", "swat", "swatting", "threat", "assassinate",
-  "execute", "stab", "shoot", "murder", "suicide pact", "suicide bombing",
-
-  // Criminal Activity  
-  "drug dealer", "cartel", "trafficking", "human trafficking", "kidnap",
-  "abduction", "slave trade", "cocaine", "heroin", "meth", "lsd", "shrooms",
-  "fentanyl", "opioids", "xanax", "lean", "perc", "ecstasy", "molly", "crack",
-  "overdose", "prostitute", "pimp", "sex trafficking", "extortion", "blackmail",
-  "fraud", "scam", "bribe", "embezzlement", "money laundering", "wire fraud",
-  "cyber attack", "hacking", "phishing", "identity theft", "credit card fraud",
-  "counterfeit", "forgery", "insider trading", "arson", "robbery", "burglary",
-  "theft", "grand theft", "carjacking", "vandalism", "looting", "riot", "gang",
-  "crip", "blood", "ms-13", "norteño", "sureño", "aryan brotherhood", "klan",
-  "kkk", "neo-nazi", "white supremacist", "black supremacist", "race war"
+  // Offensive language
+  "fuck", "shit", "bitch", "cunt", "motherfucker", "asshole", "dick", "pussy", "cock", "slut", "whore", "faggot", "nigger", "chink", "gook", "spic", "raghead", "wetback",
+  // Derogatory terms
+  "retard", "cripple", "idiot", "moron", "dumbass", "lame", "loser",
+  // Hate speech
+  "terrorist", "racist", "bigot", "sexist", "homophobe", "xenophobe",
+  // Insults and slurs
+  "bastard", "scum", "pig", "skank", "tramp", "hoe", "slut", "bimbo",
+  // Drugs and alcohol
+  "crack", "heroin", "meth", "cocaine", "weed", "marijuana", "pot",
+  // Sexual content
+  "porn", "sex", "nude", "orgy", "rape", "molest", "incest",
+  // Offensive phrases
+  "go to hell", "kill yourself", "die", "you're a loser", "eat shit",
+  // Additional common bad phrases
+  "suck my dick", "blow job", "fist fuck", "cock sucking", "dickhead",
 ];
 
 const isMessageRestricted = (text) => {
@@ -409,7 +398,7 @@ const Message = React.memo(({ ownMessage, message, onDelete }) => {
     return (
       <Flex justifyContent={"center"} p={2}>
         <Text color={"red.500"}>
-          {t("Message contains inappropriate content and was not sent.")}
+          Message contains inappropriate content and was not sent.
         </Text>
       </Flex>
     );
