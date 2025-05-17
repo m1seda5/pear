@@ -1,10 +1,11 @@
+// Frontend: HousePointTracker.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Flex, Text, Button, useColorModeValue, IconButton, useToast, useColorMode } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, IconButton, useToast, useColorMode } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import { useRecoilValue } from 'recoil';
 import userAtom from '../atoms/userAtom';
-import useDrag from '../hooks/useDrag'; // Create a custom drag hook
+import useDrag from '../hooks/useDrag';
 
 const HOUSES = [
   { name: "Samburu", color: "#4CAF50", key: "samburu", bg: "#dbeedb" },
@@ -14,7 +15,7 @@ const HOUSES = [
 ];
 
 const HousePointTracker = () => {
-  const [points, setPoints] = useState(null);
+  const [points, setPoints] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const currentUser = useRecoilValue(userAtom);
@@ -23,7 +24,6 @@ const HousePointTracker = () => {
   const { position, startDrag } = useDrag('housePointPosition', { x: window.innerWidth - 400, y: 180 });
   const [dragging, setDragging] = useState(false);
   const { colorMode } = useColorMode();
-  const pinkMode = typeof window !== 'undefined' && localStorage.getItem('pinkMode') === 'true';
 
   const fetchPoints = useCallback(async () => {
     try {
@@ -36,15 +36,22 @@ const HousePointTracker = () => {
 
   useEffect(() => {
     fetchPoints();
-    const interval = setInterval(fetchPoints, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchPoints, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, [fetchPoints]);
 
-  const handleUpdate = async (updates) => {
+  const handlePointsChange = async (houseKey, delta) => {
     try {
-      const { data } = await axios.put("/api/house-points", updates);
+      const { data } = await axios.put("/api/house-points", { 
+        house: houseKey,
+        delta: delta 
+      });
       setPoints(data);
-      toast({ title: "Updated!", status: "success", duration: 1000 });
+      toast({ 
+        title: `Updated ${HOUSES.find(h => h.key === houseKey).name}!`,
+        status: "success",
+        duration: 1000 
+      });
     } catch (error) {
       toast({ title: "Update failed", status: "error" });
     }
@@ -60,7 +67,7 @@ const HousePointTracker = () => {
     }
   };
 
-  if (!isOpen || !points) return null;
+  if (!isOpen) return null;
 
   return (
     <Box
@@ -69,21 +76,30 @@ const HousePointTracker = () => {
       top={`${position.y}px`}
       zIndex="overlay"
       w="380px"
-      bg={pinkMode && colorMode === 'light' ? 'rgba(233,161,186,0.85)' : useColorModeValue("whiteAlpha.900", "gray.800")}
+      bg={useColorModeValue("whiteAlpha.900", "gray.800")}
       borderRadius="lg"
       p={4}
       boxShadow="2xl"
       borderWidth="1px"
-      onDoubleClick={() => isAdmin && setEditMode(!editMode)}
     >
-      <Flex justify="space-between" align="center" mb={4} onMouseDown={e => { startDrag(e); setDragging(true); }} onMouseUp={() => setDragging(false)} cursor={dragging ? 'grabbing' : 'grab'}>
+      <Flex justify="space-between" align="center" mb={4} 
+            onMouseDown={e => { startDrag(e); setDragging(true); }} 
+            onMouseUp={() => setDragging(false)} 
+            cursor={dragging ? 'grabbing' : 'grab'}>
         <Text fontSize="xl" fontWeight="bold">House Points</Text>
-        <IconButton
-          icon={<CloseIcon />}
-          size="sm"
-          onClick={() => setIsOpen(false)}
-          aria-label="Close tracker"
-        />
+        <Flex gap={2}>
+          {isAdmin && (
+            <Button size="sm" onClick={() => setEditMode(!editMode)}>
+              {editMode ? 'Done' : 'Edit'}
+            </Button>
+          )}
+          <IconButton
+            icon={<CloseIcon />}
+            size="sm"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close tracker"
+          />
+        </Flex>
       </Flex>
 
       {HOUSES.map((house) => (
@@ -93,36 +109,28 @@ const HousePointTracker = () => {
           <Text flex={1} fontSize="md" fontWeight="medium">{house.name}</Text>
           
           <Box flex={2} position="relative" h="28px">
-            {points[house.key] > 0 && (
-              <Box
-                w={`${points[house.key]}%`}
-                h="full"
-                bg={house.color}
-                borderRadius="full"
-                transition="width 0.3s ease"
-                _before={{
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  bg: house.bg,
-                  borderRadius: 'full'
-                }}
-              />
-            )}
+            <Box
+              w={`${points[house.key] || 0}%`}
+              h="full"
+              bg={house.color}
+              borderRadius="full"
+              transition="width 0.3s ease"
+              _before={{
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                bg: house.bg,
+                borderRadius: 'full'
+              }}
+            />
           </Box>
 
           {editMode && isAdmin && (
             <Flex gap={2}>
-              <Button size="xs" px={3} onClick={() => handleUpdate({ 
-                ...points, 
-                [house.key]: Math.min(100, points[house.key] + 2)
-              })}>
+              <Button size="xs" px={3} onClick={() => handlePointsChange(house.key, 2)}>
                 +2
               </Button>
-              <Button size="xs" px={3} onClick={() => handleUpdate({ 
-                ...points, 
-                [house.key]: Math.max(0, points[house.key] - 2)
-              })}>
+              <Button size="xs" px={3} onClick={() => handlePointsChange(house.key, -2)}>
                 -2
               </Button>
             </Flex>
@@ -139,4 +147,4 @@ const HousePointTracker = () => {
   );
 };
 
-export default HousePointTracker; 
+export default HousePointTracker;

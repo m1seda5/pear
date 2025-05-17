@@ -1,3 +1,4 @@
+// Backend: housePointsController.js
 import HousePoints from '../models/HousePoints.js';
 
 const getAllPoints = async () => {
@@ -10,31 +11,27 @@ const getAllPoints = async () => {
   }, {});
 };
 
-const updatePoints = async (updates) => {
-  const results = {};
+const updatePoints = async ({ house, delta }) => {
   try {
-    console.log('HousePoints updatePoints called with:', updates);
-    for (const [house, points] of Object.entries(updates)) {
-      const updated = await HousePoints.findOneAndUpdate(
-        { house },
-        { points: Math.min(100, Math.max(0, points)) }, // Clamp values 0-100
-        { upsert: true, new: true }
-      );
-      results[house] = updated.points;
-    }
+    const updated = await HousePoints.findOneAndUpdate(
+      { house },
+      { $inc: { points: delta } },
+      { new: true, upsert: true }
+    );
     return await getAllPoints();
   } catch (error) {
-    console.error('Error in updatePoints:', error);
-    throw error;
+    throw new Error('Failed to update points');
   }
 };
 
 const resetPoints = async () => {
-  await HousePoints.deleteMany({}); // More efficient than individual updates
-  await Promise.all(['samburu', 'mara', 'amboseli', 'tsavo'].map(house => 
-    HousePoints.create({ house, points: 0 })
-  ));
+  await HousePoints.deleteMany({});
+  await Promise.all(
+    ['samburu', 'mara', 'amboseli', 'tsavo'].map(house =>
+      HousePoints.create({ house, points: 0 })
+    )
+  );
   return getAllPoints();
 };
 
-export { getAllPoints, updatePoints, resetPoints }; 
+export { getAllPoints, updatePoints, resetPoints };
