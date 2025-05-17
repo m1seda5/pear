@@ -180,6 +180,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDisclosure } from "@chakra-ui/hooks";
+import BadgeDisplay from "./BadgeDisplay";
 
 const MotionAvatar = motion(Avatar);
 
@@ -191,6 +192,8 @@ const UserHeader = ({ user }) => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const currentTier = "wood"; // TODO: Replace with real user tier
+  const competitionActive = true; // TODO: Replace with real competition state
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -228,53 +231,61 @@ const UserHeader = ({ user }) => {
 
   return (
     <VStack gap={4} alignItems={"start"}>
-      <Flex justifyContent={"space-between"} w={"full"}>
+      <Flex justifyContent={"space-between"} w={"full"} alignItems="center">
         <Box>
           <Text fontSize={"2xl"} fontWeight={"bold"}>{user.name}</Text>
           <Text fontSize={"sm"}>{user.username}</Text>
         </Box>
-        <Box position="relative">
-          <MotionAvatar
-            name={user.name}
-            src={user.profilePic || "https://bit.ly/broken-link"}
-            size={{ base: "md", md: "xl" }}
-            onDoubleClick={() => currentUser?.role === 'admin' && setIsDropdownOpen(!isDropdownOpen)}
-            cursor={currentUser?.role === 'admin' ? "pointer" : "default"}
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.2 }}
-          />
+        <Flex alignItems="center" gap={4}>
+          <Box position="relative">
+            <MotionAvatar
+              name={user.name}
+              src={user.profilePic || "https://bit.ly/broken-link"}
+              size={{ base: "md", md: "xl" }}
+              onDoubleClick={() => currentUser?.role === 'admin' && setIsDropdownOpen(!isDropdownOpen)}
+              cursor={currentUser?.role === 'admin' ? "pointer" : "default"}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+            />
 
-          {isDropdownOpen && currentUser?.role === 'admin' && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: '100%',
-                backgroundColor: 'rgba(45, 55, 72, 0.95)',
-                borderRadius: 'md',
-                padding: '0.5rem',
-                boxShadow: 'lg',
-                zIndex: 10,
-                minWidth: '200px',
-              }}
-            >
-              <VStack spacing={2} align="stretch">
-                <IconButton
-                  icon={<Text>❄️ Freeze Account</Text>}
-                  onClick={() => handleAdminAction('freeze')}
-                  _hover={{ bg: 'blue.800' }}
-                />
-                <IconButton
-                  icon={<Text>🗑️ Delete Account</Text>}
-                  onClick={() => handleAdminAction('delete')}
-                  _hover={{ bg: 'red.800' }}
-                />
-              </VStack>
-            </motion.div>
-          )}
-        </Box>
+            {isDropdownOpen && currentUser?.role === 'admin' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                  borderRadius: 'md',
+                  padding: '0.5rem',
+                  boxShadow: 'lg',
+                  zIndex: 10,
+                  minWidth: '200px',
+                }}
+              >
+                <VStack spacing={2} align="stretch">
+                  <IconButton
+                    icon={<Text>❄️ Freeze Account</Text>}
+                    onClick={() => handleAdminAction('freeze')}
+                    _hover={{ bg: 'blue.800' }}
+                  />
+                  <IconButton
+                    icon={<Text>🗑️ Delete Account</Text>}
+                    onClick={() => handleAdminAction('delete')}
+                    _hover={{ bg: 'red.800' }}
+                  />
+                </VStack>
+              </motion.div>
+            )}
+          </Box>
+          {/* Badge display next to avatar */}
+          <BadgeDisplay
+            currentTier={competitionActive ? currentTier : "wood"}
+            showAll={true}
+            size="lg"
+          />
+        </Flex>
       </Flex>
 
       <Text>{user.bio}</Text>

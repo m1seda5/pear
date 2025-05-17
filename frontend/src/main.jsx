@@ -9,6 +9,8 @@ import { ColorModeScript } from "@chakra-ui/color-mode";
 import { BrowserRouter } from "react-router-dom";
 import { RecoilRoot } from "recoil";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
+import { PointPopUpProvider } from "./context/PointPopUpContext";
+import { CompetitionContextProvider } from "./context/CompetitionContext";
 
 const pinkMode = localStorage.getItem('pinkMode') === 'true';
 
@@ -100,12 +102,16 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 	<React.StrictMode>
 		<RecoilRoot>
 			<BrowserRouter>
-				<ChakraProvider theme={theme}>
-					<ColorModeScript initialColorMode={theme.config.initialColorMode} />
-					<SocketContextProvider>
-						<App />
-					</SocketContextProvider>
-				</ChakraProvider>
+				<PointPopUpProvider>
+					<CompetitionContextProvider>
+						<ChakraProvider theme={theme}>
+							<ColorModeScript initialColorMode={theme.config.initialColorMode} />
+							<SocketContextProvider>
+								<App />
+							</SocketContextProvider>
+						</ChakraProvider>
+					</CompetitionContextProvider>
+				</PointPopUpProvider>
 			</BrowserRouter>
 		</RecoilRoot>
 	</React.StrictMode>

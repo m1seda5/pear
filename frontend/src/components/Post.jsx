@@ -167,6 +167,7 @@ import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
 import useShowToast from "../hooks/useShowToast";
 import Actions from "./Actions";
+import BadgeDisplay from "./BadgeDisplay";
 
 const Post = ({ post, postedBy, isTV = false }) => {
     const [user, setUser] = useState(null);
@@ -353,6 +354,11 @@ const Post = ({ post, postedBy, isTV = false }) => {
         }
     };
 
+    // Placeholder: currentTier and competitionActive
+    const currentTier = "wood"; // TODO: Replace with real user tier
+    const champion = false; // TODO: Replace with real champion logic
+    const competitionActive = true; // TODO: Replace with real competition state
+
     if (!user) return null;
 
     return (
@@ -393,21 +399,28 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             }}
                         />
                         <Flex direction="column">
-                            <Text
-                                fontSize="sm"
-                                fontWeight="semibold"
-                                color={textColor}
-                                className="post-author-username"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate(`/${user.username}`);
-                                }}
-                            >
-                                {user?.username}
-                                {user?.role === "admin" && (
-                                    <Image src="/verified.png" display="inline" w={4} h={4} ml={1} />
-                                )}
-                            </Text>
+                            <Flex alignItems="center" gap={2}>
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="semibold"
+                                    color={textColor}
+                                    className="post-author-username"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/${user.username}`);
+                                    }}
+                                >
+                                    {user?.username}
+                                </Text>
+                                {/* Badge display next to username/verified */}
+                                <BadgeDisplay
+                                    currentTier={competitionActive ? currentTier : "wood"}
+                                    showAll={false}
+                                    size="md"
+                                    showTierName={true}
+                                    champion={champion}
+                                />
+                            </Flex>
                             <Text fontSize="xs" color="gray.500">
                                 @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
                             </Text>
