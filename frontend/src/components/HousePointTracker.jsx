@@ -1,6 +1,6 @@
 // Frontend: HousePointTracker.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Flex, Text, Button, IconButton, useToast, useColorMode } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, IconButton, useToast, useColorMode, useColorModeValue } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import { useRecoilValue } from 'recoil';
