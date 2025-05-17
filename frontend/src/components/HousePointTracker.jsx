@@ -108,20 +108,29 @@ const HousePointTracker = () => {
           
           <Text flex={1} fontSize="md" fontWeight="medium">{house.name}</Text>
           
-          <Box flex={2} position="relative" h="28px">
+          <Box flex={2} position="relative" h="28px" minW="80px">
+            {/* Skeleton background bar */}
             <Box
-              w={`${points[house.key] || 0}%`}
-              h="full"
+              position="absolute"
+              top={0}
+              left={0}
+              w="100%"
+              h="100%"
+              bg={house.bg}
+              borderRadius="full"
+              zIndex={1}
+            />
+            {/* Colored progress bar */}
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              h="100%"
               bg={house.color}
               borderRadius="full"
-              transition="width 0.3s ease"
-              _before={{
-                content: '""',
-                position: 'absolute',
-                inset: 0,
-                bg: house.bg,
-                borderRadius: 'full'
-              }}
+              zIndex={2}
+              transition="width 0.4s cubic-bezier(.4,2,.6,1)"
+              w={`${Math.max(0, Math.min(100, points[house.key] || 0))}%`}
             />
           </Box>
 
