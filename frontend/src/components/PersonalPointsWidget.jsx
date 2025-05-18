@@ -1,16 +1,18 @@
-import { Box, Flex, Text, useBreakpointValue, Avatar, useMediaQuery, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, useBreakpointValue, Avatar, useMediaQuery, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
 import { CloseIcon } from "@chakra-ui/icons";
+import { useRecoilValue } from "recoil";
+import userAtom from "../atoms/userAtom";
 
 const badgeImages = {
-  champion: "/assets/images/championbadge.png",
-  sapphire: "/assets/images/saphirebadge.png",
-  emerald: "/assets/images/emeraldbadge.png",
-  ruby: "/assets/images/rubybadge.png",
-  gold: "/assets/images/goldbadge.png",
-  silver: "/assets/images/silverbadge.png",
-  bronze: "/assets/images/bronzebadge.png",
-  wood: "/assets/images/woodbadge.png",
+  champion: "/championbadge.png",
+  sapphire: "/saphirebadge.png",
+  emerald: "/emeraldbadge.png",
+  ruby: "/rubybadge.png",
+  gold: "/goldbadge.png",
+  silver: "/silverbadge.png",
+  bronze: "/bronzebadge.png",
+  wood: "/woodbadge.png",
 };
 
 const BADGE_THRESHOLDS = {
@@ -52,6 +54,10 @@ const PersonalPointsWidget = () => {
   });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const currentUser = useRecoilValue(userAtom);
+  const bgColor = useColorModeValue("white", "#18181b");
+  const borderColor = useColorModeValue("gray.200", "#232325");
+  const textColor = useColorModeValue("gray.700", "gray.200");
 
   useEffect(() => {
     if (!dragging) return;
@@ -74,11 +80,9 @@ const PersonalPointsWidget = () => {
     };
   }, [dragging]);
 
-  if (!show || isClosed) return null;
+  if (!show || isClosed || !currentUser) return null;
 
-  // Placeholder data - replace with actual user data
-  const user = { name: "MISEDA", points: 180 };
-  const currentBadge = getCurrentBadge(user.points);
+  const currentBadge = getCurrentBadge(currentUser.points || 0);
 
   return (
     <Box
@@ -89,12 +93,13 @@ const PersonalPointsWidget = () => {
       zIndex={2500}
       borderRadius="28px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
-      border="2px solid #fff3"
+      border="2px solid"
+      borderColor={borderColor}
       textAlign="center"
       fontFamily="'Montserrat', 'Inter', sans-serif"
       w="300px"
-      bgGradient="linear(to-br, #7F53AC 0%, #647DEE 100%)"
-      color="white"
+      bg={bgColor}
+      color={textColor}
       p={0}
       mb={6}
       userSelect={dragging ? "none" : "auto"}
@@ -106,7 +111,7 @@ const PersonalPointsWidget = () => {
         align="center"
         justify="space-between"
         bg="whiteAlpha.700"
-        color="#7F53AC"
+        color={textColor}
         borderTopLeftRadius="28px"
         borderTopRightRadius="28px"
         px={4}
@@ -130,7 +135,7 @@ const PersonalPointsWidget = () => {
           size="sm"
           aria-label="Close My Points"
           bg="whiteAlpha.700"
-          color="#7F53AC"
+          color={textColor}
           _hover={{ bg: "whiteAlpha.900" }}
           onClick={() => {
             setIsClosed(true);
@@ -142,7 +147,7 @@ const PersonalPointsWidget = () => {
       <Box p={7} pt={4}>
         <Flex align="center" justify="center" gap={4}>
           <Text fontWeight="extrabold" fontSize="2.1rem" letterSpacing="0.04em">
-            {user.points} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
+            {currentUser.points || 0} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
           </Text>
           <Avatar size="lg" src={badgeImages[currentBadge]} name={currentBadge} bg="transparent" boxSize="48px" />
         </Flex>
