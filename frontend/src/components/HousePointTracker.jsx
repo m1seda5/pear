@@ -71,10 +71,6 @@ const HousePointTracker = () => {
 
   return (
     <Box
-      position="fixed"
-      left={`${position.x}px`}
-      top={`${position.y}px`}
-      zIndex="overlay"
       w="380px"
       bg={useColorModeValue("whiteAlpha.900", "gray.800")}
       borderRadius="lg"
@@ -82,10 +78,7 @@ const HousePointTracker = () => {
       boxShadow="2xl"
       borderWidth="1px"
     >
-      <Flex justify="space-between" align="center" mb={4} 
-            onMouseDown={e => { startDrag(e); setDragging(true); }} 
-            onMouseUp={() => setDragging(false)} 
-            cursor={dragging ? 'grabbing' : 'grab'}>
+      <Flex justify="space-between" align="center" mb={4}>
         <Text fontSize="xl" fontWeight="bold">House Points</Text>
         <Flex gap={2}>
           {isAdmin && (

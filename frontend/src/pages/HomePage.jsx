@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text, useMediaQuery } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text, useMediaQuery, SimpleGrid } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import useShowToast from "../hooks/useShowToast";
@@ -12,7 +12,6 @@ import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import LeaderboardWidget from "../components/LeaderboardWidget";
-import PersonalPointsWidget from "../components/PersonalPointsWidget";
 import DailyQuestionWidget from "../components/DailyQuestionWidget";
 import { useCompetition } from "../context/CompetitionContext";
 
@@ -116,49 +115,50 @@ const HomePage = () => {
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			{/* Game Widgets Row (only if competition is active) */}
-			{competitionActive && (
-				<Flex direction={{ base: "column", md: "row" }} gap={6} justify="center" align="flex-start" mb={8}>
+			<SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} alignItems="flex-start" maxW="1400px" mx="auto" w="100%" px={{ base: 0, md: 6 }}>
+				{/* Left widgets (hidden on mobile) */}
+				<Box display={{ base: "none", md: "block" }}>
 					<LeaderboardWidget />
+					<HousePointTracker showTutorial={false} />
+				</Box>
+				{/* Center posts */}
+				<Box w="100%" maxW="600px" mx="auto" minW="0">
+					{!loading && posts.length === 0 && (
+						<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+					)}
+					{loading && (
+						<Flex justifyContent="center">
+							<Spinner size="xl" />
+						</Flex>
+					)}
+					{Array.isArray(posts) && posts.map((post) => {
+						const isNew = isNewPost(post.createdAt);
+						return (
+							<Box
+								key={post._id}
+								className="postContainer"
+								borderWidth="1px"
+								borderRadius="lg"
+								p={4}
+								mb={6}
+								boxShadow="sm"
+								maxW="800px"
+								mx="auto"
+							>
+								<Post post={post} postedBy={post.postedBy} />
+								{isNew && newPosts.includes(post) && (
+									<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
+								)}
+							</Box>
+						);
+					})}
+				</Box>
+				{/* Right widgets (hidden on mobile) */}
+				<Box display={{ base: "none", md: "block" }}>
 					<DailyQuestionWidget />
-					<PersonalPointsWidget />
-				</Flex>
-			)}
-			{/* Floating widgets (draggable, same size, hidden on small screens) */}
-			{isLargerThan1024 && <NotelyWidget />}
-			{isLargerThan1024 && <HousePointTracker showTutorial={false} />}
-			{/* Main posts (original layout) */}
-			<Box w="100%" maxW="600px" mx="auto" minW="0">
-				{!loading && posts.length === 0 && (
-					<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
-				)}
-				{loading && (
-					<Flex justifyContent="center">
-						<Spinner size="xl" />
-					</Flex>
-				)}
-				{Array.isArray(posts) && posts.map((post) => {
-					const isNew = isNewPost(post.createdAt);
-					return (
-						<Box
-							key={post._id}
-							className="postContainer"
-							borderWidth="1px"
-							borderRadius="lg"
-							p={4}
-							mb={6}
-							boxShadow="sm"
-							maxW="800px"
-							mx="auto"
-						>
-							<Post post={post} postedBy={post.postedBy} />
-							{isNew && newPosts.includes(post) && (
-								<Text className="newToYouText" mt={2}>{t("New to you!")}</Text>
-							)}
-						</Box>
-					);
-				})}
-			</Box>
+					<NotelyWidget />
+				</Box>
+			</SimpleGrid>
 		</>
 	);
 };
