@@ -63,7 +63,7 @@ const DailyQuestionWidget = () => {
   const triggerPopUp = usePointPopUp();
   const toast = useToast();
   const { colorMode } = useColorMode();
-  const bg = useColorModeValue("#F8F6FF", "#232325");
+  const bg = useColorModeValue("#F8F6FF", "#23232b");
   const textColor = useColorModeValue("#2D1A4A", "white");
   const borderColor = useColorModeValue("#7F53AC", "#23232b");
   if (!show || isClosed) return null;
@@ -89,7 +89,7 @@ const DailyQuestionWidget = () => {
       top={position.top + "px"}
       zIndex={2500}
       borderRadius="32px"
-      boxShadow="none"
+      boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.13)"
       border="2px solid"
       borderColor={borderColor}
       fontFamily="'Montserrat', 'Inter', sans-serif"
@@ -105,8 +105,8 @@ const DailyQuestionWidget = () => {
       <Flex
         align="center"
         justify="space-between"
-        bg="transparent"
-        color={textColor}
+        bg="whiteAlpha.700"
+        color="#7F53AC"
         borderTopLeftRadius="32px"
         borderTopRightRadius="32px"
         px={4}
@@ -139,7 +139,7 @@ const DailyQuestionWidget = () => {
         />
       </Flex>
       <Box p={8}>
-        <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em">QUESTION</Text>
+        <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em" textShadow="0 0 12px #fff8">QUESTION</Text>
         <Text fontSize="1.15rem" fontWeight="semibold" mb={5} letterSpacing="0.01em">{placeholderQuestion.question}</Text>
         <VStack spacing={4}>
           {placeholderQuestion.options.map((opt, i) => (
