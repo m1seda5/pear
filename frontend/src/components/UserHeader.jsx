@@ -166,7 +166,7 @@
 
 
 // this updated version with verification(working)
-import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton, Image } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton, Image, useColorModeValue } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
 import { Portal } from "@chakra-ui/portal";
 import { Button } from "@chakra-ui/react";
@@ -225,6 +225,9 @@ const UserHeader = ({ user }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const currentTier = "wood"; // TODO: Replace with real user tier
   const competitionActive = true; // TODO: Replace with real competition state
+  const bgColor = useColorModeValue("white", "#18181b");
+  const borderColor = useColorModeValue("gray.200", "#232325");
+  const textColor = useColorModeValue("gray.700", "gray.200");
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
