@@ -12,7 +12,6 @@ import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import LeaderboardWidget from "../components/LeaderboardWidget";
-import PersonalPointsWidget from "../components/PersonalPointsWidget";
 import DailyQuestionWidget from "../components/DailyQuestionWidget";
 import { useCompetition } from "../context/CompetitionContext";
 
@@ -121,7 +120,6 @@ const HomePage = () => {
 				<Flex direction={{ base: "column", md: "row" }} gap={6} justify="center" align="flex-start" mb={8}>
 					<LeaderboardWidget />
 					<DailyQuestionWidget />
-					<PersonalPointsWidget />
 				</Flex>
 			)}
 			{/* Floating widgets (draggable, same size, hidden on small screens) */}
