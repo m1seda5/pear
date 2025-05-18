@@ -1,6 +1,5 @@
-import { Box, Flex, Text, useBreakpointValue, Image, useMediaQuery, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, useBreakpointValue, Image, useMediaQuery } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
-import { CloseIcon } from "@chakra-ui/icons";
 
 const placeholderUsers = [
   { name: "ABI", points: 4000, badge: "emerald" },
@@ -41,7 +40,6 @@ const LeaderboardWidget = () => {
   });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("leaderboardClosed") === "true");
 
   useEffect(() => {
     if (!dragging) return;
@@ -74,11 +72,15 @@ const LeaderboardWidget = () => {
     };
   };
 
-  if (!show || isClosed) return null;
+  if (!show) return null;
 
   return (
     <Box
       id="leaderboard-widget"
+      position={isLargerThan1024 ? "absolute" : "static"}
+      left={position.left + "px"}
+      top={position.top + "px"}
+      zIndex={2000}
       borderRadius="32px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
       border="2px solid #fff3"
@@ -88,23 +90,10 @@ const LeaderboardWidget = () => {
       color="white"
       p={8}
       mb={6}
-      position="relative"
+      cursor={dragging ? "grabbing" : "grab"}
+      userSelect={dragging ? "none" : "auto"}
+      onMouseDown={isLargerThan1024 ? startDrag : undefined}
     >
-      <IconButton
-        icon={<CloseIcon />}
-        size="sm"
-        aria-label="Close Leaderboard"
-        position="absolute"
-        top={3}
-        right={3}
-        bg="whiteAlpha.700"
-        color="#7F53AC"
-        _hover={{ bg: "whiteAlpha.900" }}
-        onClick={() => {
-          setIsClosed(true);
-          sessionStorage.setItem("leaderboardClosed", "true");
-        }}
-      />
       <Text fontSize="2.2rem" fontWeight="extrabold" mb={1} letterSpacing="0.08em" textAlign="center" textShadow="0 0 16px #fff8, 0 2px 8px #0008">CHAMPIONS</Text>
       <Text fontSize="1.1rem" fontWeight="bold" mb={5} textAlign="center" letterSpacing="0.12em" color="#FFD700" textShadow="0 1px 4px #0006">QUALIFICATION 1</Text>
       {placeholderUsers.map((user, i) => (

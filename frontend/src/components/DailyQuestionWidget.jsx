@@ -79,6 +79,10 @@ const DailyQuestionWidget = () => {
   return (
     <Box
       id="daily-question-widget"
+      position={isLargerThan1024 ? "absolute" : "static"}
+      left={position.left + "px"}
+      top={position.top + "px"}
+      zIndex={2000}
       borderRadius="32px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.13)"
       border="3px solid #7F53AC"
@@ -88,6 +92,9 @@ const DailyQuestionWidget = () => {
       color="#2D1A4A"
       p={8}
       mb={6}
+      cursor={dragging ? "grabbing" : "grab"}
+      userSelect={dragging ? "none" : "auto"}
+      onMouseDown={isLargerThan1024 ? startDrag : undefined}
       textAlign="center"
     >
       <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em" textShadow="0 0 12px #fff8">QUESTION</Text>
