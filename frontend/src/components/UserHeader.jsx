@@ -238,6 +238,10 @@ const UserHeader = ({ user }) => {
     return () => i18n.off('languageChanged', handleLanguageChange);
   }, [i18n]);
 
+  const handleProfileClick = () => {
+    navigate('/update'); // Redirect to UpdateProfilePage
+  };
+
   const showToast = (title, description, status) => {
     toast({ title, description, status, duration: 3000, isClosable: true });
   };
