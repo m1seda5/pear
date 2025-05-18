@@ -1,4 +1,4 @@
-import { Box, Flex, Text, useBreakpointValue, Image, useMediaQuery, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Text, useBreakpointValue, Image, useMediaQuery, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
 import { CloseIcon } from "@chakra-ui/icons";
 
@@ -43,6 +43,13 @@ const LeaderboardWidget = () => {
   const dragOffset = useRef({ x: 0, y: 0 });
   const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("leaderboardClosed") === "true");
 
+  const bg = useColorModeValue(
+    "linear-gradient(to-br, #7F53AC 0%, #647DEE 100%)",
+    "#23232b"
+  );
+  const textColor = useColorModeValue("white", "white");
+  const borderColor = useColorModeValue("#fff3", "#23232b");
+
   useEffect(() => {
     if (!dragging) return;
     const handleMouseMove = (e) => {
@@ -85,11 +92,12 @@ const LeaderboardWidget = () => {
       zIndex={2500}
       borderRadius="32px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
-      border="2px solid #fff3"
+      border="2px solid"
+      borderColor={borderColor}
       fontFamily="'Montserrat', 'Inter', sans-serif"
       w="370px"
-      bgGradient="linear(to-br, #7F53AC 0%, #647DEE 100%)"
-      color="white"
+      bg={bg}
+      color={textColor}
       p={0}
       mb={6}
       userSelect={dragging ? "none" : "auto"}

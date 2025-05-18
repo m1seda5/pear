@@ -1,4 +1,4 @@
-import { Box, Text, Button, VStack, useBreakpointValue, useToast, useColorMode, useMediaQuery, Flex, IconButton } from "@chakra-ui/react";
+import { Box, Text, Button, VStack, useBreakpointValue, useToast, useColorMode, useMediaQuery, Flex, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
 import { usePointPopUp } from "../context/PointPopUpContext";
 import { CloseIcon } from "@chakra-ui/icons";
@@ -63,6 +63,9 @@ const DailyQuestionWidget = () => {
   const triggerPopUp = usePointPopUp();
   const toast = useToast();
   const { colorMode } = useColorMode();
+  const bg = useColorModeValue("#F8F6FF", "#23232b");
+  const textColor = useColorModeValue("#2D1A4A", "white");
+  const borderColor = useColorModeValue("#7F53AC", "#23232b");
   if (!show || isClosed) return null;
 
   const handleAnswer = () => {
@@ -87,11 +90,12 @@ const DailyQuestionWidget = () => {
       zIndex={2500}
       borderRadius="32px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.13)"
-      border="3px solid #7F53AC"
+      border="2px solid"
+      borderColor={borderColor}
       fontFamily="'Montserrat', 'Inter', sans-serif"
       w="370px"
-      bg="#F8F6FF"
-      color="#2D1A4A"
+      bg={bg}
+      color={textColor}
       p={0}
       mb={6}
       userSelect={dragging ? "none" : "auto"}

@@ -263,6 +263,7 @@ import useLogout from '../hooks/useLogout';
 import i18n from '../i18n';
 import { useRecoilValue } from 'recoil';
 import userAtom from '../atoms/userAtom';
+import CompetitionSettings from "../components/CompetitionSettings";
 
 export const SettingsPage = () => {
   const showToast = useShowToast();
@@ -551,6 +552,18 @@ export const SettingsPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Competition Settings (Admin Only) */}
+      {currentUser?.role === "admin" && (
+        <Box mt={8}>
+          <Text fontSize="xl" fontWeight="bold" mb={4}>
+            Competition Settings
+          </Text>
+          <CompetitionSettings />
+        </Box>
+      )}
     </VStack>
   );
 };
+
+export default SettingsPage;

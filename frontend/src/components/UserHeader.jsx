@@ -166,7 +166,7 @@
 
 
 // this updated version with verification(working)
-import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton, Image } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
 import { Portal } from "@chakra-ui/portal";
 import { Button } from "@chakra-ui/react";
@@ -183,6 +183,37 @@ import { useDisclosure } from "@chakra-ui/hooks";
 import BadgeDisplay from "./BadgeDisplay";
 
 const MotionAvatar = motion(Avatar);
+
+const badgeImages = {
+  champion: "/championbadge.png",
+  sapphire: "/saphirebadge.png",
+  emerald: "/emeraldbadge.png",
+  ruby: "/rubybadge.png",
+  gold: "/goldbadge.png",
+  silver: "/silverbadge.png",
+  bronze: "/bronzebadge.png",
+  wood: "/woodbadge.png",
+};
+
+const BADGE_THRESHOLDS = {
+  champion: 5000,
+  sapphire: 4000,
+  emerald: 3000,
+  ruby: 2000,
+  gold: 1000,
+  silver: 500,
+  bronze: 100,
+  wood: 0
+};
+
+const getCurrentBadge = (points) => {
+  for (const [badge, threshold] of Object.entries(BADGE_THRESHOLDS)) {
+    if (points >= threshold) {
+      return badge;
+    }
+  }
+  return "wood";
+};
 
 const UserHeader = ({ user }) => {
   const toast = useToast();
@@ -229,63 +260,55 @@ const UserHeader = ({ user }) => {
     }
   };
 
-  return (
-    <VStack gap={4} alignItems={"start"}>
-      <Flex justifyContent={"space-between"} w={"full"} alignItems="center">
-        <Box>
-          <Text fontSize={"2xl"} fontWeight={"bold"}>{user.name}</Text>
-          <Text fontSize={"sm"}>{user.username}</Text>
-        </Box>
-        <Flex alignItems="center" gap={4}>
-          <Box position="relative">
-            <MotionAvatar
-              name={user.name}
-              src={user.profilePic || "https://bit.ly/broken-link"}
-              size={{ base: "md", md: "xl" }}
-              onDoubleClick={() => currentUser?.role === 'admin' && setIsDropdownOpen(!isDropdownOpen)}
-              cursor={currentUser?.role === 'admin' ? "pointer" : "default"}
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            />
+  // Mock badges if not present
+  const badges = user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"];
 
-            {isDropdownOpen && currentUser?.role === 'admin' && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '100%',
-                  backgroundColor: 'rgba(45, 55, 72, 0.95)',
-                  borderRadius: 'md',
-                  padding: '0.5rem',
-                  boxShadow: 'lg',
-                  zIndex: 10,
-                  minWidth: '200px',
-                }}
-              >
-                <VStack spacing={2} align="stretch">
-                  <IconButton
-                    icon={<Text>❄️ Freeze Account</Text>}
-                    onClick={() => handleAdminAction('freeze')}
-                    _hover={{ bg: 'blue.800' }}
+  return (
+    <Box
+      bg={bgColor}
+      borderBottom="1px"
+      borderColor={borderColor}
+      p={4}
+      position="sticky"
+      top={0}
+      zIndex={10}
+    >
+      <Flex maxW="800px" mx="auto" align="center" justify="space-between">
+        <Flex align="center" gap={4}>
+          <Avatar size="lg" src={user.profilePic} name={user.name} />
+          <Box>
+            <Flex align="center" gap={2}>
+              <Text fontSize="2xl" fontWeight="bold">
+                {user.name}
+              </Text>
+              {/* Badges row */}
+              <Flex gap={3} align="center" ml={4}>
+                {badges.map((badge) => (
+                  <Image
+                    key={badge}
+                    src={badgeImages[badge]}
+                    alt={badge + " badge"}
+                    boxSize="40px"
+                    title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
                   />
-                  <IconButton
-                    icon={<Text>🗑️ Delete Account</Text>}
-                    onClick={() => handleAdminAction('delete')}
-                    _hover={{ bg: 'red.800' }}
-                  />
-                </VStack>
-              </motion.div>
-            )}
+                ))}
+              </Flex>
+            </Flex>
+            <Text color={textColor} fontSize="sm">
+              {user.bio || "No bio yet"}
+            </Text>
           </Box>
-          {/* Badge display next to avatar */}
-          <BadgeDisplay
-            currentTier={competitionActive ? currentTier : "wood"}
-            showAll={true}
-            size="lg"
-          />
         </Flex>
+        {currentUser?._id === user._id && (
+          <Button
+            size="sm"
+            colorScheme="purple"
+            onClick={onOpen}
+            variant="outline"
+          >
+            Edit Profile
+          </Button>
+        )}
       </Flex>
 
       <Text>{user.bio}</Text>
@@ -342,7 +365,7 @@ const UserHeader = ({ user }) => {
           <Text fontWeight={"bold"}>{t("Feed")}</Text>
         </Flex>
       </Flex>
-    </VStack>
+    </Box>
   );
 };
 
