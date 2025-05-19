@@ -2,7 +2,7 @@ import Competition from "../models/competitionModel.js";
 import User from "../models/userModel.js";
 import Post from "../models/postModel.js";
 import GameAuditLog from "../models/gameAuditLogModel.js";
-const nodemailer = require('nodemailer');
+import nodemailer from "nodemailer";
 
 // Get current competition state
 const getCompetitionState = async (req, res) => {
