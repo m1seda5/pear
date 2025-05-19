@@ -11,6 +11,7 @@ import { RecoilRoot } from "recoil";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
 import { PointPopUpProvider } from "./context/PointPopUpContext";
 import { CompetitionContextProvider } from "./context/CompetitionContext";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 const pinkMode = localStorage.getItem('pinkMode') === 'true';
 
@@ -98,21 +99,22 @@ const theme = extendTheme({
 });
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-	// React.StrictMode renders every component twice (in the initial render), only in development.
-	<React.StrictMode>
-		<RecoilRoot>
-			<BrowserRouter>
-				<PointPopUpProvider>
-					<CompetitionContextProvider>
-				<ChakraProvider theme={theme}>
-					<ColorModeScript initialColorMode={theme.config.initialColorMode} />
-					<SocketContextProvider>
-						<App />
-					</SocketContextProvider>
-				</ChakraProvider>
-					</CompetitionContextProvider>
-				</PointPopUpProvider>
-			</BrowserRouter>
-		</RecoilRoot>
-	</React.StrictMode>
+	<ErrorBoundary>
+		<React.StrictMode>
+			<RecoilRoot>
+				<BrowserRouter>
+					<PointPopUpProvider>
+						<CompetitionContextProvider>
+							<ChakraProvider theme={theme}>
+								<ColorModeScript initialColorMode={theme.config.initialColorMode} />
+								<SocketContextProvider>
+									<App />
+								</SocketContextProvider>
+							</ChakraProvider>
+						</CompetitionContextProvider>
+					</PointPopUpProvider>
+				</BrowserRouter>
+			</RecoilRoot>
+		</React.StrictMode>
+	</ErrorBoundary>
 );
