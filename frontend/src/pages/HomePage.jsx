@@ -9,7 +9,7 @@ import TutorialSlider from "../components/TutorialSlider";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
-// import NotelyWidget from "../components/NotelyWidget";
+import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import LeaderboardWidget from "../components/LeaderboardWidget";
 import DailyQuestionWidget from "../components/DailyQuestionWidget";

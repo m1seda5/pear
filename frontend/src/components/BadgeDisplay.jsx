@@ -1,6 +1,4 @@
 import { Flex, Image, Text, Box } from "@chakra-ui/react";
-import { useContext, useEffect, useState } from "react";
-import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const badgeImages = {
   champion: "/assets/images/championbadge.png",
@@ -45,17 +43,6 @@ const rainbowGlow =
   "0 0 12px 2px #ff00cc, 0 0 24px 4px #3333ff, 0 0 36px 8px #00ffcc, 0 0 48px 12px #ffcc00";
 
 const BadgeDisplay = ({ badges = [], currentTier = "wood", size = "md", showAll = false, showTierName = false, champion = false }) => {
-  const { competitionActive, badge } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood' };
-  const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
-    if (!competitionActive) return;
-    fetch("/api/users/me", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setUserData(data))
-      .catch(() => setUserData(null));
-  }, [competitionActive]);
-
   const maxIndex = badgeOrder.indexOf(currentTier);
   const displayBadges = showAll ? badgeOrder.slice(0, maxIndex + 1) : [currentTier];
 
