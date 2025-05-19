@@ -5,12 +5,60 @@ const AdminToggles = () => {
   const { competitionActive, isAdmin } = useContext(CompetitionContext) || { competitionActive: true, isAdmin: false };
   const [competitionState, setCompetitionState] = useState(null);
 
-  useEffect(() => {
-    if (!competitionActive) return;
+  // Helper to refetch state
+  const fetchState = () => {
     fetch("/api/competition/state", { credentials: "include" })
       .then(res => res.json())
       .then(data => setCompetitionState(data))
       .catch(() => setCompetitionState(null));
+  };
+
+  // Handlers for each admin action
+  const handleToggleActive = async () => {
+    await fetch("/api/competition/toggle-active", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ isActive: !competitionState.active })
+    });
+    fetchState();
+  };
+  const handleToggleDevMode = async () => {
+    await fetch("/api/competition/toggle-dev", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ devMode: !competitionState.devMode })
+    });
+    fetchState();
+  };
+  const handleToggleHalvePoints = async () => {
+    await fetch("/api/competition/toggle-halved", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ halvedPoints: !competitionState.halvedPoints })
+    });
+    fetchState();
+  };
+  const handleReset = async () => {
+    await fetch("/api/competition/reset", {
+      method: "POST",
+      credentials: "include"
+    });
+    fetchState();
+  };
+  const handleEnd = async () => {
+    await fetch("/api/competition/end", {
+      method: "POST",
+      credentials: "include"
+    });
+    fetchState();
+  };
+
+  useEffect(() => {
+    if (!competitionActive) return;
+    fetchState();
   }, [competitionActive]);
 
   return (
@@ -18,19 +66,19 @@ const AdminToggles = () => {
       {isAdmin && competitionState && (
         <div>
           <h2>Admin Controls</h2>
-          <button onClick={() => setCompetitionState({ ...competitionState, active: !competitionState.active })}>
+          <button onClick={handleToggleActive}>
             {competitionState.active ? 'Pause Competition' : 'Resume Competition'}
           </button>
-          <button onClick={() => setCompetitionState({ ...competitionState, devMode: !competitionState.devMode })}>
+          <button onClick={handleToggleDevMode}>
             {competitionState.devMode ? 'Disable Dev Mode' : 'Enable Dev Mode'}
           </button>
-          <button onClick={() => setCompetitionState({ ...competitionState, halvePoints: !competitionState.halvePoints })}>
-            {competitionState.halvePoints ? 'Disable Halve Points' : 'Enable Halve Points'}
+          <button onClick={handleToggleHalvePoints}>
+            {competitionState.halvedPoints ? 'Disable Halve Points' : 'Enable Halve Points'}
           </button>
-          <button onClick={() => setCompetitionState({ ...competitionState, reset: true })}>
+          <button onClick={handleReset}>
             Reset Competition
           </button>
-          <button onClick={() => setCompetitionState({ ...competitionState, end: true })}>
+          <button onClick={handleEnd}>
             End Competition
           </button>
         </div>
