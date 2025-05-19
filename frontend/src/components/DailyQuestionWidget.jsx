@@ -2,7 +2,7 @@ import { Box, Text, Button, VStack, useBreakpointValue, useToast, useColorMode, 
 import { useState, useRef, useEffect, useContext } from "react";
 import { usePointPopUp } from "../context/PointPopUpContext";
 import { CloseIcon, EditIcon } from "@chakra-ui/icons";
-import { CompetitionContext } from "../contexts/CompetitionContext";
+import { CompetitionContext } from "../context/CompetitionContext";
 import { useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
