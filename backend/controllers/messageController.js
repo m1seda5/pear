@@ -67,16 +67,11 @@ async function sendMessage(req, res) {
     // Process image if provided
     let imageUrl = "";
     if (img) {
-      try {
-        const uploadedResponse = await cloudinary.uploader.upload(img);
-        imageUrl = uploadedResponse.secure_url;
-      } catch (error) {
-        console.error("Image upload error:", error);
-        return res.status(400).json({ error: "Failed to upload image" });
-      }
+      const result = await cloudinary.uploader.upload(img);
+      imageUrl = result.secure_url;
     }
 
-    // Create and save the new message
+    // Create new message
     const newMessage = new Message({
       conversationId: conversation._id,
       sender: senderId,
@@ -84,42 +79,67 @@ async function sendMessage(req, res) {
       img: imageUrl,
     });
 
-    await Promise.all([
-      newMessage.save(),
-      conversation.updateOne({
-        lastMessage: {
-          text: message,
-          sender: senderId,
-        },
-      }),
-    ]);
+    await newMessage.save();
 
-    // Populate sender details for the response
-    const populatedMessage = await Message.findById(newMessage._id)
-      .populate('sender', 'username profilePic');
-
-    // Emit socket event for real-time updates
-    const io = getIO();
-    const socketPayload = {
-      conversationId: conversation._id,
-      receiverId: recipientId,
-      conversation,
-      senderId,
-      message: populatedMessage,
+    // Update conversation's last message
+    conversation.lastMessage = {
+      text: message,
+      sender: senderId,
+      seen: false,
     };
+    await conversation.save();
 
-    if (conversation.isGroup) {
-      io.to(`group_${conversation._id}`).emit("newGroupMessage", socketPayload);
-    } else {
-      io.to(`chat_${conversation._id}`).emit("newMessage", socketPayload);
+    // Check if this completes a conversation (both users have sent at least one message)
+    if (!conversation.isGroup) {
+      const messages = await Message.find({ conversationId: conversation._id });
+      const uniqueSenders = new Set(messages.map(m => m.sender.toString()));
+      
+      // If both users have sent messages, award points
+      if (uniqueSenders.size === 2) {
+        const requestId = `conv_${conversation._id}_${Date.now()}`;
+        try {
+          const pointsRes = await fetch(`${process.env.API_URL}/api/points/conversation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              senderId,
+              recipientId: conversation.participants.find(p => p.toString() !== senderId.toString()),
+              requestId
+            })
+          });
+          
+          if (pointsRes.ok) {
+            const pointsData = await pointsRes.json();
+            // Emit points update to both users
+            const recipientSocketId = getRecipientSocketId(recipientId);
+            if (recipientSocketId) {
+              io.to(recipientSocketId).emit("pointsUpdate", pointsData);
+            }
+            io.to(socket.id).emit("pointsUpdate", pointsData);
+          }
+        } catch (error) {
+          console.error("Error awarding conversation points:", error);
+        }
+      }
     }
 
-    res.status(201).json(populatedMessage);
+    // Emit socket events
+    const roomId = conversation.isGroup ? `group_${conversation._id}` : `chat_${conversation._id}`;
+    io.to(roomId).emit("messageReceived", {
+      conversationId: conversation._id,
+      message: newMessage,
+      conversation
+    });
+
+    res.status(201).json(newMessage);
   } catch (error) {
     console.error("Error in sendMessage:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: error.message });
   }
 }
+
 // messageController.js - Update getMessages function
 // In messageController.js - Updated getMessages function
 async function getMessages(req, res) {

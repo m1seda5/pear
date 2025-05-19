@@ -17,6 +17,10 @@ import mongoose from "mongoose";
 import cors from "cors";
 import http from "http";
 import housePointsRoutes from "./routes/housePointsRoutes.js";
+import competitionRoutes from './routes/competitionRoutes.js';
+import badgeRoutes from './routes/badgeRoutes.js';
+import dailyQuestionRoutes from './routes/dailyQuestionRoutes.js';
+import pointsRoutes from './routes/pointsRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -79,6 +83,10 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/house-points", housePointsRoutes);
+app.use('/api/competition', competitionRoutes);
+app.use('/api/badges', badgeRoutes);
+app.use('/api/daily-question', dailyQuestionRoutes);
+app.use('/api/points', pointsRoutes);
 
 // Initialize socket.io
 initializeSocket(server);
