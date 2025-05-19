@@ -334,24 +334,24 @@ const UserHeader = ({ user }) => {
             <Flex gap={4} align="center" ml={2} flexWrap="wrap">
               {competitionActive
                 ? (user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"]).map((badge) => {
-                    const isSpecial = specialBadges.includes(badge);
-                    const canRedeem =
-                      currentUser?._id === user._id &&
-                      isSpecial &&
-                      !redeemed &&
-                      eligibleBadge === badge &&
-                      isFirst;
-                    return (
-                      <Image
-                        key={badge}
-                        src={badgeImages[badge]}
-                        alt={badge + " badge"}
-                        boxSize="48px"
-                        title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
-                        style={canRedeem ? { cursor: 'pointer', border: '2px solid #7F53AC', boxShadow: '0 0 12px #7F53AC' } : {}}
-                        onClick={canRedeem ? () => handleRedeem(badge) : undefined}
-                      />
-                    );
+                const isSpecial = specialBadges.includes(badge);
+                const canRedeem =
+                  currentUser?._id === user._id &&
+                  isSpecial &&
+                  !redeemed &&
+                  eligibleBadge === badge &&
+                  isFirst;
+                return (
+                  <Image
+                    key={badge}
+                    src={badgeImages[badge]}
+                    alt={badge + " badge"}
+                    boxSize="48px"
+                    title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
+                    style={canRedeem ? { cursor: 'pointer', border: '2px solid #7F53AC', boxShadow: '0 0 12px #7F53AC' } : {}}
+                    onClick={canRedeem ? () => handleRedeem(badge) : undefined}
+                  />
+                );
                   })
                 : user.lastBadge && (
                     <Image
