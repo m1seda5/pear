@@ -181,6 +181,8 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDisclosure } from "@chakra-ui/hooks";
 import BadgeDisplay from "./BadgeDisplay";
+import { useContext } from "react";
+import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const MotionAvatar = motion(Avatar);
 
@@ -215,6 +217,8 @@ const getCurrentBadge = (points) => {
   return "wood";
 };
 
+const specialBadges = ["ruby", "emerald", "sapphire"];
+
 const UserHeader = ({ user }) => {
   const toast = useToast();
   const currentUser = useRecoilValue(userAtom);
@@ -223,11 +227,16 @@ const UserHeader = ({ user }) => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const currentTier = "wood"; // TODO: Replace with real user tier
-  const competitionActive = true; // TODO: Replace with real competition state
+  const { competitionActive, badge } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood' };
   const bgColor = useColorModeValue("white", "#18181b");
   const borderColor = useColorModeValue("gray.200", "#232325");
   const textColor = useColorModeValue("gray.700", "gray.200");
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemed, setRedeemed] = useState(user.outOfCompetition);
+  const [eligibleBadge, setEligibleBadge] = useState(null);
+  const [isFirst, setIsFirst] = useState(false);
+  const [error, setError] = useState("");
+  const { setCompetitionActive } = useContext(CompetitionContext) || {};
 
   useEffect(() => {
     const handleLanguageChange = (lng) => {
@@ -237,6 +246,28 @@ const UserHeader = ({ user }) => {
     i18n.on('languageChanged', handleLanguageChange);
     return () => i18n.off('languageChanged', handleLanguageChange);
   }, [i18n]);
+
+  useEffect(() => {
+    if (!competitionActive) return;
+    fetch("/api/users/me", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => setUserData(data))
+      .catch(() => setUserData(null));
+  }, [competitionActive]);
+
+  useEffect(() => {
+    // Only check for special badge eligibility if this is the profile owner and a special badge
+    if (currentUser?._id !== user._id) return;
+    const lastBadge = user.lastBadge;
+    if (!specialBadges.includes(lastBadge) || user.outOfCompetition) return;
+    fetch(`/api/badges/first/${lastBadge}`, { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        setIsFirst(data.isFirst);
+        setEligibleBadge(lastBadge);
+      })
+      .catch(() => setIsFirst(false));
+  }, [user, currentUser]);
 
   const handleProfileClick = () => {
     navigate('/update'); // Redirect to UpdateProfilePage
@@ -267,6 +298,30 @@ const UserHeader = ({ user }) => {
     }
   };
 
+  const handleRedeem = async (badge) => {
+    setRedeeming(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/badges/redeem`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user._id, badge }),
+      });
+      const data = await res.json();
+      if (data.message) {
+        setRedeemed(true);
+        setCompetitionActive && setCompetitionActive(false);
+      } else {
+        setError(data.error || "Redemption failed.");
+      }
+    } catch (e) {
+      setError("Redemption failed.");
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   // Mock badges if not present
   const badges = user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"];
 
@@ -280,17 +335,40 @@ const UserHeader = ({ user }) => {
             <Text fontSize={"xs"} bg={"gray.dark"} color={"gray.light"} p={1} borderRadius={"full"}>brookhouse</Text>
             {/* Badges row, slightly larger, right of username, wrap if needed */}
             <Flex gap={4} align="center" ml={2} flexWrap="wrap">
-              {(user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"]).map((badge) => (
-                <Image
-                  key={badge}
-                  src={badgeImages[badge]}
-                  alt={badge + " badge"}
-                  boxSize="48px"
-                  title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
-                />
-              ))}
+              {competitionActive
+                ? (user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"]).map((badge) => {
+                    const isSpecial = specialBadges.includes(badge);
+                    const canRedeem =
+                      currentUser?._id === user._id &&
+                      isSpecial &&
+                      !redeemed &&
+                      eligibleBadge === badge &&
+                      isFirst;
+                    return (
+                      <Image
+                        key={badge}
+                        src={badgeImages[badge]}
+                        alt={badge + " badge"}
+                        boxSize="48px"
+                        title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
+                        style={canRedeem ? { cursor: 'pointer', border: '2px solid #7F53AC', boxShadow: '0 0 12px #7F53AC' } : {}}
+                        onClick={canRedeem ? () => handleRedeem(badge) : undefined}
+                      />
+                    );
+                  })
+                : user.lastBadge && (
+                    <Image
+                      key={user.lastBadge}
+                      src={badgeImages[user.lastBadge]}
+                      alt={user.lastBadge + " badge"}
+                      boxSize="48px"
+                      title={user.lastBadge.charAt(0).toUpperCase() + user.lastBadge.slice(1) + " Badge"}
+                    />
+                  )}
             </Flex>
           </Flex>
+          {error && <Text color="red.400" fontSize="sm" mt={2}>{error}</Text>}
+          {redeeming && <Text color="purple.500" fontSize="sm" mt={2}>Redeeming...</Text>}
         </Box>
         <Box>
           {user.profilePic ? (

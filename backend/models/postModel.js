@@ -261,6 +261,13 @@ const postSchema = mongoose.Schema(
         return this.views.length;
       }
     },
+    trendingReactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        admin: { type: Boolean, default: false },
+        type: { type: String }, // e.g. 'fire'
+      }
+    ],
   },
   {
     timestamps: true,
