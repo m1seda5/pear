@@ -29,4 +29,6 @@ export const PointPopUpProvider = ({ children }) => {
       )}
     </PointPopUpContext.Provider>
   );
-}; 
+};
+
+export { PointPopUpContext }; 
