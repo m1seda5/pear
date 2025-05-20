@@ -9,7 +9,6 @@ import TutorialSlider from "../components/TutorialSlider";
 import { useTranslation } from 'react-i18next';
 import '../index.css';
 import _ from 'lodash';
-// import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
 import LeaderboardWidget from "../components/LeaderboardWidget";
 import DailyQuestionWidget from "../components/DailyQuestionWidget";
@@ -123,7 +122,6 @@ const HomePage = () => {
 				</Flex>
 			)}
 			{/* Floating widgets (draggable, same size, hidden on small screens) */}
-			{isLargerThan1024 && <NotelyWidget />}
 			{isLargerThan1024 && <HousePointTracker showTutorial={false} />}
 			{/* Main posts (original layout) */}
 			<Box w="100%" maxW="600px" mx="auto" minW="0">
