@@ -81,12 +81,12 @@ const LeaderboardWidget = () => {
       .then(res => res.json())
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) {
-          setLeaders(placeholderUsers);
+          setLeaders([]);
         } else {
           setLeaders(data);
         }
       })
-      .catch(() => setLeaders(placeholderUsers));
+      .catch(() => setLeaders([]));
   }, [competitionActive, competitionEnded]);
 
   const startDrag = (e) => {
@@ -165,7 +165,7 @@ const LeaderboardWidget = () => {
           <Text fontSize="lg" textAlign="center" color="gray.400">No leaders yet!</Text>
         ) : (
           leaders.map((user, i) => (
-            <Flex key={user.username} align="center" justify="space-between" mb={i === leaders.length - 1 ? 0 : 3}>
+            <Flex key={user._id || user.username} align="center" justify="space-between" mb={i === leaders.length - 1 ? 0 : 3}>
               <Flex align="center" gap={3} minW="0">
                 <Text fontWeight="bold" fontSize="1.15rem" color="#7F53AC">{i + 1}</Text>
                 <Image src={badgeImages[user.lastBadge || "wood"]} alt={user.lastBadge || "wood"} boxSize="32px" mr={1} />

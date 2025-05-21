@@ -237,7 +237,7 @@ const DailyQuestionWidget = () => {
         <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em">QUESTION</Text>
             <Text fontSize="1.15rem" fontWeight="semibold" mb={5} letterSpacing="0.01em">{question.question}</Text>
         <VStack spacing={4}>
-              {question.options.map((opt, i) => (
+              {question.options && question.options.map((opt, i) => (
             <Button
               key={opt}
               w="100%"
