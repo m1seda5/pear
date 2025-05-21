@@ -1,7 +1,10 @@
 import React from "react";
 
 export class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
@@ -11,7 +14,12 @@ export class ErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.hasError) {
-      return <div>Error in this section: {this.state.error?.message}</div>;
+      return (
+        <div style={{ color: "red", padding: 32 }}>
+          <h2>Something went wrong.</h2>
+          <pre>{this.state.error?.toString()}</pre>
+        </div>
+      );
     }
     return this.props.children;
   }
