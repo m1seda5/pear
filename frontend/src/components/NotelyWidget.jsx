@@ -158,15 +158,20 @@ const NotelyWidget = () => {
   return (
     <Box
       id="notely-widget"
+      position="fixed"
+      left={position.left + "px"}
+      top={position.top + "px"}
+      zIndex={2000}
       w="320px"
       bg={widgetBg}
       borderRadius="16px"
       p={4}
       boxShadow="2xl"
       border="none"
+      cursor={dragging ? "grabbing" : "default"}
       userSelect={dragging ? "none" : "auto"}
     >
-      <Flex justify="space-between" align="center" mb={2}>
+      <Flex justify="space-between" align="center" mb={2} onMouseDown={startDrag} style={{ cursor: "grab" }}>
         <Box fontWeight="bold" fontSize="xl" color={noteText}>Notely</Box>
         <IconButton icon={<CloseIcon />} size="sm" onClick={handleClose} aria-label="Close" bg="transparent" _hover={{ bg: widgetBg }} />
       </Flex>
