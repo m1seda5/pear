@@ -39,8 +39,8 @@ const DEFAULT_POSITION = { top: 100, left: 840 };
 
 const PersonalPointsWidget = () => {
   const show = useBreakpointValue({ base: false, md: true });
-  // const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
-  // const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("personalPointsClosed") === "true");
+  const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
+  const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("personalPointsClosed") === "true");
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("personalPointsWidgetPosition");
     if (saved) {
@@ -80,10 +80,7 @@ const PersonalPointsWidget = () => {
     };
   }, [dragging]);
 
-  // Debug log
-  console.log('[PersonalPointsWidget] show:', show, 'currentUser:', currentUser);
-
-  if (!show || !currentUser) return null;
+  if (!show || isClosed || !currentUser) return null;
 
   const currentBadge = getCurrentBadge(currentUser.points || 0);
 
@@ -120,7 +117,7 @@ const PersonalPointsWidget = () => {
         px={4}
         py={2}
         cursor={dragging ? "grabbing" : "grab"}
-        onMouseDown={(e) => {
+        onMouseDown={isLargerThan1024 ? (e) => {
           setDragging(true);
           const widget = document.getElementById("personal-points-widget");
           const rect = widget.getBoundingClientRect();
@@ -128,11 +125,23 @@ const PersonalPointsWidget = () => {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
           };
-        }}
+        } : undefined}
         userSelect="none"
         style={{ WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
       >
         <Text fontWeight="bold" fontSize="xl">My Points</Text>
+        <IconButton
+          icon={<CloseIcon />}
+          size="sm"
+          aria-label="Close My Points"
+          bg="whiteAlpha.700"
+          color={textColor}
+          _hover={{ bg: "whiteAlpha.900" }}
+          onClick={() => {
+            setIsClosed(true);
+            sessionStorage.setItem("personalPointsClosed", "true");
+          }}
+        />
       </Flex>
       {/* Widget content */}
       <Box p={7} pt={4}>
