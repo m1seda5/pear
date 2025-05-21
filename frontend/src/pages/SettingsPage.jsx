@@ -257,7 +257,7 @@
 
 // post notis 
 import React, { useState } from 'react';
-import { Button, Text, Spinner, Switch, HStack, VStack, Box, useColorMode, useColorModeValue, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@chakra-ui/react';
+import { Button, Text, Spinner, Switch, HStack, VStack, Box, useColorMode, useColorModeValue } from '@chakra-ui/react';
 import useShowToast from '../hooks/useShowToast';
 import useLogout from '../hooks/useLogout';
 import i18n from '../i18n';
@@ -276,8 +276,6 @@ export const SettingsPage = () => {
   });
   const [isToggling, setIsToggling] = React.useState(false);
   const [isPinkMode, setIsPinkMode] = useState(() => localStorage.getItem('pinkMode') === 'true');
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [showReallyResetModal, setShowReallyResetModal] = useState(false);
   
   // Check if user is admin or the specific user
   const canChangeColorMode = currentUser?.role === 'admin' || 
@@ -398,17 +396,6 @@ export const SettingsPage = () => {
     window.location.reload();
   };
 
-  const handleResetCompetition = () => {
-    setShowResetModal(false);
-    setShowReallyResetModal(true);
-  };
-
-  const confirmResetCompetition = () => {
-    setShowReallyResetModal(false);
-    // TODO: Reset all users to wood badge, 0 points, clear badge progress (front-end only)
-    showToast("Competition Reset", "All users have been reset to Wood badge and 0 points.", "info");
-  };
-
   return (
     <VStack spacing={6} align="stretch" maxW="600px" mx="auto" p={4}>
       {/* Color Mode Section */}
@@ -512,45 +499,6 @@ export const SettingsPage = () => {
           {i18n.t('Freeze Account')}
         </Button>
       </Box>
-
-      {/* Admin-only Reset Competition Section */}
-      {currentUser?.role === 'admin' && (
-        <Box p={4} borderWidth="1px" borderRadius="lg" bg="red.50" mt={8}>
-          <Text fontWeight="bold" color="red.600" mb={2}>Admin: Reset Competition</Text>
-          <Text mb={4} color="red.500">This will reset all users to Wood badge and 0 points. This action cannot be undone.</Text>
-          <Button colorScheme="red" onClick={() => setShowResetModal(true)}>
-            Reset Competition
-          </Button>
-        </Box>
-      )}
-      {/* First confirmation modal */}
-      <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Are you sure you want to reset the competition?</ModalHeader>
-          <ModalBody>
-            <Text>This will reset all users to Wood badge and 0 points. This action cannot be undone.</Text>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={() => setShowResetModal(false)} mr={3}>Cancel</Button>
-            <Button colorScheme="red" onClick={handleResetCompetition}>Yes, Reset</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-      {/* Second confirmation modal */}
-      <Modal isOpen={showReallyResetModal} onClose={() => setShowReallyResetModal(false)} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Are you REALLY sure?</ModalHeader>
-          <ModalBody>
-            <Text>This will immediately reset all users. Are you really, really sure?</Text>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={() => setShowReallyResetModal(false)} mr={3}>Cancel</Button>
-            <Button colorScheme="red" onClick={confirmResetCompetition}>Yes, I'm really sure</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </VStack>
   );
 };

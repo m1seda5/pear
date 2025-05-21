@@ -11,10 +11,6 @@ import '../index.css';
 import _ from 'lodash';
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
-import LeaderboardWidget from "../components/LeaderboardWidget";
-import PersonalPointsWidget from "../components/PersonalPointsWidget";
-import DailyQuestionWidget from "../components/DailyQuestionWidget";
-import { useCompetition } from "../context/CompetitionContext";
 
 const WidgetPlaceholder = ({ title }) => (
 	<Box
@@ -43,7 +39,6 @@ const HomePage = () => {
 	const [showTutorial, setShowTutorial] = useState(false);
 	const user = useRecoilValue(userAtom);
 	const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
-	const { competitionActive } = useCompetition();
 
 	// Handle language change
 	useEffect(() => {
@@ -116,14 +111,6 @@ const HomePage = () => {
 	return (
 		<>
 			{showTutorial && <TutorialSlider onComplete={handleTutorialComplete} />}
-			{/* Game Widgets Row (only if competition is active) */}
-			{competitionActive && (
-				<Flex direction={{ base: "column", md: "row" }} gap={6} justify="center" align="flex-start" mb={8}>
-					<LeaderboardWidget />
-					<DailyQuestionWidget />
-					<PersonalPointsWidget />
-				</Flex>
-			)}
 			{/* Floating widgets (draggable, same size, hidden on small screens) */}
 			{isLargerThan1024 && <NotelyWidget />}
 			{isLargerThan1024 && <HousePointTracker showTutorial={false} />}
