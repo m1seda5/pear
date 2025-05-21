@@ -24,8 +24,7 @@ import messageSound from "../assets/sounds/message.mp3";
 import GroupMessageHeader from "./GroupMessageHeader";
 import { useToast } from "@chakra-ui/react";
 import { useContext } from "react";
-import { CompetitionContext } from "../context/CompetitionContext";
-import { PointPopUpContext } from "../context/PointPopUpContext";
+import { CompetitionContext, PointPopUpContext } from "../context/CompetitionContext";
 
 const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
