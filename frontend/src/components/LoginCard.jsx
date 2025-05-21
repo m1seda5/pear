@@ -27,7 +27,7 @@ export default function LoginCard() {
 	const [loading, setLoading] = useState(false);
 
 	const [inputs, setInputs] = useState({
-		identifier: "",
+		username: "",
 		password: "",
 	});
 	const showToast = useShowToast();
@@ -39,10 +39,7 @@ export default function LoginCard() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({
-					identifier: inputs.identifier,
-					password: inputs.password
-				}),
+				body: JSON.stringify(inputs),
 				credentials: "include",
 			});
 			const data = await res.json();
@@ -79,12 +76,11 @@ export default function LoginCard() {
 				>
 					<Stack spacing={4}>
 						<FormControl isRequired>
-							<FormLabel>Email or Username</FormLabel>
+							<FormLabel>Username</FormLabel>
 							<Input
 								type='text'
-								value={inputs.identifier}
-								onChange={(e) => setInputs((inputs) => ({ ...inputs, identifier: e.target.value }))}
-								placeholder="Enter email or username"
+								value={inputs.username}
+								onChange={(e) => setInputs((inputs) => ({ ...inputs, username: e.target.value }))}
 							/>
 						</FormControl>
 						<FormControl isRequired>
