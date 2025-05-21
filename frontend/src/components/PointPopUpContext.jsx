@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { CompetitionContext } from '../contexts/CompetitionContext';
+import { CompetitionContext } from '../context/CompetitionContext';
 
 const PointPopUpContext = () => {
   const { competitionActive, points, updatePoints } = useContext(CompetitionContext) || { competitionActive: true, points: 0, updatePoints: () => {} };

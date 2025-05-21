@@ -1,6 +1,6 @@
 import { Flex, Image, Text, Box } from "@chakra-ui/react";
 import { useContext, useEffect, useState } from "react";
-import { CompetitionContext } from "../contexts/CompetitionContext";
+import { CompetitionContext } from "../context/CompetitionContext";
 
 const badgeImages = {
   champion: "/assets/images/championbadge.png",

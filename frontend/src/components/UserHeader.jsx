@@ -182,7 +182,7 @@ import { motion } from 'framer-motion';
 import { useDisclosure } from "@chakra-ui/hooks";
 import BadgeDisplay from "./BadgeDisplay";
 import { useContext } from "react";
-import { CompetitionContext } from "../contexts/CompetitionContext";
+import { CompetitionContext } from "../context/CompetitionContext";
 
 const MotionAvatar = motion(Avatar);
 
