@@ -1,5 +1,6 @@
-import { Box, Flex, Text, useBreakpointValue, Avatar, useColorModeValue } from "@chakra-ui/react";
+import { Box, Flex, Text, useBreakpointValue, Avatar, useMediaQuery, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
+import { CloseIcon } from "@chakra-ui/icons";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 
@@ -34,10 +35,12 @@ const getCurrentBadge = (points) => {
   return "wood";
 };
 
-const DEFAULT_POSITION = { top: 100, left: 20 }; // Changed default position to be more visible
+const DEFAULT_POSITION = { top: 100, left: 840 };
 
 const PersonalPointsWidget = () => {
-  // Always show the widget regardless of screen size
+  const show = useBreakpointValue({ base: false, md: true });
+  // const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
+  // const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("personalPointsClosed") === "true");
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("personalPointsWidgetPosition");
     if (saved) {
@@ -77,14 +80,10 @@ const PersonalPointsWidget = () => {
     };
   }, [dragging]);
 
-  // Debug log with more details
-  console.log('[PersonalPointsWidget] currentUser:', currentUser ? 'exists' : 'missing', 'points:', currentUser?.points);
+  // Debug log
+  console.log('[PersonalPointsWidget] show:', show, 'currentUser:', currentUser);
 
-  // Only check if currentUser exists
-  if (!currentUser) {
-    console.log('[PersonalPointsWidget] Not rendering: currentUser is missing');
-    return null;
-  }
+  if (!show || !currentUser) return null;
 
   const currentBadge = getCurrentBadge(currentUser.points || 0);
 
@@ -107,8 +106,8 @@ const PersonalPointsWidget = () => {
       p={0}
       mb={6}
       userSelect={dragging ? "none" : "auto"}
-      display="block" // Always display the widget
-      style={{ transition: 'box-shadow 0.2s' }}
+      display={{ base: "none", md: "block" }}
+      style={{ transition: 'box-shadow 0.2s, left 0.2s, top 0.2s' }}
     >
       {/* Drag handle bar */}
       <Flex
@@ -148,4 +147,4 @@ const PersonalPointsWidget = () => {
   );
 };
 
-export default PersonalPointsWidget;
+export default PersonalPointsWidget; 

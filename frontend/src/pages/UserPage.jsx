@@ -1,4 +1,4 @@
-// UserPage.jsx with PersonalPointsWidget Integration Fix
+// UserPage.jsx
 import { useEffect, useState } from "react";
 import UserHeader from "../components/UserHeader";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -24,9 +24,6 @@ const UserPage = () => {
   const location = useLocation();
   const currentUser = useRecoilValue(userAtom);
   const [fromSearch, setFromSearch] = useState(false);
-  
-  // Debug log to confirm currentUser is available
-  console.log('[UserPage] currentUser:', currentUser ? 'exists' : 'missing', 'username:', username);
 
   // Check if the page was accessed via search
   useEffect(() => {
@@ -138,8 +135,7 @@ const UserPage = () => {
 
   return (
     <Box>
-      {/* Ensure PersonalPointsWidget is rendered when currentUser exists */}
-      {currentUser && <PersonalPointsWidget />}
+      <PersonalPointsWidget />
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>
@@ -209,3 +205,4 @@ const UserPage = () => {
 };
 
 export default UserPage;
+
