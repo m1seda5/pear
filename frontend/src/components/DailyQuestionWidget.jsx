@@ -124,15 +124,15 @@ const DailyQuestionWidget = () => {
       if (data.error) throw new Error(data.error);
       
       if (data.correct) {
-    setAnswered(true);
-    triggerPopUp(25, colorMode);
-    toast({
-      title: "+25 Points!",
+        setAnswered(true);
+        triggerPopUp(25, colorMode);
+        toast({
+          title: "+25 Points!",
           description: "You answered the daily question correctly!",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
       } else {
         toast({
           title: "Incorrect",
@@ -204,18 +204,18 @@ const DailyQuestionWidget = () => {
               onClick={() => navigate("/daily-questions/edit")}
             />
           )}
-        <IconButton
-          icon={<CloseIcon />}
-          size="sm"
-          aria-label="Close Daily Question"
-          bg="whiteAlpha.700"
-          color="#7F53AC"
-          _hover={{ bg: "whiteAlpha.900" }}
-          onClick={() => {
-            setIsClosed(true);
-            sessionStorage.setItem("dailyQuestionClosed", "true");
-          }}
-        />
+          <IconButton
+            icon={<CloseIcon />}
+            size="sm"
+            aria-label="Close Daily Question"
+            bg="whiteAlpha.700"
+            color="#7F53AC"
+            _hover={{ bg: "whiteAlpha.900" }}
+            onClick={() => {
+              setIsClosed(true);
+              sessionStorage.setItem("dailyQuestionClosed", "true");
+            }}
+          />
         </Flex>
       </Flex>
       <Box p={8}>
@@ -234,28 +234,28 @@ const DailyQuestionWidget = () => {
           </VStack>
         ) : (
           <>
-        <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em">QUESTION</Text>
+            <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em">QUESTION</Text>
             <Text fontSize="1.15rem" fontWeight="semibold" mb={5} letterSpacing="0.01em">{question.question}</Text>
-        <VStack spacing={4}>
+            <VStack spacing={4}>
               {question.options.map((opt, i) => (
-            <Button
-              key={opt}
-              w="100%"
-              colorScheme="purple"
-              variant="outline"
-              borderRadius="xl"
-              fontWeight="bold"
-              fontSize="1.1rem"
-              py={6}
-              borderWidth={2}
-              borderColor="#7F53AC"
+                <Button
+                  key={opt}
+                  w="100%"
+                  colorScheme="purple"
+                  variant="outline"
+                  borderRadius="xl"
+                  fontWeight="bold"
+                  fontSize="1.1rem"
+                  py={6}
+                  borderWidth={2}
+                  borderColor="#7F53AC"
                   onClick={() => handleAnswer(opt)}
-              isDisabled={answered}
-            >
-              {String.fromCharCode(65 + i)}. {opt}
-            </Button>
-          ))}
-        </VStack>
+                  isDisabled={answered}
+                >
+                  {String.fromCharCode(65 + i)}. {opt}
+                </Button>
+              ))}
+            </VStack>
           </>
         )}
       </Box>
