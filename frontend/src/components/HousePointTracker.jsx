@@ -69,7 +69,7 @@ const HousePointTracker = () => {
 
   if (!isOpen) return null;
 
-  const bg = useColorModeValue("whiteAlpha.900", "#232325");
+  const bg = useColorModeValue("whiteAlpha.900", "#23232b");
   const textColor = useColorModeValue("#2D1A4A", "white");
   const borderColor = useColorModeValue("gray.200", "#23232b");
 
