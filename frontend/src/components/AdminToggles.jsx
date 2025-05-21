@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { CompetitionContext } from '../context/CompetitionContext';
+import { CompetitionContext } from '../contexts/CompetitionContext';
 
 const AdminToggles = () => {
   const { competitionActive, isAdmin } = useContext(CompetitionContext) || { competitionActive: true, isAdmin: false };

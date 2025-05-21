@@ -169,7 +169,7 @@ import useShowToast from "../hooks/useShowToast";
 import Actions from "./Actions";
 import BadgeDisplay from "./BadgeDisplay";
 import { useContext } from "react";
-import { CompetitionContext } from "../context/CompetitionContext";
+import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const Post = ({ post, postedBy, isTV = false }) => {
     const [user, setUser] = useState(null);
