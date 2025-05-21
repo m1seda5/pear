@@ -157,7 +157,7 @@
 // version 2 with translations working
 import { Flex, Text, Avatar, Image, useColorModeValue } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useRecoilState, useRecoilValue } from "recoil";
@@ -166,6 +166,7 @@ import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
 import useShowToast from "../hooks/useShowToast";
 import Actions from "./Actions";
+import BadgeDisplay from "./BadgeDisplay";
 import { useContext } from "react";
 import { CompetitionContext } from "../context/CompetitionContext";
 
@@ -179,6 +180,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const [language, setLanguage] = useState(i18n.language);
     const viewTimeoutRef = useRef(null);
     const postRef = useRef(null);
+    const surroundingPostsRef = useRef([]);
     const { competitionActive, badge } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood' };
 
     // Match colors from HomePage background
@@ -203,14 +205,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
     useEffect(() => {
         const getUser = async () => {
             try {
-                // Handle both cases where postedBy could be an object or just an ID string
                 const userId = typeof postedBy === "object" ? postedBy._id : postedBy;
-                
-                if (!userId) {
-                    console.error("No valid userId found for post:", post);
-                    return;
-                }
-                
                 const res = await fetch("/api/users/profile/" + userId, { credentials: 'include' });
                 const data = await res.json();
                 if (data.error) {
@@ -225,7 +220,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
         };
 
         getUser();
-    }, [postedBy, showToast, t, post]);
+    }, [postedBy, showToast, t]);
 
     useEffect(() => {
         const markAsViewed = async () => {
@@ -262,22 +257,14 @@ const Post = ({ post, postedBy, isTV = false }) => {
                 clearTimeout(viewTimeoutRef.current);
             }
         };
-    }, [post._id, post.isViewed, setPosts, showToast, t]);
+    }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
 
-    // This effect should not update the user for the post, only the currentUser
-    // The issue might be here - this is probably causing all posts to show the current user
     useEffect(() => {
         if (!competitionActive) return;
-        
-        // Only update current user info, not the post author
-        // This should not affect the 'user' state that represents the post author
         fetch("/api/users/me", { credentials: "include" })
             .then(res => res.json())
-            .then(data => {
-                // Don't update the user state here - this is the current user, not the post author
-                // Commented out: setUser(data)
-            })
-            .catch(err => console.error("Error fetching current user:", err));
+            .then(data => setUser(data))
+            .catch(() => setUser(null));
     }, [competitionActive]);
 
     const handleDeletePost = async (e) => {
@@ -377,10 +364,15 @@ const Post = ({ post, postedBy, isTV = false }) => {
         }
     };
 
+    // Placeholder: currentTier and competitionActive
+    const currentTier = "wood"; // TODO: Replace with real user tier
+    const champion = false; // TODO: Replace with real champion logic
+
     if (!user) return null;
 
     return (
         <>
+            <a href="/" style={{ display: 'none' }}>Hidden Website Link</a>
             <Flex
                 ref={postRef}
                 direction="column"
