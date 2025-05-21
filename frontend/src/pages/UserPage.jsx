@@ -11,7 +11,8 @@ import postsAtom from "../atoms/postsAtom";
 import CreatePost from "../components/CreatePost";
 import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
-import PersonalPointsWidget from "../components/PersonalPointsWidget";
+import NotelyWidget from "../components/NotelyWidget";
+import HousePointTracker from "../components/HousePointTracker";
 
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
@@ -135,7 +136,9 @@ const UserPage = () => {
 
   return (
     <Box>
-      <PersonalPointsWidget />
+      {/* Floating widgets (hidden on small screens) */}
+      <NotelyWidget />
+      <HousePointTracker showTutorial={false} />
       <UserHeader user={user} />
       {fromSearch && currentUser?._id !== user._id && (
         <Flex justifyContent="flex-end" px={4} mb={4}>

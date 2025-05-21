@@ -1,7 +1,6 @@
-import { Box, Text, Button, VStack, useBreakpointValue, useToast, useColorMode, useMediaQuery, Flex, IconButton } from "@chakra-ui/react";
+import { Box, Text, Button, VStack, useBreakpointValue, useToast, useColorMode, useMediaQuery } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
 import { usePointPopUp } from "../context/PointPopUpContext";
-import { CloseIcon } from "@chakra-ui/icons";
 
 const placeholderQuestion = {
   question: "Which country has the most natural lakes in the world?",
@@ -13,7 +12,6 @@ const DEFAULT_POSITION = { top: 100, left: 440 };
 const DailyQuestionWidget = () => {
   const show = useBreakpointValue({ base: false, md: true });
   const [isLargerThan1024] = useMediaQuery("(min-width: 1024px)");
-  const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("dailyQuestionClosed") === "true");
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("dailyQuestionWidgetPosition");
     if (saved) {
@@ -63,7 +61,7 @@ const DailyQuestionWidget = () => {
   const triggerPopUp = usePointPopUp();
   const toast = useToast();
   const { colorMode } = useColorMode();
-  if (!show || isClosed) return null;
+  if (!show) return null;
 
   const handleAnswer = () => {
     if (answered) return;
@@ -81,10 +79,10 @@ const DailyQuestionWidget = () => {
   return (
     <Box
       id="daily-question-widget"
-      position="fixed"
+      position={isLargerThan1024 ? "absolute" : "static"}
       left={position.left + "px"}
       top={position.top + "px"}
-      zIndex={2500}
+      zIndex={2000}
       borderRadius="32px"
       boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.13)"
       border="3px solid #7F53AC"
@@ -92,72 +90,35 @@ const DailyQuestionWidget = () => {
       w="370px"
       bg="#F8F6FF"
       color="#2D1A4A"
-      p={0}
+      p={8}
       mb={6}
+      cursor={dragging ? "grabbing" : "grab"}
       userSelect={dragging ? "none" : "auto"}
-      display={{ base: "none", md: "block" }}
-      style={{ transition: 'box-shadow 0.2s, left 0.2s, top 0.2s' }}
+      onMouseDown={isLargerThan1024 ? startDrag : undefined}
+      textAlign="center"
     >
-      <Flex
-        align="center"
-        justify="space-between"
-        bg="whiteAlpha.700"
-        color="#7F53AC"
-        borderTopLeftRadius="32px"
-        borderTopRightRadius="32px"
-        px={4}
-        py={2}
-        cursor={dragging ? "grabbing" : "grab"}
-        onMouseDown={isLargerThan1024 ? (e) => {
-          setDragging(true);
-          const widget = document.getElementById("daily-question-widget");
-          const rect = widget.getBoundingClientRect();
-          dragOffset.current = {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-          };
-        } : undefined}
-        userSelect="none"
-        style={{ WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
-      >
-        <Text fontWeight="bold" fontSize="xl">Daily Question</Text>
-        <IconButton
-          icon={<CloseIcon />}
-          size="sm"
-          aria-label="Close Daily Question"
-          bg="whiteAlpha.700"
-          color="#7F53AC"
-          _hover={{ bg: "whiteAlpha.900" }}
-          onClick={() => {
-            setIsClosed(true);
-            sessionStorage.setItem("dailyQuestionClosed", "true");
-          }}
-        />
-      </Flex>
-      <Box p={8}>
-        <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em" textShadow="0 0 12px #fff8">QUESTION</Text>
-        <Text fontSize="1.15rem" fontWeight="semibold" mb={5} letterSpacing="0.01em">{placeholderQuestion.question}</Text>
-        <VStack spacing={4}>
-          {placeholderQuestion.options.map((opt, i) => (
-            <Button
-              key={opt}
-              w="100%"
-              colorScheme="purple"
-              variant="outline"
-              borderRadius="xl"
-              fontWeight="bold"
-              fontSize="1.1rem"
-              py={6}
-              borderWidth={2}
-              borderColor="#7F53AC"
-              onClick={handleAnswer}
-              isDisabled={answered}
-            >
-              {String.fromCharCode(65 + i)}. {opt}
-            </Button>
-          ))}
-        </VStack>
-      </Box>
+      <Text fontSize="2.1rem" fontWeight="extrabold" mb={2} color="#7F53AC" letterSpacing="0.08em" textShadow="0 0 12px #fff8">QUESTION</Text>
+      <Text fontSize="1.15rem" fontWeight="semibold" mb={5} letterSpacing="0.01em">{placeholderQuestion.question}</Text>
+      <VStack spacing={4}>
+        {placeholderQuestion.options.map((opt, i) => (
+          <Button
+            key={opt}
+            w="100%"
+            colorScheme="purple"
+            variant="outline"
+            borderRadius="xl"
+            fontWeight="bold"
+            fontSize="1.1rem"
+            py={6}
+            borderWidth={2}
+            borderColor="#7F53AC"
+            onClick={handleAnswer}
+            isDisabled={answered}
+          >
+            {String.fromCharCode(65 + i)}. {opt}
+          </Button>
+        ))}
+      </VStack>
     </Box>
   );
 };
