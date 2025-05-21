@@ -8,7 +8,6 @@ import {
   SkeletonCircle,
   Text,
   useColorModeValue,
-  useColorMode,
 } from "@chakra-ui/react";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
@@ -26,7 +25,7 @@ import GroupMessageHeader from "./GroupMessageHeader";
 import { useToast } from "@chakra-ui/react";
 import { useContext } from "react";
 import { CompetitionContext } from "../context/CompetitionContext";
-import { usePointPopUp } from "../context/PointPopUpContext";
+import { PointPopUpContext } from "../context/PointPopUpContext";
 
 const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
@@ -43,9 +42,8 @@ const MessageContainer = ({ isMonitoring }) => {
   const setConversations = useSetRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const { competitionActive, updatePoints } = useContext(CompetitionContext);
-  const { colorMode } = useColorMode();
-  const triggerPopUp = usePointPopUp();
+  const { competitionActive, updatePoints, triggerPopUp } = useContext(CompetitionContext);
+  const { colorMode } = useContext(PointPopUpContext);
 
   const messageContainerStyles = {
     '&::-webkit-scrollbar': {

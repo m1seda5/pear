@@ -78,28 +78,30 @@ const getTodayQuestion = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const userAgent = req.headers['user-agent'] || '';
-    // Fetch user and update lastDailyQuestionUA
-    const user = await User.findById(req.user._id);
-    if (user) {
-      user.lastDailyQuestionUA = userAgent;
-      await user.save();
-    }
+    const sessionKey = `dq_ua_${req.user._id}`;
+    // Store UA in memory (or use Redis/DB for production)
+    global[sessionKey] = userAgent;
+    
     // First try to get an active question for today
     let dq = await DailyQuestion.findOne({ date: today, isActive: true });
+    
     // If no active question exists, get a random unused question
     if (!dq) {
       const unusedQuestions = await DailyQuestion.find({ used: false, isActive: true });
       if (unusedQuestions.length === 0) {
         return res.status(404).json({ error: "No questions available" });
       }
+      
       // Select a random question
       const randomIndex = Math.floor(Math.random() * unusedQuestions.length);
       dq = unusedQuestions[randomIndex];
+      
       // Mark it as used and set today's date
       dq.used = true;
       dq.date = today;
       await dq.save();
     }
+
     // Don't send the answer to the client
     const questionForClient = {
       _id: dq._id,
@@ -107,6 +109,7 @@ const getTodayQuestion = async (req, res) => {
       options: dq.options,
       date: dq.date
     };
+
     res.json(questionForClient);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -119,31 +122,38 @@ const answerDailyQuestion = async (req, res) => {
     const { questionId, answer } = req.body;
     const userId = req.user._id;
     const userAgent = req.headers['user-agent'] || '';
-    // Fetch user and check lastDailyQuestionUA
-    const user = await User.findById(userId);
-    if (user && user.lastDailyQuestionUA && user.lastDailyQuestionUA !== userAgent) {
+    const sessionKey = `dq_ua_${userId}`;
+    // Check if UA matches
+    if (global[sessionKey] && global[sessionKey] !== userAgent) {
+      // Serve backup question batch (simulate with error for now)
       return res.status(400).json({ error: "Browser or device changed. Please answer a backup question batch." });
     }
+
     const dq = await DailyQuestion.findById(questionId);
     if (!dq) return res.status(404).json({ error: "Question not found" });
+    
     // Check if user has already answered correctly
     if (dq.correctUsers.includes(userId)) {
       return res.status(400).json({ error: "Already answered correctly" });
     }
+    
     // Check if max correct answers reached
     if (dq.correctUsers.length >= 25) {
       return res.status(400).json({ error: "Max correct answers reached" });
     }
+
     const isCorrect = dq.answer.trim().toLowerCase() === answer.trim().toLowerCase();
+    
     if (isCorrect) {
       // Add user to correct users
       dq.correctUsers.push(userId);
       await dq.save();
+
       // Award points to user
-      if (user) {
-        user.points += 25;
-        await user.save();
-      }
+      const user = await User.findById(userId);
+      user.points += 25;
+      await user.save();
+
       // Log the points
       await GameAuditLog.create({
         user: userId,
@@ -151,12 +161,14 @@ const answerDailyQuestion = async (req, res) => {
         points: 25,
         details: { questionId }
       });
+
       return res.json({ 
         correct: true, 
         message: "+25 points!",
         correctCount: dq.correctUsers.length
       });
     }
+
     return res.json({ 
       correct: false, 
       message: "Incorrect answer.",

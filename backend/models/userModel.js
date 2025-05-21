@@ -465,7 +465,6 @@ const userSchema = mongoose.Schema(
     lastBadge: { type: String, default: "wood" },
     outOfCompetition: { type: Boolean, default: false },
     devMode: { type: Boolean, default: false },
-    lastDailyQuestionUA: { type: String, default: "" },
   },
   { timestamps: true }
 );
