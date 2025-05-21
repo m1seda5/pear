@@ -69,10 +69,6 @@ const HousePointTracker = () => {
 
   if (!isOpen) return null;
 
-  const bg = useColorModeValue("whiteAlpha.900", "#23232b");
-  const textColor = useColorModeValue("#2D1A4A", "white");
-  const borderColor = useColorModeValue("gray.200", "#23232b");
-
   return (
     <Box
       position="fixed"
@@ -80,13 +76,11 @@ const HousePointTracker = () => {
       top={`${position.y}px`}
       zIndex="overlay"
       w="380px"
-      bg={bg}
-      color={textColor}
+      bg={useColorModeValue("whiteAlpha.900", "gray.800")}
       borderRadius="lg"
       p={4}
       boxShadow="2xl"
       borderWidth="1px"
-      borderColor={borderColor}
     >
       <Flex justify="space-between" align="center" mb={4} 
             onMouseDown={e => { startDrag(e); setDragging(true); }} 

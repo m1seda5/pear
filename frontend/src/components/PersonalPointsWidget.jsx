@@ -13,26 +13,6 @@ const badgeImages = {
   wood: "/assets/images/woodbadge.png",
 };
 
-const BADGE_THRESHOLDS = {
-  champion: 5000,
-  sapphire: 4000,
-  emerald: 3000,
-  ruby: 2000,
-  gold: 1000,
-  silver: 500,
-  bronze: 100,
-  wood: 0
-};
-
-const getCurrentBadge = (points) => {
-  for (const [badge, threshold] of Object.entries(BADGE_THRESHOLDS)) {
-    if (points >= threshold) {
-      return badge;
-    }
-  }
-  return "wood";
-};
-
 const DEFAULT_POSITION = { top: 100, left: 840 };
 
 const PersonalPointsWidget = () => {
@@ -76,10 +56,8 @@ const PersonalPointsWidget = () => {
 
   if (!show || isClosed) return null;
 
-  // Placeholder data - replace with actual user data
-  const user = { name: "MISEDA", points: 180 };
-  const currentBadge = getCurrentBadge(user.points);
-
+  // Placeholder data
+  const user = { name: "MISEDA", points: 180, badge: "wood" };
   return (
     <Box
       id="personal-points-widget"
@@ -140,12 +118,13 @@ const PersonalPointsWidget = () => {
       </Flex>
       {/* Widget content */}
       <Box p={7} pt={4}>
-        <Flex align="center" justify="center" gap={4}>
-          <Text fontWeight="extrabold" fontSize="2.1rem" letterSpacing="0.04em">
-            {user.points} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
-          </Text>
-          <Avatar size="lg" src={badgeImages[currentBadge]} name={currentBadge} bg="transparent" boxSize="48px" />
+        <Flex align="center" justify="center" gap={4} mb={2}>
+          <Avatar size="lg" src={badgeImages[user.badge]} name={user.name} bg="transparent" boxSize="48px" />
+          <Text fontWeight="bold" fontSize="1.3rem">{user.name}</Text>
         </Flex>
+        <Text fontWeight="extrabold" fontSize="2.1rem" letterSpacing="0.04em">
+          {user.points} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
+        </Text>
       </Box>
     </Box>
   );

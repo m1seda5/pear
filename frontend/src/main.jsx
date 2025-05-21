@@ -104,12 +104,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 			<BrowserRouter>
 				<PointPopUpProvider>
 					<CompetitionContextProvider>
-				<ChakraProvider theme={theme}>
-					<ColorModeScript initialColorMode={theme.config.initialColorMode} />
-					<SocketContextProvider>
-						<App />
-					</SocketContextProvider>
-				</ChakraProvider>
+						<ChakraProvider theme={theme}>
+							<ColorModeScript initialColorMode={theme.config.initialColorMode} />
+							<SocketContextProvider>
+								<App />
+							</SocketContextProvider>
+						</ChakraProvider>
 					</CompetitionContextProvider>
 				</PointPopUpProvider>
 			</BrowserRouter>
