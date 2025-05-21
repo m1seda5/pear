@@ -399,19 +399,28 @@ const Post = ({ post, postedBy, isTV = false }) => {
                             }}
                         />
                         <Flex direction="column">
-                            <Text
-                                fontSize="sm"
-                                fontWeight="semibold"
-                                color={textColor}
-                                className="post-author-username"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate(`/${user.username}`);
-                                }}
-                            >
-                                {user?.username}
-                                <Image src="/woodbadge.png" w={4} h={4} ml={1} display="inline" />
-                            </Text>
+                            <Flex alignItems="center" gap={2}>
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="semibold"
+                                    color={textColor}
+                                    className="post-author-username"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/${user.username}`);
+                                    }}
+                                >
+                                    {user?.username}
+                                </Text>
+                                {/* Badge display next to username/verified */}
+                                <BadgeDisplay
+                                    currentTier={competitionActive ? currentTier : "wood"}
+                                    showAll={false}
+                                    size="md"
+                                    showTierName={true}
+                                    champion={champion}
+                                />
+                            </Flex>
                             <Text fontSize="xs" color="gray.500">
                                 @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}
                             </Text>
