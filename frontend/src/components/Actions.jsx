@@ -23,7 +23,8 @@ import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
 import { CompetitionContext } from "../context/CompetitionContext";
 import { FaHeart, FaRegHeart, FaComment, FaRetweet } from "react-icons/fa";
-import { useToast } from "@chakra-ui/react";
+import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import { usePointPopUp } from "../context/PointPopUpContext";
 
 const Actions = ({ post, posts, setPosts, onClose }) => {

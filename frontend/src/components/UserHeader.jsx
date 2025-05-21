@@ -166,7 +166,10 @@
 
 
 // this updated version with verification(working)
-import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton, Image, useColorModeValue, Menu, MenuButton, MenuItem, MenuList, Portal, Button } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Link, Text, VStack, useToast, IconButton, Image, useColorModeValue } from "@chakra-ui/react";
+import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu";
+import { Portal } from "@chakra-ui/portal";
+import { Button } from "@chakra-ui/react";
 import { MdVideoCall } from "react-icons/md";
 import { CgMoreO } from "react-icons/cg";
 import { useRecoilValue } from "recoil";

@@ -22,7 +22,7 @@ import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
 import GroupMessageHeader from "./GroupMessageHeader";
-import { useToast } from "@chakra-ui/react";
+import { useToast } from "react-hot-toast";
 import { useContext } from "react";
 import { CompetitionContext, PointPopUpContext } from "../context/CompetitionContext";
 

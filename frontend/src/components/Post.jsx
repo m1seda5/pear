@@ -155,7 +155,8 @@
 // export default Post;
 
 // version 2 with translations working
-import { Flex, Text, Avatar, Image, useColorModeValue } from "@chakra-ui/react";
+import { Flex, Text } from "@chakra-ui/layout";
+import { Avatar, Image, useColorModeValue } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
