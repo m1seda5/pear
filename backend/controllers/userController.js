@@ -2357,18 +2357,6 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-const getLeaderboard = async (req, res) => {
-  try {
-    const users = await User.find({ outOfCompetition: false })
-      .sort({ points: -1 })
-      .limit(7)
-      .select("username points badges lastBadge profilePic role");
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 export {
   searchHeader,
   signupUser,
@@ -2390,6 +2378,5 @@ export {
   deleteUserData,
   searchUsers,
   searchReviewers,
-  getCurrentUser,
-  getLeaderboard
+  getCurrentUser
 };

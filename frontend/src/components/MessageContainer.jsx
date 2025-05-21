@@ -22,27 +22,18 @@ import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import messageSound from "../assets/sounds/message.mp3";
 import GroupMessageHeader from "./GroupMessageHeader";
-import { useToast } from "react-hot-toast";
-import { useContext } from "react";
-import { CompetitionContext, PointPopUpContext } from "../contexts/CompetitionContext";
 
 const MessageContainer = ({ isMonitoring }) => {
   const showToast = useShowToast();
-  const { selectedConversation } = useRecoilValue(selectedConversationAtom);
+  const selectedConversation = useRecoilValue(selectedConversationAtom);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [img, setImg] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
   const currentUser = useRecoilValue(userAtom);
   const { socket } = useSocket();
   const setConversations = useSetRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const { competitionActive, updatePoints, triggerPopUp } = useContext(CompetitionContext);
-  const { colorMode } = useContext(PointPopUpContext);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef();
 
   const messageContainerStyles = {
     '&::-webkit-scrollbar': {
@@ -89,31 +80,84 @@ const MessageContainer = ({ isMonitoring }) => {
     }
   }, [selectedConversation, socket]);
 
+
   useEffect(() => {
-    if (socket) {
-      socket.on("messageReceived", (data) => {
-        setMessages((prev) => [...prev, data.message]);
-      });
-
-      socket.on("typing", () => setIsTyping(true));
-      socket.on("stopTyping", () => setIsTyping(false));
-
-      socket.on("pointsUpdate", (data) => {
-        if (competitionActive) {
-          updatePoints(data.points);
-          triggerPopUp(data.points, colorMode);
-          showToast("Success", data.message, "success");
+    // In MessageContainer.jsx
+    // Update handleDirectMessage
+    const handleDirectMessage = (message) => {
+      if (message.sender._id === currentUser._id) return; // Skip current user's messages
+      
+      // Strictly verify this is for the current direct conversation
+      if (!selectedConversation.isGroup && 
+          message.conversationId === selectedConversation._id) {
+        setMessages((prev) => [...prev, message]);
+        
+        // Sound notification if window is not focused
+        if (!document.hasFocus()) {
+          const sound = new Audio(messageSound);
+          sound.play();
         }
-      });
-
-      return () => {
-        socket.off("messageReceived");
-        socket.off("typing");
-        socket.off("stopTyping");
-        socket.off("pointsUpdate");
-      };
-    }
-  }, [socket, competitionActive, updatePoints, triggerPopUp, colorMode, showToast]);
+        
+        // Update conversation list
+        setConversations((prev) => {
+          return prev.map((conversation) => {
+            if (conversation._id === message.conversationId) {
+              return {
+                ...conversation,
+                lastMessage: {
+                  text: message.text,
+                  sender: message.sender,
+                },
+              };
+            }
+            return conversation;
+          });
+        });
+      }
+    };
+    
+    // In MessageContainer.jsx
+    // Update handleGroupMessage
+    const handleGroupMessage = (data) => {
+      if (data.message.sender._id === currentUser._id) return; // Skip current user's messages
+      
+      // Strictly verify this is for the current group conversation
+      if (selectedConversation.isGroup && 
+          selectedConversation._id === data.conversation._id) {
+        setMessages((prev) => [...prev, data.message]);
+        
+        // Sound notification if window is not focused
+        if (!document.hasFocus()) {
+          const sound = new Audio(messageSound);
+          sound.play();
+        }
+        
+        // Update conversation list
+        setConversations((prev) => {
+          return prev.map((conversation) => {
+            if (conversation._id === data.conversation._id) {
+              return {
+                ...conversation,
+                lastMessage: {
+                  text: data.message.text,
+                  sender: data.message.sender,
+                },
+              };
+            }
+            return conversation;
+          });
+        });
+      }
+    };
+    
+    socket?.on("newMessage", handleDirectMessage);
+    socket?.on("newGroupMessage", handleGroupMessage);
+    
+    return () => {
+      socket?.off("newMessage", handleDirectMessage);
+      socket?.off("newGroupMessage", handleGroupMessage);
+    };
+  }, [socket, selectedConversation, setConversations, currentUser._id]);
 
   useEffect(() => {
     const lastMessageIsFromOtherUser =
@@ -184,6 +228,25 @@ const MessageContainer = ({ isMonitoring }) => {
 
     if (selectedConversation._id) getMessages();
   }, [showToast, selectedConversation, currentUser.token]);
+
+  useEffect(() => {
+    socket?.on("typing", ({ conversationId }) => {
+      if (selectedConversation._id === conversationId) {
+        setIsTyping(true);
+      }
+    });
+    
+    socket?.on("stopTyping", ({ conversationId }) => {
+      if (selectedConversation._id === conversationId) {
+        setIsTyping(false);
+      }
+    });
+
+    return () => {
+      socket?.off("typing");
+      socket?.off("stopTyping");
+    };
+  }, [socket, selectedConversation._id]);
 
   useEffect(() => {
     if (selectedConversation._id) {

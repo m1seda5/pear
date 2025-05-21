@@ -1,7 +1,6 @@
 import { Box, Flex, Text, useBreakpointValue, Image, useMediaQuery, IconButton, useColorModeValue } from "@chakra-ui/react";
-import { useState, useRef, useEffect, useContext } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { CompetitionContext } from "../context/CompetitionContext";
 
 const placeholderUsers = [
   { name: "ABI", points: 4000, badge: "emerald" },
@@ -43,16 +42,13 @@ const LeaderboardWidget = () => {
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("leaderboardClosed") === "true");
-  const [leaders, setLeaders] = useState([]);
-  const { competitionActive, showWidgets, competitionEnded } = useContext(CompetitionContext) || { 
-    competitionActive: true, 
-    showWidgets: true,
-    competitionEnded: false 
-  };
 
-  const bg = useColorModeValue("#F8F6FF", "#232325");
-  const textColor = useColorModeValue("#2D1A4A", "white");
-  const borderColor = useColorModeValue("#7F53AC", "#23232b");
+  const bg = useColorModeValue(
+    "linear-gradient(to-br, #7F53AC 0%, #647DEE 100%)",
+    "#232325"
+  );
+  const textColor = useColorModeValue("white", "white");
+  const borderColor = useColorModeValue("#fff3", "#23232b");
 
   useEffect(() => {
     if (!dragging) return;
@@ -75,20 +71,6 @@ const LeaderboardWidget = () => {
     };
   }, [dragging]);
 
-  useEffect(() => {
-    if (!competitionActive || competitionEnded) return;
-    fetch("/api/users/leaderboard", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
-        if (!Array.isArray(data) || data.length === 0) {
-          setLeaders(placeholderUsers);
-        } else {
-          setLeaders(data);
-        }
-      })
-      .catch(() => setLeaders(placeholderUsers));
-  }, [competitionActive, competitionEnded]);
-
   const startDrag = (e) => {
     setDragging(true);
     const widget = document.getElementById("leaderboard-widget");
@@ -99,7 +81,7 @@ const LeaderboardWidget = () => {
     };
   };
 
-  if (!show || isClosed || !competitionActive || !showWidgets || competitionEnded) return null;
+  if (!show || isClosed) return null;
 
   return (
     <Box
@@ -161,22 +143,17 @@ const LeaderboardWidget = () => {
       <Box p={8}>
         <Text fontSize="2.2rem" fontWeight="extrabold" mb={1} letterSpacing="0.08em" textAlign="center">CHAMPIONS</Text>
         <Text fontSize="1.1rem" fontWeight="bold" mb={5} textAlign="center" letterSpacing="0.12em" color="#FFD700">QUALIFICATION 1</Text>
-        {leaders.length === 0 ? (
-          <Text fontSize="lg" textAlign="center" color="gray.400">No leaders yet!</Text>
-        ) : (
-          leaders.map((user, i) => (
-            <Flex key={user.username} align="center" justify="space-between" mb={i === leaders.length - 1 ? 0 : 3}>
-              <Flex align="center" gap={3} minW="0">
-                <Text fontWeight="bold" fontSize="1.15rem" color="#7F53AC">{i + 1}</Text>
-                <Image src={badgeImages[user.lastBadge || "wood"]} alt={user.lastBadge || "wood"} boxSize="32px" mr={1} />
-                <Text fontWeight="bold" fontSize="1.15rem" isTruncated>{user.username}</Text>
-              </Flex>
-              <Text fontWeight="extrabold" fontSize="1.35rem" letterSpacing="0.04em">
-                {user.points} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
-              </Text>
+        {placeholderUsers.map((user, i) => (
+          <Flex key={user.name} align="center" justify="space-between" mb={i === placeholderUsers.length - 1 ? 0 : 3}>
+            <Flex align="center" gap={3} minW="0">
+              <Image src={badgeImages[user.badge]} alt={user.badge} boxSize="32px" mr={1} />
+              <Text fontWeight="bold" fontSize="1.15rem" isTruncated>{user.name}</Text>
             </Flex>
-          ))
-        )}
+            <Text fontWeight="extrabold" fontSize="1.35rem" letterSpacing="0.04em">
+              {user.points} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
+            </Text>
+          </Flex>
+        ))}
       </Box>
     </Box>
   );

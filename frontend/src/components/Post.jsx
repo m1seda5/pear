@@ -168,8 +168,6 @@ import { useTranslation } from "react-i18next";
 import useShowToast from "../hooks/useShowToast";
 import Actions from "./Actions";
 import BadgeDisplay from "./BadgeDisplay";
-import { useContext } from "react";
-import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const Post = ({ post, postedBy, isTV = false }) => {
     const [user, setUser] = useState(null);
@@ -182,7 +180,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
     const viewTimeoutRef = useRef(null);
     const postRef = useRef(null);
     const surroundingPostsRef = useRef([]);
-    const { competitionActive, badge } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood' };
 
     // Match colors from HomePage background
     const textColor = useColorModeValue("gray.700", "gray.200");
@@ -259,14 +256,6 @@ const Post = ({ post, postedBy, isTV = false }) => {
             }
         };
     }, [post._id, post.isViewed, setPosts, currentUser.token, showToast, t]);
-
-    useEffect(() => {
-        if (!competitionActive) return;
-        fetch("/api/users/me", { credentials: "include" })
-            .then(res => res.json())
-            .then(data => setUser(data))
-            .catch(() => setUser(null));
-    }, [competitionActive]);
 
     const handleDeletePost = async (e) => {
         try {
@@ -368,6 +357,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
     // Placeholder: currentTier and competitionActive
     const currentTier = "wood"; // TODO: Replace with real user tier
     const champion = false; // TODO: Replace with real champion logic
+    const competitionActive = true; // TODO: Replace with real competition state
 
     if (!user) return null;
 
