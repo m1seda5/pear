@@ -25,7 +25,7 @@ import { CompetitionContext } from "../contexts/CompetitionContext";
 import { FaHeart, FaRegHeart, FaComment, FaRetweet } from "react-icons/fa";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
-import { usePointPopUp } from "../context/PointPopUpContext";
+import { PointPopUpContext } from "../context/PointPopUpContext";
 
 const Actions = ({ post, posts, setPosts, onClose }) => {
     const { t } = useTranslation();
@@ -35,8 +35,8 @@ const Actions = ({ post, posts, setPosts, onClose }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [reply, setReply] = useState("");
     const { showToast } = useToast();
-    const { competitionActive, updatePoints } = useContext(CompetitionContext);
-    const triggerPopUp = usePointPopUp();
+    const { competitionActive, updatePoints, triggerPopUp } = useContext(CompetitionContext);
+    const { colorMode } = useContext(PointPopUpContext);
 
     // Get appropriate color for pear icon based on color mode
     const pearColor = useColorModeValue("black", "white");
@@ -60,7 +60,7 @@ const Actions = ({ post, posts, setPosts, onClose }) => {
                 // Only award points if competition is active and user hasn't received points for this post today
                 if (competitionActive && data.pointsAwarded) {
                     updatePoints(10);
-                    triggerPopUp(10, pearColor);
+                    triggerPopUp(10, colorMode);
                     showToast("Success", "+10 Points! Someone liked your post!", "success");
                 }
                 
@@ -108,7 +108,7 @@ const Actions = ({ post, posts, setPosts, onClose }) => {
             // Only award points for admin fire reaction
             if (competitionActive && data.adminReaction === "🔥") {
                 updatePoints(175);
-                triggerPopUp(175, pearColor);
+                triggerPopUp(175, colorMode);
                 showToast("Success", "+175 Points! Your post was trending!", "success");
             }
 
@@ -178,7 +178,7 @@ const Actions = ({ post, posts, setPosts, onClose }) => {
             // Only award points if competition is active and user hasn't exceeded daily repost limit
             if (competitionActive && data.pointsAwarded) {
                 updatePoints(10);
-                triggerPopUp(10, pearColor);
+                triggerPopUp(10, colorMode);
                 showToast("Success", "+10 Points! You reposted content!", "success");
             }
 
