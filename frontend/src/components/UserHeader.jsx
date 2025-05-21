@@ -303,9 +303,14 @@ const UserHeader = ({ user }) => {
           </Box>
         </Flex>
         {currentUser?._id === user._id && (
-          <Link as={RouterLink} to="/update">
-            <Button size={"sm"}>{t("Edit Profile")}</Button>
-          </Link>
+          <Button
+            size="sm"
+            colorScheme="purple"
+            onClick={onOpen}
+            variant="outline"
+          >
+            Edit Profile
+          </Button>
         )}
       </Flex>
 
