@@ -54,7 +54,7 @@ const awardTrendingPostPoints = async (req, res) => {
       details: { postId }
     });
 
-    res.json({ message: `+${points} points for trending post!`, points });
+    res.json({ message: `+${points} points for trending post!`, points, pointsAwarded: points });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -93,7 +93,7 @@ const awardRepostPoints = async (req, res) => {
     post.reposts.push(userId);
     await post.save();
 
-    let points = 10;
+    let points = 20;
     if (comp.halvedPoints) points = Math.floor(points / 2);
 
     user.points += points;
@@ -107,7 +107,7 @@ const awardRepostPoints = async (req, res) => {
       details: { postId }
     });
 
-    res.json({ message: `+${points} points for repost!`, points });
+    res.json({ message: `+${points} points for repost!`, points, pointsAwarded: points });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -151,7 +151,7 @@ const awardDailyPostBonus = async (req, res) => {
       requestId
     });
 
-    res.json({ message: `+${points} points for daily post!`, points });
+    res.json({ message: `+${points} points for daily post!`, points, pointsAwarded: points });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -216,7 +216,7 @@ const awardDailyMessagePoints = async (req, res) => {
       requestId
     });
 
-    res.json({ message: `+${points} points for daily messaging!`, points });
+    res.json({ message: `+${points} points for daily messaging!`, points, pointsAwarded: points });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

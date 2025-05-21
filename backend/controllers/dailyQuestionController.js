@@ -154,7 +154,8 @@ const answerDailyQuestion = async (req, res) => {
       return res.json({ 
         correct: true, 
         message: "+25 points!",
-        correctCount: dq.correctUsers.length
+        correctCount: dq.correctUsers.length,
+        pointsAwarded: 25
       });
     }
     return res.json({ 

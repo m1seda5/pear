@@ -1041,7 +1041,6 @@
 //     const userId = req.user._id;
 
 //     const post = await Post.findById(postId);
-
 //     if (!post) {
 //       return res.status(404).json({ error: "Post not found" });
 //     }
@@ -1811,7 +1810,6 @@ const likeUnlikePost = async (req, res) => {
     const userId = req.user._id;
 
     const post = await Post.findById(postId);
-
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
@@ -1826,7 +1824,14 @@ const likeUnlikePost = async (req, res) => {
       // Like post
       post.likes.push(userId);
       await post.save();
-      res.status(200).json({ message: "Post liked successfully" });
+      // Award points for liking a post
+      const User = (await import("../models/userModel.js")).default;
+      const user = await User.findById(userId);
+      if (user) {
+        user.points = (user.points || 0) + 20;
+        await user.save();
+      }
+      res.status(200).json({ message: "Post liked successfully", pointsAwarded: 20 });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });
