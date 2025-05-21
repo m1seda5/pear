@@ -6,7 +6,7 @@ import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 
 const DailyQuestionEditPage = () => {
   const [questions, setQuestions] = useState([]);
-  const [newQuestion, setNewQuestion] = useState({ question: "", correct: "", false1: "", false2: "", false3: "" });
+  const [newQuestion, setNewQuestion] = useState({ question: "", answer: "" });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -50,33 +50,18 @@ const DailyQuestionEditPage = () => {
       });
       return;
     }
-    const options = [newQuestion.correct, newQuestion.false1, newQuestion.false2, newQuestion.false3];
-    if (options.some(opt => !opt.trim())) {
-      toast({
-        title: t("Error"),
-        description: t("All answer fields are required"),
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-    const payload = {
-      question: newQuestion.question,
-      options,
-      answer: newQuestion.correct
-    };
+
     try {
       const res = await fetch("/api/daily-question/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(newQuestion),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setQuestions([...questions, data.dq]);
-      setNewQuestion({ question: "", correct: "", false1: "", false2: "", false3: "" });
+      setNewQuestion({ question: "", answer: "" });
       toast({
         title: t("Success"),
         description: t("Question added successfully"),
@@ -107,7 +92,7 @@ const DailyQuestionEditPage = () => {
       if (data.error) throw new Error(data.error);
       setQuestions(questions.map(q => q._id === id ? data.dq : q));
       setEditingId(null);
-      setNewQuestion({ question: "", correct: "", false1: "", false2: "", false3: "" });
+      setNewQuestion({ question: "", answer: "" });
       toast({
         title: t("Success"),
         description: t("Question updated successfully"),
@@ -172,35 +157,11 @@ const DailyQuestionEditPage = () => {
               />
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>{t("Correct Answer (A)")}</FormLabel>
+              <FormLabel>{t("Answer")}</FormLabel>
               <Input
-                value={newQuestion.correct}
-                onChange={(e) => setNewQuestion({ ...newQuestion, correct: e.target.value })}
+                value={newQuestion.answer}
+                onChange={(e) => setNewQuestion({ ...newQuestion, answer: e.target.value })}
                 placeholder={t("Enter the correct answer")}
-              />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel>{t("False Answer (B)")}</FormLabel>
-              <Input
-                value={newQuestion.false1}
-                onChange={(e) => setNewQuestion({ ...newQuestion, false1: e.target.value })}
-                placeholder={t("Enter a false answer")}
-              />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel>{t("False Answer (C)")}</FormLabel>
-              <Input
-                value={newQuestion.false2}
-                onChange={(e) => setNewQuestion({ ...newQuestion, false2: e.target.value })}
-                placeholder={t("Enter a false answer")}
-              />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel>{t("False Answer (D)")}</FormLabel>
-              <Input
-                value={newQuestion.false3}
-                onChange={(e) => setNewQuestion({ ...newQuestion, false3: e.target.value })}
-                placeholder={t("Enter a false answer")}
               />
             </FormControl>
             <Button type="submit" colorScheme="purple" width="full">
@@ -234,7 +195,7 @@ const DailyQuestionEditPage = () => {
                     mr={2}
                     onClick={() => {
                       setEditingId(q._id);
-                      setNewQuestion({ question: q.question, correct: q.answer, false1: "", false2: "", false3: "" });
+                      setNewQuestion({ question: q.question, answer: q.answer });
                     }}
                   />
                   <IconButton

@@ -224,7 +224,7 @@ const UserHeader = ({ user }) => {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { competitionActive, badge, points } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood', points: 0 };
+  const { competitionActive, badge } = useContext(CompetitionContext) || { competitionActive: true, badge: 'wood' };
   const bgColor = useColorModeValue("white", "#18181b");
   const borderColor = useColorModeValue("gray.200", "#232325");
   const textColor = useColorModeValue("gray.700", "gray.200");
@@ -330,28 +330,39 @@ const UserHeader = ({ user }) => {
           <Flex gap={2} alignItems={"center"} flexWrap="wrap">
             <Text fontSize={"sm"}>{user.username}</Text>
             <Text fontSize={"xs"} bg={"gray.dark"} color={"gray.light"} p={1} borderRadius={"full"}>brookhouse</Text>
-            {/* Badge next to username */}
-            {currentUser && currentUser._id === user._id ? (
-              <Flex align="center" gap={2} ml={2}>
-                <img
-                  src={badgeImages[badge || "wood"]}
-                  alt={(badge || "wood") + " badge"}
-                  style={{ width: 32, height: 32 }}
-                  title={(badge || "wood").charAt(0).toUpperCase() + (badge || "wood").slice(1) + " Badge"}
-                />
-                <Text fontSize="sm" color="gray.500">{points || 0} pts</Text>
-              </Flex>
-            ) : (
-              <Flex align="center" gap={2} ml={2}>
-                <img
-                  src={badgeImages[user.lastBadge || "wood"]}
-                  alt={(user.lastBadge || "wood") + " badge"}
-                  style={{ width: 32, height: 32 }}
-                  title={(user.lastBadge || "wood").charAt(0).toUpperCase() + (user.lastBadge || "wood").slice(1) + " Badge"}
-                />
-                <Text fontSize="sm" color="gray.500">{user.points || 0} pts</Text>
-              </Flex>
-            )}
+            {/* Badges row, slightly larger, right of username, wrap if needed */}
+            <Flex gap={4} align="center" ml={2} flexWrap="wrap">
+              {competitionActive
+                ? (user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"]).map((badge) => {
+                const isSpecial = specialBadges.includes(badge);
+                const canRedeem =
+                  currentUser?._id === user._id &&
+                  isSpecial &&
+                  !redeemed &&
+                  eligibleBadge === badge &&
+                  isFirst;
+                return (
+                  <Image
+                    key={badge}
+                    src={badgeImages[badge]}
+                    alt={badge + " badge"}
+                    boxSize="48px"
+                    title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
+                    style={canRedeem ? { cursor: 'pointer', border: '2px solid #7F53AC', boxShadow: '0 0 12px #7F53AC' } : {}}
+                    onClick={canRedeem ? () => handleRedeem(badge) : undefined}
+                  />
+                );
+                  })
+                : user.lastBadge && (
+                    <Image
+                      key={user.lastBadge}
+                      src={badgeImages[user.lastBadge]}
+                      alt={user.lastBadge + " badge"}
+                      boxSize="48px"
+                      title={user.lastBadge.charAt(0).toUpperCase() + user.lastBadge.slice(1) + " Badge"}
+                    />
+                  )}
+            </Flex>
           </Flex>
           {error && <Text color="red.400" fontSize="sm" mt={2}>{error}</Text>}
           {redeeming && <Text color="purple.500" fontSize="sm" mt={2}>Redeeming...</Text>}

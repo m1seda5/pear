@@ -18,6 +18,7 @@ const badgeImages = {
 const DEFAULT_POSITION = { top: 100, left: 840 };
 
 const PersonalPointsWidget = () => {
+  const [userData, setUserData] = useState(null);
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("personalPointsWidgetPosition");
     if (saved) {
@@ -34,18 +35,28 @@ const PersonalPointsWidget = () => {
   const bgColor = useColorModeValue("white", "#18181b");
   const borderColor = useColorModeValue("gray.200", "#232325");
   const textColor = useColorModeValue("gray.700", "gray.200");
-  const { competitionActive, showWidgets, competitionEnded, points, badge } = useContext(CompetitionContext) || { 
+  const { competitionActive, showWidgets, competitionEnded } = useContext(CompetitionContext) || { 
     competitionActive: true, 
     showWidgets: true,
-    competitionEnded: false,
-    points: 0,
-    badge: "wood"
+    competitionEnded: false 
   };
+
+  useEffect(() => {
+    if (!competitionActive || competitionEnded) return;
+    fetch("/api/users/me", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        setUserData(data);
+      })
+      .catch(() => {
+        setUserData({ points: 0, lastBadge: "Wood League" });
+      });
+  }, [competitionActive, competitionEnded]);
 
   if (!showWidgets || competitionEnded) return null;
 
-  const displayBadge = badge || "wood";
-  const displayPoints = points || 0;
+  const badge = userData?.lastBadge || "wood";
+  const displayPoints = userData?.points || 0;
 
   return (
     <Box
@@ -91,14 +102,14 @@ const PersonalPointsWidget = () => {
         userSelect="none"
         style={{ WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
       >
-        <Text fontWeight="bold" fontSize="xl">{displayBadge === "wood" ? "Wood League" : displayBadge.charAt(0).toUpperCase() + displayBadge.slice(1) + " League"}</Text>
+        <Text fontWeight="bold" fontSize="xl">{badge === "wood" ? "Wood League" : badge.charAt(0).toUpperCase() + badge.slice(1) + " League"}</Text>
       </Flex>
       <Box p={7} pt={4}>
         <Flex align="center" justify="center" gap={4}>
           <Text fontWeight="extrabold" fontSize="2.1rem" letterSpacing="0.04em">
             {displayPoints} <Box as="span" fontSize="0.8em" fontWeight="semibold" color="#B0B0B0">PTS</Box>
           </Text>
-          <Avatar size="lg" src={badgeImages[displayBadge]} name={displayBadge} bg="transparent" boxSize="48px" />
+          <Avatar size="lg" src={badgeImages[badge]} name={badge} bg="transparent" boxSize="48px" />
         </Flex>
       </Box>
     </Box>
