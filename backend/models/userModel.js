@@ -460,7 +460,11 @@ const userSchema = mongoose.Schema(
     lastNotificationDate: {
       type: Date,
       default: null
-    }
+    },
+    badges: [{ type: String }],
+    lastBadge: { type: String, default: "wood" },
+    outOfCompetition: { type: Boolean, default: false },
+    devMode: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

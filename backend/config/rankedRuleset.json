@@ -1,0 +1,25 @@
+{
+  "points": {
+    "loginStreak": { "3": 50, "5": 100, "7": 150, "10": 200 },
+    "dailyQuestion": 25,
+    "repost": 10,
+    "conversation": 25,
+    "trendingPost": 175
+  },
+  "badgeThresholds": {
+    "wood": 0,
+    "bronze": 300,
+    "silver": 700,
+    "gold": 1300,
+    "ruby": 2000,
+    "emerald": 3000,
+    "sapphire": 4000,
+    "champion": 5000
+  },
+  "featureFlags": {
+    "popUpAnimations": true,
+    "championGlow": true,
+    "mobileFallbacks": true,
+    "motivationNotifications": true
+  }
+} 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import tenLight from "../assets/images/10(light).png";
 import tenDark from "../assets/images/10(dark).png";
@@ -14,6 +14,7 @@ import hundredLight from "../assets/images/100(light).png";
 import hundredDark from "../assets/images/100(dark).png";
 import twofiftyLight from "../assets/images/250(light).png";
 import twofiftyDark from "../assets/images/250(dark).png";
+import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const pngMap = {
   10: { light: tenLight, dark: tenDark },
@@ -33,6 +34,16 @@ const getPointsPng = (points, mode) => {
 };
 
 const PointPopUp = ({ points, mode = "light", position = { top: 0, left: 0 }, onDone }) => {
+  const { competitionActive, updatePoints } = useContext(CompetitionContext) || { competitionActive: true, points: 0, updatePoints: () => {} };
+
+  useEffect(() => {
+    if (!competitionActive) return;
+    fetch("/api/users/me", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => updatePoints(data.points || 0))
+      .catch(() => updatePoints(0));
+  }, [competitionActive, updatePoints]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (onDone) onDone();
