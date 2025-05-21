@@ -25,56 +25,55 @@ export const CompetitionContextProvider = ({ children }) => {
   const registerOnBadgeUpgraded = (cb) => setBadgeUpgradedHooks(hooks => [...hooks, cb]);
   const registerOnCompetitionEnd = (cb) => setCompetitionEndHooks(hooks => [...hooks, cb]);
 
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch('/api/users/me', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch user data');
-      const data = await response.json();
-      setUserInfo(data);
-      setPoints(data.points || 0);
-      setBadge(data.lastBadge || 'wood');
-      setIsAdmin(data.role === 'admin');
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      setUserInfo(null);
-      setPoints(0);
-      setBadge('wood');
-      setIsAdmin(false);
-    }
-  };
-
-  const fetchCompetitionState = async () => {
-    try {
-      const response = await fetch('/api/competition/state', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch competition state');
-      const data = await response.json();
-      setCompetitionActive(data.active);
-      setShowWidgets(data.active);
-      setCompetitionEnded(data.ended);
-    } catch (error) {
-      console.error('Error fetching competition state:', error);
-      setCompetitionActive(true);
-      setShowWidgets(true);
-      setCompetitionEnded(false);
-    }
-  };
-
-  // Initial data fetch
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/users/me', { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch user data');
+        const data = await response.json();
+        setUserInfo(data);
+        setPoints(data.points || 0);
+        setBadge(data.lastBadge || 'wood');
+        setIsAdmin(data.role === 'admin');
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setUserInfo(null);
+        setPoints(0);
+        setBadge('wood');
+        setIsAdmin(false);
+      }
+    };
+
+    const fetchCompetitionState = async () => {
+      try {
+        const response = await fetch('/api/competition/state', { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch competition state');
+        const data = await response.json();
+        setCompetitionActive(data.active);
+        setShowWidgets(data.active);
+        setCompetitionEnded(data.ended);
+      } catch (error) {
+        console.error('Error fetching competition state:', error);
+        setCompetitionActive(true);
+        setShowWidgets(true);
+        setCompetitionEnded(false);
+      }
+    };
+
+    // Reconnect sync: fetch latest user info and points
+    useEffect(() => {
+      const handleReconnect = () => {
+        fetchUserData();
+        // Optionally, fetch audit log and reconcile if needed
+      };
+      window.addEventListener('online', handleReconnect);
+      return () => {
+        window.removeEventListener('online', handleReconnect);
+      };
+    }, []);
+
     fetchUserData();
     fetchCompetitionState();
-  }, []);
-
-  // Reconnect sync: fetch latest user info and points
-  useEffect(() => {
-    const handleReconnect = () => {
-      fetchUserData();
-      // Optionally, fetch audit log and reconcile if needed
-    };
-    window.addEventListener('online', handleReconnect);
-    return () => {
-      window.removeEventListener('online', handleReconnect);
-    };
   }, []);
 
   // Call hooks when points change
@@ -103,7 +102,8 @@ export const CompetitionContextProvider = ({ children }) => {
     if (competitionEnded) {
       competitionEndHooks.forEach(cb => cb(userInfo?._id));
     }
-  }, [competitionEnded, userInfo?._id]);
+    // eslint-disable-next-line
+  }, [competitionEnded]);
 
   useEffect(() => {
     if (!competitionActive || !userInfo || !userInfo.streak) return;
@@ -138,7 +138,7 @@ export const CompetitionContextProvider = ({ children }) => {
         isClosable: true,
       });
     }
-  }, [competitionActive, userInfo?.streak, userInfo?.points, toast]);
+  }, [competitionActive, userInfo?.streak]);
 
   const endCompetition = async () => {
     try {
