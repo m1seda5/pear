@@ -410,7 +410,7 @@ const Post = ({ post, postedBy, isTV = false }) => {
                                 }}
                             >
                                 {user?.username}
-                                <Image src="/woodbadge.png" w={4} h={4} ml={1} display="inline" />
+                                <Image src="/woodbadge.png" w={6} h={6} ml={2} mb={-1} display="inline" style={{verticalAlign: 'middle'}} />
                             </Text>
                             <Text fontSize="xs" color="gray.500">
                                 @{user?.username} · {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : ""} {t("ago")}

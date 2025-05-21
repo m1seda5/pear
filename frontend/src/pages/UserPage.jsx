@@ -13,6 +13,7 @@ import userAtom from "../atoms/userAtom";
 import { FaLock } from "react-icons/fa";
 import NotelyWidget from "../components/NotelyWidget";
 import HousePointTracker from "../components/HousePointTracker";
+import PersonalPointsWidget from "../components/PersonalPointsWidget";
 
 const UserPage = () => {
   const { user, loading } = useGetUserProfile();
@@ -136,6 +137,7 @@ const UserPage = () => {
 
   return (
     <Box>
+      <PersonalPointsWidget />
       {/* Floating widgets (hidden on small screens) */}
       <NotelyWidget />
       <HousePointTracker showTutorial={false} />
