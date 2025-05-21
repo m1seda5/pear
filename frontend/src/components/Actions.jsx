@@ -37,7 +37,7 @@ const Actions = ({ post }) => {
     const showToast = useShowToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { competitionActive, updatePoints, isAdmin } = useContext(CompetitionContext);
-    const { showPointPopUp } = usePointPopUp();
+    const showPointPopUp = usePointPopUp();
 
     // Get appropriate color for pear icon based on color mode
     const pearColor = useColorModeValue("black", "white");
