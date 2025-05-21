@@ -21,7 +21,7 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import postsAtom from "../atoms/postsAtom";
 import { useTranslation } from "react-i18next";
-import { CompetitionContext } from "../context/CompetitionContext";
+import { CompetitionContext } from "../contexts/CompetitionContext";
 import { FaHeart, FaRegHeart, FaComment, FaRetweet } from "react-icons/fa";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";

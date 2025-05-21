@@ -14,7 +14,7 @@ import hundredLight from "../assets/images/100(light).png";
 import hundredDark from "../assets/images/100(dark).png";
 import twofiftyLight from "../assets/images/250(light).png";
 import twofiftyDark from "../assets/images/250(dark).png";
-import { CompetitionContext } from "../context/CompetitionContext";
+import { CompetitionContext } from "../contexts/CompetitionContext";
 
 const pngMap = {
   10: { light: tenLight, dark: tenDark },
