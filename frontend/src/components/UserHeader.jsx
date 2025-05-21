@@ -267,64 +267,60 @@ const UserHeader = ({ user }) => {
   const badges = user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"];
 
   return (
-    <VStack gap={4} alignItems={"start"} w="full">
-      <Flex justifyContent={"space-between"} w={"full"}>
-        <Box>
-          <Text fontSize={"2xl"} fontWeight={"bold"}>{user.name}</Text>
-          <Flex gap={2} alignItems={"center"} flexWrap="wrap">
-            <Text fontSize={"sm"}>{user.username}</Text>
-            <Text fontSize={"xs"} bg={"gray.dark"} color={"gray.light"} p={1} borderRadius={"full"}>brookhouse</Text>
-            {/* Badges row, slightly larger, right of username, wrap if needed */}
-            <Flex gap={4} align="center" ml={2} flexWrap="wrap">
-              {(user.badges || ["wood", "bronze", "silver", "gold", "ruby", "emerald", "sapphire", "champion"]).map((badge) => (
-                <Image
-                  key={badge}
-                  src={badgeImages[badge]}
-                  alt={badge + " badge"}
-                  boxSize="48px"
-                  title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
-                />
-              ))}
+    <Box
+      bg={bgColor}
+      borderBottom="1px"
+      borderColor={borderColor}
+      p={4}
+      position="sticky"
+      top={0}
+      zIndex={10}
+    >
+      <Flex maxW="800px" mx="auto" align="center" justify="space-between">
+        <Flex align="center" gap={4}>
+          <Avatar size="lg" src={user.profilePic} name={user.name} />
+          <Box>
+            <Flex align="center" gap={2}>
+              <Text fontSize="2xl" fontWeight="bold">
+                {user.name}
+              </Text>
+              {/* Badges row */}
+              <Flex gap={3} align="center" ml={4}>
+                {badges.map((badge) => (
+                  <Image
+                    key={badge}
+                    src={badgeImages[badge]}
+                    alt={badge + " badge"}
+                    boxSize="40px"
+                    title={badge.charAt(0).toUpperCase() + badge.slice(1) + " Badge"}
+                  />
+                ))}
+              </Flex>
             </Flex>
-          </Flex>
-        </Box>
-        <Box>
-          {user.profilePic ? (
-            <MotionAvatar
-              name={user.name}
-              src={user.profilePic}
-              size={{ base: "md", md: "xl" }}
-              onClick={handleProfileClick}
-              cursor="pointer"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            />
-          ) : (
-            <MotionAvatar
-              name={user.name}
-              src="https://bit.ly/broken-link"
-              size={{ base: "md", md: "xl" }}
-              onClick={handleProfileClick}
-              cursor="pointer"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            />
-          )}
-        </Box>
+            <Text color={textColor} fontSize="sm">
+              {user.bio || "No bio yet"}
+            </Text>
+          </Box>
+        </Flex>
+        {currentUser?._id === user._id && (
+          <Link as={RouterLink} to="/update">
+            <Button size={"sm"}>{t("Edit Profile")}</Button>
+          </Link>
+        )}
       </Flex>
 
       <Text>{user.bio}</Text>
 
-      {currentUser?._id === user._id && (
+      {currentUser?._id === user._id ? (
         <Link as={RouterLink} to="/update">
           <Button size={"sm"}>{t("Edit Profile")}</Button>
         </Link>
-      )}
-      {currentUser?._id !== user._id && (
+      ) : (
         <Button size={"sm"} onClick={handleFollowUnfollow} isLoading={updating}>
           {following ? t("Unfollow") : t("Follow")}
         </Button>
       )}
+
       <Flex w={"full"} justifyContent={"space-between"}>
         <Flex gap={2} alignItems={"center"}>
           <Link color={"gray.light"}>Pear</Link>
@@ -355,6 +351,7 @@ const UserHeader = ({ user }) => {
           </Box>
         </Flex>
       </Flex>
+
       <Flex w={"full"}>
         <Flex
           flex={1}
@@ -366,7 +363,7 @@ const UserHeader = ({ user }) => {
           <Text fontWeight={"bold"}>{t("Feed")}</Text>
         </Flex>
       </Flex>
-    </VStack>
+    </Box>
   );
 };
 
