@@ -21,6 +21,8 @@ export const CompetitionContextProvider = ({ children }) => {
   const [badgeUpgradedHooks, setBadgeUpgradedHooks] = useState([]);
   const [competitionEndHooks, setCompetitionEndHooks] = useState([]);
 
+  const [suppressToasts, setSuppressToasts] = useState(false);
+
   const registerOnPointsChange = (cb) => setPointsChangeHooks(hooks => [...hooks, cb]);
   const registerOnBadgeUpgraded = (cb) => setBadgeUpgradedHooks(hooks => [...hooks, cb]);
   const registerOnCompetitionEnd = (cb) => setCompetitionEndHooks(hooks => [...hooks, cb]);
@@ -77,9 +79,13 @@ export const CompetitionContextProvider = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    setSuppressToasts(!competitionActive || !showWidgets || competitionEnded);
+  }, [competitionActive, showWidgets, competitionEnded]);
+
   // Call hooks when points change
   const updatePoints = (delta) => {
-    if (!competitionActive || competitionEnded) return;
+    if (!competitionActive || competitionEnded || suppressToasts) return;
     setPoints((p) => {
       const newTotal = p + delta;
       pointsChangeHooks.forEach(cb => cb(newTotal));
@@ -89,7 +95,7 @@ export const CompetitionContextProvider = ({ children }) => {
 
   // Call hooks when badge upgrades
   const updateBadge = (newBadge) => {
-    if (!competitionActive || competitionEnded) return;
+    if (!competitionActive || competitionEnded || suppressToasts) return;
     setBadge((oldBadge) => {
       if (oldBadge !== newBadge) {
         badgeUpgradedHooks.forEach(cb => cb(oldBadge, newBadge));
@@ -189,6 +195,8 @@ export const CompetitionContextProvider = ({ children }) => {
         endCompetition,
         resetCompetition,
         setIsAdmin,
+        suppressToasts,
+        setShowWidgets,
         // SDK hooks
         registerOnPointsChange,
         registerOnBadgeUpgraded,

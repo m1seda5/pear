@@ -44,10 +44,11 @@ const LeaderboardWidget = () => {
   const dragOffset = useRef({ x: 0, y: 0 });
   const [isClosed, setIsClosed] = useState(() => sessionStorage.getItem("leaderboardClosed") === "true");
   const [leaders, setLeaders] = useState([]);
-  const { competitionActive, showWidgets, competitionEnded } = useContext(CompetitionContext) || { 
+  const { competitionActive, showWidgets, competitionEnded, points } = useContext(CompetitionContext) || { 
     competitionActive: true, 
     showWidgets: true,
-    competitionEnded: false 
+    competitionEnded: false,
+    points: 0
   };
 
   const bg = useColorModeValue("#F8F6FF", "#232325");
@@ -87,7 +88,7 @@ const LeaderboardWidget = () => {
         }
       })
       .catch(() => setLeaders(placeholderUsers));
-  }, [competitionActive, competitionEnded]);
+  }, [competitionActive, competitionEnded, points]);
 
   const startDrag = (e) => {
     setDragging(true);

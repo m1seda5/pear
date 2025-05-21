@@ -7,8 +7,9 @@ const CompetitionSettings = () => {
   const { isOpen: isEndOpen, onOpen: onEndOpen, onClose: onEndClose } = useDisclosure();
   const cancelRef = useRef();
   const toast = useToast();
-  const { competitionActive, setCompetitionActive } = useCompetition();
+  const { competitionActive, setCompetitionActive, showWidgets, setShowWidgets } = useCompetition();
   const [isLoading, setIsLoading] = useState(false);
+  const [isPaused, setIsPaused] = useState(!competitionActive);
 
   const handleResetCompetition = async () => {
     setIsLoading(true);
@@ -75,9 +76,42 @@ const CompetitionSettings = () => {
     }
   };
 
+  const handlePauseUnpause = () => {
+    if (isPaused) {
+      setCompetitionActive(true);
+      setShowWidgets(true);
+      setIsPaused(false);
+      toast({
+        title: "Competition Unpaused",
+        description: "All widgets and toasts are now active.",
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } else {
+      setCompetitionActive(false);
+      setShowWidgets(false);
+      setIsPaused(true);
+      toast({
+        title: "Competition Paused",
+        description: "All widgets and toasts are now hidden.",
+        status: "info",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <Box p={4}>
       <Flex gap={4}>
+        <Button
+          colorScheme={isPaused ? "green" : "yellow"}
+          onClick={handlePauseUnpause}
+          isLoading={isLoading}
+        >
+          {isPaused ? "Unpause Competition" : "Pause Competition"}
+        </Button>
         <Button
           colorScheme="red"
           onClick={onResetOpen}
