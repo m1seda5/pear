@@ -117,7 +117,9 @@ const HomePage = () => {
 			{/* Main posts (original layout) */}
 			<Box w="100%" maxW="600px" mx="auto" minW="0">
 				{!loading && posts.length === 0 && (
-					<h1>{t("Welcome to Pear! You have successfully created an account. Log in to see the latest Brookhouse news 🍐.")}</h1>
+					<Text textAlign="center" fontSize="lg">
+						{t("No posts found. Follow more users or groups to see content!")}
+					</Text>
 				)}
 				{loading && (
 					<Flex justifyContent="center">

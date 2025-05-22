@@ -1931,6 +1931,15 @@ const getFeedPosts = async (req, res) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
+    const pendingPostId = req.query.pendingPostId;
+    let matchOr = [
+      { reviewStatus: "approved" },
+      { "postedBy.role": { $in: ["admin", "teacher"] } }
+    ];
+    if (pendingPostId && mongoose.Types.ObjectId.isValid(pendingPostId)) {
+      matchOr.unshift({ _id: mongoose.Types.ObjectId(pendingPostId) });
+    }
+
     const user = await User.findById(userId)
       .populate("groups")
       .select("following yearGroup department role groups");
@@ -1942,13 +1951,7 @@ const getFeedPosts = async (req, res) => {
 
     // Construct aggregation pipeline
     const pipeline = [
-      // Initial match to filter approved posts or those from staff
-      { $match: { 
-        $or: [
-          { reviewStatus: "approved" },
-          { "postedBy.role": { $in: ["admin", "teacher"] } }
-        ]
-      }},
+      { $match: { $or: matchOr } },
       // Populate postedBy information
       { $lookup: {
           from: "users",

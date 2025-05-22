@@ -292,6 +292,14 @@ function App() {
     }
   }, [pathname, user]);
 
+  useEffect(() => {
+    const pendingPost = localStorage.getItem('pendingPost');
+    if (user && pendingPost) {
+      navigate(`/posts/${pendingPost}`);
+      localStorage.removeItem('pendingPost');
+    }
+  }, [user]);
+
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
 
   if (!isI18nReady) {
@@ -304,7 +312,7 @@ function App() {
         {!isTVPage && <Header unreadCount={unreadCount} />}
         <Box mx="auto" px={4} maxW={shouldUseFullWidth ? "100vw" : "600px"}>
           <Routes>
-            <Route path="/" element={user ? <HomePage /> : <Navigate to="/auth" />} />
+            <Route path="/" element={user ? <HomePage key={Date.now()} /> : <Navigate to="/auth" />} />
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
             <Route path="/:username" element={<UserPage />} />

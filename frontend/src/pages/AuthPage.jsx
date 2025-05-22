@@ -9,11 +9,26 @@ const AuthPage = () => {
   const authScreenState = useRecoilValue(authScreenAtom);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const queryParams = new URLSearchParams(window.location.search);
+  const postId = queryParams.get('post');
+  const redirectPath = queryParams.get('redirect');
+
+  if (postId) {
+    try {
+      const decodedPostId = atob(postId);
+      localStorage.setItem('pendingPost', decodedPostId);
+    } catch (e) {
+      // ignore decoding errors
+    }
+  }
+
+  const handleLogin = async () => {
     // After successful login:
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get('redirect') || '/';
-    navigate(redirectUrl);
+    if (success) {
+      navigate(redirectPath || (user ? "/" : "/auth"));
+    }
   };
 
   return (
