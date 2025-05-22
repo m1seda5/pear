@@ -308,7 +308,7 @@ function App() {
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
             <Route path="/:username" element={<UserPage />} />
-            <Route path="/:username/post/:pid" element={<PostPage />} />
+            <Route path="/:username/post/:pid" element={user ? <PostPage /> : <Navigate to={`/auth/login?redirect=/posts/${params.id}`} />} />
             <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
             <Route path="/verify-email" element={<VerifyEmail />} />

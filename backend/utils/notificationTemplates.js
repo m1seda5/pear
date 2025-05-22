@@ -68,6 +68,16 @@ return {
 };
 };
 
+// Simple post notification with direct login+redirect link
+export const generatePostNotificationSimple = (posterUsername, postId) => ({
+  message: `${posterUsername} just made a new post...`,
+  template: `
+    <a href="https://pear-tsk2.onrender.com/auth/login?postId=${postId}&redirect=/posts/${postId}">
+      View Post
+    </a>
+  `
+});
+
 export const smartNotificationMessages = [
 "👀 Psst… Brookhouse News is rolling in. Don't miss the buzz!",
 "Your Pear feed is feeling a little lonely 🍐. Time to reconnect!",

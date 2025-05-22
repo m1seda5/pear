@@ -1235,33 +1235,43 @@ const transporter = nodemailer.createTransport({
 
 // Helper function to send notification email
 const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
-  const mailOptions = {
-    from: "pearnet104@gmail.com",
-    to: recipientEmail,
-    subject: "New Post on Pear! 🍐",
-    html: `
+  try {
+    // Encode the post ID using base64
+    const encodedPostId = Buffer.from(postId.toString()).toString('base64');
+    
+    const emailTemplate = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
         <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
         <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <a href="https://pear-tsk2.onrender.com/auth/login" 
-           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-          Visit Pear
-        </a>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="https://pear-tsk2.onrender.com/auth/login?post=${encodedPostId}&redirect=/posts/${postId}" 
+             style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 16px;">
+            View Post
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #666;">
+          Visit Pear Network to view the post.
+        </p>
         <p style="color: #666; font-size: 12px; margin-top: 20px;">
           You received this email because you have notifications enabled. 
           You can disable these in your Pear account settings.
         </p>
       </div>
-    `
-  };
+    `;
 
-  try {
+    const mailOptions = {
+      from: "pearnet104@gmail.com",
+      to: recipientEmail,
+      subject: "New Post on Pear! 🍐",
+      html: emailTemplate
+    };
+
     await transporter.sendMail(mailOptions);
     console.log(`Notification email sent to ${recipientEmail}`);
   } catch (error) {
     console.error(`Error sending notification email to ${recipientEmail}:`, error);
+    throw error; // Re-throw to handle it in the calling function
   }
 };
 
