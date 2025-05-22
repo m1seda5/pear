@@ -27,7 +27,7 @@ export default function LoginCard() {
 	const [loading, setLoading] = useState(false);
 
 	const [inputs, setInputs] = useState({
-		username: "",
+		identifier: "",
 		password: "",
 	});
 	const showToast = useShowToast();
@@ -76,11 +76,11 @@ export default function LoginCard() {
 				>
 					<Stack spacing={4}>
 						<FormControl isRequired>
-							<FormLabel>Username</FormLabel>
+							<FormLabel>Emial or Username</FormLabel>
 							<Input
 								type='text'
-								value={inputs.username}
-								onChange={(e) => setInputs((inputs) => ({ ...inputs, username: e.target.value }))}
+								value={inputs.identifier}
+								onChange={(e) => setInputs((inputs) => ({ ...inputs, identifier: e.target.value }))}
 							/>
 						</FormControl>
 						<FormControl isRequired>
