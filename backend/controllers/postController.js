@@ -1235,40 +1235,33 @@ const transporter = nodemailer.createTransport({
 
 // Helper function to send notification email
 const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
-  try {
-    // Direct link to the post
-    const postUrl = `https://pear-tsk2.onrender.com/posts/${postId}`;
-    const emailTemplate = `
+  const mailOptions = {
+    from: "pearnet104@gmail.com",
+    to: recipientEmail,
+    subject: "New Post on Pear! 🍐",
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
         <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
         <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <div style="text-align: center; margin: 24px 0;">
-          <a href="${postUrl}" 
-             style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 16px;">
-            View Post
-          </a>
-        </div>
-        <p style="font-size: 14px; color: #666;">
-          Click the button above to view the post on Pear Network.
-        </p>
+        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+          View Post
+        </a>
         <p style="color: #666; font-size: 12px; margin-top: 20px;">
           You received this email because you have notifications enabled. 
           You can disable these in your Pear account settings.
         </p>
       </div>
-    `;
-    const mailOptions = {
-      from: "pearnet104@gmail.com",
-      to: recipientEmail,
-      subject: "New Post on Pear! 🍐",
-      html: emailTemplate
-    };
+    `
+  };
+
+  try {
     await transporter.sendMail(mailOptions);
     console.log(`Notification email sent to ${recipientEmail}`);
   } catch (error) {
     console.error(`Error sending notification email to ${recipientEmail}:`, error);
-    throw error;
   }
 };
 
@@ -1671,12 +1664,7 @@ const reviewPost = async (req, res) => {
           });
 
           const notificationPromises = usersToNotify.map((recipient) =>
-            sendNotificationEmail(
-              recipient.email,
-              post.postedBy,
-              post._id,
-              poster.username
-            )
+            sendNotificationEmail(recipient.email, postedBy, newPost._id, user.username)
           );
 
           await Promise.allSettled(notificationPromises);
