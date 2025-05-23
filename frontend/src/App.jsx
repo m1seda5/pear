@@ -172,7 +172,7 @@
 
 // post review 
 import { Box } from "@chakra-ui/react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import UserPage from "./pages/UserPage";
 import PostPage from "./pages/PostPage";
 import Header from "./components/Header";
@@ -302,6 +302,15 @@ function App() {
 
   const shouldUseFullWidth = isTVPage || isAdminDashboard;
 
+  const ProtectedPostRoute = () => {
+    const { pid, id } = useParams();
+    const postId = pid || id;
+    if (!user) {
+      return <Navigate to={`/auth/login?redirect=/posts/${postId}`} />;
+    }
+    return <PostPage />;
+  };
+
   if (!isI18nReady) {
     return null; // or a loading spinner
   }
@@ -316,14 +325,14 @@ function App() {
             <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" />} />
             <Route path="/update" element={user ? <UpdateProfilePage /> : <Navigate to="/auth" />} />
             <Route path="/:username" element={<UserPage />} />
-            <Route path="/:username/post/:pid" element={user ? <PostPage /> : <Navigate to={`/auth/login?redirect=/posts/${params.id}`} />} />
+            <Route path="/:username/post/:pid" element={<ProtectedPostRoute />} />
             <Route path="/chat" element={user ? <ChatPage onConversationOpen={fetchUnreadCount} /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/tv" element={<TVPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/admin" element={user && user.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
-            <Route path="/posts/:id" element={<PostPage />} />
+            <Route path="/posts/:id" element={<ProtectedPostRoute />} />
           </Routes>
         </Box>
         {!isTVPage && isPotentialReviewer && <ReviewModal />}
