@@ -1236,22 +1236,21 @@ const transporter = nodemailer.createTransport({
 // Helper function to send notification email
 const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
   try {
-    // Encode the post ID using base64
-    const encodedPostId = Buffer.from(postId.toString()).toString('base64');
-    
+    // Direct link to the post
+    const postUrl = `https://pear-tsk2.onrender.com/posts/${postId}`;
     const emailTemplate = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
         <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
         <p style="font-size: 16px;">Don't miss out on the conversation!</p>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="https://pear-tsk2.onrender.com/auth/login?post=${encodedPostId}&redirect=/posts/${postId}" 
+          <a href="${postUrl}" 
              style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 16px;">
             View Post
           </a>
         </div>
         <p style="font-size: 14px; color: #666;">
-          Visit Pear Network to view the post.
+          Click the button above to view the post on Pear Network.
         </p>
         <p style="color: #666; font-size: 12px; margin-top: 20px;">
           You received this email because you have notifications enabled. 
@@ -1259,55 +1258,53 @@ const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUse
         </p>
       </div>
     `;
-
     const mailOptions = {
       from: "pearnet104@gmail.com",
       to: recipientEmail,
       subject: "New Post on Pear! 🍐",
       html: emailTemplate
     };
-
     await transporter.sendMail(mailOptions);
     console.log(`Notification email sent to ${recipientEmail}`);
   } catch (error) {
     console.error(`Error sending notification email to ${recipientEmail}:`, error);
-    throw error; // Re-throw to handle it in the calling function
+    throw error;
   }
 };
 
-
-// New notifyReviewers function
+// Reviewer notification function
 const notifyReviewers = async (post) => {
   try {
     const populatedPost = await Post.findById(post._id)
       .populate("postedBy", "username email")
       .populate("reviewers.userId", "email username role");
-
     if (!populatedPost) {
       console.error("Post not found for notification:", post._id);
       return;
     }
-
     const posterUsername = populatedPost.postedBy.username;
     const reviewers = populatedPost.reviewers;
-
-    const getReviewerEmailTemplate = (reviewerUsername, postId, posterUsername) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4CAF50;">New Post Pending Review on Pear! 🍐</h2>
-        <p style="font-size: 16px;">Hello ${reviewerUsername},</p>
-        <p style="font-size: 16px;">${posterUsername} has submitted a new post that requires your review.</p>
-        <p style="font-size: 16px;">Please review the content and approve or reject it.</p>
-        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
-           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-          Review Post
-        </a>
-        <p style="color: #666; font-size: 12px; margin-top: 20px;">
-          You received this email because you have review permissions on Pear.
-        </p>
-      </div>
-    `;
-
+    const getReviewerEmailTemplate = (reviewerUsername, postId, posterUsername) => {
+      const reviewUrl = `https://pear-tsk2.onrender.com/posts/${postId}`;
+      return `
+        <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">
+          <h2 style=\"color: #4CAF50;\">New Post Pending Review on Pear! 🍐</h2>
+          <p style=\"font-size: 16px;\">Hello ${reviewerUsername},</p>
+          <p style=\"font-size: 16px;\">${posterUsername} has submitted a new post that requires your review.</p>
+          <p style=\"font-size: 16px;\">Please review the content and approve or reject it.</p>
+          <div style=\"text-align: center; margin: 24px 0;\">
+            <a href=\"${reviewUrl}\" 
+               style=\"display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                      color: white; text-decoration: none; border-radius: 5px; font-size: 16px;\">
+              Review Post
+            </a>
+          </div>
+          <p style=\"color: #666; font-size: 12px; margin-top: 20px;\">
+            You received this email because you have review permissions on Pear.
+          </p>
+        </div>
+      `;
+    };
     const notificationPromises = reviewers
       .filter(reviewer => reviewer.userId && reviewer.userId.email)
       .map(reviewer => {
@@ -1321,12 +1318,12 @@ const notifyReviewers = async (post) => {
           .then(() => console.log(`Review notification sent to ${reviewer.userId.email}`))
           .catch(error => console.error(`Error sending to ${reviewer.userId.email}:`, error));
       });
-
     await Promise.allSettled(notificationPromises);
   } catch (error) {
     console.error("Error in notifyReviewers:", error);
   }
 };
+
 const createPost = async (req, res) => {
   try {
     const {
