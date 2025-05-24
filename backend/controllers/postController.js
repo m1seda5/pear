@@ -1235,29 +1235,42 @@ const transporter = nodemailer.createTransport({
 
 // Helper function to send notification email
 const sendNotificationEmail = async (recipientEmail, posterId, postId, posterUsername) => {
-  const mailOptions = {
-    from: "pearnet104@gmail.com",
-    to: recipientEmail,
-    subject: "New Post on Pear! 🍐",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
-        <p style="font-size: 16px;">Hello! ${posterUsername} just made a new post on Pear.</p>
-        <p style="font-size: 16px;">Don't miss out on the conversation!</p>
-        <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
-           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
-                  color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-          View Post
-        </a>
-        <p style="color: #666; font-size: 12px; margin-top: 20px;">
-          You received this email because you have notifications enabled. 
-          You can disable these in your Pear account settings.
-        </p>
-      </div>
-    `
-  };
-
   try {
+    // First get the post to ensure it exists and get the poster's info
+    const post = await Post.findById(postId)
+      .populate("postedBy", "username profilePic email")
+      .lean();
+
+    if (!post) {
+      console.error("Post not found for notification:", postId);
+      return;
+    }
+
+    // Get the poster's info, with fallback to provided username
+    const poster = post.postedBy || { username: posterUsername || "Unknown User" };
+    
+    const mailOptions = {
+      from: "pearnet104@gmail.com",
+      to: recipientEmail,
+      subject: "New Post on Pear! 🍐",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #4CAF50;">New Post on Pear! 🍐</h2>
+          <p style="font-size: 16px;">Hello! ${poster.username} just made a new post on Pear.</p>
+          <p style="font-size: 16px;">Don't miss out on the conversation!</p>
+          <a href="https://pear-tsk2.onrender.com/posts/${postId}" 
+             style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                    color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+            View Post
+          </a>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">
+            You received this email because you have notifications enabled. 
+            You can disable these in your Pear account settings.
+          </p>
+        </div>
+      `
+    };
+
     await transporter.sendMail(mailOptions);
     console.log(`Notification email sent to ${recipientEmail}`);
   } catch (error) {
@@ -1723,50 +1736,74 @@ const toggleNotifications = async (req, res) => {
 const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
-    const userId = req.user._id;
+    const userId = req.user?._id;
 
-    const post = await Post.findById(postId)
-      .populate("postedBy", "username profilePic")
+    // First get the post without population to check if it exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Now populate the post with user data
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: "postedBy",
+        select: "username profilePic email role",
+        options: { lean: true }
+      })
       .populate("targetGroups", "name color")
-      .lean(); // Added lean() for better performance
+      .lean();
 
-    if (!post) return res.status(404).json({ error: "Post not found" });
+    // If postedBy is null or missing, provide fallback values
+    if (!populatedPost.postedBy) {
+      populatedPost.postedBy = {
+        username: "Unknown User",
+        profilePic: "https://res.cloudinary.com/dxq7q0y0y/image/upload/v1/default_profile_pic.png",
+        role: "user"
+      };
+    }
 
     // Check if user already viewed using atomic update
-    const updatedPost = await Post.findOneAndUpdate(
-      { _id: postId, views: { $ne: userId } },
-      { $addToSet: { views: userId } },
-      { new: true }
-    ).populate("postedBy", "username profilePic");
-
-    // Use updatedPost if available, otherwise use the lean post
-    const postObject = updatedPost ? updatedPost.toObject() : { ...post };
+    if (userId) {
+      const updatedPost = await Post.findOneAndUpdate(
+        { _id: postId, views: { $ne: userId } },
+        { $addToSet: { views: userId } },
+        { new: true }
+      );
+      if (updatedPost) {
+        Object.assign(populatedPost, updatedPost.toObject());
+      }
+    }
 
     // Ensure createdAt is properly formatted as ISO string
-    if (!postObject.createdAt) {
-      postObject.createdAt = new Date().toISOString();
+    if (!populatedPost.createdAt) {
+      populatedPost.createdAt = new Date().toISOString();
     } else {
-      postObject.createdAt = postObject.createdAt.toISOString ? 
-        postObject.createdAt.toISOString() : 
-        new Date(postObject.createdAt).toISOString();
+      populatedPost.createdAt = populatedPost.createdAt.toISOString ? 
+        populatedPost.createdAt.toISOString() : 
+        new Date(populatedPost.createdAt).toISOString();
     }
 
     // Ensure arrays are initialized
-    postObject.likes = postObject.likes || [];
-    postObject.reposts = postObject.reposts || [];
-    postObject.viewCount = postObject.views.length;
-    postObject.isViewed = postObject.views.includes(userId);
+    populatedPost.likes = populatedPost.likes || [];
+    populatedPost.reposts = populatedPost.reposts || [];
+    populatedPost.views = populatedPost.views || [];
+    populatedPost.viewCount = populatedPost.views.length;
+    populatedPost.isViewed = userId ? populatedPost.views.includes(userId) : false;
 
-    if (req.user) {
-      postObject.isLiked = postObject.likes.includes(req.user._id.toString());
-      postObject.isReposted = postObject.reposts.includes(req.user._id.toString());
+    if (userId) {
+      populatedPost.isLiked = populatedPost.likes.includes(userId.toString());
+      populatedPost.isReposted = populatedPost.reposts.includes(userId.toString());
     }
 
     // Add some additional logging for debugging
-    console.log("Post createdAt:", postObject.createdAt);
-    console.log("Post createdAt type:", typeof postObject.createdAt);
+    console.log("Post data:", {
+      id: populatedPost._id,
+      postedBy: populatedPost.postedBy,
+      createdAt: populatedPost.createdAt
+    });
 
-    res.status(200).json(postObject);
+    res.status(200).json(populatedPost);
   } catch (err) {
     console.error("Error in getPost:", err);
     res.status(500).json({ error: err.message });
