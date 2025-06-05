@@ -22,20 +22,20 @@ export default {
         });
     });
 
-    // Smart notifications
-    nodeCron.schedule('30 7 * * *', () => {
-      sendSmartNotifications();
-    });
+    // Smart notifications - DISABLED
+    // nodeCron.schedule('30 7 * * *', () => {
+    //   sendSmartNotifications();
+    // });
     
-    nodeCron.schedule('30 19 * * *', () => {
-      sendSmartNotifications();
-    });
+    // nodeCron.schedule('30 19 * * *', () => {
+    //   sendSmartNotifications();
+    // });
     
     // No-posts-today notification
     nodeCron.schedule('30 20 * * *', () => {
       sendNoPostsTodayNotification();
     });
     
-    console.log("All cron jobs started");
+    console.log("All cron jobs started (smart notifications disabled)");
   }
 };
